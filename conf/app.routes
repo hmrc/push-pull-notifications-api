@@ -1,3 +1,5 @@
 # microservice specific routes
 
 GET        /hello-world             uk.gov.hmrc.pushpullnotificationsapi.controllers.MicroserviceHelloWorldController.hello
+
+POST       /topics                  uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.createTopic()
