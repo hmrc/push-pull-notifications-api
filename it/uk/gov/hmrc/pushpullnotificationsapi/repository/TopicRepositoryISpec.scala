@@ -2,6 +2,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
 
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.play.test.UnitSpec
@@ -10,7 +11,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TopicRepositoryISpec extends UnitSpec with MongoApp {
+class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite{
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -23,8 +24,9 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp {
   def repo: TopicsRepository =
     app.injector.instanceOf[TopicsRepository]
 
-  override def beforeEach() {
+  override def beforeEach(): Unit ={
     super.beforeEach()
+    dropMongoDb()
     await(repo.ensureIndexes)
   }
 

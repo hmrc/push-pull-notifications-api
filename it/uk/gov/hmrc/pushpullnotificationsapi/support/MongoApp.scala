@@ -1,13 +1,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import org.scalatest.{BeforeAndAfterEach, Suite, TestSuite}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import uk.gov.hmrc.mongo.{MongoSpecSupport, Awaiting => MongoAwaiting}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 
-trait MongoApp extends MongoSpecSupport with BeforeAndAfterEach with GuiceOneAppPerSuite {
+trait MongoApp extends MongoSpecSupport with BeforeAndAfterEach  {
   me: Suite with TestSuite =>
 
   override def beforeEach(): Unit = {
