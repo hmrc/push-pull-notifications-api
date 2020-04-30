@@ -18,17 +18,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
+import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, Topic}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 @Singleton
 class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
@@ -52,13 +51,10 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   )
 
-  def createTopic(topic: Topic)(
-    implicit ec: ExecutionContext): Future[Boolean] =
-    insert(topic).map(wr => wr.ok) recover {
-      case NonFatal(e) =>
-        Logger.info(s"Exception occurred creating Topic with name: ${topic.topicName} error: ${e.getMessage}")
-        false
+  def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Unit] =
+    collection.insert.one(topic).map(_ => ()).recoverWith {
+      case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
+        Future.failed(DuplicateTopicException(s"${topic.topicName} ${topic.topicCreator.clientId}"))
     }
-
 }
 

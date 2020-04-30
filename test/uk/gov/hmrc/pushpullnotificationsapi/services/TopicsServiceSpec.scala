@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.util.UUID
+
 import org.scalatestplus.mockito.MockitoSugar
 import org.mockito.Mockito.{verify, when}
 import org.mockito.ArgumentMatchers.any
@@ -31,6 +33,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TopicsServiceSpec extends UnitSpec with MockitoSugar {
 
+  private val topicId = UUID.randomUUID().toString
   private val clientId: String = "clientId"
   private val topicName: String = "topicName"
 
@@ -38,34 +41,24 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar {
     val mockRepository: TopicsRepository = mock[TopicsRepository]
     val objInTest = new TopicsService(mockRepository)
     val argumentCaptor: Captor[Topic] = ArgCaptor[Topic]
-    def primeRepoMock(result: Boolean): Unit = {
-      when(mockRepository.createTopic(any[Topic])(any[ExecutionContext])).thenReturn(Future.successful(result))
-    }
+      when(mockRepository.createTopic(any[Topic])(any[ExecutionContext])).thenReturn(Future.successful(()))
+
   }
 
   "TopicsService" should {
 
     "return Created when topic repo returns true" in new Setup {
-      primeRepoMock(true)
-      val result: Result = await(objInTest.createTopic(clientId, topicName))
-      result shouldBe Created
+      await(objInTest.createTopic(topicId, clientId, topicName))
+
 
       verify(mockRepository).createTopic(argumentCaptor.capture)(any[ExecutionContext])
       validateTopic(argumentCaptor.value)
     }
 
-    "return Ok when topic repo returns false" in new Setup {
-      primeRepoMock(false)
-      val result: Result = await(objInTest.createTopic(clientId, topicName))
-      result shouldBe Ok
-
-      verify(mockRepository).createTopic(argumentCaptor.capture)(any[ExecutionContext])
-      validateTopic(argumentCaptor.value)
-    }
   }
 
   def validateTopic(topic: Topic): Unit = {
-    topic.topicId should not be empty
+    topic.topicId shouldBe topicId
     topic.topicName shouldBe topicName
     topic.subscribers.size shouldBe 0
     topic.topicCreator.clientId shouldBe clientId

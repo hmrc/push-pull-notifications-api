@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
-import org.mockito.Mockito.{reset, verify, when, verifyNoInteractions}
+import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -26,16 +26,14 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
-import play.api.mvc.Results.{InternalServerError, Created}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.DuplicateTopicException
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class TopicsControllerSpec extends UnitSpec with MockitoSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach{
@@ -61,19 +59,31 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
   "TopicsController" when {
     "createTopic" should {
         "return 201 when topic successfully created" in {
-          when(mockTopicsService.createTopic(any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(Created))
+          when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
          val result = doPost("/topics", validHeaders, jsonBody)
           status(result) should be(CREATED)
 
-          verify(mockTopicsService).createTopic(eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
+          verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
         }
 
-      "return the service result" in {
-        when(mockTopicsService.createTopic(any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(InternalServerError))
+
+      "return 422 when service fails with duplicate topic exception" in {
+        when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext]))
+          .thenReturn(Future.failed(DuplicateTopicException("some error")))
+        val result = await(doPost("/topics", validHeaders, jsonBody))
+        status(result) should be(UNPROCESSABLE_ENTITY)
+        contentAsJson(result).toString() shouldBe "{\"code\":\"DUPLICATE_TOPIC\",\"message\":\"some error\"}"
+
+        verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
+      }
+
+      "return 500 when service fails with any runtime exception" in {
+        when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext]))
+          .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doPost("/topics", validHeaders, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockTopicsService).createTopic(eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
+        verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
       }
 
       "return 400 when non JSon payload sent" in {

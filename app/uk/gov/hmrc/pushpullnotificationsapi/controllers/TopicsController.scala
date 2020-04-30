@@ -16,26 +16,47 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Reads}
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.createTopicRequestFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, ErrorCode, JsErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 @Singleton()
-class TopicsController @Inject()(appConfig: AppConfig,  topicsService: TopicsService, cc: ControllerComponents, playBodyParsers: PlayBodyParsers)
+class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsService, cc: ControllerComponents, playBodyParsers: PlayBodyParsers)
                                 (implicit val ec: ExecutionContext) extends BackendController(cc) {
 
   def createTopic(): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[CreateTopicRequest] {
-      topic => topicsService.createTopic(topic.clientId, topic.topicName)
+      topic =>
+        val topicId = UUID.randomUUID().toString
+        topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
+            Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
+            Created
+        } recover recovery
     }
+  }
+
+  private def recovery: PartialFunction[Throwable, Result] = {
+    case NonFatal(e) => {
+      Logger.info("An unexpected error occurred:", e)
+      e match {
+        case error: DuplicateTopicException => UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_TOPIC, error.message))
+        case _ => InternalServerError
+      }
+
+    }
+
   }
 
   override protected def withJsonBody[T]
@@ -46,12 +67,10 @@ class TopicsController @Inject()(appConfig: AppConfig,  topicsService: TopicsSer
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit m: Manifest[T], reads: Reads[T]): Future[Result] = {
     Try(json.validate[T]) match {
       case Success(JsSuccess(payload, _)) => f(payload)
-      case Success(JsError(errs)) => {
+      case Success(JsError(errs)) =>
         Future.successful(UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, JsError.toJson(errs))))
-      }
-      case Failure(e) => {
+      case Failure(e) =>
         Future.successful(UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, e.getMessage)))
-      }
     }
   }
 }

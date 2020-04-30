@@ -6,7 +6,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.{WSClient, WSResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
-import play.api.test.Helpers.{UNPROCESSABLE_ENTITY, CREATED, OK, UNSUPPORTED_MEDIA_TYPE, BAD_REQUEST}
+import play.api.test.Helpers.{UNPROCESSABLE_ENTITY, CREATED, UNSUPPORTED_MEDIA_TYPE, BAD_REQUEST, NO_CONTENT}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
@@ -37,9 +37,9 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   val createTopicJsonBody =raw"""{"clientId": "akjhjkhjshjkhksaih", "topicName": "iuiuiuojo"}"""
   val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
 
-  val validHeaders = "Content-Type" -> "application/json"
+  val validHeaders: (String, String) = "Content-Type" -> "application/json"
 
-  val wsClient = app.injector.instanceOf[WSClient]
+  val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def doPost(jsonBody: String, headers: (String, String)): WSResponse =
     wsClient
@@ -58,11 +58,12 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         result.status shouldBe CREATED
       }
 
-      "respond with 200 when topic already exists" in {
+      "respond with 422 when topic already exists" in {
         doPost(createTopicJsonBody, validHeaders)
 
         val result2 = doPost(createTopicJsonBody, validHeaders)
-        result2.status shouldBe OK
+        result2.status shouldBe UNPROCESSABLE_ENTITY
+        result2.body.contains("DUPLICATE_TOPIC") shouldBe true
       }
 
       "respond with 201 when two topics are created" in {
@@ -81,6 +82,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       "respond with 422 when invalid Json is sent" in {
         val result = doPost("{}", validHeaders)
         result.status shouldBe UNPROCESSABLE_ENTITY
+        result.body.contains("INVALID_REQUEST_PAYLOAD") shouldBe true
       }
 
       "respond with 415 when request content Type headers are empty" in {

@@ -14,23 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.models
+package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import play.api.libs.json.{JsObject, Json}
-import play.api.libs.json.Json.JsValueWrapper
-
-object ErrorCode extends Enumeration {
-  type ErrorCode = Value
-
-  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
-  val DUPLICATE_TOPIC = Value("DUPLICATE_TOPIC")
-  val UNKNOWN_ERROR = Value("UNKNOWN_ERROR")
-}
-
-object JsErrorResponse {
-  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
-    Json.obj(
-      "code" -> errorCode.toString,
-      "message" -> message
-    )
+object MongoErrorCodes {
+    val DuplicateKey = 11000
 }

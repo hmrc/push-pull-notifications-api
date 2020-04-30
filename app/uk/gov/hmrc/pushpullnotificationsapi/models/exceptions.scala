@@ -16,21 +16,4 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import play.api.libs.json.{JsObject, Json}
-import play.api.libs.json.Json.JsValueWrapper
-
-object ErrorCode extends Enumeration {
-  type ErrorCode = Value
-
-  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
-  val DUPLICATE_TOPIC = Value("DUPLICATE_TOPIC")
-  val UNKNOWN_ERROR = Value("UNKNOWN_ERROR")
-}
-
-object JsErrorResponse {
-  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
-    Json.obj(
-      "code" -> errorCode.toString,
-      "message" -> message
-    )
-}
+case class DuplicateTopicException(message: String, code: Option[Int] = None) extends RuntimeException
