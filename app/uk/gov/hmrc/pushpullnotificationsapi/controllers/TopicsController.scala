@@ -20,12 +20,13 @@ import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.{JsError, JsSuccess, JsValue, Reads}
+import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.createTopicRequestFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,21 +42,28 @@ class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsServ
       topic =>
         val topicId = UUID.randomUUID().toString
         topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
-            Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
-            Created
+          Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
+          Created
         } recover recovery
     }
   }
 
+  def getTopicByNameAndClientId(topicName: String, clientId: String): Action[AnyContent] = Action.async {
+    topicsService.getTopicByNameAndClientId(topicName, clientId) map {
+      case List(topic) => Ok(Json.toJson(topic))
+      case _ => NotFound
+    } recover recovery
+
+
+  }
+
   private def recovery: PartialFunction[Throwable, Result] = {
-    case NonFatal(e) => {
+    case NonFatal(e) =>
       Logger.info("An unexpected error occurred:", e)
       e match {
         case error: DuplicateTopicException => UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_TOPIC, error.message))
         case _ => InternalServerError
       }
-
-    }
 
   }
 

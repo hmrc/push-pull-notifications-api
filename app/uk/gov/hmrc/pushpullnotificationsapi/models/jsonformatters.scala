@@ -20,11 +20,13 @@ import play.api.libs.json.{Format, JsError, JsResult, JsString, JsSuccess, JsVal
 import uk.gov.hmrc.play.json.Union
 
 object ReactiveMongoFormatters {
- implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-
+  implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
+  implicit val formatTopicCreator: Format[TopicCreator] = Json.format[TopicCreator]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
+  implicit val formats: OFormat[Topic] = Json.format[Topic]
+
 }
 
 object RequestFormatters {

@@ -3,10 +3,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE, NOT_FOUND}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
-import play.api.test.Helpers.{UNPROCESSABLE_ENTITY, CREATED, UNSUPPORTED_MEDIA_TYPE, BAD_REQUEST, NO_CONTENT}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
@@ -34,7 +38,9 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   val url = s"http://localhost:$port"
 
-  val createTopicJsonBody =raw"""{"clientId": "akjhjkhjshjkhksaih", "topicName": "iuiuiuojo"}"""
+  val topicName = "mytopicName"
+  val clientId = "someClientId"
+  val createTopicJsonBody =raw"""{"clientId": "$clientId", "topicName": "$topicName"}"""
   val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
 
   val validHeaders: (String, String) = "Content-Type" -> "application/json"
@@ -48,11 +54,18 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       .post(jsonBody)
       .futureValue
 
+  def doGet(topicName:String, clientId: String, headers: (String, String)): WSResponse =
+    wsClient
+      .url(s"$url/topics?topicName=$topicName&clientId=$clientId")
+      .withHttpHeaders(headers)
+      .get
+      .futureValue
+
   // need to clean down mongo then run two
 
   "TopicsController" when {
 
-    "GET /topics" should {
+    "POST /topics" should {
       "respond with 201 when topic created" in {
         val result = doPost(createTopicJsonBody, validHeaders)
         result.status shouldBe CREATED
@@ -94,6 +107,27 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         val result = doPost("{}", "Content-Type" -> "application/xml")
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
+    }
+  }
+
+  "GET /topics?topicName=someName&clientId=someClientid" should {
+    "respond with 200 and topic in body when exists" in {
+      val result = doPost(createTopicJsonBody, validHeaders)
+      result.status shouldBe CREATED
+
+      val result2 = doGet(topicName,  clientId, validHeaders)
+      result2.status shouldBe OK
+
+      val topic = Json.parse(result2.body).as[Topic]
+      topic.topicName shouldBe topicName
+      topic.topicCreator.clientId shouldBe clientId
+
+    }
+
+    "respond with 404 when topic does not exists" in {
+      val result2 = doGet(topicName,  clientId, validHeaders)
+      result2.status shouldBe NOT_FOUND
+
     }
   }
 }

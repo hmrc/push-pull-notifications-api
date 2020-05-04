@@ -89,4 +89,34 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
     }
   }
 
+  "getTopicByTopicNameAndClientId" should {
+    "should return a list containing one topic when topic exists" in {
+      val result = await(repo.getTopicByNameAndClientId(topicName, clientId))
+      result.isEmpty shouldBe true
+      await(repo.createTopic(topic))
+
+      val result2 = await(repo.getTopicByNameAndClientId(topicName, clientId))
+      result2.isEmpty  shouldBe false
+      result2.head.topicCreator.clientId shouldBe clientId
+      result2.head.topicName shouldBe topicName
+      result2.size shouldBe 1
+    }
+
+    "should return an empty list  when topic does not exists (topicName)" in {
+
+      await(repo.createTopic(topic))
+
+      val result = await(repo.getTopicByNameAndClientId("differentTopicName", clientId))
+      result.isEmpty shouldBe true
+    }
+
+    "should return an empty list  when topic does not exists (clientId)" in {
+
+      await(repo.createTopic(topic))
+
+      val result = await(repo.getTopicByNameAndClientId(topicName, "differentClientId"))
+      result.isEmpty shouldBe true
+    }
+  }
+
 }
