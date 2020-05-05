@@ -26,9 +26,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class TopicsService @Inject()(repository: TopicsRepository) {
+
   def createTopic(topicId: String, clientId: String, topicName: String)
                  (implicit ec: ExecutionContext): Future[Unit] = {
     repository.createTopic(Topic(topicId, topicName, TopicCreator(clientId)))
+  }
+
+  def getTopicByNameAndClientId(topicName: String, clientId:String)
+                               (implicit ec: ExecutionContext): Future[List[Topic]] ={
+    repository.getTopicByNameAndClientId(topicName, clientId)
   }
 
 

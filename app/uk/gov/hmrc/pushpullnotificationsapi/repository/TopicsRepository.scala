@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
@@ -25,7 +26,8 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, Topic}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, ReactiveMongoFormatters, Topic}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +36,7 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[Topic, BSONObjectID](
     "push-pull-notification-topics",
     mongoComponent.mongoConnector.db,
-    Topic.formats,
+    ReactiveMongoFormatters.formats,
     ReactiveMongoFormats.objectIdFormats) {
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
@@ -56,5 +58,10 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
         Future.failed(DuplicateTopicException(s"${topic.topicName} ${topic.topicCreator.clientId}"))
     }
+
+  def getTopicByNameAndClientId(topicName: String, clientId: String)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
+    Logger.info(s"Getting topic by topicName:$topicName & clientId:$clientId")
+    find("topicName" -> topicName, "topicCreator.clientId" -> clientId)
+  }
 }
 

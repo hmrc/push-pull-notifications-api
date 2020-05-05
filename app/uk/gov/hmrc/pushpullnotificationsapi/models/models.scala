@@ -62,11 +62,3 @@ case class PushSubscriber(override val clientId: String, callBackUrl: String) ex
 }
 
 case class Topic(topicId: String, topicName: String, topicCreator: TopicCreator, subscribers: List[Subscriber] = List.empty)
-
-object Topic{
-  implicit val subscriptionFormats = ReactiveMongoFormatters.formatSubscriber
-  implicit val formats: OFormat[Topic] = Json.format[Topic]
-}
-
-
-
