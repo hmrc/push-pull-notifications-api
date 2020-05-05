@@ -7,7 +7,7 @@ lazy val scoverageSettings = {
   Seq(
     // Semicolon-separated list of regexs matching classes to exclude
     ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimum := 80,
+    ScoverageKeys.coverageMinimum := 85,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false
@@ -83,6 +83,7 @@ lazy val root = (project in file("."))
     majorVersion := 0
   )
   .settings(scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification"))
+  .disablePlugins(JUnitXmlReportPlugin)
   .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {
