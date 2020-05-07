@@ -23,7 +23,8 @@ import org.mockito.Mockito.{verify, when}
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Topic, TopicCreator}
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
+import uk.gov.hmrc.pushpullnotificationsapi.models.{PushSubscriber, SubscriberContainer, SubscribersRequest, SubscriptionType, Topic, TopicCreator, UpdateSubscribersRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,6 +35,14 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar {
   private val topicId = UUID.randomUUID().toString
   private val clientId: String = "clientId"
   private val topicName: String = "topicName"
+  val endpoint = "/iam/a/callbackurl"
+  val subscriberId = UUID.randomUUID().toString
+  val updateSubscribersRequestWithId = UpdateSubscribersRequest(List(SubscribersRequest(callBackUrl = endpoint,
+    subscriberType = API_PUSH_SUBSCRIBER,
+    subscriberId = Some(subscriberId))))
+
+  val updateSubscribersRequestWithOutId = UpdateSubscribersRequest(List(SubscribersRequest(callBackUrl = endpoint,
+    subscriberType = API_PUSH_SUBSCRIBER)))
 
   trait Setup {
     val mockRepository: TopicsRepository = mock[TopicsRepository]
@@ -46,7 +55,8 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar {
         .thenReturn(Future.successful(returnList))
     }
 
-
+    when(mockRepository.updateSubscribers(eqTo(topicId), any[List[SubscriberContainer[PushSubscriber]]])(any[ExecutionContext]))
+      .thenReturn(Future.successful(None))
 
   }
 
@@ -77,6 +87,38 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar {
 
         results.size shouldBe 0
       }
+    }
+
+    "updateSubscribers" should {
+
+      "pass the correct values to the repository and not generate a new subscriberId when a subscriberId is in the request" in new Setup {
+
+        await(objInTest.updateSubscribers(topicId,updateSubscribersRequestWithId))
+
+        val subscriberCaptor: Captor[List[SubscriberContainer[PushSubscriber]]] = ArgCaptor[List[SubscriberContainer[PushSubscriber]]]
+        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+
+        val capturedSubscriber = subscriberCaptor.value.head.elem
+        capturedSubscriber.callBackUrl shouldBe endpoint
+        capturedSubscriber.subscriberId shouldBe subscriberId
+        capturedSubscriber.subscriptionType shouldBe API_PUSH_SUBSCRIBER
+
+      }
+
+      "pass the correct values to the repository and should generate a new subscriberId when a subscriberId is not in the request" in new Setup {
+
+        await(objInTest.updateSubscribers(topicId,updateSubscribersRequestWithOutId))
+
+        val subscriberCaptor: Captor[List[SubscriberContainer[PushSubscriber]]] = ArgCaptor[List[SubscriberContainer[PushSubscriber]]]
+        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+
+        val capturedSubscriber = subscriberCaptor.value.head.elem
+        capturedSubscriber.callBackUrl shouldBe endpoint
+        capturedSubscriber.subscriberId shouldNot be(subscriberId)
+        capturedSubscriber.subscriptionType shouldBe API_PUSH_SUBSCRIBER
+
+      }
+
     }
 
   }

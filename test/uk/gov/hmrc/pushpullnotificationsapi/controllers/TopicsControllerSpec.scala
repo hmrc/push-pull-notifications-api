@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
 import org.scalatest.BeforeAndAfterEach
@@ -26,17 +28,18 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
-import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
+import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.DuplicateTopicException
+import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, Topic, TopicCreator, UpdateSubscribersRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class TopicsControllerSpec extends UnitSpec with MockitoSugar
-  with GuiceOneAppPerSuite with BeforeAndAfterEach{
+  with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   val mockTopicsService: TopicsService = mock[TopicsService]
 
@@ -48,23 +51,25 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
     reset(mockTopicsService)
   }
 
-  val clientId = "clientid"
-  val topicName = "topicName"
-  val jsonBody: String =  raw"""{"topicName": "$topicName",
-                       |"clientId": "$clientId" }""".stripMargin
+  val clientId: String = "clientid"
+  val topicName: String = "topicName"
+  val topicId: String = UUID.randomUUID().toString
+  val jsonBody: String =
+    raw"""{"topicName": "$topicName",
+         |"clientId": "$clientId" }""".stripMargin
 
-  private val validHeaders: Map[String, String] = Map("Content-Type"->"application/json")
+  private val validHeaders: Map[String, String] = Map("Content-Type" -> "application/json")
 
 
   "TopicsController" when {
     "createTopic" should {
-        "return 201 when topic successfully created" in {
-          when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
-         val result = doPost("/topics", validHeaders, jsonBody)
-          status(result) should be(CREATED)
+      "return 201 when topic successfully created" in {
+        when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
+        val result = doPost("/topics", validHeaders, jsonBody)
+        status(result) should be(CREATED)
 
-          verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
-        }
+        verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
+      }
 
 
       "return 422 when service fails with duplicate topic exception" in {
@@ -92,11 +97,6 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
         verifyNoInteractions(mockTopicsService)
       }
 
-      "return 422 when Json sent but header not set" in {
-        val result = doPost("/topics", Map.empty, "{}")
-        status(result) should be(UNPROCESSABLE_ENTITY)
-        verifyNoInteractions(mockTopicsService)
-      }
 
       "return 422 when invalid JSon payload sent" in {
         val result = doPost("/topics", validHeaders, "{}")
@@ -104,17 +104,120 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
         verifyNoInteractions(mockTopicsService)
       }
     }
+
+    "getTopicByNameAndClientId" should {
+
+      "return OK and requested topic when it exists" in {
+
+        when(mockTopicsService.getTopicByNameAndClientId(eqTo(topicName), eqTo(clientId))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List(Topic(topicId = UUID.randomUUID().toString, topicName = topicName, TopicCreator(clientId)))))
+
+        val result: Result = await(doGet(s"/topics?topicName=$topicName&clientId=$clientId", validHeaders))
+
+        status(result) should be(OK)
+
+        verify(mockTopicsService).getTopicByNameAndClientId(eqTo(topicName), eqTo(clientId))(any[ExecutionContext])
+        val bodyVal = Helpers.contentAsString(result)
+        val topic = Json.parse(bodyVal).as[Topic]
+        topic.subscribers shouldBe empty
+      }
+
+      "return NOTFOUND when requested topic does not exist" in {
+
+        when(mockTopicsService.getTopicByNameAndClientId(eqTo(topicName), eqTo(clientId))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List.empty))
+
+        val result: Result = await(doGet(s"/topics?topicName=$topicName&clientId=$clientId", validHeaders))
+
+        status(result) should be(NOT_FOUND)
+
+        verify(mockTopicsService).getTopicByNameAndClientId(eqTo(topicName), eqTo(clientId))(any[ExecutionContext])
+      }
+    }
+
+    "updateSubscribers" should {
+
+      val validUpdateSubscribersRequestJson = "{ \"subscribers\":[" +
+        "{\"subscriberId\": \"somesubscriberId\", \"subscriberType\": \"API_PUSH_SUBSCRIBER\", " +
+        "\"callBackUrl\":\"someURL\"}" +
+        "]}"
+
+      "return 200 when valid request and topic update is successful" in {
+        when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Topic(topicId = topicId, topicName = topicName, TopicCreator(clientId)))))
+
+        val result: Result = await(doPut(s"/topics/$topicId/subscribers", validHeaders, validUpdateSubscribersRequestJson))
+        println(validUpdateSubscribersRequestJson)
+
+        verify(mockTopicsService).updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext])
+        status(result) should be(OK)
+      }
+
+      "return 404 when valid request and topic update is successful" in {
+        when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(None))
+
+        val result = await(doPut(s"/topics/$topicId/subscribers", validHeaders, validUpdateSubscribersRequestJson))
+
+        verify(mockTopicsService).updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext])
+        status(result) should be(NOT_FOUND)
+      }
+
+
+      "return 500 when valid request and topic service returns failed future" in {
+        when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.failed( new RuntimeException("someError")))
+
+        val result = await(doPut(s"/topics/$topicId/subscribers", validHeaders, validUpdateSubscribersRequestJson))
+
+        verify(mockTopicsService).updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext])
+        status(result) should be(INTERNAL_SERVER_ERROR)
+      }
+
+
+      "return 422 when JSON is sent not valid against the requestObject" in {
+        when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Topic(topicId = topicId, topicName = topicName, TopicCreator(clientId)))))
+
+        val result = doPut(s"/topics/$topicId/subscribers", validHeaders, "{}")
+
+        status(result) should be(UNPROCESSABLE_ENTITY)
+      }
+
+      "return 400 when Non JSON payload is sent" in {
+        when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Topic(topicId = topicId, topicName = topicName, TopicCreator(clientId)))))
+
+        val result = doPut(s"/topics/$topicId/subscribers", validHeaders, "IamNotJson")
+
+        status(result) should be(BAD_REQUEST)
+      }
+
+    }
   }
 
-  def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] ={
-    val maybeBody: Option[JsValue] =  Try{
+  def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    route(app, fakeRequest).get
+  }
+
+  def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+    doPOSTorPUT(uri, headers, bodyValue, POST)
+  }
+
+  def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+    doPOSTorPUT(uri, headers, bodyValue, PUT)
+  }
+
+  private def doPOSTorPUT(uri: String, headers: Map[String, String], bodyValue: String, method: String): Future[Result] = {
+    val maybeBody: Option[JsValue] = Try {
       Json.parse(bodyValue)
     } match {
       case Success(value) => Some(value)
-      case Failure(_) =>  None
+      case Failure(_) => None
     }
 
-    val fakeRequest =  FakeRequest(POST, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
 

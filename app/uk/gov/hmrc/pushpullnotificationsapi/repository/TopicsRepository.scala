@@ -27,7 +27,7 @@ import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, ReactiveMongoFormatters, Topic}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, ReactiveMongoFormatters, Subscriber, SubscriberContainer, Topic}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -63,5 +63,15 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     Logger.info(s"Getting topic by topicName:$topicName & clientId:$clientId")
     find("topicName" -> topicName, "topicCreator.clientId" -> clientId)
   }
+
+  def updateSubscribers(topicId: String, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Topic]] = {
+
+    updateTopic(topicId, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
+  }
+
+  private def updateTopic(topicId: String, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
+    findAndUpdate(Json.obj("topicId" -> topicId), updateStatement, fetchNewObject = true) map {
+      _.result[Topic]
+    }
 }
 

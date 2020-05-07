@@ -2,17 +2,17 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
 
+import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, PushSubscriber, SubscriptionType, Topic, TopicCreator}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite{
+class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -25,7 +25,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
   def repo: TopicsRepository =
     app.injector.instanceOf[TopicsRepository]
 
-  override def beforeEach(): Unit ={
+  override def beforeEach(): Unit = {
     super.beforeEach()
     dropMongoDb()
     await(repo.ensureIndexes)
@@ -37,48 +37,44 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
   val callBackEndpoint = "some/endpoint"
   val topic: Topic = Topic(topicName = topicName,
     topicId = topicId,
-    topicCreator = TopicCreator(clientId),
-    subscribers = List(PushSubscriber(clientId, callBackEndpoint )))
+    topicCreator = TopicCreator(clientId))
 
   "createTopic" should {
 
     "create a Topic with one PushSubscriber" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe ()
-       val fetchedRecords = await(repo.find())
+      result shouldBe(())
+      val fetchedRecords = await(repo.find())
       val fetchedTopic = fetchedRecords.head
       fetchedTopic.topicName shouldBe topicName
       fetchedTopic.topicCreator.clientId shouldBe clientId
       fetchedTopic.topicId shouldBe topicId
-      fetchedTopic.subscribers.size shouldBe 1
-      val subscriber =  fetchedTopic.subscribers.head
-      subscriber.subscriptionType shouldBe SubscriptionType.API_PUSH_SUBSCRIBER
-      subscriber.clientId shouldBe clientId
-      subscriber.subscriberId should not be empty
+      fetchedTopic.subscribers.size shouldBe 0
+
 
     }
 
     "create a Topic should allow topics for same clientId but different TopicNames" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe ()
+      result shouldBe(())
       val result2: Unit = await(repo.createTopic(topic.copy(topicName = "someNewName")))
-      result2 shouldBe ()
+      result2 shouldBe(())
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
     "create a Topic should allow topics for different clientId but same TopicNames" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe ()
+      result shouldBe(())
       val result2: Unit = await(repo.createTopic(topic.copy(topicCreator = topic.topicCreator.copy("someCLientId"))))
-      result2 shouldBe ()
+      result2 shouldBe(())
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
     "create a Topic should not allow creation of duplicate topics with same topicName and clientId" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe ()
+      result shouldBe(())
 
       intercept[DuplicateTopicException] {
         await(repo.createTopic(Topic(UUID.randomUUID().toString, topicName, TopicCreator(clientId))))
@@ -96,7 +92,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
       await(repo.createTopic(topic))
 
       val result2 = await(repo.getTopicByNameAndClientId(topicName, clientId))
-      result2.isEmpty  shouldBe false
+      result2.isEmpty shouldBe false
       result2.head.topicCreator.clientId shouldBe clientId
       result2.head.topicName shouldBe topicName
       result2.size shouldBe 1
@@ -118,5 +114,34 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
       result.isEmpty shouldBe true
     }
   }
+  "updateSubscribers" should {
 
+    "update the subscriber list" in {
+      await(repo.createTopic(topic))
+      val fetchedRecords = await(repo.find())
+      fetchedRecords.size shouldBe 1
+
+      val createdTopic = fetchedRecords.head
+      createdTopic.subscribers.size shouldBe 0
+
+      val subscribers = List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))
+
+      val updated = await(repo.updateSubscribers(createdTopic.topicId, subscribers))
+      val updatedTopic = updated.head
+      updatedTopic.subscribers.size shouldBe 1
+
+      val subscriber = updatedTopic.subscribers.head.asInstanceOf[PushSubscriber]
+      subscriber.callBackUrl shouldBe callBackEndpoint
+      subscriber.subscribedDateTime.isBefore(DateTime.now())
+
+
+    }
+
+    "return None when the topic doesn't exist" in {
+      val updated = await(repo.updateSubscribers("someRandomTopicId",  List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))))
+      updated shouldBe None
+
+    }
+
+  }
 }

@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.util.UUID
-
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Topic, TopicCreator}
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,5 +36,17 @@ class TopicsService @Inject()(repository: TopicsRepository) {
     repository.getTopicByNameAndClientId(topicName, clientId)
   }
 
+  def updateSubscribers(topicId: String, request: UpdateSubscribersRequest)
+                                (implicit ec: ExecutionContext): Future[Option[Topic]] = {
+    val subscribers = request.subscribers.map(subscriber => {
+      subscriber.subscriberType match {
+        case API_PUSH_SUBSCRIBER => subscriber.subscriberId match {
+          case Some(id) => PushSubscriber(callBackUrl = subscriber.callBackUrl, subscriberId = id)
+          case None => PushSubscriber(callBackUrl = subscriber.callBackUrl)
+        }
+      }
+    })
+    repository.updateSubscribers(topicId, subscribers.map(new SubscriberContainer(_)))
+  }
 
 }

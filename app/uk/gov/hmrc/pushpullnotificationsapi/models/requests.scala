@@ -16,4 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.SubscriptionType
+
 case class CreateTopicRequest(topicName: String, clientId: String)
+
+case class SubscribersRequest(callBackUrl: String, subscriberType: SubscriptionType, subscriberId: Option[String] = None)
+
+case class UpdateSubscribersRequest(subscribers: List[SubscribersRequest])
+
