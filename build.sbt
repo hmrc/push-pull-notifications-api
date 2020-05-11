@@ -83,6 +83,7 @@ lazy val root = (project in file("."))
     majorVersion := 0
   )
   .settings(scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification"))
+  .disablePlugins(JUnitXmlReportPlugin)
   .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {
