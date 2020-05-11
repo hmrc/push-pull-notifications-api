@@ -1,7 +1,8 @@
 # microservice specific routes
 
-GET        /hello-world             uk.gov.hmrc.pushpullnotificationsapi.controllers.MicroserviceHelloWorldController.hello
+POST       /topics                      uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.createTopic()
 
-POST       /topics                  uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.createTopic()
+GET        /topics                      uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.getTopicByNameAndClientId(topicName, clientId)
 
-GET        /topics                  uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.getTopicByNameAndClientId(topicName, clientId)
+PUT        /topics/:topicId/subscribers uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.updateSubscribers(topicId)
+

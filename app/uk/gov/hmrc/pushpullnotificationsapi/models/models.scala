@@ -18,25 +18,9 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.util.UUID
 
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
-//{
-//  "_id" : ObjectId("5ea6a85b7d5c7bb2905a96d1"),
-//  "topicId" : "6d16fcc1-62d3-4d88-9daa-1d11a50b99aa",
-//  "topicName" : "topicName",
-//  "topicCreator" : {
-//     "clientId" : "ClientID1"
-//    },
-//  "subscribers" : [
-//    {
-//      "clientId" : "ClientID1",
-//      "callBackUrl" : "some/endpoint",
-//      "subscriptionType" : "API_PUSH_SUBSCRIBER"
-//    }
-//  ]
-//}
 
-
-//DB models
 case class TopicCreator(clientId: String)
 
 object TopicCreator {
@@ -51,14 +35,16 @@ object SubscriptionType extends Enumeration {
 
 sealed trait Subscriber {
   val subscriberId: String
+  val subscribedDateTime: DateTime
   val subscriptionType: SubscriptionType.Value
-  val clientId: String
 }
 
-case class PushSubscriber(override val clientId: String, callBackUrl: String) extends Subscriber {
-  override val subscriberId: String = UUID.randomUUID().toString
+class SubscriberContainer[+A] (val elem: A)
+
+case class PushSubscriber(callBackUrl: String,
+                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
+                          override val subscriberId: String = UUID.randomUUID().toString) extends Subscriber {
   override val subscriptionType: SubscriptionType.Value = SubscriptionType.API_PUSH_SUBSCRIBER
-  implicit val formats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
 }
 
 case class Topic(topicId: String, topicName: String, topicCreator: TopicCreator, subscribers: List[Subscriber] = List.empty)

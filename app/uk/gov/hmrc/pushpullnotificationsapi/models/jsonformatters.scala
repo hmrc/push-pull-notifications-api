@@ -16,10 +16,20 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import play.api.libs.json.{Format, JsError, JsResult, JsString, JsSuccess, JsValue, Json, OFormat, Reads, Writes}
+import org.joda.time.DateTime
+import play.api.libs.json.{Format, JodaReads, JodaWrites, JsError, JsResult, JsString, JsSuccess, JsValue, Json, OFormat, Reads, Writes}
 import uk.gov.hmrc.play.json.Union
 
+
+object JodaDateFormats {
+  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
+  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
+  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
+}
+
 object ReactiveMongoFormatters {
+  implicit val dateFormats = JodaDateFormats.JodaDateTimeFormat
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatTopicCreator: Format[TopicCreator] = Json.format[TopicCreator]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
@@ -31,6 +41,8 @@ object ReactiveMongoFormatters {
 
 object RequestFormatters {
   implicit val createTopicRequestFormatter: OFormat[CreateTopicRequest] = Json.format[CreateTopicRequest]
+  implicit val subscribersRequestFormatter: OFormat[SubscribersRequest] = Json.format[SubscribersRequest]
+  implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscribersRequest] = Json.format[UpdateSubscribersRequest]
 }
 
 class InvalidEnumException(className: String, input:String)

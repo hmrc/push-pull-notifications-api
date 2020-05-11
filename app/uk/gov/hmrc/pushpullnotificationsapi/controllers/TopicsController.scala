@@ -25,8 +25,8 @@ import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.createTopicRequestFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse, UpdateSubscribersRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,7 +53,18 @@ class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsServ
       case List(topic) => Ok(Json.toJson(topic))
       case _ => NotFound
     } recover recovery
+  }
 
+  def updateSubscribers(topicId: String): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+    withJsonBody[UpdateSubscribersRequest]{
+      updateRequest =>
+        topicsService.updateSubscribers(topicId, updateRequest) map {
+          case Some(topic) => Ok(Json.toJson(topic))
+          case _ => {Logger.info("topic not found or update failed")
+            NotFound
+          }
+        } recover recovery
+    }
 
   }
 

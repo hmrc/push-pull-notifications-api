@@ -1,11 +1,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE, NOT_FOUND}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
@@ -43,6 +45,14 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   val createTopicJsonBody =raw"""{"clientId": "$clientId", "topicName": "$topicName"}"""
   val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
 
+  val updateSubcribersJsonBodyWithIds = raw"""{ "subscribers":[{
+                                             |     "subscriberType": "API_PUSH_SUBSCRIBER",
+                                             |     "callBackUrl":"somepath/firstOne",
+                                             |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
+                                             |   }]
+                                             |}
+                                             |""".stripMargin
+
   val validHeaders: (String, String) = "Content-Type" -> "application/json"
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
@@ -52,6 +62,13 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       .url(s"$url/topics")
       .withHttpHeaders(headers)
       .post(jsonBody)
+      .futureValue
+
+  def doPut(topicId:String, jsonBody: String, headers: (String, String)): WSResponse =
+    wsClient
+      .url(s"$url/topics/$topicId/subscribers")
+      .withHttpHeaders(headers)
+      .put(jsonBody)
       .futureValue
 
   def doGet(topicName:String, clientId: String, headers: (String, String)): WSResponse =
@@ -115,7 +132,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       val result = doPost(createTopicJsonBody, validHeaders)
       result.status shouldBe CREATED
 
-      val result2 = doGet(topicName,  clientId, validHeaders)
+      val result2 = doGet(topicName, clientId, validHeaders)
       result2.status shouldBe OK
 
       val topic = Json.parse(result2.body).as[Topic]
@@ -125,9 +142,45 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     }
 
     "respond with 404 when topic does not exists" in {
-      val result2 = doGet(topicName,  clientId, validHeaders)
+      val result2 = doGet(topicName, clientId, validHeaders)
       result2.status shouldBe NOT_FOUND
 
     }
+  }
+
+  "PUT /topics/{topicId}/subscribers" should {
+
+    "return 200 and update topic successfully when topic exists" in {
+
+      val createdTopic = createTopicAndCheckExistsWithNoSubscribers()
+
+      val updateResult = doPut(createdTopic.topicId, updateSubcribersJsonBodyWithIds, validHeaders)
+      updateResult.status shouldBe OK
+
+      val updatedTopic = Json.parse(updateResult.body).as[Topic]
+      updatedTopic.subscribers.size shouldBe 1
+
+    }
+
+    "return 404 when topic does not exist" in {
+      val updateResult = doPut(UUID.randomUUID().toString, updateSubcribersJsonBodyWithIds, validHeaders)
+      updateResult.status shouldBe NOT_FOUND
+    }
+
+    "return 422 when requestBody is not a valid payload" in {
+      val updateResult = doPut(UUID.randomUUID().toString, "{}", validHeaders)
+      updateResult.status shouldBe UNPROCESSABLE_ENTITY
+    }
+  }
+
+  private def createTopicAndCheckExistsWithNoSubscribers(): Topic ={
+    val result = doPost(createTopicJsonBody, validHeaders)
+    result.status shouldBe CREATED
+
+    val result2 = doGet(topicName, clientId, validHeaders)
+    result2.status shouldBe OK
+    val topic = Json.parse(result2.body).as[Topic]
+    topic.subscribers.size shouldBe 0
+    topic
   }
 }
