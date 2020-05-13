@@ -40,12 +40,13 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   val url = s"http://localhost:$port"
 
+
   val topicName = "mytopicName"
   val clientId = "someClientId"
   val createTopicJsonBody =raw"""{"clientId": "$clientId", "topicName": "$topicName"}"""
   val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
 
-  val updateSubcribersJsonBodyWithIds = raw"""{ "subscribers":[{
+  val updateSubcribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
                                              |     "subscriberType": "API_PUSH_SUBSCRIBER",
                                              |     "callBackUrl":"somepath/firstOne",
                                              |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
@@ -80,12 +81,16 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   // need to clean down mongo then run two
 
+
+
+
   "TopicsController" when {
 
     "POST /topics" should {
       "respond with 201 when topic created" in {
         val result = doPost(createTopicJsonBody, validHeaders)
         result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
       }
 
       "respond with 422 when topic already exists" in {
@@ -99,9 +104,11 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       "respond with 201 when two topics are created" in {
         val result = doPost(createTopicJsonBody, validHeaders)
         result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
 
         val result2 = doPost(createTopic2JsonBody, validHeaders)
         result2.status shouldBe CREATED
+        validateStringIsUUID(result2.body)
       }
 
       "respond with 400 when NonJson is sent" in {
@@ -131,6 +138,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     "respond with 200 and topic in body when exists" in {
       val result = doPost(createTopicJsonBody, validHeaders)
       result.status shouldBe CREATED
+      validateStringIsUUID(result.body)
 
       val result2 = doGet(topicName, clientId, validHeaders)
       result2.status shouldBe OK
@@ -176,6 +184,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   private def createTopicAndCheckExistsWithNoSubscribers(): Topic ={
     val result = doPost(createTopicJsonBody, validHeaders)
     result.status shouldBe CREATED
+    validateStringIsUUID(result.body)
 
     val result2 = doGet(topicName, clientId, validHeaders)
     result2.status shouldBe OK

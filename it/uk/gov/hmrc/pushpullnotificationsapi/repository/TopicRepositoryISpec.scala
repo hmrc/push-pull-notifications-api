@@ -142,6 +142,21 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
       updated shouldBe None
 
     }
+  }
+  "getTopicByTopicId" should {
 
+    "return topic when topic exists" in {
+      await(repo.createTopic(topic))
+      val result = await(repo.findByTopicId(topicId))
+      result.isEmpty shouldBe false
+      result.size shouldBe 1
+      result.head.topicId shouldBe topicId
+    }
+
+    "return empty list when topic does not exist" in {
+      await(repo.createTopic(topic))
+      val result = await(repo.findByTopicId("any"))
+      result.isEmpty shouldBe true
+    }
   }
 }

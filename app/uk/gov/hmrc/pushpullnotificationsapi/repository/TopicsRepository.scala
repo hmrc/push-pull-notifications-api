@@ -34,24 +34,28 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[Topic, BSONObjectID](
-    "push-pull-notification-topics",
+    "topics",
     mongoComponent.mongoConnector.db,
-    ReactiveMongoFormatters.formats,
+    ReactiveMongoFormatters.topicsFormats,
     ReactiveMongoFormats.objectIdFormats) {
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
   override def indexes = Seq(
-    Index(
-      key = Seq(
-        "topicName" -> IndexType.Ascending,
-        "topicCreator.clientId" -> IndexType.Ascending
-      ),
-      name = Some("push_pull_notification_topics_index"),
-      unique = true,
-      background = true
-    )
+  Index(
+  key = Seq(
+  "topicName" -> IndexType.Ascending,
+  "topicCreator.clientId" -> IndexType.Ascending
+  ),
+  name = Some("topics_index"),
+  unique = true,
+  background = true
   )
+  )
+
+  def findByTopicId(topicId: String)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
+    find("topicId" -> topicId)
+  }
 
   def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Unit] =
     collection.insert.one(topic).map(_ => ()).recoverWith {
