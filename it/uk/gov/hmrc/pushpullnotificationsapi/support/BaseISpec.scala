@@ -1,5 +1,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
+import java.util.regex.Pattern
+
 import akka.stream.Materializer
 import play.api.Application
 import play.api.i18n.{Lang, Messages, MessagesApi}
@@ -39,4 +41,8 @@ abstract class BaseISpec
   implicit def hc(implicit request: FakeRequest[_]): HeaderCarrier =
     HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
 
+  val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
+  def validateStringIsUUID(toTest: String): Unit ={
+    uuidPattern.matcher(toTest).find() shouldBe true
+  }
 }

@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import org.joda.time.DateTime
 import play.api.libs.json.{Format, JodaReads, JodaWrites, JsError, JsResult, JsString, JsSuccess, JsValue, Json, OFormat, Reads, Writes}
 import uk.gov.hmrc.play.json.Union
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 
 object JodaDateFormats {
@@ -35,7 +36,9 @@ object ReactiveMongoFormatters {
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
-  implicit val formats: OFormat[Topic] = Json.format[Topic]
+  implicit val topicsFormats: OFormat[Topic] = Json.format[Topic]
+
+  implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
 
 }
 

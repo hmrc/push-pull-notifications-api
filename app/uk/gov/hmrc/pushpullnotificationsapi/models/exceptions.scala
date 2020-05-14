@@ -17,3 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 case class DuplicateTopicException(message: String, code: Option[Int] = None) extends RuntimeException
+
+case class DuplicateNotificationException(message: String, code: Option[Int] = None) extends RuntimeException
+
+case class TopicNotFoundException(message: String, code: Option[Int] = None) extends RuntimeException

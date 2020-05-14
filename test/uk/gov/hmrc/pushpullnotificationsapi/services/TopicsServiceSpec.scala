@@ -24,7 +24,7 @@ import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushSubscriber, SubscriberContainer, SubscribersRequest, SubscriptionType, Topic, TopicCreator, UpdateSubscribersRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global

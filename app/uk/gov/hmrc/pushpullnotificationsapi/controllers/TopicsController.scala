@@ -43,7 +43,7 @@ class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsServ
         val topicId = UUID.randomUUID().toString
         topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
           Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
-          Created
+          Created(topicId)
         } recover recovery
     }
   }
@@ -83,7 +83,7 @@ class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsServ
     withJson(request.body)(f)
   }
 
-  private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit m: Manifest[T], reads: Reads[T]): Future[Result] = {
+  private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     Try(json.validate[T]) match {
       case Success(JsSuccess(payload, _)) => f(payload)
       case Success(JsError(errs)) =>
