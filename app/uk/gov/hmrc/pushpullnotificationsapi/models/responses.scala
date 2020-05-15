@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import play.api.libs.json.{JsObject, Json}
 import play.api.libs.json.Json.JsValueWrapper
+import play.api.libs.json.{JsObject, Json}
 
 object ErrorCode extends Enumeration {
   type ErrorCode = Value

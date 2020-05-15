@@ -18,13 +18,15 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
 
+import org.joda.time.DateTime
 import org.mockito.MockitoSugar
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.captor.{ArgCaptor, Captor}
+import org.mockito.stubbing.ScalaOngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Topic, TopicCreator, TopicNotFoundException}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,11 +48,18 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
     val serviceToTest = new NotificationsService(mockTopicRepo, mockNotificationsRepo)
     val notificationCaptor: Captor[Notification] = ArgCaptor[Notification]
 
-    def primeNotificationRepo(result: Future[Unit]) = {
+    def primeNotificationRepoSave(result: Future[Unit]): ScalaOngoingStubbing[Future[Unit]] = {
       when(mockNotificationsRepo.saveNotification(any[Notification])(any[ExecutionContext])).thenReturn(result)
     }
+    def primeNotificationRepoGetNotifications(result: Future[List[Notification]]): ScalaOngoingStubbing[Future[List[Notification]]] = {
+      when(mockNotificationsRepo.getByTopicIdAndFilters(eqTo(topicId),
+        any[Option[NotificationStatus]],
+        any[Option[DateTime]],
+        any[Option[DateTime]])(any[ExecutionContext])).thenReturn(result)
+    }
 
-    def primeTopicsRepo(result: Future[List[Topic]], topicId: String) = {
+
+    def primeTopicsRepo(result: Future[List[Topic]], topicId: String): ScalaOngoingStubbing[Future[List[Topic]]] = {
       when(mockTopicRepo.findByTopicId(eqTo(topicId))(any[ExecutionContext])).thenReturn(result)
     }
   }
@@ -67,11 +76,10 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
 
   "SaveNotification" should {
     "return true when topic exists & notification successfully saved" in new Setup {
-
       primeTopicsRepo(Future.successful(List(topicObject)), topicId)
-      primeNotificationRepo(Future.successful(()))
+      primeNotificationRepoSave(Future.successful(()))
 
-      val result = await(serviceToTest.saveNotification(topicId, UUID.randomUUID(), notificationContentTypeJson, message))
+      val result: Boolean = await(serviceToTest.saveNotification(topicId, UUID.randomUUID(), notificationContentTypeJson, message))
       result shouldBe true
 
       verify(mockTopicRepo, times(1)).findByTopicId(eqTo(topicId))(any[ExecutionContext])
@@ -82,7 +90,6 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     "return false when topic does not exist" in new Setup {
-
       primeTopicsRepo(Future.successful(List.empty), topicId)
       intercept[TopicNotFoundException] {
         await(serviceToTest.saveNotification(topicId, UUID.randomUUID(), notificationContentTypeXml, message))
@@ -90,6 +97,44 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
 
       verify(mockTopicRepo, times(1)).findByTopicId(eqTo(topicId))(any[ExecutionContext])
       verifyZeroInteractions(mockNotificationsRepo)
+    }
+  }
+
+  "getNotifications" should {
+
+    val status = Some(NotificationStatus.RECEIVED)
+    val fromDate = Some(DateTime.now().minusHours(2))
+    val toDate = Some(DateTime.now())
+
+    "return list of matched notifications" in new Setup {
+
+      primeNotificationRepoGetNotifications(
+        Future.successful(List(Notification(UUID.randomUUID(), topicId,NotificationContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
+      )
+     val result: List[Notification] =  await(serviceToTest.getNotifications(topicId= topicId,
+        status = status,
+        fromDateTime = fromDate,
+        toDateTime = toDate))
+
+      result.isEmpty shouldBe false
+
+      verify(mockNotificationsRepo).getByTopicIdAndFilters(eqTo(topicId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+
+    }
+
+    "return empty list when no notifications found" in new Setup {
+
+      primeNotificationRepoGetNotifications(Future.successful(List.empty))
+
+      val result: List[Notification] =  await(serviceToTest.getNotifications(topicId= topicId,
+        status = status,
+        fromDateTime = fromDate,
+        toDateTime = toDate))
+
+      result.isEmpty shouldBe true
+
+      verify(mockNotificationsRepo).getByTopicIdAndFilters(eqTo(topicId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+
     }
   }
 }

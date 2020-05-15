@@ -18,17 +18,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import play.api.Logger
+import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createAscendingIndex
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,27 +37,62 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     "notifications",
     mongoComponent.mongoConnector.db,
     ReactiveMongoFormatters.notificationsFormats,
-    ReactiveMongoFormats.objectIdFormats) {
-
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+    ReactiveMongoFormats.objectIdFormats) with ReactiveMongoFormats {
 
 
-  //TODO: Think of sensible index (notification id, topicid and createdDateTime)?
+
   override def indexes = Seq(
-    Index(
-      key = Seq(
-        "notificationId" -> IndexType.Ascending,
-        "topicId" -> IndexType.Ascending,
-        "status" -> IndexType.Ascending
-      ),
-      name = Some("notifications_index"),
-      unique = true,
-      background = true
+   createAscendingIndex(
+     Some("notifications_index"),
+     isUnique = true,
+     isBackground = true,
+     List("notificationId", "topicId", "status"): _*
+   ),
+    createAscendingIndex(
+      Some("notifications_created_datetime_index"),
+      isUnique = false,
+      isBackground = true,
+      List("topicId, createdDateTime"): _*
     )
   )
 
+  def getByTopicIdAndFilters(topicId: String,
+                             status: Option[NotificationStatus] = None,
+                             fromDateTime: Option[DateTime] = None,
+                             toDateTime: Option[DateTime] = None)
+                           (implicit ec: ExecutionContext): Future[List[Notification]] =
+  {
+
+    val query: (String, JsValueWrapper) =  f"$$and" -> (
+      topicIdQuery(topicId) ++
+      statusQuery(status) ++
+      Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
+    find(query)
+  }
+
+  val empty: JsObject = Json.obj()
+
+ private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): JsObject = {
+    if (start.isDefined || end.isDefined) {
+      val startCompare = if (start.isDefined) Json.obj("$gte" -> Json.obj("$date" -> start.get.getMillis)) else empty
+      val endCompare = if (end.isDefined) Json.obj("$lte" -> Json.obj("$date" -> end.get.getMillis)) else empty
+      Json.obj(fieldName -> (startCompare ++ endCompare))
+    }
+    else empty
+  }
+
+  private def topicIdQuery(topicId: String): JsArray ={
+    Json.arr(Json.obj("topicId" -> topicId))
+  }
+  private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray ={
+    maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
+  }
+
+  def getAllByTopicId(topicId: String)
+                     (implicit ec: ExecutionContext): Future[List[Notification]] = getByTopicIdAndFilters(topicId)
+
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Unit] =
-    collection.insert.one(notification).map(_ => ()).recoverWith {
+    insert(notification).map(_ => ()).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
         Future.failed(DuplicateNotificationException(s"${notification.notificationId} ${notification.topicId}"))
     }

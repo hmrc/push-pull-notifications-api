@@ -22,12 +22,12 @@ import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, ReactiveMongoFormatters, Subscriber, SubscriberContainer, Topic}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.{createAscendingIndex, createSingleFieldAscendingIndex}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,16 +42,13 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
   override def indexes = Seq(
-  Index(
-  key = Seq(
-  "topicName" -> IndexType.Ascending,
-  "topicCreator.clientId" -> IndexType.Ascending
-  ),
-  name = Some("topics_index"),
-  unique = true,
-  background = true
+    createAscendingIndex(Some("topics_index"),
+      isUnique = true,
+      isBackground = true,
+      indexFieldsKey = List("topicName", "topicCreator.clientId"): _*),
+    createSingleFieldAscendingIndex("topicId", Some("topicid_index"), isUnique = true)
   )
-  )
+
 
   def findByTopicId(topicId: String)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
     find("topicId" -> topicId)

@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
 
+import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
 import org.scalatest.BeforeAndAfterEach
@@ -31,7 +32,8 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{RECEIVED, UNKNOWN}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateNotificationException, TopicNotFoundException}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
@@ -60,6 +62,19 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
   private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json")
   private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml")
 
+  val createdDateTime: DateTime = DateTime.now().minusDays(1)
+  val notification: Notification = Notification(UUID.randomUUID(), topicId,
+    notificationContentType = NotificationContentType.APPLICATION_JSON,
+    message = "{}",
+    createdDateTime = createdDateTime,
+    status = RECEIVED)
+
+  val notification2: Notification = Notification(UUID.randomUUID(), topicId,
+    notificationContentType = NotificationContentType.APPLICATION_XML,
+    message = "<someXml/>",
+    createdDateTime = createdDateTime.plusHours(12),
+    status = NotificationStatus.READ)
+
 
   "NotificationController" when {
     "saveNotification" should {
@@ -72,17 +87,20 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
         val result = doPost(s"/notifications/topics/$topicId", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext])
       }
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
-        when(mockNotificationService.saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+        when(mockNotificationService
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
           .thenReturn(Future.successful(true))
 
         val result = doPost(s"/notifications/topics/$topicId", validHeadersXml, xmlBody)
         status(result) should be(CREATED)
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
       }
 
       "return 400 when json content type header is sent but invalid json" in {
@@ -111,48 +129,151 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
 
       "return 500 when save notification Fails" in {
 
-        when(mockNotificationService.saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+        when(mockNotificationService
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
           .thenReturn(Future.successful(false))
 
         val result = doPost(s"/notifications/topics/$topicId", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
       }
 
       "return 422 when save notification throws Duplicate Notification Exception" in {
 
-        when(mockNotificationService.saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+        when(mockNotificationService
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
           .thenReturn(Future.failed(DuplicateNotificationException("some Exception")))
 
         val result = await(doPost(s"/notifications/topics/$topicId", validHeadersXml, xmlBody))
         status(result) should be(UNPROCESSABLE_ENTITY)
 
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
       }
 
       "return 404 when save notification throws Topic not found Exception" in {
 
-        when(mockNotificationService.saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+        when(mockNotificationService
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
           .thenReturn(Future.failed(TopicNotFoundException("some Exception")))
 
         val result = doPost(s"/notifications/topics/$topicId", validHeadersXml, xmlBody)
         status(result) should be(NOT_FOUND)
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {
 
-        when(mockNotificationService.saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+        when(mockNotificationService
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/notifications/topics/$topicId", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockNotificationService).saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+        verify(mockNotificationService)
+          .saveNotification(eqTo(topicId), any[UUID], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
       }
+    }
+
+    "getNotificationsByTopicIdAndFilters" should {
+
+      "return 200 and list of matching notifications when no filters provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, None)
+      }
+
+      "return 200 and list of matching notifications when status filter provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, Some("READ"))
+      }
+
+      "return 404 when invalid status filter provided" in {
+        testAndValidateGetByQueryParams(topicId, NOT_FOUND, Some("KBUO"))
+      }
+
+      "return 200 when valid from_date filter provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, None, maybeFromDateStr = Some( "2020-02-02T00:54:00Z"))
+      }
+
+      "return 200 when valid status, from_date filter are provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, Some("RECEIVED"), maybeFromDateStr = Some( "2020-02-02T00:54:00Z"))
+      }
+
+      "return 404 when invalid from_date filter provided" in {
+        testAndValidateGetByQueryParams(topicId, NOT_FOUND, None, maybeFromDateStr = Some("4433:33:88T223322"))
+      }
+
+      "return 200 when valid to_date filter provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, None, maybeToDateStr = Some("2020-02-02T00:54:00Z"))
+      }
+
+      "return 200 when valid to_date and status filters are provided" in {
+        testAndValidateGetByQueryParams(topicId, OK, Some("RECEIVED"), maybeToDateStr = Some("2020-02-02T00:54:00Z"))
+      }
+
+      "return 404 when invalid to_date filter provided" in {
+        testAndValidateGetByQueryParams(topicId, NOT_FOUND,  None, maybeToDateStr = Some("4433:33:88T223322"))
+      }
+
+
+    }
+  }
+
+  def testAndValidateGetByQueryParams(topicId: String,
+                                      expectedStatusCode: Int,
+                                      maybeNotificationStatus: Option[String],
+                                      maybeFromDateStr: Option[String]= None,
+                                      maybeToDateStr: Option[String] = None): Unit ={
+
+    val maybeFromDate = stringToDateTimeLenient(maybeFromDateStr)
+    val mayBeToDate = stringToDateTimeLenient(maybeToDateStr)
+
+    val mayBeStatus = maybeNotificationStatus.map(x=>{
+      Try[NotificationStatus]{NotificationStatus.withName(x)
+    } match {
+      case Success(x) => x
+      case Failure(_) => UNKNOWN
+    }})
+
+    expectedStatusCode match {
+      case OK => when(mockNotificationService.getNotifications(eqTo(topicId),
+        eqTo(mayBeStatus),
+        eqTo(maybeFromDate),
+        eqTo(mayBeToDate))(any[ExecutionContext])).thenReturn(Future.successful(List(notification, notification2)))
+      case NOT_FOUND => ()
+    }
+
+    val statusQueryString = maybeNotificationStatus.fold("")(x=>s"status=$x&")
+    val toDateQueryString = maybeToDateStr.fold("")( x=> s"to_date=$x&")
+    val fromDateQueryString = maybeFromDateStr.fold("")( x=> s"from_date=$x&")
+
+    val result = await(doGet(s"/notifications/topics/$topicId?"++statusQueryString++fromDateQueryString++toDateQueryString, Map.empty))
+    status(result) shouldBe expectedStatusCode
+
+    expectedStatusCode match {
+      case NOT_FOUND =>   verifyNoInteractions(mockNotificationService)
+      case OK => verify(mockNotificationService).getNotifications(eqTo(topicId),
+        eqTo(mayBeStatus),
+        eqTo(maybeFromDate),
+        eqTo(mayBeToDate))(any[ExecutionContext])
+    }
+
+  }
+
+  def stringToDateTime(dateStr: String): DateTime = {
+    DateTime.parse(dateStr)
+  }
+
+  def  stringToDateTimeLenient(dateStr: Option[String]): Option[DateTime] = {
+    Try[Option[DateTime]]{
+      dateStr.map(DateTime.parse)
+    }match {
+      case Success(x) => x
+      case Failure(_) => None
     }
   }
 
