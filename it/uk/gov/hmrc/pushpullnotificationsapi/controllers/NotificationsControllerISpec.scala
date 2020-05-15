@@ -112,18 +112,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         val result = doPost( s"$url/notifications/topics/${UUID.randomUUID().toString}", "{}", validHeadersJson)
         result.status shouldBe NOT_FOUND
       }
-
-      "respond with 422 when attempt to create duplicate notification" in {
-        val topic =  createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersJson)
-        result.status shouldBe CREATED
-        validateStringIsUUID(result.body)
-
-        val result2 = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersJson)
-        result2.status shouldBe UNPROCESSABLE_ENTITY
-      }
-
-
     }
 
   }
