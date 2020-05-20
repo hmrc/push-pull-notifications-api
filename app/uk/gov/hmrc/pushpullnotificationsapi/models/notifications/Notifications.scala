@@ -18,35 +18,56 @@ package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
 import java.util.UUID
 
+import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.Format
-import uk.gov.hmrc.pushpullnotificationsapi.models.EnumJson
+import play.api.libs.json.{Format, Json, OFormat}
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.RECEIVED
+
+import scala.collection.immutable
 
 
-object NotificationContentType extends Enumeration {
-  type NotificationContentType = Value
-  val APPLICATION_JSON: NotificationContentType.Value = Value
-  val APPLICATION_XML: NotificationContentType.Value = Value
-  val UNSUPPORTED: NotificationContentType.Value = Value
-  implicit val AllowedContentTypeFormat: Format[NotificationContentType.Value] = EnumJson.enumFormat(NotificationContentType)
+sealed trait NotificationContentType extends EnumEntry
+
+object NotificationContentType extends Enum[NotificationContentType] with PlayJsonEnum[NotificationContentType] {
+  val values: immutable.IndexedSeq[NotificationContentType] = findValues
+
+  case object APPLICATION_JSON extends NotificationContentType
+
+  case object APPLICATION_XML extends NotificationContentType
+
+  case object UNSUPPORTED extends NotificationContentType
+
 }
 
-object NotificationStatus extends Enumeration {
-  type NotificationStatus = Value
-  val RECEIVED: NotificationStatus.Value = Value
-  implicit val NotificationStatusFormat: Format[NotificationStatus.Value] = EnumJson.enumFormat(NotificationStatus)
+sealed trait NotificationStatus extends EnumEntry
+
+object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[NotificationStatus] {
+  val values: immutable.IndexedSeq[NotificationStatus] = findValues
+
+  case object RECEIVED extends NotificationStatus
+
+  case object READ extends NotificationStatus
+
+  case object UNKNOWN extends NotificationStatus
+
 }
 
 
-case class Notification(notificationId : UUID,
-                        topicId : String,
-                        notificationContentType: NotificationContentType.Value,
+case class Notification(notificationId: UUID,
+                        topicId: String,
+                        notificationContentType: NotificationContentType,
                         message: String,
-                        status: NotificationStatus.Value = NotificationStatus.RECEIVED,
+                        status: NotificationStatus = RECEIVED,
                         createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
                         readDateTime: Option[DateTime] = None,
                         pushedDateTime: Option[DateTime] = None)
 
+object Notification {
+  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+
+  implicit val format: OFormat[Notification] = Json.format[Notification]
+}
 
 //{
 //    "_id" : ObjectId("5ebbb1a07d90a80ffb42af91"),

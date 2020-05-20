@@ -2,11 +2,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
 
+import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Format
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, UNPROCESSABLE_ENTITY}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK}
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
@@ -15,7 +18,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
   this: Suite with ServerProvider =>
-
+  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   def topicsRepo:  TopicsRepository= app.injector.instanceOf[TopicsRepository]
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
 
@@ -64,6 +67,12 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       .post(jsonBody)
       .futureValue
 
+  def doGet(urlString: String, headers: (String, String)): WSResponse =
+    wsClient
+      .url(urlString)
+      .withHttpHeaders(headers)
+      .get
+      .futureValue
   // need to clean down mongo then run two
 
   def createTopicAndReturn(): Topic = {
@@ -72,6 +81,14 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     await(topicsRepo.findAll().head)
   }
 
+  def createNotifications(topicId: String, numberToCreate: Int): Unit ={
+    for( i <- 0 until numberToCreate){
+      val result = doPost( s"$url/notifications/topics/${topicId}", "{}", validHeadersJson)
+      result.status shouldBe CREATED
+    }
+
+
+  }
   "NotificationsController" when {
 
     "POST /notification/topics/[topicId]" should {
@@ -111,6 +128,16 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         createTopicAndReturn()
         val result = doPost( s"$url/notifications/topics/${UUID.randomUUID().toString}", "{}", validHeadersJson)
         result.status shouldBe NOT_FOUND
+      }
+    }
+
+    "GET /notification/topics/[topicId]" should {
+      "respond with 201 when notification created for valid json and json content type" in {
+        val topic =  createTopicAndReturn()
+        createNotifications(topic.topicId, 4)
+        val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson)
+        result.status shouldBe OK
+        println(result.body)
       }
     }
 

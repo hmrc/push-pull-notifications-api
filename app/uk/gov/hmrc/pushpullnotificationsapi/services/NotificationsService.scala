@@ -19,19 +19,28 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
+import org.joda.time.DateTime
 import uk.gov.hmrc.pushpullnotificationsapi.models.TopicNotFoundException
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 
 @Singleton
 class NotificationsService @Inject()(topicsRepository: TopicsRepository, notificationsRepository: NotificationsRepository) {
 
-  def saveNotification(topicId: String, notificationId: UUID, contentType: NotificationContentType.Value, message: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def getNotifications(topicId: String,
+                       status: Option[NotificationStatus] = None,
+                       fromDateTime: Option[DateTime] = None,
+                       toDateTime: Option[DateTime] = None)
+                      (implicit ec: ExecutionContext): Future[List[Notification]] = {
+    notificationsRepository.getByTopicIdAndFilters(topicId, status, fromDateTime, toDateTime)
+  }
 
+
+  def saveNotification(topicId: String, notificationId: UUID, contentType: NotificationContentType, message: String)
+                      (implicit ec: ExecutionContext): Future[Boolean] = {
     topicsRepository.findByTopicId(topicId)
       .flatMap {
         case Nil => Future.failed(TopicNotFoundException(s"$topicId not found"))
@@ -42,10 +51,5 @@ class NotificationsService @Inject()(topicsRepository: TopicsRepository, notific
         }
       }
   }
-
-  //TODO -> topic Id (on URl) check topic exists...
-  //if exists save notification in notification repository.
-  // if topic does not exists sent error
-  // return any repo errors
 
 }

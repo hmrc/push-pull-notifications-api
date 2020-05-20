@@ -25,8 +25,11 @@ import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateNotificationQueryParamsAction
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateNotificationException, ErrorCode, JsErrorResponse, TopicNotFoundException}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,6 +40,7 @@ import scala.xml.NodeSeq
 @Singleton()
 class NotificationsController @Inject()(appConfig: AppConfig,
                                         notificationsService: NotificationsService,
+                                        queryParamValidatorAction: ValidateNotificationQueryParamsAction,
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)
                                        (implicit val ec: ExecutionContext) extends BackendController(cc) {
@@ -56,7 +60,17 @@ class NotificationsController @Inject()(appConfig: AppConfig,
 
   }
 
-  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]) = {
+  def getNotificationsByTopicIdAndFilters(topicId: String): Action[AnyContent] =
+    (Action andThen
+      queryParamValidatorAction)
+    .async {implicit request =>
+      notificationsService.getNotifications(topicId, request.params.status, request.params.fromDate, request.params.toDate) map {
+        case Nil => Ok("no results")
+        case x : List[Notification] =>  Ok(Json.toJson(x))
+      } recover recovery
+    }
+
+  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): NotificationContentType = {
     request.contentType match {
       case Some(MimeTypes.JSON) => APPLICATION_JSON
       case Some(MimeTypes.XML) => APPLICATION_XML

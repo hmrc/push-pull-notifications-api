@@ -17,62 +17,33 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, JodaReads, JodaWrites, JsError, JsResult, JsString, JsSuccess, JsValue, Json, OFormat, Reads, Writes}
+import play.api.libs.json._
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 
-object JodaDateFormats {
-  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
-  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
-  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
-}
-
 object ReactiveMongoFormatters {
-  implicit val dateFormats = JodaDateFormats.JodaDateTimeFormat
+  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatTopicCreator: Format[TopicCreator] = Json.format[TopicCreator]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
   implicit val topicsFormats: OFormat[Topic] = Json.format[Topic]
-
   implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
+}
 
+object ResponseFormatters{
+  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
+  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
+  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
+  implicit val notificationWrites = Json.format[Notification]
 }
 
 object RequestFormatters {
   implicit val createTopicRequestFormatter: OFormat[CreateTopicRequest] = Json.format[CreateTopicRequest]
   implicit val subscribersRequestFormatter: OFormat[SubscribersRequest] = Json.format[SubscribersRequest]
   implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscribersRequest] = Json.format[UpdateSubscribersRequest]
-}
-
-class InvalidEnumException(className: String, input:String)
-  extends RuntimeException(s"Enumeration expected of type: '$className', but it does not contain '$input'")
-
-object EnumJson {
-
-  def enumReads[E <: Enumeration](enum: E): Reads[E#Value] = new Reads[E#Value] {
-    def reads(json: JsValue): JsResult[E#Value] = json match {
-      case JsString(s) =>
-        try {
-          JsSuccess(enum.withName(s))
-        } catch {
-          case _: NoSuchElementException => throw new InvalidEnumException(enum.getClass.getSimpleName, s)
-        }
-      case _ => JsError("String value expected")
-    }
-  }
-
-  implicit def enumWrites[E <: Enumeration]: Writes[E#Value] = new Writes[E#Value] {
-    def writes(v: E#Value): JsValue = JsString(v.toString)
-  }
-
-  implicit def enumFormat[E <: Enumeration](enum: E): Format[E#Value] = {
-    Format(enumReads(enum), enumWrites)
-  }
-
-
-
 }
