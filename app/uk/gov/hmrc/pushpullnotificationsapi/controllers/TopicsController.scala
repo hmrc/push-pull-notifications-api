@@ -24,6 +24,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse, UpdateSubscribersRequest}
@@ -34,19 +35,26 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 @Singleton()
-class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsService, cc: ControllerComponents, playBodyParsers: PlayBodyParsers)
+class TopicsController @Inject()(appConfig: AppConfig,
+                                 validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
+                                 topicsService: TopicsService,
+                                 cc: ControllerComponents,
+                                 playBodyParsers: PlayBodyParsers)
                                 (implicit val ec: ExecutionContext) extends BackendController(cc) {
 
-  def createTopic(): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[CreateTopicRequest] {
-      topic =>
-        val topicId = UUID.randomUUID().toString
-        topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
-          Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
-          Created(topicId)
-        } recover recovery
-    }
-  }
+  def createTopic(): Action[JsValue] =
+    (Action andThen
+      validateUserAgentHeaderAction)
+      .async(playBodyParsers.json) { implicit request =>
+        withJsonBody[CreateTopicRequest] {
+          topic: CreateTopicRequest =>
+            val topicId = UUID.randomUUID().toString
+            topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
+              Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
+              Created(topicId)
+            } recover recovery
+        }
+      }
 
   def getTopicByNameAndClientId(topicName: String, clientId: String): Action[AnyContent] = Action.async {
     topicsService.getTopicByNameAndClientId(topicName, clientId) map {
@@ -56,13 +64,12 @@ class TopicsController @Inject()(appConfig: AppConfig, topicsService: TopicsServ
   }
 
   def updateSubscribers(topicId: String): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[UpdateSubscribersRequest]{
+    withJsonBody[UpdateSubscribersRequest] {
       updateRequest =>
         topicsService.updateSubscribers(topicId, updateRequest) map {
           case Some(topic) => Ok(Json.toJson(topic))
-          case _ => {Logger.info("topic not found or update failed")
+          case _ => Logger.info("topic not found or update failed")
             NotFound
-          }
         } recover recovery
     }
 

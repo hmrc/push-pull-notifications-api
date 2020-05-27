@@ -31,6 +31,7 @@ import play.api.mvc.Result
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, Topic, TopicCreator, UpdateSubscribersRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
@@ -42,13 +43,19 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   val mockTopicsService: TopicsService = mock[TopicsService]
+  val mockAppConfig: AppConfig = mock[AppConfig]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[TopicsService].to(mockTopicsService))
+    .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
 
   override def beforeEach(): Unit = {
-    reset(mockTopicsService)
+    reset(mockTopicsService, mockAppConfig)
+  }
+
+  private def setUpAppConfig(userAgents: List[String]): Unit ={
+    when(mockAppConfig.whitelistedUserAgentList).thenReturn(userAgents)
   }
 
   val clientId: String = "clientid"
@@ -58,24 +65,57 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
     raw"""{"topicName": "$topicName",
          |"clientId": "$clientId" }""".stripMargin
 
+  private val validHeadersWithValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
+  private val validHeadersWithInValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "User-Agent" -> "some-other-service")
+
   private val validHeaders: Map[String, String] = Map("Content-Type" -> "application/json")
+
 
 
   "TopicsController" when {
     "createTopic" should {
       "return 201 when topic successfully created" in {
+        setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
-        val result = doPost("/topics", validHeaders, jsonBody)
+        val result = doPost("/topics", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(CREATED)
 
         verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
       }
 
+      "return 400 when useragent config is empty" in {
+        setUpAppConfig(List.empty)
+        val result = doPost("/topics", validHeadersWithValidUserAgent, jsonBody)
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockTopicsService)
+      }
+
+
+      "return 400 when invalid useragent provided" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
+        val result = doPost("/topics", validHeadersWithInValidUserAgent, jsonBody)
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockTopicsService)
+      }
+
+        "return 400 when no useragent header provided" in {
+          setUpAppConfig(List("api-subscription-fields"))
+          when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext])).thenReturn(Future.successful(()))
+          val result = doPost("/topics", validHeaders, jsonBody)
+          status(result) should be(BAD_REQUEST)
+
+          verifyNoInteractions(mockTopicsService)
+        }
+
 
       "return 422 when service fails with duplicate topic exception" in {
+        setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext]))
           .thenReturn(Future.failed(DuplicateTopicException("some error")))
-        val result = await(doPost("/topics", validHeaders, jsonBody))
+        val result = await(doPost("/topics", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(UNPROCESSABLE_ENTITY)
         contentAsJson(result).toString() shouldBe "{\"code\":\"DUPLICATE_TOPIC\",\"message\":\"some error\"}"
 
@@ -83,15 +123,17 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
       }
 
       "return 500 when service fails with any runtime exception" in {
+        setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[String], any[String], any[String])(any[ExecutionContext]))
           .thenReturn(Future.failed(new RuntimeException("some error")))
-        val result = doPost("/topics", validHeaders, jsonBody)
+        val result = doPost("/topics", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockTopicsService).createTopic(any[String], eqTo(clientId), eqTo(topicName))(any[ExecutionContext])
       }
 
       "return 400 when non JSon payload sent" in {
+        setUpAppConfig(List("api-subscription-fields"))
         val result = doPost("/topics", validHeaders, "xxx")
         status(result) should be(BAD_REQUEST)
         verifyNoInteractions(mockTopicsService)
@@ -99,7 +141,8 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
 
 
       "return 422 when invalid JSon payload sent" in {
-        val result = doPost("/topics", validHeaders, "{}")
+        setUpAppConfig(List("api-subscription-fields"))
+        val result = doPost("/topics", validHeadersWithValidUserAgent, "{}")
         status(result) should be(UNPROCESSABLE_ENTITY)
         verifyNoInteractions(mockTopicsService)
       }

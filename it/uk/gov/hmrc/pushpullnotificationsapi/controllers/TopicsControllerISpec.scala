@@ -54,28 +54,28 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
                                              |}
                                              |""".stripMargin
 
-  val validHeaders: (String, String) = "Content-Type" -> "application/json"
+  val validHeaders = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"))
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
-  def doPost(jsonBody: String, headers: (String, String)): WSResponse =
+  def doPost(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/topics")
-      .withHttpHeaders(headers)
+      .withHttpHeaders(headers: _*)
       .post(jsonBody)
       .futureValue
 
-  def doPut(topicId:String, jsonBody: String, headers: (String, String)): WSResponse =
+  def doPut(topicId:String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/topics/$topicId/subscribers")
-      .withHttpHeaders(headers)
+      .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doGet(topicName:String, clientId: String, headers: (String, String)): WSResponse =
+  def doGet(topicName:String, clientId: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/topics?topicName=$topicName&clientId=$clientId")
-      .withHttpHeaders(headers)
+      .withHttpHeaders(headers: _*)
       .get
       .futureValue
 
@@ -123,13 +123,23 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       }
 
       "respond with 415 when request content Type headers are empty" in {
-        val result = doPost("{}", "someHeader" -> "someValue")
+        val result = doPost("{}", List("someHeader" -> "someValue"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 415 when request content Type header is not JSON " in {
-        val result = doPost("{}", "Content-Type" -> "application/xml")
+        val result = doPost("{}",  List("Content-Type" -> "application/xml"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
+      }
+
+      "respond with 400 when UserAgent is not sent " in {
+        val result = doPost("{}",  List("Content-Type" -> "application/json"))
+        result.status shouldBe BAD_REQUEST
+      }
+
+      "respond with 400 when UserAgent is not in whitelist" in {
+        val result = doPost("{}",  List("Content-Type" -> "application/json", "User-Agent"->"not-a-known-one"))
+        result.status shouldBe BAD_REQUEST
       }
     }
   }
