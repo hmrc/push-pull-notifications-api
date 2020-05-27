@@ -105,13 +105,16 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
     val status = Some(NotificationStatus.RECEIVED)
     val fromDate = Some(DateTime.now().minusHours(2))
     val toDate = Some(DateTime.now())
+    val clientId = "clientid"
 
     "return list of matched notifications" in new Setup {
 
+      primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoGetNotifications(
         Future.successful(List(Notification(UUID.randomUUID(), topicId,NotificationContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
       )
      val result: List[Notification] =  await(serviceToTest.getNotifications(topicId= topicId,
+        clientId = clientId,
         status = status,
         fromDateTime = fromDate,
         toDateTime = toDate))
@@ -124,9 +127,11 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
 
     "return empty list when no notifications found" in new Setup {
 
+      primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
       val result: List[Notification] =  await(serviceToTest.getNotifications(topicId= topicId,
+        clientId = clientId,
         status = status,
         fromDateTime = fromDate,
         toDateTime = toDate))
@@ -134,6 +139,25 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with BeforeAnd
       result.isEmpty shouldBe true
 
       verify(mockNotificationsRepo).getByTopicIdAndFilters(eqTo(topicId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+
+    }
+
+    "return notfound exception when client id is different from topic creator client id" in new Setup {
+
+      primeTopicsRepo(Future.successful(List(topicObject)), topicId)
+      primeNotificationRepoGetNotifications(Future.successful(List.empty))
+
+      intercept[TopicNotFoundException] {
+        await(serviceToTest.getNotifications(topicId = topicId,
+          clientId = "differentClientId",
+          status = status,
+          fromDateTime = fromDate,
+          toDateTime = toDate))
+      }
+
+
+
+      verifyNoMoreInteractions(mockNotificationsRepo)
 
     }
   }

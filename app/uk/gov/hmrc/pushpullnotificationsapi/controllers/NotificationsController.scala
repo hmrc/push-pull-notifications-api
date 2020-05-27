@@ -25,7 +25,7 @@ import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateNotificationQueryParamsAction
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{ValidateNotificationQueryParamsAction, ValidatedNotificationHeadersAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType._
@@ -41,6 +41,7 @@ import scala.xml.NodeSeq
 class NotificationsController @Inject()(appConfig: AppConfig,
                                         notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
+                                        headerValidatorAction: ValidatedNotificationHeadersAction,
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)
                                        (implicit val ec: ExecutionContext) extends BackendController(cc) {
@@ -57,14 +58,14 @@ class NotificationsController @Inject()(appConfig: AppConfig,
     } else {
       Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
     }
-
   }
 
   def getNotificationsByTopicIdAndFilters(topicId: String): Action[AnyContent] =
     (Action andThen
-      queryParamValidatorAction)
+      queryParamValidatorAction andThen
+      headerValidatorAction)
     .async {implicit request =>
-      notificationsService.getNotifications(topicId, request.params.status, request.params.fromDate, request.params.toDate) map {
+      notificationsService.getNotifications(topicId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
         case Nil => Ok("no results")
         case x : List[Notification] =>  Ok(Json.toJson(x))
       } recover recovery

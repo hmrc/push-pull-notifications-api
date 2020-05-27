@@ -31,24 +31,32 @@ import scala.concurrent.{ExecutionContext, Future}
 class NotificationsService @Inject()(topicsRepository: TopicsRepository, notificationsRepository: NotificationsRepository) {
 
   def getNotifications(topicId: String,
+                       clientId: String,
                        status: Option[NotificationStatus] = None,
                        fromDateTime: Option[DateTime] = None,
                        toDateTime: Option[DateTime] = None)
                       (implicit ec: ExecutionContext): Future[List[Notification]] = {
-    notificationsRepository.getByTopicIdAndFilters(topicId, status, fromDateTime, toDateTime)
-  }
 
+    topicsRepository.findByTopicId(topicId)
+      .flatMap {
+        case Nil => Future.failed(TopicNotFoundException(s"$topicId not found"))
+        case List(x) =>
+          if(x.topicCreator.clientId.equalsIgnoreCase(clientId)) {
+            notificationsRepository.getByTopicIdAndFilters(topicId, status, fromDateTime, toDateTime)
+          }else{
+            Future.failed(TopicNotFoundException(s"$clientId does not match topicCreator"))
+          }
+      }
+  }
 
   def saveNotification(topicId: String, notificationId: UUID, contentType: NotificationContentType, message: String)
                       (implicit ec: ExecutionContext): Future[Boolean] = {
     topicsRepository.findByTopicId(topicId)
       .flatMap {
         case Nil => Future.failed(TopicNotFoundException(s"$topicId not found"))
-        //TODO -> throw exception
-        case List(_) => {
+        case List(_) =>
           val notification = Notification(notificationId, topicId, contentType, message)
           notificationsRepository.saveNotification(notification).map(_ => true)
-        }
       }
   }
 

@@ -55,20 +55,22 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
                                              |}
                                              |""".stripMargin
 
-  val validHeadersJson = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"))
-  val validHeadersJsonWithNoUserAgent = List("Content-Type" -> "application/json")
-  val validHeadersXml = List("Content-Type" -> "application/xml")
+  val validHeadersJson = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"), ("X-CLIENT-ID" -> clientId))
+  val validHeadersJsonWithNoUserAgent = List(("Content-Type" -> "application/json"), ("X-CLIENT-ID" -> clientId))
+  val validHeadersXml = List(("Content-Type" -> "application/xml"), ("X-CLIENT-ID" -> clientId))
+  val invalidHeadersInvalidClientId = List(("Content-Type" -> "application/xml"), ("X-CLIENT-ID" -> "wrongclientid"))
+  val invalidHeadersMissingClientId = List(("Content-Type" -> "application/xml"))
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
-  def doPost(urlString: String, jsonBody: String, headers: (String, String)*): WSResponse =
+  def doPost(urlString: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(urlString)
       .withHttpHeaders(headers: _*)
       .post(jsonBody)
       .futureValue
 
-  def doGet(urlString: String, headers: (String, String)*): WSResponse =
+  def doGet(urlString: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(urlString)
       .withHttpHeaders(headers: _*)
@@ -77,14 +79,14 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   // need to clean down mongo then run two
 
   def createTopicAndReturn(): Topic = {
-    val result = doPost( s"$url/topics", createTopicJsonBody, validHeadersJson : _*)
+    val result = doPost( s"$url/topics", createTopicJsonBody, validHeadersJson)
     result.status shouldBe CREATED
     await(topicsRepo.findAll().head)
   }
 
   def createNotifications(topicId: String, numberToCreate: Int): Unit ={
     for( i <- 0 until numberToCreate){
-      val result = doPost( s"$url/notifications/topics/${topicId}", "{}", validHeadersJson : _*)
+      val result = doPost( s"$url/notifications/topics/${topicId}", "{}", validHeadersJson)
       result.status shouldBe CREATED
     }
 
@@ -95,39 +97,39 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     "POST /notification/topics/[topicId]" should {
       "respond with 201 when notification created for valid json and json content type" in {
        val topic =  createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersJson : _*)
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 201 when notification created for valid xml and xml content type" in {
         val topic = createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "<somNode/>", validHeadersXml : _*)
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 400 when for valid xml and but json content type" in {
         val topic = createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "<somNode/>", validHeadersJson : _*)
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "<somNode/>", validHeadersJson)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 400 when for valid json and but xml content type" in {
         val topic = createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersXml : _*)
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", validHeadersXml)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 400 when unknown content type sent in request" in {
         val topic = createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", "ContentType" -> "text/plain")
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", List(("ContentType" -> "text/plain")))
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 404 when unknown / non existent topic id sent" in {
         createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${UUID.randomUUID().toString}", "{}", validHeadersJson : _*)
+        val result = doPost( s"$url/notifications/topics/${UUID.randomUUID().toString}", "{}", validHeadersJson)
         result.status shouldBe NOT_FOUND
       }
     }
@@ -136,13 +138,26 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       "respond with 201 when notification created for valid json and json content type" in {
         val topic =  createTopicAndReturn()
         createNotifications(topic.topicId, 4)
-        val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson: _*)
+        val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson)
         result.status shouldBe OK
         println(result.body)
       }
     }
 
+    "respond with 400 when notification created when clientId does not match" in {
+      val topic =  createTopicAndReturn()
+      createNotifications(topic.topicId, 4)
+      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", invalidHeadersInvalidClientId)
+      result.status shouldBe NOT_FOUND
+      println(result.body)
+    }
+
+    "respond with 400 when notification created header missing clientId" in {
+      val topic =  createTopicAndReturn()
+      createNotifications(topic.topicId, 4)
+      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", invalidHeadersMissingClientId)
+      result.status shouldBe BAD_REQUEST
+      println(result.body)
+    }
   }
-
-
 }
