@@ -46,7 +46,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
         message = "{\"someJsone\": \"someValue\"}",
         status = RECEIVED)
       val result: Unit = await(repo.saveNotification(notification))
-      result shouldBe()
+      result shouldBe(():Unit)
 
 
     }
@@ -59,7 +59,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
 
       val result: Unit = await(repo.saveNotification(notification))
-      result shouldBe()
+      result shouldBe(():Unit)
 
       intercept[DuplicateNotificationException] {
         await(repo.saveNotification(notification))
@@ -194,7 +194,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createdDateTime = createdDateTime)
 
     val result: Unit = await(repo.saveNotification(notification))
-    result shouldBe()
+    result shouldBe(():Unit)
   }
 
   private def createHistoricalNotifications(numberToCreate: Int): Unit ={

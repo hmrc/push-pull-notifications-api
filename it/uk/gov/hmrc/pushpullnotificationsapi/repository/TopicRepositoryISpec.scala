@@ -43,7 +43,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
 
     "create a Topic with one PushSubscriber" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe()
+      result shouldBe(():Unit)
       val fetchedRecords = await(repo.find())
       val fetchedTopic = fetchedRecords.head
       fetchedTopic.topicName shouldBe topicName
@@ -56,25 +56,25 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
 
     "create a Topic should allow topics for same clientId but different TopicNames" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe()
+      result shouldBe(():Unit)
       val result2: Unit = await(repo.createTopic(topic.copy(topicId = topicId(), topicName = "someNewName")))
-      result2 shouldBe()
+      result2 shouldBe(():Unit)
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
     "create a Topic should allow topics for different clientId but same TopicNames" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe()
+      result shouldBe(():Unit)
       val result2: Unit = await(repo.createTopic(topic.copy(topicId = topicId(), topicCreator = topic.topicCreator.copy("someCLientId"))))
-      result2 shouldBe()
+      result2 shouldBe(():Unit)
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
     "create a Topic should not allow creation of duplicate topics with same topicName and clientId" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe()
+      result shouldBe(():Unit)
 
       intercept[DuplicateTopicException] {
         await(repo.createTopic(Topic(UUID.randomUUID().toString, topicName, TopicCreator(clientId))))
@@ -86,7 +86,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
 
     "create a Topic should not allow creation of duplicate topics with same topicId" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe()
+      result shouldBe(():Unit)
 
       intercept[DuplicateTopicException] {
         await(repo.createTopic(topic))
