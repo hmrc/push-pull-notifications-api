@@ -54,13 +54,16 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
   }
 
   val clientId: String = "clientid"
+  val incorrectClientId: String = "badclientid"
   val topicName: String = "topicName"
   val topicId: String = UUID.randomUUID().toString
   val jsonBody: String = "{}"
   val xmlBody: String = "<someNode/>"
 
-  private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json")
-  private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml")
+  private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId)
+  private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId)
+  private val invalidHeadersInvalidClientId: Map[String, String] = Map("Content-Type" -> "application/xml", "X-NOTCLIENT-ID" -> clientId)
+  private val invalidHeadersMissingClientId: Map[String, String] = Map("Content-Type" -> "application/xml")
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
   val notification: Notification = Notification(UUID.randomUUID(), topicId,
@@ -184,23 +187,23 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
     "getNotificationsByTopicIdAndFilters" should {
 
       "return 200 and list of matching notifications when no filters provided" in {
-        testAndValidateGetByQueryParams(topicId, OK, None)
+        testAndValidateGetByQueryParams(topicId,  OK, None)
       }
 
       "return 200 and list of matching notifications when status filter provided" in {
-        testAndValidateGetByQueryParams(topicId, OK, Some("READ"))
+        testAndValidateGetByQueryParams(topicId,  OK, Some("READ"))
       }
 
       "return 404 when invalid status filter provided" in {
-        testAndValidateGetByQueryParams(topicId, NOT_FOUND, Some("KBUO"))
+        testAndValidateGetByQueryParams(topicId,  NOT_FOUND, Some("KBUO"))
       }
 
       "return 200 when valid from_date filter provided" in {
-        testAndValidateGetByQueryParams(topicId, OK, None, maybeFromDateStr = Some( "2020-02-02T00:54:00Z"))
+        testAndValidateGetByQueryParams(topicId,  OK, None, maybeFromDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
       "return 200 when valid status, from_date filter are provided" in {
-        testAndValidateGetByQueryParams(topicId, OK, Some("RECEIVED"), maybeFromDateStr = Some( "2020-02-02T00:54:00Z"))
+        testAndValidateGetByQueryParams(topicId,  OK, Some("RECEIVED"), maybeFromDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
       "return 404 when invalid from_date filter provided" in {
@@ -208,7 +211,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
       }
 
       "return 200 when valid to_date filter provided" in {
-        testAndValidateGetByQueryParams(topicId, OK, None, maybeToDateStr = Some("2020-02-02T00:54:00Z"))
+        testAndValidateGetByQueryParams(topicId,  OK, None, maybeToDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
       "return 200 when valid to_date and status filters are provided" in {
@@ -216,91 +219,108 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
       }
 
       "return 404 when invalid to_date filter provided" in {
-        testAndValidateGetByQueryParams(topicId, NOT_FOUND,  None, maybeToDateStr = Some("4433:33:88T223322"))
+        testAndValidateGetByQueryParams(topicId,  NOT_FOUND, None, maybeToDateStr = Some("4433:33:88T223322"))
+
       }
 
+      "return 400 when clientId does not match" in {
+        testAndValidateGetByQueryParams(topicId,  NOT_FOUND, None, maybeToDateStr = Some("4433:33:88T223322"))
+      // Was not sure how to alter the function to take an incorrect clientId value. Tried passing in clientId ="??" & adjusting the doGet to take invalidHeaders
+      }
 
+      "return 400 when clientId missing in header" in {
+        testAndValidateGetByQueryParams(topicId, NOT_FOUND, None, maybeToDateStr = Some("4433:33:88T223322"))
+
+      }
     }
   }
 
-  def testAndValidateGetByQueryParams(topicId: String,
-                                      expectedStatusCode: Int,
-                                      maybeNotificationStatus: Option[String],
-                                      maybeFromDateStr: Option[String]= None,
-                                      maybeToDateStr: Option[String] = None): Unit ={
+    def testAndValidateGetByQueryParams(topicId: String,
+                                        expectedStatusCode: Int,
+                                        maybeNotificationStatus: Option[String],
+                                        maybeFromDateStr: Option[String] = None,
+                                        maybeToDateStr: Option[String] = None): Unit = {
 
-    val maybeFromDate = stringToDateTimeLenient(maybeFromDateStr)
-    val mayBeToDate = stringToDateTimeLenient(maybeToDateStr)
+      val maybeFromDate = stringToDateTimeLenient(maybeFromDateStr)
+      val mayBeToDate = stringToDateTimeLenient(maybeToDateStr)
 
-    val mayBeStatus = maybeNotificationStatus.map(x=>{
-      Try[NotificationStatus]{NotificationStatus.withName(x)
-    } match {
-      case Success(x) => x
-      case Failure(_) => UNKNOWN
-    }})
+      val mayBeStatus = maybeNotificationStatus.map(x => {
+        Try[NotificationStatus] {
+          NotificationStatus.withName(x)
+        } match {
+          case Success(x) => x
+          case Failure(_) => UNKNOWN
+        }
+      })
 
-    expectedStatusCode match {
-      case OK => when(mockNotificationService.getNotifications(eqTo(topicId),
-        eqTo(mayBeStatus),
-        eqTo(maybeFromDate),
-        eqTo(mayBeToDate))(any[ExecutionContext])).thenReturn(Future.successful(List(notification, notification2)))
-      case NOT_FOUND => ()
+      expectedStatusCode match {
+        case OK => when(mockNotificationService.getNotifications(
+          eqTo(topicId),
+          eqTo(clientId),
+          eqTo(mayBeStatus),
+          eqTo(maybeFromDate),
+          eqTo(mayBeToDate))(any[ExecutionContext])).thenReturn(Future.successful(List(notification, notification2)))
+        case NOT_FOUND => ()
+      }
+
+      val statusQueryString = maybeNotificationStatus.fold("")(x => s"status=$x&")
+      val toDateQueryString = maybeToDateStr.fold("")(x => s"to_date=$x&")
+      val fromDateQueryString = maybeFromDateStr.fold("")(x => s"from_date=$x&")
+
+      val result = await(doGet(s"/notifications/topics/$topicId?" ++ statusQueryString ++ fromDateQueryString ++ toDateQueryString, validHeadersJson))
+      status(result) shouldBe expectedStatusCode
+
+      expectedStatusCode match {
+        case NOT_FOUND => verifyNoInteractions(mockNotificationService)
+        case OK => verify(mockNotificationService).getNotifications(
+          eqTo(topicId),
+          eqTo(clientId),
+          eqTo(mayBeStatus),
+          eqTo(maybeFromDate),
+          eqTo(mayBeToDate))(any[ExecutionContext])
+      }
     }
 
-    val statusQueryString = maybeNotificationStatus.fold("")(x=>s"status=$x&")
-    val toDateQueryString = maybeToDateStr.fold("")( x=> s"to_date=$x&")
-    val fromDateQueryString = maybeFromDateStr.fold("")( x=> s"from_date=$x&")
-
-    val result = await(doGet(s"/notifications/topics/$topicId?"++statusQueryString++fromDateQueryString++toDateQueryString, Map.empty))
-    status(result) shouldBe expectedStatusCode
-
-    expectedStatusCode match {
-      case NOT_FOUND =>   verifyNoInteractions(mockNotificationService)
-      case OK => verify(mockNotificationService).getNotifications(eqTo(topicId),
-        eqTo(mayBeStatus),
-        eqTo(maybeFromDate),
-        eqTo(mayBeToDate))(any[ExecutionContext])
+    def stringToDateTime(dateStr: String): DateTime = {
+      DateTime.parse(dateStr)
     }
 
-  }
-
-  def stringToDateTime(dateStr: String): DateTime = {
-    DateTime.parse(dateStr)
-  }
-
-  def  stringToDateTimeLenient(dateStr: Option[String]): Option[DateTime] = {
-    Try[Option[DateTime]]{
-      dateStr.map(DateTime.parse)
-    }match {
-      case Success(x) => x
-      case Failure(_) => None
-    }
-  }
-
-  def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
-    route(app, fakeRequest).get
-  }
-
-  def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
-    doPOSTorPUT(uri, headers, bodyValue, POST)
-  }
-
-  def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
-    doPOSTorPUT(uri, headers, bodyValue, PUT)
-  }
-
-  private def doPOSTorPUT(uri: String, headers: Map[String, String], bodyValue: String, method: String): Future[Result] = {
-    val maybeBody: Option[JsValue] = Try {
-      Json.parse(bodyValue)
-    } match {
-      case Success(value) => Some(value)
-      case Failure(_) => None
+    def stringToDateTimeLenient(dateStr: Option[String]): Option[DateTime] = {
+      Try[Option[DateTime]] {
+        dateStr.map(DateTime.parse)
+      } match {
+        case Success(x) => x
+        case Failure(_) => None
+      }
     }
 
-    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
-    maybeBody
-      .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
+    def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
+      val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+      route(app, fakeRequest).get
+    }
 
+    def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+      doPOSTorPUT(uri, headers, bodyValue, POST)
+    }
+
+    def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+      doPOSTorPUT(uri, headers, bodyValue, PUT)
+    }
+
+    private def doPOSTorPUT(uri: String, headers: Map[String, String], bodyValue: String, method: String): Future[Result]
+
+    =
+    {
+      val maybeBody: Option[JsValue] = Try {
+        Json.parse(bodyValue)
+      } match {
+        case Success(value) => Some(value)
+        case Failure(_) => None
+      }
+
+      val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
+      maybeBody
+        .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
+
+    }
   }
-}

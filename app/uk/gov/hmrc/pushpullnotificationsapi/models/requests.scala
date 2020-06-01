@@ -32,3 +32,5 @@ case class NotificationQueryParams(status: Option[NotificationStatus],
                                    toDate: Option[DateTime])
 
 case class ValidatedNotificationQueryRequest[A](params: NotificationQueryParams, request: Request[A])
+
+case class ValidatedNotificationHeaderRequest[A](clientId: String, params: NotificationQueryParams, request: Request[A])

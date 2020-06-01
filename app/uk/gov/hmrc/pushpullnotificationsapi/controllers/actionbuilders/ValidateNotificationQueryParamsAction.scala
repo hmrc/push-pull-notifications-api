@@ -51,9 +51,9 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   private def validateNotificationQueryParams[A](request: Request[A]): Either[Result, NotificationQueryParams] = {
 
     for {
-      statusVal <- validateStatusParamValue(request.getQueryString(statusParamKey)).right
-      fromDateVal <- validateDateParamValue(request.getQueryString(fromDateParamKey)).right
-      toDateVal <- validateDateParamValue(request.getQueryString(toDateParamKey)).right
+      statusVal <- validateStatusParamValue(request.getQueryString(statusParamKey))
+      fromDateVal <- validateDateParamValue(request.getQueryString(fromDateParamKey))
+      toDateVal <- validateDateParamValue(request.getQueryString(toDateParamKey))
     } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
   }
 
