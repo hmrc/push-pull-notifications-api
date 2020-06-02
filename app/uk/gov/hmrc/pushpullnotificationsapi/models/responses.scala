@@ -22,6 +22,7 @@ import play.api.libs.json.{JsObject, Json}
 object ErrorCode extends Enumeration {
   type ErrorCode = Value
 
+  val TOPIC_NOT_FOUND = Value("TOPIC_NOT_FOUND")
   val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
   val DUPLICATE_TOPIC = Value("DUPLICATE_TOPIC")
   val DUPLICATE_NOTIFICATION = Value("DUPLICATE_NOTIFICATION")

@@ -82,7 +82,6 @@ class TopicsController @Inject()(appConfig: AppConfig,
         case error: DuplicateTopicException => UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_TOPIC, error.message))
         case _ => InternalServerError
       }
-
   }
 
   override protected def withJsonBody[T]

@@ -25,10 +25,10 @@ import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{ValidateNotificationQueryParamsAction, ValidatedNotificationHeadersAction}
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateNotificationException, ErrorCode, JsErrorResponse, TopicNotFoundException}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
@@ -41,10 +41,10 @@ import scala.xml.NodeSeq
 class NotificationsController @Inject()(appConfig: AppConfig,
                                         notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
-                                        headerValidatorAction: ValidatedNotificationHeadersAction,
+                                        authAction: AuthAction,
                                         cc: ControllerComponents,
-                                        playBodyParsers: PlayBodyParsers)
-                                       (implicit val ec: ExecutionContext) extends BackendController(cc) {
+                                        playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
+  extends BackendController(cc)  {
 
   def saveNotification(topicId: String): Action[String] = Action.async(playBodyParsers.tolerantText) { implicit request =>
     val convertedType = contentTypeHeaderToNotificationType
@@ -62,14 +62,15 @@ class NotificationsController @Inject()(appConfig: AppConfig,
 
   def getNotificationsByTopicIdAndFilters(topicId: String): Action[AnyContent] =
     (Action andThen
-      queryParamValidatorAction andThen
-      headerValidatorAction)
-    .async {implicit request =>
-      notificationsService.getNotifications(topicId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-        case Nil => Ok("no results")
-        case x : List[Notification] =>  Ok(Json.toJson(x))
-      } recover recovery
-    }
+            authAction andThen
+      queryParamValidatorAction)
+      .async { implicit request =>
+            notificationsService.getNotifications(topicId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
+              case Nil => Ok("no results")
+              case x: List[Notification] => Ok(Json.toJson(x))
+            } recover recovery
+        }
+
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): NotificationContentType = {
     request.contentType match {
@@ -93,10 +94,10 @@ class NotificationsController @Inject()(appConfig: AppConfig,
   }
 
   private def checkValidXml(body: String) = {
-    validateBody[NodeSeq](body, body =>  scala.xml.XML.loadString(body))
+    validateBody[NodeSeq](body, body => scala.xml.XML.loadString(body))
   }
 
-  private def validateBody[T](body:String, f: String => T): Boolean ={
+  private def validateBody[T](body: String, f: String => T): Boolean = {
     Try[T] {
       f(body)
     } match {
@@ -110,7 +111,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
       Logger.info("An unexpected error occurred:", e)
       e match {
         case error: DuplicateNotificationException => UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, error.message))
-        case error: TopicNotFoundException => NotFound(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, error.message))
+        case error: TopicNotFoundException => NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, error.message))
         case _ => InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, e.getMessage))
       }
 

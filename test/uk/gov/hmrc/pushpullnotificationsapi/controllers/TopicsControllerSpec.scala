@@ -32,6 +32,7 @@ import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateTopicException, Topic, TopicCreator, UpdateSubscribersRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
@@ -44,9 +45,11 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar
 
   val mockTopicsService: TopicsService = mock[TopicsService]
   val mockAppConfig: AppConfig = mock[AppConfig]
+  val mockAuthAction: AuthAction = mock[AuthAction]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[TopicsService].to(mockTopicsService))
+    .overrides(bind[AuthAction].to(mockAuthAction))
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
 

@@ -31,6 +31,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
+import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{RECEIVED, UNKNOWN}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType, NotificationStatus}
@@ -44,13 +45,15 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   val mockNotificationService: NotificationsService = mock[NotificationsService]
+  val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[NotificationsService].to(mockNotificationService))
+    .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
 
   override def beforeEach(): Unit = {
-    reset(mockNotificationService)
+    reset(mockNotificationService, mockAuthConnector)
   }
 
   val clientId: String = "clientid"
@@ -62,8 +65,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
 
   private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId)
   private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId)
-  private val invalidHeadersInvalidClientId: Map[String, String] = Map("Content-Type" -> "application/xml", "X-NOTCLIENT-ID" -> clientId)
-  private val invalidHeadersMissingClientId: Map[String, String] = Map("Content-Type" -> "application/xml")
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
   val notification: Notification = Notification(UUID.randomUUID(), topicId,
@@ -225,26 +226,60 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
 
       "return 400 when clientId does not match" in {
         testAndValidateGetByQueryParams(topicId,  NOT_FOUND, None, maybeToDateStr = Some("4433:33:88T223322"))
-      // Was not sure how to alter the function to take an incorrect clientId value. Tried passing in clientId ="??" & adjusting the doGet to take invalidHeaders
+      }
+
+      "return 200 with empty List when no notifictions returned" in{
+        val fromdatStr = "2020-02-02T00:54:00Z"
+        val toDateStr = "2020-02-02T00:54:00Z"
+        primeAuthAction(clientId)
+        when(mockNotificationService.getNotifications(
+          eqTo(topicId),
+          eqTo(clientId),
+          eqTo(Some(RECEIVED)),
+          eqTo(stringToDateTimeLenient(Some(fromdatStr))),
+          eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List.empty))
+
+        val result = await(doGet(s"/notifications/topics/$topicId?status=RECEIVED&from_date=$fromdatStr&to_date=$toDateStr", validHeadersJson))
+        status(result) shouldBe OK
       }
 
       "return 400 when clientId missing in header" in {
         testAndValidateGetByQueryParams(topicId, NOT_FOUND, None, maybeToDateStr = Some("4433:33:88T223322"))
 
       }
+
+      "return 401 when no clientId is returned from auth" in {
+        when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(None))
+        val result = await(doGet(s"/notifications/topics/$topicId", validHeadersJson))
+        status(result) shouldBe UNAUTHORIZED
+      }
+
+      "return 401 when authorisation fails" in {
+        when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any()))
+          .thenReturn(Future.failed(SessionRecordNotFound()))
+
+        val result = await(doGet(s"/notifications/topics/$topicId", validHeadersJson))
+        status(result) shouldBe UNAUTHORIZED
+      }
     }
   }
 
-    def testAndValidateGetByQueryParams(topicId: String,
+  private def primeAuthAction(clientId: String): Unit ={
+    when(mockAuthConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(clientId)))
+
+  }
+
+  private def testAndValidateGetByQueryParams(topicId: String,
                                         expectedStatusCode: Int,
                                         maybeNotificationStatus: Option[String],
                                         maybeFromDateStr: Option[String] = None,
                                         maybeToDateStr: Option[String] = None): Unit = {
+    primeAuthAction(clientId)
+      val maybeFromDate: Option[DateTime] = stringToDateTimeLenient(maybeFromDateStr)
+      val maybeToDate: Option[DateTime] = stringToDateTimeLenient(maybeToDateStr)
 
-      val maybeFromDate = stringToDateTimeLenient(maybeFromDateStr)
-      val mayBeToDate = stringToDateTimeLenient(maybeToDateStr)
-
-      val mayBeStatus = maybeNotificationStatus.map(x => {
+      val maybeStatus = maybeNotificationStatus.map(x => {
         Try[NotificationStatus] {
           NotificationStatus.withName(x)
         } match {
@@ -257,9 +292,9 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
         case OK => when(mockNotificationService.getNotifications(
           eqTo(topicId),
           eqTo(clientId),
-          eqTo(mayBeStatus),
+          eqTo(maybeStatus),
           eqTo(maybeFromDate),
-          eqTo(mayBeToDate))(any[ExecutionContext])).thenReturn(Future.successful(List(notification, notification2)))
+          eqTo(maybeToDate))(any[ExecutionContext])).thenReturn(Future.successful(List(notification, notification2)))
         case NOT_FOUND => ()
       }
 
@@ -275,9 +310,9 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar
         case OK => verify(mockNotificationService).getNotifications(
           eqTo(topicId),
           eqTo(clientId),
-          eqTo(mayBeStatus),
+          eqTo(maybeStatus),
           eqTo(maybeFromDate),
-          eqTo(mayBeToDate))(any[ExecutionContext])
+          eqTo(maybeToDate))(any[ExecutionContext])
       }
     }
 
