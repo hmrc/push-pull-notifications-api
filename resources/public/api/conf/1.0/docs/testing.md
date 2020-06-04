@@ -1,0 +1,1 @@
+For details on testing this API see the documentation for the API that is creating the notifications.
