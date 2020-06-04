@@ -27,9 +27,9 @@ import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{DuplicateNotificationException, ErrorCode, JsErrorResponse, TopicNotFoundException}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,28 +46,31 @@ class NotificationsController @Inject()(appConfig: AppConfig,
                                         playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
   extends BackendController(cc)  {
 
-  def saveNotification(topicId: String): Action[String] = Action.async(playBodyParsers.tolerantText) { implicit request =>
+  def saveNotification(topicId: TopicId): Action[String] = Action.async(playBodyParsers.tolerantText) { implicit request =>
     val convertedType = contentTypeHeaderToNotificationType
     if (validateContentTypeAndBody(convertedType)) {
-      val notificationId = UUID.randomUUID()
+      val notificationId = NotificationId(UUID.randomUUID())
       notificationsService.saveNotification(topicId, notificationId, convertedType, request.body) map {
-        case true => Created(notificationId.toString)
-        case false => InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "Unable to save Notification: Unknown Error"))
+        case Right(_: SaveNotificationSuccessResult) => Created(notificationId.toString)
+        case Left(_: NotificationsServiceTopicNotFoundResult) =>
+          NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, "Unable to save Notification: topicId not found"))
+        case Left(_: SaveNotificationFailedDuplicateNotificationResult)  =>
+          UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
       } recover recovery
-
     } else {
       Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
     }
   }
 
-  def getNotificationsByTopicIdAndFilters(topicId: String): Action[AnyContent] =
+  def getNotificationsByTopicIdAndFilters(topicId: TopicId): Action[AnyContent] =
     (Action andThen
             authAction andThen
       queryParamValidatorAction)
       .async { implicit request =>
             notificationsService.getNotifications(topicId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-              case Nil => Ok("no results")
-              case x: List[Notification] => Ok(Json.toJson(x))
+              case Right(results: GetNotificationsSuccessRetrievedResult) => Ok(Json.toJson(results.notifications))
+              case Left(_: NotificationsServiceUnauthorisedResult) =>
+                Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to view notification for topic not created by yourself"))
             } recover recovery
         }
 
@@ -110,8 +113,6 @@ class NotificationsController @Inject()(appConfig: AppConfig,
     case NonFatal(e) =>
       Logger.info("An unexpected error occurred:", e)
       e match {
-        case error: DuplicateNotificationException => UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, error.message))
-        case error: TopicNotFoundException => NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, error.message))
         case _ => InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, e.getMessage))
       }
 

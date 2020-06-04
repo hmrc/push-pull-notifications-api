@@ -1,13 +1,13 @@
 # microservice specific routes
 
 # Topics
-POST       /topics                         uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.createTopic()
+PUT       /topics                         uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.createTopic()
 
-GET        /topics                         uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.getTopicByNameAndClientId(topicName, clientId)
+GET        /topics                         uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.getTopicByNameAndClientId(topicName: String, clientId: ClientId)
 
-PUT        /topics/:topicId/subscribers    uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.updateSubscribers(topicId)
+PUT        /topics/:topicId/subscribers    uk.gov.hmrc.pushpullnotificationsapi.controllers.TopicsController.updateSubscribers(topicId: TopicId)
 
 # Notifications
-POST       /notifications/topics/:topicId  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(topicId)
+POST       /notifications/topics/:topicId  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(topicId: TopicId)
 
-GET        /notifications/topics/:topicId  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByTopicIdAndFilters(topicId)
+GET        /notifications/topics/:topicId  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByTopicIdAndFilters(topicId: TopicId)

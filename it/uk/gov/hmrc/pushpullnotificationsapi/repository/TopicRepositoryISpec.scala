@@ -31,19 +31,21 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
     await(repo.ensureIndexes)
   }
 
-  val clientId = "ClientID1"
-  val topicName = "topicName"
-  def topicId(): String = UUID.randomUUID().toString
+  val clientIdStr: String = "someCLientId"
+  val clientId: ClientId = ClientId(clientIdStr)
+  val topicName: String = "topicName"
+  val topicIdStr: String = UUID.randomUUID().toString
+  val topicId: TopicId = TopicId(UUID.fromString(topicIdStr))
   val callBackEndpoint = "some/endpoint"
   val topic: Topic = Topic(topicName = topicName,
-    topicId = topicId(),
+    topicId = topicId,
     topicCreator = TopicCreator(clientId))
 
   "createTopic" should {
 
     "create a Topic with one PushSubscriber" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe(():Unit)
+      result shouldBe ((): Unit)
       val fetchedRecords = await(repo.find())
       val fetchedTopic = fetchedRecords.head
       fetchedTopic.topicName shouldBe topicName
@@ -55,42 +57,43 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
     }
 
     "create a Topic should allow topics for same clientId but different TopicNames" in {
-      val result: Unit = await(repo.createTopic(topic))
-      result shouldBe(():Unit)
-      val result2: Unit = await(repo.createTopic(topic.copy(topicId = topicId(), topicName = "someNewName")))
-      result2 shouldBe(():Unit)
+      val result: Option[TopicId] = await(repo.createTopic(topic))
+      result shouldBe Some(topicId)
+      val newTopicId = TopicId(UUID.randomUUID())
+      val result2 = await(repo.createTopic(topic.copy(newTopicId, topicName = "someNewName")))
+      result2 shouldBe Some(newTopicId)
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
     "create a Topic should allow topics for different clientId but same TopicNames" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe(():Unit)
-      val result2: Unit = await(repo.createTopic(topic.copy(topicId = topicId(), topicCreator = topic.topicCreator.copy("someCLientId"))))
-      result2 shouldBe(():Unit)
+      result shouldBe ((): Unit)
+      val newTopicId = TopicId(UUID.randomUUID())
+      val result2: Unit = await(repo.createTopic(topic.copy(newTopicId, topicCreator = topic.topicCreator.copy(ClientId(UUID.randomUUID().toString)))))
+      result2 shouldBe ((): Unit)
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
-    "create a Topic should not allow creation of duplicate topics with same topicName and clientId" in {
+    "create a Topic throw no errors and only create topic once when topic with same name and client id called twice" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe(():Unit)
+      result shouldBe ((): Unit)
 
-      intercept[DuplicateTopicException] {
-        await(repo.createTopic(Topic(UUID.randomUUID().toString, topicName, TopicCreator(clientId))))
-      }
+      await(repo.createTopic(Topic(TopicId(UUID.randomUUID()), topicName, TopicCreator(clientId))))
+
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
     }
 
-    "create a Topic should not allow creation of duplicate topics with same topicId" in {
+    "create a Topic should not allow creation of duplicate topics with same topic details" in {
       val result: Unit = await(repo.createTopic(topic))
-      result shouldBe(():Unit)
+      result shouldBe ((): Unit)
 
-      intercept[DuplicateTopicException] {
-        await(repo.createTopic(topic))
-      }
+
+      await(repo.createTopic(topic))
+
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
@@ -122,11 +125,17 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
 
       await(repo.createTopic(topic))
 
-      val result = await(repo.getTopicByNameAndClientId(topicName, "differentClientId"))
+      val result = await(repo.getTopicByNameAndClientId(topicName, ClientId(UUID.randomUUID().toString)))
       result.isEmpty shouldBe true
     }
   }
   "updateSubscribers" should {
+
+    "subscriberId toString should match UUID string" in{
+      val subscriberIdStr = UUID.randomUUID().toString
+      val subscriberId = SubscriberId(UUID.fromString(subscriberIdStr))
+      subscriberId.raw shouldBe subscriberIdStr
+    }
 
     "update the subscriber list" in {
       await(repo.createTopic(topic))
@@ -150,7 +159,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
     }
 
     "return None when the topic doesn't exist" in {
-      val updated = await(repo.updateSubscribers("someRandomTopicId",  List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))))
+      val updated = await(repo.updateSubscribers(TopicId(UUID.randomUUID()), List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))))
       updated shouldBe None
 
     }
@@ -167,7 +176,7 @@ class TopicRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSui
 
     "return empty list when topic does not exist" in {
       await(repo.createTopic(topic))
-      val result = await(repo.findByTopicId("any"))
+      val result = await(repo.findByTopicId(TopicId(UUID.randomUUID())))
       result.isEmpty shouldBe true
     }
   }

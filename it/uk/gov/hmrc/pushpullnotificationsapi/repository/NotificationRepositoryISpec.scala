@@ -10,7 +10,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,35 +40,41 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
   "saveNotification" should {
 
+    "test notificationId to String" in {
+      val notificationIdStr = UUID.randomUUID().toString
+      val notification = NotificationId(UUID.fromString(notificationIdStr))
+      notification.raw shouldBe notificationIdStr
+    }
+
     "save a Notification" in {
-      val notification = Notification(UUID.randomUUID(), topicId = "someTopicId",
+      val notification = Notification(NotificationId(UUID.randomUUID()), topicId,
         notificationContentType = APPLICATION_JSON,
         message = "{\"someJsone\": \"someValue\"}",
         status = RECEIVED)
       val result: Unit = await(repo.saveNotification(notification))
-      result shouldBe(():Unit)
+      result shouldBe ((): Unit)
 
 
     }
 
     "not save duplicate Notifications" in {
-      val notification = Notification(UUID.randomUUID(), topicId = "someTopicId",
+      val notification = Notification(NotificationId(UUID.randomUUID()), topicId = topicId,
         notificationContentType = APPLICATION_JSON,
         message = "{",
         status = RECEIVED)
 
 
       val result: Unit = await(repo.saveNotification(notification))
-      result shouldBe(():Unit)
+      result shouldBe ((): Unit)
 
-      intercept[DuplicateNotificationException] {
-        await(repo.saveNotification(notification))
-      }
+
+      await(repo.saveNotification(notification))
+
     }
 
   }
-
-  private val topicId = UUID.randomUUID().toString
+  private val topicIdStr = UUID.randomUUID().toString
+  private val topicId = TopicId(UUID.fromString(topicIdStr))
 
   "getByTopicIdAndFilters" should {
 
@@ -85,7 +91,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
     "return empty list for a non existent / unknown topic id" in {
-      await(repo.getAllByTopicId("unknownTopicId")).isEmpty shouldBe true
+      await(repo.getAllByTopicId(TopicId(UUID.randomUUID()))).isEmpty shouldBe true
     }
 
     "return list of notification for topicId filtered by status" in {
@@ -117,7 +123,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createNotificationInDB()
 
       await(repo.getAllByTopicId(topicId)).isEmpty shouldBe false
-      await(repo.getByTopicIdAndFilters("unknownTopicId", Some(RECEIVED))).isEmpty shouldBe true
+      await(repo.getByTopicIdAndFilters(TopicId(UUID.randomUUID()), Some(RECEIVED))).isEmpty shouldBe true
     }
 
 
@@ -129,8 +135,8 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       val filteredList = await(repo.getByTopicIdAndFilters(topicId,
         Some(RECEIVED),
-        fromDateTime=Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime=Some(DateTime.now())))
+        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
+        toDateTime = Some(DateTime.now())))
       filteredList.size shouldBe 3
     }
 
@@ -158,7 +164,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       val filteredList = await(repo.getByTopicIdAndFilters(topicId,
         Some(RECEIVED),
-        toDateTime=Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
+        toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
       ))
       filteredList.size shouldBe 6
     }
@@ -168,25 +174,25 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins -30), status = READ)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins -30), status = READ)
+      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
+      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
 
       val filteredList = await(repo.getByTopicIdAndFilters(topicId,
-        fromDateTime=Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime=Some(DateTime.now())))
-      filteredList.count(n => n.status==READ) shouldBe 2
-      filteredList.count(n => n.status==RECEIVED) shouldBe 3
+        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
+        toDateTime = Some(DateTime.now())))
+      filteredList.count(n => n.status == READ) shouldBe 2
+      filteredList.count(n => n.status == RECEIVED) shouldBe 3
     }
   }
 
- private def validateNotificationsCreated(numberExpected: Int): Unit = {
-   val notifications: List[Notification] = await(repo.getAllByTopicId(topicId))
-   notifications.isEmpty shouldBe false
-   notifications.size shouldBe numberExpected
- }
+  private def validateNotificationsCreated(numberExpected: Int): Unit = {
+    val notifications: List[Notification] = await(repo.getAllByTopicId(topicId))
+    notifications.isEmpty shouldBe false
+    notifications.size shouldBe numberExpected
+  }
 
-  private def createNotificationInDB(status: NotificationStatus = RECEIVED, createdDateTime : DateTime = DateTime.now()) = {
-    val notification = Notification(UUID.randomUUID(),
+  private def createNotificationInDB(status: NotificationStatus = RECEIVED, createdDateTime: DateTime = DateTime.now()) = {
+    val notification = Notification(NotificationId(UUID.randomUUID()),
       topicId = topicId,
       APPLICATION_JSON,
       message = "{\"someJsone\": \"someValue\"}",
@@ -194,11 +200,11 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createdDateTime = createdDateTime)
 
     val result: Unit = await(repo.saveNotification(notification))
-    result shouldBe(():Unit)
+    result shouldBe ((): Unit)
   }
 
-  private def createHistoricalNotifications(numberToCreate: Int): Unit ={
-    for( a <- 0 until numberToCreate){
+  private def createHistoricalNotifications(numberToCreate: Int): Unit = {
+    for (a <- 0 until numberToCreate) {
       createNotificationInDB(createdDateTime = DateTime.now().minusHours(a))
     }
   }

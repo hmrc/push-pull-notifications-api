@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -45,33 +47,34 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     createAscendingIndex(Some("topics_index"),
       isUnique = true,
       isBackground = true,
-      indexFieldsKey = List("topicName", "topicCreator.clientId"): _*),
+      indexFieldsKey = List("topicName", "topicCreator.clientId.value"): _*),
     createSingleFieldAscendingIndex("topicId", Some("topicid_index"), isUnique = true)
   )
 
 
-  def findByTopicId(topicId: String)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
-    find("topicId" -> topicId)
+  def findByTopicId(topicId: TopicId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
+    find("topicId.value" -> topicId.value)
   }
 
-  def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Unit] =
-    collection.insert.one(topic).map(_ => ()).recoverWith {
+  def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Option[TopicId]] =
+    collection.insert.one(topic).map(_ => Some(topic.topicId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Future.failed(DuplicateTopicException(s"${topic.topicName} ${topic.topicCreator.clientId}"))
+        Logger.info("unable to create topic")
+      Future.successful(None)
     }
 
-  def getTopicByNameAndClientId(topicName: String, clientId: String)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
-    Logger.info(s"Getting topic by topicName:$topicName & clientId:$clientId")
-    find("topicName" -> topicName, "topicCreator.clientId" -> clientId)
+  def getTopicByNameAndClientId(topicName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
+    Logger.info(s"Getting topic by topicName:$topicName & clientId")
+    find("topicName" -> topicName, "topicCreator.clientId.value" -> clientId.value)
   }
 
-  def updateSubscribers(topicId: String, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Topic]] = {
+  def updateSubscribers(topicId: TopicId, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Topic]] = {
 
-    updateTopic(topicId, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
+    updateTopic(topicId.value, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
   }
 
-  private def updateTopic(topicId: String, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
-    findAndUpdate(Json.obj("topicId" -> topicId), updateStatement, fetchNewObject = true) map {
+  private def updateTopic(topicId: UUID, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
+    findAndUpdate(Json.obj("topicId.value" -> topicId), updateStatement, fetchNewObject = true) map {
       _.result[Topic]
     }
 }

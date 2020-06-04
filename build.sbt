@@ -34,7 +34,8 @@ lazy val compileDeps = Seq(
 def testDeps(scope: String) = Seq(
   "uk.gov.hmrc" %% "hmrctest" % "3.9.0-play-26" % scope,
   "org.scalatest" %% "scalatest" % "3.0.8" % scope,
-  "org.mockito" %% "mockito-scala-scalatest" % "1.9.0" % scope,
+  "org.mockito" %% "mockito-scala-scalatest" % "1.14.4" % scope,
+
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.3" % scope,
   "uk.gov.hmrc" %% "reactivemongo-test" % "4.16.0-play-26" % scope,
   "com.github.tomakehurst" % "wiremock" % "2.25.1" % scope
@@ -85,6 +86,12 @@ lazy val root = (project in file("."))
     parallelExecution in IntegrationTest := false,
     testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     majorVersion := 0
+  )
+  .settings(
+    routesImport ++= Seq(
+      "uk.gov.hmrc.pushpullnotificationsapi.models._",
+      "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._"
+    )
   )
   .settings(scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification"))
   .disablePlugins(JUnitXmlReportPlugin)

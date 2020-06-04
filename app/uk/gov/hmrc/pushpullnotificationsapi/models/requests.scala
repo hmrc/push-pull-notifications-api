@@ -27,11 +27,11 @@ case class SubscribersRequest(callBackUrl: String, subscriberType: SubscriptionT
 case class UpdateSubscribersRequest(subscribers: List[SubscribersRequest])
 
 // Notifications
-case class AuthenticatedNotificationRequest[A](clientId: String, request: Request[A])
+case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 
 case class NotificationQueryParams(status: Option[NotificationStatus],
                                    fromDate: Option[DateTime],
                                    toDate: Option[DateTime])
 
-case class ValidatedNotificationQueryRequest[A](clientId: String, params: NotificationQueryParams, request: Request[A])
+case class ValidatedNotificationQueryRequest[A](clientId: ClientId, params: NotificationQueryParams, request: Request[A])
 

@@ -55,7 +55,7 @@ HTTP Status: `200`
 * 400 response body return standard `{"code": "XX", "message": "ZZ"}` format
    
 
-## `POST /topics`
+## `PUT /topics`
 Create a new topic
 
 This endpoint is restricted, only a whitelist of services can access it.
@@ -79,7 +79,12 @@ This endpoint is restricted, only a whitelist of services can access it.
 | `clientId` | The Developer Hub Client ID that can access this topic
 
 ### Response
-HTTP Status: `201`
+HTTP Status: `201` if topic is created
+```
+1c5b9365-18a6-55a5-99c9-83a091ac7f26
+```
+
+HTTP Status: `200` if topic already exists
 ```
 1c5b9365-18a6-55a5-99c9-83a091ac7f26
 ```
