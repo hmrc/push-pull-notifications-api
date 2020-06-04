@@ -17,6 +17,7 @@
       {
         "version": "1.0",
         "status": "BETA",
+        "endpointsEnabled": true,
         "access": {
           "type": "PRIVATE",
           "isTrial": true,
