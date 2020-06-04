@@ -21,10 +21,10 @@ import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.Logger
 import play.api.mvc.Results.NotFound
-import play.api.mvc.{ActionRefiner, Request, Result}
+import play.api.mvc.{ActionRefiner, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
-import uk.gov.hmrc.pushpullnotificationsapi.models.{NotificationQueryParams, ValidatedNotificationQueryRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationRequest, NotificationQueryParams, ValidatedNotificationQueryRequest}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -32,13 +32,13 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionContext)
-  extends ActionRefiner[Request, ValidatedNotificationQueryRequest]  with HttpErrorFunctions {
+  extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest]  with HttpErrorFunctions {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
-  override def refine[A](request: Request[A]): Future[Either[Result, ValidatedNotificationQueryRequest[A]]]  = Future.successful {
-    validateNotificationQueryParams(request) match{
-      case Right(value) => Right(ValidatedNotificationQueryRequest[A](value, request))
+  override def refine[A](request: AuthenticatedNotificationRequest[A]): Future[Either[Result, ValidatedNotificationQueryRequest[A]]]  = Future.successful {
+     validateNotificationQueryParams(request) match{
+      case Right(value) => Right(ValidatedNotificationQueryRequest[A](request.clientId, value, request.request))
       case Left(error) => Left(error)
     }
   }
@@ -48,16 +48,17 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   val toDateParamKey = "to_date"
 
 
-  private def validateNotificationQueryParams[A](request: Request[A]): Either[Result, NotificationQueryParams] = {
+  private def validateNotificationQueryParams[A](request: AuthenticatedNotificationRequest[A]): Either[Result, NotificationQueryParams] = {
 
     for {
-      statusVal <- validateStatusParamValue(request.getQueryString(statusParamKey))
-      fromDateVal <- validateDateParamValue(request.getQueryString(fromDateParamKey))
-      toDateVal <- validateDateParamValue(request.getQueryString(toDateParamKey))
+      statusVal <- validateStatusParamValue(request.request.getQueryString(statusParamKey))
+      fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
+      toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
     } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
   }
 
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {
+
     maybeStatusStr match {
       case Some(statusVal) => Try[NotificationStatus]{NotificationStatus.withName(statusVal)} match {
         case Success(x) => Right(Some(x))

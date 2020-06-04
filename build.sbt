@@ -19,6 +19,7 @@ lazy val scoverageSettings = {
 lazy val compileDeps = Seq(
   ws,
   "uk.gov.hmrc" %% "bootstrap-play-26" % "1.3.0",
+  "uk.gov.hmrc" %% "auth-client" % "2.32.2-play-26",
   "com.beachape" %% "enumeratum-play-json" % "1.6.0",
   "uk.gov.hmrc" %% "play-json-union-formatter" % "1.10.0-play-26",
   "com.kenshoo" %% "metrics-play" % "2.6.19_0.7.0",

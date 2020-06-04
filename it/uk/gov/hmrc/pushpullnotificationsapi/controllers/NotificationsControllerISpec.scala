@@ -8,15 +8,15 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Format
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{AuditService, AuthService, MongoApp, ServerBaseISpec}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
+class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService{
   this: Suite with ServerProvider =>
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   def topicsRepo:  TopicsRepository= app.injector.instanceOf[TopicsRepository]
@@ -25,6 +25,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   override def beforeEach(): Unit ={
     super.beforeEach()
     dropMongoDb()
+    primeAuditService()
     await(topicsRepo.ensureIndexes)
     await(notificationRepo.ensureIndexes)
   }
@@ -55,11 +56,9 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
                                              |}
                                              |""".stripMargin
 
-  val validHeadersJson = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"), ("X-CLIENT-ID" -> clientId))
-  val validHeadersJsonWithNoUserAgent = List(("Content-Type" -> "application/json"), ("X-CLIENT-ID" -> clientId))
-  val validHeadersXml = List(("Content-Type" -> "application/xml"), ("X-CLIENT-ID" -> clientId))
-  val invalidHeadersInvalidClientId = List(("Content-Type" -> "application/xml"), ("X-CLIENT-ID" -> "wrongclientid"))
-  val invalidHeadersMissingClientId = List(("Content-Type" -> "application/xml"))
+  val validHeadersJson = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"))
+  val validHeadersJsonWithNoUserAgent = List("Content-Type" -> "application/json")
+  val validHeadersXml = List("Content-Type" -> "application/xml")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -85,8 +84,8 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   }
 
   def createNotifications(topicId: String, numberToCreate: Int): Unit ={
-    for( i <- 0 until numberToCreate){
-      val result = doPost( s"$url/notifications/topics/${topicId}", "{}", validHeadersJson)
+    for(_ <- 0 until numberToCreate){
+      val result = doPost( s"$url/notifications/topics/$topicId", "{}", validHeadersJson)
       result.status shouldBe CREATED
     }
 
@@ -123,7 +122,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
       "respond with 400 when unknown content type sent in request" in {
         val topic = createTopicAndReturn()
-        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", List(("ContentType" -> "text/plain")))
+        val result = doPost( s"$url/notifications/topics/${topic.topicId}", "{}", List("ContentType" -> "text/plain"))
         result.status shouldBe BAD_REQUEST
       }
 
@@ -136,28 +135,28 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
     "GET /notification/topics/[topicId]" should {
       "respond with 201 when notification created for valid json and json content type" in {
+        primeAuthServiceSuccess(clientId,"{\"authorise\" : [ ], \"retrieve\" : [ \"optionalClientId\" ]}")
         val topic =  createTopicAndReturn()
         createNotifications(topic.topicId, 4)
         val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson)
         result.status shouldBe OK
-        println(result.body)
       }
     }
 
-    "respond with 400 when notification created when clientId does not match" in {
+    "respond with 404 when notification created when clientId returned from auth does not match" in {
+      primeAuthServiceSuccess("UnknownClientId","{\"authorise\" : [ ], \"retrieve\" : [ \"optionalClientId\" ]}")
       val topic =  createTopicAndReturn()
       createNotifications(topic.topicId, 4)
-      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", invalidHeadersInvalidClientId)
+      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson)
       result.status shouldBe NOT_FOUND
-      println(result.body)
     }
 
-    "respond with 400 when notification created header missing clientId" in {
+    "respond with 401 when authorisation fails" in {
+      primeAuthServiceFail()
       val topic =  createTopicAndReturn()
       createNotifications(topic.topicId, 4)
-      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", invalidHeadersMissingClientId)
-      result.status shouldBe BAD_REQUEST
-      println(result.body)
+      val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId}", validHeadersJson)
+      result.status shouldBe UNAUTHORIZED
     }
   }
 }
