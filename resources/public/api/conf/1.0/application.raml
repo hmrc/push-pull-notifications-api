@@ -1,6 +1,6 @@
 #%RAML 1.0
 ---
-title: Push Pull Notifications Api
+title: Push Pull Notifications
 version: 1.0
 
 protocols: [ HTTPS ]
@@ -13,8 +13,10 @@ documentation:
    content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/versioning.md
  - title: Errors
    content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/errors.md
+ - title: Testing
+   content: !include docs/testing.md
 
-mediaType: application/hal+json
+mediaType: application/json
 
 uses:
   sec: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/securitySchemes.raml
@@ -24,63 +26,35 @@ uses:
 
 /misc/push-pull-notification:
   /notifications/topics/{topicId}:
+    uriParameters:
+      topicId:
+        description: Unique identified for the topic
+        type: string
+        required: true
+        example: 50dca3fc-c37c-4f03-b719-63571333624c
     get:
-      displayName: Get a list of the notifications
-      description: Returns a list of notifications that have been send to a topic
+      displayName: Get a list of notifications
+      description: Returns a list of notifications that have been sent to a topic
       is: [headers.acceptHeader]
-      securedBy: [ sec.x-application ]
-      responses:
-          200:
-            body:
-              application/json:
-                example: |
-                  [
-                    {
-                        "notificationId": "1ed5f407-8096-40d1-87ef-9a2a103eeb85",
-                        "topicId": "50dca3fc-c37c-4f03-b719-63571333624c",
-                        "notificationContentType": "APPLICATION_JSON",
-                        "message": "{}",
-                        "status": "RECEIVED",
-                        "createdDateTime": "2020-06-01T10:20:23.160+0000"
-                    },
-                    {
-                        "notificationId": "86bb5f82-452e-49c8-88af-1f321d573960",
-                        "topicId": "50dca3fc-c37c-4f03-b719-63571333624c",
-                        "notificationContentType": "APPLICATION_XML",
-                        "message": "<someXml>xmlValue</someXml>",
-                        "status": "RECEIVED",
-                        "createdDateTime": "2020-06-01T10:27:33.613+0000"
-                    }
-                  ]
-          404:
-            body:
-              application/json:
-                example: |
-                  {
-                    "code": "TOPIC_NOT_FOUND",
-                    "message": "Topic Id: 50dca3fc-c37c-4f03-b719-635713336 not found"
-                  }
-          500:
-            body:
-              application/json:
-                example: |
-                  {
-                    "code": "UNKNOWN_ERROR",
-                    "message": "An Unknown Error has occurred"
-                  }  
-  /topics:
-    get:
-      displayName: Get a list of topics
-      description: TODO
+#      TODO Documentation doesn't render the required scope !!!!!
+      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
+      (annotations.scope): "read:pull-notifications"
       queryParameters:
-        topicName:
-          displayName: Topic Name
+        status:
           type: string
-          description: Name of topic
-          example: I%20am%20a%20Topic(URL Encoded)
-          required: true
-      is: [headers.acceptHeader]
-      securedBy: [ sec.x-application ]
+          enum: ["RECEIVED"]
+          description: Only return notifications with this status. Currently `RECEIVED` is the only valid value.
+          required: false
+        from_date:
+          type: string
+          description: Only return notifications created after this datetime. ISO-8601 UTC date and time.
+          required: false
+          example: 2020-06-03T14:20:54.987
+        to_date:
+          type: string
+          description: Only return notifications created before this datetime. ISO-8601 UTC date and time.
+          required: false
+          example: 2020-06-03T14:20:54.987
       responses:
         200:
           body:
@@ -91,7 +65,7 @@ uses:
                       "notificationId": "1ed5f407-8096-40d1-87ef-9a2a103eeb85",
                       "topicId": "50dca3fc-c37c-4f03-b719-63571333624c",
                       "notificationContentType": "APPLICATION_JSON",
-                      "message": "{}",
+                      "message": "{\"key\":\"value\"}",
                       "status": "RECEIVED",
                       "createdDateTime": "2020-06-01T10:20:23.160+0000"
                   },
@@ -104,19 +78,22 @@ uses:
                       "createdDateTime": "2020-06-01T10:27:33.613+0000"
                   }
                 ]
+        # TODO Need an JSON schema for the response
+        400:
+          body:
+            application/json:
+              type: types.errorResponse
+              examples:
+                example-1:
+                  description: The provided query parameters don't match the specification.
+                  value:
+                    code: BAD_REQUEST
         404:
           body:
             application/json:
-              example: |
-                {
-                  "code": "TOPIC_NOT_FOUND",
-                  "message": "Topic Id: 50dca3fc-c37c-4f03-b719-635713336 not found"
-                }
-        500:
-          body:
-            application/json:
-              example: |
-                {
-                  "code": "UNKNOWN_ERROR",
-                  "message": "An Unknown Error has occurred"
-                }
+              type: types.errorResponse
+              examples:
+                example-1:
+                  description: The unique identified for the topic does not exist
+                  value:
+                    code: TOPIC_NOT_FOUND

@@ -10,10 +10,21 @@
     "name": "Push Pull Notifications",
     "description": "This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) \nnotifications. Notifications are create by other HMRC services.",
     "context": "/misc/push-pull-notification",
+    "categories": [
+      "OTHER"
+    ],
     "versions": [
       {
         "version": "1.0",
-        "status": "BETA"
+        "status": "BETA",
+        "access": {
+          "type": "PRIVATE",
+          "isTrial": true,
+          "whitelistedApplicationIds": [
+            "cfd9bf91-2a92-4ba4-b495-e44a505babb7",
+            "ab349380-17cc-4de0-a7ac-c76baedd7133"
+          ]
+        }
       }
     ]
   }
