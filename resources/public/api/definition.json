@@ -23,7 +23,8 @@
           "isTrial": true,
           "whitelistedApplicationIds": [
             "cfd9bf91-2a92-4ba4-b495-e44a505babb7",
-            "ab349380-17cc-4de0-a7ac-c76baedd7133"
+            "ab349380-17cc-4de0-a7ac-c76baedd7133",
+            "b5431e7f-3966-4aa5-aee5-65e5951d2f78"
           ]
         }
       }
