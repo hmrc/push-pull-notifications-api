@@ -209,6 +209,7 @@ HTTP Status: `200`
 | Topic not found | 404 | NONE
 
 ### Suggested improvements:
+* Query params need to be camelCase https://confluence.tools.tax.service.gov.uk/display/AR/Naming+Conventions
 * `Accept` header isn't being checked
 * 400 response body return standard `{"code": "XX", "message": "ZZ"}` format
 * 404 access denied response should be 403
