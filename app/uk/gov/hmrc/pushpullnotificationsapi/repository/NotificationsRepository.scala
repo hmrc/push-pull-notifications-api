@@ -26,7 +26,7 @@ import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createAscendingIndex
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,17 +46,17 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
      Some("notifications_index"),
      isUnique = true,
      isBackground = true,
-     List("notificationId", "topicId", "status"): _*
+     List("notificationId.value", "topicId", "status"): _*
    ),
     createAscendingIndex(
       Some("notifications_created_datetime_index"),
       isUnique = false,
       isBackground = true,
-      List("topicId, createdDateTime"): _*
+      List("topicId.value, createdDateTime"): _*
     )
   )
 
-  def getByTopicIdAndFilters(topicId: String,
+  def getByTopicIdAndFilters(topicId: TopicId,
                              status: Option[NotificationStatus] = None,
                              fromDateTime: Option[DateTime] = None,
                              toDateTime: Option[DateTime] = None)
@@ -81,20 +81,20 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     else empty
   }
 
-  private def topicIdQuery(topicId: String): JsArray ={
-    Json.arr(Json.obj("topicId" -> topicId))
+  private def topicIdQuery(topicId: TopicId): JsArray ={
+    Json.arr(Json.obj("topicId.value" -> topicId.value))
   }
   private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray ={
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
   }
 
-  def getAllByTopicId(topicId: String)
+  def getAllByTopicId(topicId: TopicId)
                      (implicit ec: ExecutionContext): Future[List[Notification]] = getByTopicIdAndFilters(topicId)
 
-  def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Unit] =
-    insert(notification).map(_ => ()).recoverWith {
+  def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
+    insert(notification).map(_ => Some(notification.notificationId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Future.failed(DuplicateNotificationException(s"${notification.notificationId} ${notification.topicId}"))
+        Future.successful(None)
     }
 
 }

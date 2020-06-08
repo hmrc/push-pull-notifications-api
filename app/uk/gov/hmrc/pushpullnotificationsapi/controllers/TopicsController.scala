@@ -27,7 +27,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{CreateTopicRequest, DuplicateTopicException, ErrorCode, JsErrorResponse, UpdateSubscribersRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,22 +49,23 @@ class TopicsController @Inject()(appConfig: AppConfig,
       .async(playBodyParsers.json) { implicit request =>
         withJsonBody[CreateTopicRequest] {
           topic: CreateTopicRequest =>
-            val topicId = UUID.randomUUID().toString
-            topicsService.createTopic(topicId, topic.clientId, topic.topicName).map { _ =>
-              Logger.info(s"Topic Created: $topicId for clientId: ${topic.clientId}")
-              Created(topicId)
-            } recover recovery
-        }
+            val topicId = TopicId(UUID.randomUUID())
+            topicsService.createTopic(topicId, ClientId(topic.clientId), topic.topicName).map {
+              case Right(result: TopicServiceCreateSuccessResult) => Created(Json.toJson(CreateTopicResponse(result.topicId.raw)))
+              case Right(result: TopicServiceCreateRetrievedSuccessResult) => Ok(Json.toJson(CreateTopicResponse(result.topicId.raw)))
+              case Left(_: TopicServiceCreateFailedResult) => UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "unable to createTopic"))
+            }
+        } recover recovery
       }
 
-  def getTopicByNameAndClientId(topicName: String, clientId: String): Action[AnyContent] = Action.async {
+  def getTopicByNameAndClientId(topicName: String, clientId: ClientId): Action[AnyContent] = Action.async {
     topicsService.getTopicByNameAndClientId(topicName, clientId) map {
       case List(topic) => Ok(Json.toJson(topic))
       case _ => NotFound
     } recover recovery
   }
 
-  def updateSubscribers(topicId: String): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+  def updateSubscribers(topicId: TopicId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateSubscribersRequest] {
       updateRequest =>
         topicsService.updateSubscribers(topicId, updateRequest) map {
@@ -72,20 +74,21 @@ class TopicsController @Inject()(appConfig: AppConfig,
             NotFound
         } recover recovery
     }
-
   }
 
   private def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
       Logger.info("An unexpected error occurred:", e)
       e match {
-        case error: DuplicateTopicException => UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_TOPIC, error.message))
         case _ => InternalServerError
       }
   }
 
+
   override protected def withJsonBody[T]
-  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] = {
+  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
+
+  = {
     withJson(request.body)(f)
   }
 
@@ -99,3 +102,4 @@ class TopicsController @Inject()(appConfig: AppConfig,
     }
   }
 }
+

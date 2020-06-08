@@ -7,7 +7,7 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE, UNAUTHORIZED}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
@@ -54,15 +54,15 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
                                              |}
                                              |""".stripMargin
 
-  val validHeaders = List(("Content-Type" -> "application/json"),  ("User-Agent" -> "api-subscription-fields"))
+  val validHeaders = List("Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
-  def doPost(jsonBody: String, headers: List[(String, String)]): WSResponse =
+  def doPut(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/topics")
       .withHttpHeaders(headers: _*)
-      .post(jsonBody)
+      .put(jsonBody)
       .futureValue
 
   def doPut(topicId:String, jsonBody: String, headers: List[(String, String)]): WSResponse =
@@ -88,65 +88,67 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
     "POST /topics" should {
       "respond with 201 when topic created" in {
-        val result = doPost(createTopicJsonBody, validHeaders)
+        val result = doPut(createTopicJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
-      "respond with 422 when topic already exists" in {
-        doPost(createTopicJsonBody, validHeaders)
+      "respond with 200 with topic ID  when topic already exists" in {
+        val result1 = doPut(createTopicJsonBody, validHeaders)
+        validateStringIsUUID(result1.body)
 
-        val result2 = doPost(createTopicJsonBody, validHeaders)
-        result2.status shouldBe UNPROCESSABLE_ENTITY
-        result2.body.contains("DUPLICATE_TOPIC") shouldBe true
+        val result2 = doPut(createTopicJsonBody, validHeaders)
+        result2.status shouldBe OK
+        validateStringIsUUID(result2.body)
+        result2.body shouldBe result1.body
       }
 
       "respond with 201 when two topics are created" in {
-        val result = doPost(createTopicJsonBody, validHeaders)
+        val result = doPut(createTopicJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
 
-        val result2 = doPost(createTopic2JsonBody, validHeaders)
+        val result2 = doPut(createTopic2JsonBody, validHeaders)
         result2.status shouldBe CREATED
         validateStringIsUUID(result2.body)
       }
 
       "respond with 400 when NonJson is sent" in {
-        val result = doPost("nonJsonPayload", validHeaders)
+        val result = doPut("nonJsonPayload", validHeaders)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 422 when invalid Json is sent" in {
-        val result = doPost("{}", validHeaders)
+        val result = doPut("{}", validHeaders)
         result.status shouldBe UNPROCESSABLE_ENTITY
         result.body.contains("INVALID_REQUEST_PAYLOAD") shouldBe true
       }
 
       "respond with 415 when request content Type headers are empty" in {
-        val result = doPost("{}", List("someHeader" -> "someValue"))
+        val result = doPut("{}", List("someHeader" -> "someValue"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 415 when request content Type header is not JSON " in {
-        val result = doPost("{}",  List("Content-Type" -> "application/xml"))
+        val result = doPut("{}",  List("Content-Type" -> "application/xml"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
-      "respond with 400 when UserAgent is not sent " in {
-        val result = doPost("{}",  List("Content-Type" -> "application/json"))
-        result.status shouldBe BAD_REQUEST
+      "respond with 401 when UserAgent is not sent " in {
+        val result = doPut("{}",  List("Content-Type" -> "application/json"))
+        result.status shouldBe UNAUTHORIZED
       }
 
-      "respond with 400 when UserAgent is not in whitelist" in {
-        val result = doPost("{}",  List("Content-Type" -> "application/json", "User-Agent"->"not-a-known-one"))
-        result.status shouldBe BAD_REQUEST
+      "respond with 401 when UserAgent is not in whitelist" in {
+        val result = doPut("{}",  List("Content-Type" -> "application/json", "User-Agent"->"not-a-known-one"))
+        result.status shouldBe UNAUTHORIZED
       }
     }
   }
 
   "GET /topics?topicName=someName&clientId=someClientid" should {
     "respond with 200 and topic in body when exists" in {
-      val result = doPost(createTopicJsonBody, validHeaders)
+      val result = doPut(createTopicJsonBody, validHeaders)
       result.status shouldBe CREATED
       validateStringIsUUID(result.body)
 
@@ -155,7 +157,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
       val topic = Json.parse(result2.body).as[Topic]
       topic.topicName shouldBe topicName
-      topic.topicCreator.clientId shouldBe clientId
+      topic.topicCreator.clientId.value shouldBe clientId
 
     }
 
@@ -172,7 +174,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
       val createdTopic = createTopicAndCheckExistsWithNoSubscribers()
 
-      val updateResult = doPut(createdTopic.topicId, updateSubcribersJsonBodyWithIds, validHeaders)
+      val updateResult = doPut(createdTopic.topicId.raw, updateSubcribersJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe OK
 
       val updatedTopic = Json.parse(updateResult.body).as[Topic]
@@ -192,7 +194,7 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   }
 
   private def createTopicAndCheckExistsWithNoSubscribers(): Topic ={
-    val result = doPost(createTopicJsonBody, validHeaders)
+    val result = doPut(createTopicJsonBody, validHeaders)
     result.status shouldBe CREATED
     validateStringIsUUID(result.body)
 

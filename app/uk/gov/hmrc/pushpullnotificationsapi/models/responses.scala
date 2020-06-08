@@ -19,9 +19,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
 
+case class CreateTopicResponse(topicId: String)
+
 object ErrorCode extends Enumeration {
   type ErrorCode = Value
 
+  val UNAUTHORISED = Value("UNAUTHORISED")
   val TOPIC_NOT_FOUND = Value("TOPIC_NOT_FOUND")
   val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
   val DUPLICATE_TOPIC = Value("DUPLICATE_TOPIC")

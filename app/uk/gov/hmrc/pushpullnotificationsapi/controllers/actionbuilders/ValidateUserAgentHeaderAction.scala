@@ -21,6 +21,7 @@ import play.api.mvc.{ActionFilter, Request, Result}
 import play.api.mvc.Results._
 import uk.gov.hmrc.http.HttpErrorFunctions
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,7 +40,7 @@ class ValidateUserAgentHeaderAction @Inject()(appConfig: AppConfig)(implicit ec:
         if (x.contains(userAgent)) {
           Future.successful(None)
         } else {
-          Future.successful(Some(BadRequest))
+          Future.successful(Some(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Authorisation failed"))))
         }
     }
 

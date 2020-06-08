@@ -17,13 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.Json
 import play.api.mvc.Results._
 import play.api.mvc.{ActionRefiner, Request, Result}
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
 import uk.gov.hmrc.play.HeaderCarrierConverter
-import uk.gov.hmrc.pushpullnotificationsapi.models.AuthenticatedNotificationRequest
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationRequest, ClientId, ErrorCode, JsErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -40,12 +39,12 @@ class AuthAction @Inject()(override val authConnector: AuthConnector)(implicit e
 
     authorised().retrieve(uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.clientId) {
       case maybeClientId: Option[String]  => maybeClientId match {
-        case Some(clientId) =>  Future.successful(Right(AuthenticatedNotificationRequest[A](clientId, request)))
-        case _ => Future.successful(Left(Unauthorized("unable to retrieve client id")))
+        case Some(clientId) =>  Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
+        case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
       }
-      case _ => Future.successful(Left(Unauthorized("Authorisation Failed")))
+      case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Authorisation failed"))))
     } recover {
-      case e: AuthorisationException =>Left(Unauthorized(Json.obj("errorMessage" -> e.getMessage)))
+      case e: AuthorisationException =>Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
     }
   }
 
