@@ -118,9 +118,9 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         result.status shouldBe BAD_REQUEST
       }
 
-      "respond with 422 when invalid Json is sent" in {
+      "respond with 400 when invalid Json is sent" in {
         val result = doPut("{}", validHeaders)
-        result.status shouldBe UNPROCESSABLE_ENTITY
+        result.status shouldBe BAD_REQUEST
         result.body.contains("INVALID_REQUEST_PAYLOAD") shouldBe true
       }
 
@@ -187,9 +187,9 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
       updateResult.status shouldBe NOT_FOUND
     }
 
-    "return 422 when requestBody is not a valid payload" in {
+    "return 400 when requestBody is not a valid payload" in {
       val updateResult = doPut(UUID.randomUUID().toString, "{}", validHeaders)
-      updateResult.status shouldBe UNPROCESSABLE_ENTITY
+      updateResult.status shouldBe BAD_REQUEST
     }
   }
 

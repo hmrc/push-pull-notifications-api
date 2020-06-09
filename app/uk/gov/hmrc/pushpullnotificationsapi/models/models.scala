@@ -20,7 +20,6 @@ import java.util.UUID
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
 import scala.collection.immutable

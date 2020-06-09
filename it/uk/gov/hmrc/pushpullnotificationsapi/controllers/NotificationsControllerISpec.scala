@@ -143,7 +143,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
     "GET /notification/topics/[topicId]" should {
       "respond with 201 when notification created for valid json and json content type" in {
-        primeAuthServiceSuccess(clientId,"{\"authorise\" : [ ], \"retrieve\" : [ \"optionalClientId\" ]}")
+        primeAuthServiceSuccess(clientId,"{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val topic =  createTopicAndReturn()
         createNotifications(topic.topicId, 4)
         val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId.raw}", validHeadersJson)
@@ -152,7 +152,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     }
 
     "respond with 401 on create when clientId returned from auth does not match" in {
-      primeAuthServiceSuccess("UnknownClientId","{\"authorise\" : [ ], \"retrieve\" : [ \"optionalClientId\" ]}")
+      primeAuthServiceSuccess("UnknownClientId","{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
       val topic =  createTopicAndReturn()
       createNotifications(topic.topicId, 4)
       val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId.raw}", validHeadersJson)
@@ -160,7 +160,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     }
 
     "respond with 401 on create when no clientID in response from auth" in {
-      primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"optionalClientId\" ]}")
+      primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
       val topic =  createTopicAndReturn()
       createNotifications(topic.topicId, 4)
       val result: WSResponse = doGet( s"$url/notifications/topics/${topic.topicId.raw}", validHeadersJson)

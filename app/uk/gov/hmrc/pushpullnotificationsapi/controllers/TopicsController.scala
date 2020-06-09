@@ -53,7 +53,8 @@ class TopicsController @Inject()(appConfig: AppConfig,
             topicsService.createTopic(topicId, ClientId(topic.clientId), topic.topicName).map {
               case Right(result: TopicServiceCreateSuccessResult) => Created(Json.toJson(CreateTopicResponse(result.topicId.raw)))
               case Right(result: TopicServiceCreateRetrievedSuccessResult) => Ok(Json.toJson(CreateTopicResponse(result.topicId.raw)))
-              case Left(_: TopicServiceCreateFailedResult) => UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "unable to createTopic"))
+              case Left(x: TopicServiceCreateFailedResult) =>
+                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createTopic:${x.message}"))
             }
         } recover recovery
       }
@@ -80,7 +81,7 @@ class TopicsController @Inject()(appConfig: AppConfig,
     case NonFatal(e) =>
       Logger.info("An unexpected error occurred:", e)
       e match {
-        case _ => InternalServerError
+        case _ => InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
       }
   }
 
@@ -96,9 +97,9 @@ class TopicsController @Inject()(appConfig: AppConfig,
     Try(json.validate[T]) match {
       case Success(JsSuccess(payload, _)) => f(payload)
       case Success(JsError(errs)) =>
-        Future.successful(UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, JsError.toJson(errs))))
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, JsError.toJson(errs))))
       case Failure(e) =>
-        Future.successful(UnprocessableEntity(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, e.getMessage)))
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, e.getMessage)))
     }
   }
 }

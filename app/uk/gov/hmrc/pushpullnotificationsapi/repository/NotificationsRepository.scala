@@ -46,7 +46,7 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
      Some("notifications_index"),
      isUnique = true,
      isBackground = true,
-     List("notificationId.value", "topicId", "status"): _*
+     List("notificationId.value", "topicId.value", "status"): _*
    ),
     createAscendingIndex(
       Some("notifications_created_datetime_index"),

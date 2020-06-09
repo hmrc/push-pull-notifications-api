@@ -28,7 +28,7 @@ trait AuthService {
         aResponse()
           .withStatus(Status.OK)
           .withBody(s"""{
-            |"optionalClientId": "$clientId"
+            |"clientId": "$clientId"
             |}""".stripMargin)
       )
     )
