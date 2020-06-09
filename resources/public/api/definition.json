@@ -24,7 +24,9 @@
           "whitelistedApplicationIds": [
             "cfd9bf91-2a92-4ba4-b495-e44a505babb7",
             "ab349380-17cc-4de0-a7ac-c76baedd7133",
-            "b5431e7f-3966-4aa5-aee5-65e5951d2f78"
+            "b5431e7f-3966-4aa5-aee5-65e5951d2f78",
+            "4e724366-885d-4d16-9e39-cb946a0f795b",
+            "71ef5626-2f75-429c-b8b3-23bbdf5f0084"
           ]
         }
       }
