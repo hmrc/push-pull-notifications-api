@@ -29,7 +29,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
-import play.api.test.FakeRequest
+import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
@@ -136,7 +136,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         verifyNoInteractions(mockNotificationService)
       }
 
-      "return 422 when save notification throws Duplicate Notification Exception" in {
+      "return 500 when save notification throws Duplicate Notification Exception" in {
 
         when(mockNotificationService
           .saveNotification(eqTo(topicId), any[NotificationId], eqTo(NotificationContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
@@ -144,7 +144,9 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
 
         val result = await(doPost(s"/notifications/topics/${topicId.raw}", validHeadersXml, xmlBody))
-        status(result) should be(UNPROCESSABLE_ENTITY)
+        status(result) should be(INTERNAL_SERVER_ERROR)
+        val bodyVal = Helpers.contentAsString(result)
+        bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
 
 
         verify(mockNotificationService)

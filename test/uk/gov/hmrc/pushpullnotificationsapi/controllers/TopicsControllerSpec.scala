@@ -160,10 +160,10 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
       }
 
 
-      "return 422 when invalid JSon payload sent" in {
+      "return 400 when invalid JSon payload sent" in {
         setUpAppConfig(List("api-subscription-fields"))
         val result = doPut("/topics", validHeadersWithValidUserAgent, "{}")
-        status(result) should be(UNPROCESSABLE_ENTITY)
+        status(result) should be(BAD_REQUEST)
         verifyNoInteractions(mockTopicsService)
       }
     }
@@ -241,13 +241,13 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
       }
 
 
-      "return 422 when JSON is sent not valid against the requestObject" in {
+      "return 400 when JSON is sent not valid against the requestObject" in {
         when(mockTopicsService.updateSubscribers(eqTo(topicId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
           .thenReturn(Future.successful(Some(Topic(topicId = topicId, topicName = topicName, TopicCreator(clientId)))))
 
         val result = doPut(s"/topics/${topicId.raw}/subscribers", validHeaders, "{}")
 
-        status(result) should be(UNPROCESSABLE_ENTITY)
+        status(result) should be(BAD_REQUEST)
       }
 
       "return 400 when Non JSON payload is sent" in {

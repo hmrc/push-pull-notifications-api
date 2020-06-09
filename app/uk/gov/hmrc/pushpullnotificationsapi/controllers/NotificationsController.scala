@@ -55,7 +55,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
         case Left(_: NotificationsServiceTopicNotFoundResult) =>
           NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, "Unable to save Notification: topicId not found"))
         case Left(_: SaveNotificationFailedDuplicateNotificationResult)  =>
-          UnprocessableEntity(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
+          InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
       } recover recovery
     } else {
       Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))

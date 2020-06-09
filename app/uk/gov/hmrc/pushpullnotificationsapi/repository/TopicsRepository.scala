@@ -48,7 +48,7 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       isUnique = true,
       isBackground = true,
       indexFieldsKey = List("topicName", "topicCreator.clientId.value"): _*),
-    createSingleFieldAscendingIndex("topicId", Some("topicid_index"), isUnique = true)
+    createSingleFieldAscendingIndex("topicId.value", Some("topicid_index"), isUnique = true)
   )
 
 
