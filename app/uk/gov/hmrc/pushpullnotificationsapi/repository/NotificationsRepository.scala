@@ -46,13 +46,13 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
      Some("notifications_index"),
      isUnique = true,
      isBackground = true,
-     List("notificationId.value", "topicId.value", "status"): _*
+     List("notificationId", "topicId", "status"): _*
    ),
     createAscendingIndex(
       Some("notifications_created_datetime_index"),
       isUnique = false,
       isBackground = true,
-      List("topicId.value, createdDateTime"): _*
+      List("topicId, createdDateTime"): _*
     )
   )
 
@@ -82,7 +82,7 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   }
 
   private def topicIdQuery(topicId: TopicId): JsArray ={
-    Json.arr(Json.obj("topicId.value" -> topicId.value))
+    Json.arr(Json.obj("topicId" -> topicId.value))
   }
   private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray ={
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }

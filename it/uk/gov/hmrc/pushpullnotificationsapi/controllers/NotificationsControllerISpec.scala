@@ -48,7 +48,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   val createTopicJsonBody =raw"""{"clientId": "$clientId", "topicName": "$topicName"}"""
   val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
 
-  val updateSubcribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
+  val updateSubscribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
                                              |     "subscriberType": "API_PUSH_SUBSCRIBER",
                                              |     "callBackUrl":"somepath/firstOne",
                                              |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
@@ -56,7 +56,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
                                              |}
                                              |""".stripMargin
 
-  val validHeadersJson = List("Content-Type" -> "application/json",  ("User-Agent" -> "api-subscription-fields"))
+  val validHeadersJson = List("Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
   val validHeadersJsonWithNoUserAgent = List("Content-Type" -> "application/json")
   val validHeadersXml = List("Content-Type" -> "application/xml")
 
