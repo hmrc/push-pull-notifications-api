@@ -18,8 +18,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{TopicServiceCreateFailedResult, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,16 +28,15 @@ import scala.concurrent.{ExecutionContext, Future}
 class TopicsService @Inject()(repository: TopicsRepository) {
 
   def createTopic(topicId: TopicId, clientId: ClientId, topicName: String)
-                 (implicit ec: ExecutionContext): Future[Either[TopicServiceCreateFailedResult, TopicServiceSuccessResult]] = {
+                 (implicit ec: ExecutionContext): Future[TopicCreateResult] = {
     repository.createTopic(Topic(topicId, topicName, TopicCreator(clientId))) flatMap {
-      case Some(id) => Future.successful(Right(TopicServiceCreateSuccessResult(id)))
+      case Some(id) => Future.successful(TopicCreatedResult(id))
       case None => repository.getTopicByNameAndClientId(topicName, clientId)
         .map(_.headOption) map {
-        case Some(x) => Right(TopicServiceCreateRetrievedSuccessResult(x.topicId))
-        case _ => {
+        case Some(x) => TopicRetrievedResult(x.topicId)
+        case _ =>
           Logger.info(s"Topic with name :$topicName already exists for clientId: $clientId but unable to retrieve")
-          Left(TopicServiceCreateFailedResult(s"Topic with name :$topicName already exists for this clientId but unable to retrieve it"))
-        }
+          TopicCreateFailedResult(s"Topic with name :$topicName already exists for this clientId but unable to retrieve it")
       }
     }
 

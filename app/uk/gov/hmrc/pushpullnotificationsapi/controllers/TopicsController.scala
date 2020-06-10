@@ -25,18 +25,17 @@ import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 
 @Singleton()
-class TopicsController @Inject()(appConfig: AppConfig,
-                                 validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
+class TopicsController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                                  topicsService: TopicsService,
                                  cc: ControllerComponents,
                                  playBodyParsers: PlayBodyParsers)
@@ -50,10 +49,10 @@ class TopicsController @Inject()(appConfig: AppConfig,
           topic: CreateTopicRequest =>
             val topicId = TopicId(UUID.randomUUID())
             topicsService.createTopic(topicId, ClientId(topic.clientId), topic.topicName).map {
-              case Right(result: TopicServiceCreateSuccessResult) => Created(Json.toJson(CreateTopicResponse(result.topicId.raw)))
-              case Right(result: TopicServiceCreateRetrievedSuccessResult) => Ok(Json.toJson(CreateTopicResponse(result.topicId.raw)))
-              case Left(x: TopicServiceCreateFailedResult) =>
-                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createTopic:${x.message}"))
+              case r: TopicCreatedResult => Created(Json.toJson(CreateTopicResponse(r.topicId.raw)))
+              case r: TopicRetrievedResult => Ok(Json.toJson(CreateTopicResponse(r.topicId.raw)))
+              case r: TopicCreateFailedResult =>
+                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createTopic:${r.message}"))
             }
         } recover recovery
       }

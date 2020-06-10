@@ -84,7 +84,7 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
       "return 201 and topicId when topic successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[TopicId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Right(TopicServiceCreateSuccessResult(topicId))))
+          .thenReturn(Future.successful(TopicCreatedResult(topicId)))
         val result = await(doPut("/topics", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"topicId":"${topicId.value}"}"""
@@ -96,7 +96,7 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
       "return 200 and topicId when topic already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[TopicId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Right(TopicServiceCreateRetrievedSuccessResult(topicId))))
+          .thenReturn(Future.successful(TopicRetrievedResult(topicId)))
         val result = await(doPut("/topics", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(OK)
         val expectedBodyStr = s"""{"topicId":"${topicId.value}"}"""
@@ -109,7 +109,7 @@ class TopicsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
       "return 422 when Left returned from Topic Service" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockTopicsService.createTopic(any[TopicId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Left(TopicServiceCreateFailedResult(s"Topic with name :$topicName already exists for cleintId: $clientId but unable to retrieve"))))
+          .thenReturn(Future.successful(TopicCreateFailedResult(s"Topic with name :$topicName already exists for cleintId: $clientId but unable to retrieve")))
         val result = await(doPut("/topics", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(UNPROCESSABLE_ENTITY)
 

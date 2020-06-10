@@ -18,16 +18,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
-
-sealed trait TopicServiceResult
-
-case class TopicServiceCreateFailedResult(message: String) extends TopicServiceResult
-abstract class TopicServiceSuccessResult() extends TopicServiceResult
-
-
-case class TopicServiceCreateSuccessResult(topicId: TopicId) extends TopicServiceSuccessResult
-case class TopicServiceCreateRetrievedSuccessResult(topicId: TopicId) extends TopicServiceSuccessResult
-
+sealed trait TopicCreateResult
+final case class TopicCreateFailedResult(message: String) extends TopicCreateResult
+sealed trait TopicCreateSuccessResult extends TopicCreateResult
+final case class TopicCreatedResult(topicId: TopicId) extends TopicCreateSuccessResult
+final case class TopicRetrievedResult(topicId: TopicId) extends TopicCreateSuccessResult
 
 sealed trait NotificationServiceResult
 abstract class NotificationsServiceFailedResult() extends NotificationServiceResult
