@@ -7,8 +7,8 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNPROCESSABLE_ENTITY, UNSUPPORTED_MEDIA_TYPE, UNAUTHORIZED}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
 import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
