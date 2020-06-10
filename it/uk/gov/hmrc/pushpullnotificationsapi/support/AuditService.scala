@@ -2,7 +2,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
-import play.api.test.Helpers.WWW_AUTHENTICATE
 
 trait AuditService {
   val auditUrl = "/write/audit"

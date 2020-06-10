@@ -47,13 +47,13 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     createAscendingIndex(Some("topics_index"),
       isUnique = true,
       isBackground = true,
-      indexFieldsKey = List("topicName", "topicCreator.clientId.value"): _*),
-    createSingleFieldAscendingIndex("topicId.value", Some("topicid_index"), isUnique = true)
+      indexFieldsKey = List("topicName", "topicCreator.clientId"): _*),
+    createSingleFieldAscendingIndex("topicId", Some("topicid_index"), isUnique = true)
   )
 
 
   def findByTopicId(topicId: TopicId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
-    find("topicId.value" -> topicId.value)
+    find("topicId" -> topicId.value)
   }
 
   def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Option[TopicId]] =
@@ -65,16 +65,16 @@ class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
 
   def getTopicByNameAndClientId(topicName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
     Logger.info(s"Getting topic by topicName:$topicName & clientId")
-    find("topicName" -> topicName, "topicCreator.clientId.value" -> clientId.value)
+    find("topicName" -> topicName, "topicCreator.clientId" -> clientId.value)
   }
 
   def updateSubscribers(topicId: TopicId, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Topic]] = {
 
-    updateTopic(topicId.value, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
+    updateTopic(topicId, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
   }
 
-  private def updateTopic(topicId: UUID, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
-    findAndUpdate(Json.obj("topicId.value" -> topicId), updateStatement, fetchNewObject = true) map {
+  private def updateTopic(topicId: TopicId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
+    findAndUpdate(Json.obj("topicId" -> topicId.value), updateStatement, fetchNewObject = true) map {
       _.result[Topic]
     }
 }

@@ -22,12 +22,13 @@ lazy val compileDeps = Seq(
   "uk.gov.hmrc" %% "auth-client" % "2.35.0-play-26",
   "com.beachape" %% "enumeratum-play-json" % "1.6.0",
   "uk.gov.hmrc" %% "play-json-union-formatter" % "1.10.0-play-26",
+  "com.typesafe.play" %% "play-json" % "2.7.1",
   "com.kenshoo" %% "metrics-play" % "2.6.19_0.7.0",
   "uk.gov.hmrc" %% "domain" % "5.6.0-play-26",
   "com.github.blemale" %% "scaffeine" % "3.1.0",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.0.0",
   "uk.gov.hmrc" %% "simple-reactivemongo" % "7.22.0-play-26",
-  "com.typesafe.play" %% "play-json-joda" % "2.6.10",
+  "com.typesafe.play" %% "play-json-joda" % "2.7.1",
   ws
 )
 
