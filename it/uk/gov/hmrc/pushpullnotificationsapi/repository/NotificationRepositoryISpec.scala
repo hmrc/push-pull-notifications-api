@@ -8,7 +8,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType.APPLICATION_JSON
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
@@ -48,7 +48,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
     "save a Notification" in {
       val notification = Notification(NotificationId(UUID.randomUUID()), topicId,
-        notificationContentType = APPLICATION_JSON,
+        messageContentType = APPLICATION_JSON,
         message = "{\"someJsone\": \"someValue\"}",
         status = RECEIVED)
       val result: Unit = await(repo.saveNotification(notification))
@@ -59,7 +59,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
     "not save duplicate Notifications" in {
       val notification = Notification(NotificationId(UUID.randomUUID()), topicId = topicId,
-        notificationContentType = APPLICATION_JSON,
+        messageContentType = APPLICATION_JSON,
         message = "{",
         status = RECEIVED)
 

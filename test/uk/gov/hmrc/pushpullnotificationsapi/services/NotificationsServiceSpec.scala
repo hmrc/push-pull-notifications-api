@@ -25,7 +25,7 @@ import org.mockito.stubbing.ScalaOngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationContentType, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, MessageContentType, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
 
@@ -48,7 +48,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
     val serviceToTest = new NotificationsService(mockTopicRepo, mockNotificationsRepo)
     val notificationCaptor: Captor[Notification] = ArgCaptor[Notification]
 
-    def primeNotificationRepoSave(result: Future[Option[NotificationId]]) = {
+    def primeNotificationRepoSave(result: Future[Option[NotificationId]]): ScalaOngoingStubbing[Future[Option[NotificationId]]] = {
       when(mockNotificationsRepo.saveNotification(any[Notification])(any[ExecutionContext])).thenReturn(result)
     }
     def primeNotificationRepoGetNotifications(result: Future[List[Notification]]): ScalaOngoingStubbing[Future[List[Notification]]] = {
@@ -68,8 +68,8 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private val topicId = models.TopicId(UUID.fromString(topicIdStr))
   private val clientIdStr = "b15b81ff-536b-4292-ae84-9466af9f3ab1"
   private val clientId = ClientId(clientIdStr)
-  private val notificationContentTypeJson = NotificationContentType.APPLICATION_JSON
-  private val notificationContentTypeXml = NotificationContentType.APPLICATION_XML
+  private val messageContentTypeJson = MessageContentType.APPLICATION_JSON
+  private val messageContentTypeXml = MessageContentType.APPLICATION_XML
   private val message = "message"
   private val topicObject = Topic(topicId, "topicName", TopicCreator(clientId))
 
@@ -78,26 +78,27 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   // return any repo errors
 
   "SaveNotification" should {
-    "return true when topic exists & notification successfully saved" in new Setup {
+    "return NotificationCreateSuccessResult when topic exists & notification successfully saved" in new Setup {
       primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
 
-      val result: Either[NotificationsServiceFailedResult, NotificationsServiceSuccessResult] = await(serviceToTest.saveNotification(topicId, NotificationId(UUID.randomUUID()), notificationContentTypeJson, message))
-      result.right.get shouldBe SaveNotificationSuccessResult()
+      val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(topicId,
+        NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
+      result shouldBe NotificationCreateSuccessResult()
 
       verify(mockTopicRepo, times(1)).findByTopicId(eqTo(topicId))(any[ExecutionContext])
       verify(mockNotificationsRepo).saveNotification(notificationCaptor.capture)(any[ExecutionContext])
       notificationCaptor.value.topicId shouldBe topicId
-      notificationCaptor.value.notificationContentType shouldBe notificationContentTypeJson
+      notificationCaptor.value.messageContentType shouldBe messageContentTypeJson
       notificationCaptor.value.message shouldBe message
     }
 
-    "return false when topic does not exist" in new Setup {
+    "return NotificationCreateFailedTopicNotFoundResult when topic does not exist" in new Setup {
       primeTopicsRepo(Future.successful(List.empty), topicId)
 
-      val result: Either[NotificationsServiceFailedResult, NotificationsServiceSuccessResult] =
-        await(serviceToTest.saveNotification(topicId, NotificationId(UUID.randomUUID()), notificationContentTypeXml, message))
-      result shouldBe Left(NotificationsServiceTopicNotFoundResult((s"Topic Id: TopicId(${topicIdStr}) not found")))
+      val result: NotificationCreateServiceResult =
+        await(serviceToTest.saveNotification(topicId, NotificationId(UUID.randomUUID()), messageContentTypeXml, message))
+      result shouldBe NotificationCreateFailedTopicNotFoundResult(s"Topic Id: TopicId($topicIdStr) not found")
 
       verify(mockTopicRepo, times(1)).findByTopicId(eqTo(topicId))(any[ExecutionContext])
       verifyZeroInteractions(mockNotificationsRepo)
@@ -115,15 +116,16 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
       primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoGetNotifications(
-        Future.successful(List(Notification(NotificationId(UUID.randomUUID()), topicId,NotificationContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
+        Future.successful(List(Notification(NotificationId(UUID.randomUUID()),
+          topicId,MessageContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
       )
-     val result: Either[NotificationsServiceFailedResult, NotificationsServiceSuccessResult] =  await(serviceToTest.getNotifications(topicId= topicId,
+     val result: GetNotificationCreateServiceResult =  await(serviceToTest.getNotifications(topicId= topicId,
         clientId = clientId,
         status = status,
         fromDateTime = fromDate,
         toDateTime = toDate))
 
-      val resultsList : GetNotificationsSuccessRetrievedResult = result.right.get.asInstanceOf[GetNotificationsSuccessRetrievedResult]
+      val resultsList : GetNotificationsSuccessRetrievedResult = result.asInstanceOf[GetNotificationsSuccessRetrievedResult]
       resultsList.notifications.isEmpty shouldBe false
 
       verify(mockNotificationsRepo).getByTopicIdAndFilters(eqTo(topicId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
@@ -135,13 +137,13 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
-      val result: Either[NotificationsServiceFailedResult, NotificationsServiceSuccessResult] =  await(serviceToTest.getNotifications(topicId= topicId,
+      val result: GetNotificationCreateServiceResult =  await(serviceToTest.getNotifications(topicId= topicId,
         clientId = clientId,
         status = status,
         fromDateTime = fromDate,
         toDateTime = toDate))
 
-      result shouldBe Right(GetNotificationsSuccessRetrievedResult(List.empty))
+      result shouldBe GetNotificationsSuccessRetrievedResult(List.empty)
 
       verify(mockNotificationsRepo).getByTopicIdAndFilters(eqTo(topicId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
 
@@ -152,13 +154,13 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       primeTopicsRepo(Future.successful(List(topicObject)), topicId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
-      val result: Either[NotificationsServiceFailedResult, NotificationsServiceSuccessResult] = await(serviceToTest.getNotifications(topicId = topicId,
+      val result: GetNotificationCreateServiceResult = await(serviceToTest.getNotifications(topicId = topicId,
           clientId = ClientId(UUID.randomUUID().toString),
           status = status,
           fromDateTime = fromDate,
           toDateTime = toDate))
 
-      result shouldBe Left(NotificationsServiceUnauthorisedResult("clientId does not match topicCreator"))
+      result shouldBe GetNotificationsServiceUnauthorisedResult("clientId does not match topicCreator")
 
 
       verifyNoMoreInteractions(mockNotificationsRepo)

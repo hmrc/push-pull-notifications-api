@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
 import java.util.UUID
 
+import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
@@ -28,17 +29,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import scala.collection.immutable
 
 
-sealed trait NotificationContentType extends EnumEntry
+sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 
-object NotificationContentType extends Enum[NotificationContentType] with PlayJsonEnum[NotificationContentType] {
-  val values: immutable.IndexedSeq[NotificationContentType] = findValues
+object MessageContentType extends StringEnum[MessageContentType] with StringPlayJsonValueEnum[MessageContentType] {
+  val values: immutable.IndexedSeq[MessageContentType] = findValues
 
-  case object APPLICATION_JSON extends NotificationContentType
-
-  case object APPLICATION_XML extends NotificationContentType
-
-  case object UNSUPPORTED extends NotificationContentType
-
+  case object APPLICATION_JSON extends MessageContentType("application/json")
+  case object APPLICATION_XML extends MessageContentType("application/xml")
 }
 
 sealed trait NotificationStatus extends EnumEntry
@@ -47,11 +44,7 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
   val values: immutable.IndexedSeq[NotificationStatus] = findValues
 
   case object RECEIVED extends NotificationStatus
-
   case object READ extends NotificationStatus
-
-  case object UNKNOWN extends NotificationStatus
-
 }
 
 
@@ -62,7 +55,7 @@ case class NotificationId(value: UUID) extends AnyVal {
 
 case class Notification(notificationId: NotificationId,
                         topicId: TopicId,
-                        notificationContentType: NotificationContentType,
+                        messageContentType: MessageContentType,
                         message: String,
                         status: NotificationStatus = RECEIVED,
                         createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
@@ -71,7 +64,7 @@ case class Notification(notificationId: NotificationId,
 
 object Notification {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val formatTopicID = Json.format[TopicId]
-  implicit val formatNotificationID = Json.format[NotificationId]
+  implicit val formatTopicID: OFormat[TopicId] = Json.format[TopicId]
+  implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }

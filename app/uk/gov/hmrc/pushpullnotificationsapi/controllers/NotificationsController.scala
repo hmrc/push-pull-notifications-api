@@ -24,12 +24,11 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationContentType, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +37,7 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 @Singleton()
-class NotificationsController @Inject()(appConfig: AppConfig,
-                                        notificationsService: NotificationsService,
+class NotificationsController @Inject()(notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
                                         authAction: AuthAction,
                                         cc: ControllerComponents,
@@ -47,18 +45,22 @@ class NotificationsController @Inject()(appConfig: AppConfig,
   extends BackendController(cc)  {
 
   def saveNotification(topicId: TopicId): Action[String] = Action.async(playBodyParsers.tolerantText) { implicit request =>
-    val convertedType = contentTypeHeaderToNotificationType
-    if (validateContentTypeAndBody(convertedType)) {
-      val notificationId = NotificationId(UUID.randomUUID())
-      notificationsService.saveNotification(topicId, notificationId, convertedType, request.body) map {
-        case Right(_: SaveNotificationSuccessResult) => Created(notificationId.toString)
-        case Left(_: NotificationsServiceTopicNotFoundResult) =>
-          NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, "Unable to save Notification: topicId not found"))
-        case Left(_: SaveNotificationFailedDuplicateNotificationResult)  =>
-          InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
-      } recover recovery
-    } else {
+    val maybeConvertedType = contentTypeHeaderToNotificationType
+    maybeConvertedType.fold(
       Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+    ){ contentType =>
+      if (validateBodyAgainstContentType(contentType)) {
+        val notificationId = NotificationId(UUID.randomUUID())
+        notificationsService.saveNotification(topicId, notificationId, contentType, request.body) map {
+          case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+          case _: NotificationCreateFailedTopicNotFoundResult =>
+            NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, "Unable to save Notification: topicId not found"))
+          case _: NotificationCreateFailedDuplicateResult =>
+            InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
+        } recover recovery
+      } else {
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+      }
     }
   }
 
@@ -68,27 +70,28 @@ class NotificationsController @Inject()(appConfig: AppConfig,
       queryParamValidatorAction)
       .async { implicit request =>
             notificationsService.getNotifications(topicId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-              case Right(results: GetNotificationsSuccessRetrievedResult) => Ok(Json.toJson(results.notifications))
-              case Left(_: NotificationsServiceUnauthorisedResult) =>
+              case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications))
+              case   _: GetNotificationsServiceTopicNotFoundResult =>
+                NotFound(JsErrorResponse(ErrorCode.TOPIC_NOT_FOUND, "Unable to save Notification: topicId not found"))
+              case _: GetNotificationsServiceUnauthorisedResult =>
                 Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to view notification for topic not created by yourself"))
             } recover recovery
         }
 
 
-  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): NotificationContentType = {
+  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
     request.contentType match {
-      case Some(MimeTypes.JSON) => APPLICATION_JSON
-      case Some(MimeTypes.XML) => APPLICATION_XML
-      case _ => UNSUPPORTED
+      case Some(MimeTypes.JSON) => Some(APPLICATION_JSON)
+      case Some(MimeTypes.XML) => Some(APPLICATION_XML)
+      case _ => None
     }
   }
 
 
-  private def validateContentTypeAndBody(notificationContentType: NotificationContentType)(implicit request: Request[String]) = {
+  private def validateBodyAgainstContentType(notificationContentType: MessageContentType)(implicit request: Request[String]) = {
     notificationContentType match {
       case APPLICATION_JSON => checkValidJson(request.body)
       case APPLICATION_XML => checkValidXml(request.body)
-      case _ => false
     }
   }
 

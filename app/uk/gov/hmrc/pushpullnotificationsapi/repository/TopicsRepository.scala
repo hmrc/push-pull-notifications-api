@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.UUID
-
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger

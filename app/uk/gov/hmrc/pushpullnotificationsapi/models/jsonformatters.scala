@@ -56,6 +56,7 @@ object ResponseFormatters{
   implicit val topicsFormats: OFormat[Topic] = Json.format[Topic]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val createTopicResponseFormatter: OFormat[CreateTopicResponse] = Json.format[CreateTopicResponse]
+  implicit val createNotificationResponseFormatter: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
 }
 
 object RequestFormatters {
