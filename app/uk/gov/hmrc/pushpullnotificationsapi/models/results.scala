@@ -24,14 +24,25 @@ sealed trait TopicCreateSuccessResult extends TopicCreateResult
 final case class TopicCreatedResult(topicId: TopicId) extends TopicCreateSuccessResult
 final case class TopicRetrievedResult(topicId: TopicId) extends TopicCreateSuccessResult
 
-sealed trait NotificationServiceResult
-abstract class NotificationsServiceFailedResult() extends NotificationServiceResult
-abstract class NotificationsServiceSuccessResult() extends NotificationServiceResult
+sealed trait NotificationCreateServiceResult
 
-case class NotificationsServiceTopicNotFoundResult(message: String) extends NotificationsServiceFailedResult
-case class NotificationsServiceUnauthorisedResult(message: String) extends NotificationsServiceFailedResult
+sealed trait NotificationCreateServiceFailedResult extends NotificationCreateServiceResult
+sealed trait NotificationCreateServiceSuccessResult extends NotificationCreateServiceResult
 
-case class GetNotificationsSuccessRetrievedResult(notifications: List[Notification]) extends NotificationsServiceSuccessResult
+final case class NotificationCreateSuccessResult() extends NotificationCreateServiceSuccessResult
+final case class NotificationCreateFailedDuplicateResult(message: String) extends NotificationCreateServiceFailedResult
+final case class NotificationCreateFailedTopicNotFoundResult(message: String) extends NotificationCreateServiceFailedResult
 
-case class SaveNotificationFailedDuplicateNotificationResult(message: String) extends NotificationsServiceFailedResult
-case class SaveNotificationSuccessResult() extends NotificationsServiceSuccessResult
+sealed trait GetNotificationCreateServiceResult
+
+sealed trait GetNotificationsServiceFailedResult extends GetNotificationCreateServiceResult
+sealed trait GetNotificationsServiceSuccessResult extends GetNotificationCreateServiceResult
+
+
+final case class GetNotificationsServiceTopicNotFoundResult(message: String) extends GetNotificationsServiceFailedResult
+final case class GetNotificationsServiceUnauthorisedResult(message: String) extends GetNotificationsServiceFailedResult
+
+final case class GetNotificationsSuccessRetrievedResult(notifications: List[Notification]) extends GetNotificationsServiceSuccessResult
+
+
+

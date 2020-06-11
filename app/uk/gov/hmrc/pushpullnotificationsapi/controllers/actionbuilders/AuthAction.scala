@@ -38,11 +38,11 @@ class AuthAction @Inject()(override val authConnector: AuthConnector)(implicit e
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers)
 
     authorised().retrieve(uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.clientId) {
-      case maybeClientId: Option[String]  => maybeClientId match {
-        case Some(clientId) =>  Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
-        case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
-      }
-      case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Authorisation failed"))))
+      maybeClientId: Option[String] =>
+        maybeClientId match {
+          case Some(clientId) => Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
+          case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
+        }
     } recover {
       case e: AuthorisationException =>Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
     }

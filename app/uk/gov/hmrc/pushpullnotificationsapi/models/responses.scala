@@ -20,6 +20,7 @@ import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
 
 case class CreateTopicResponse(topicId: String)
+case class CreateNotificationResponse(notificationId: String)
 
 object ErrorCode extends Enumeration {
   type ErrorCode = Value

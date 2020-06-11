@@ -92,6 +92,7 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
                      (implicit ec: ExecutionContext): Future[List[Notification]] = getByTopicIdAndFilters(topicId)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
+
     insert(notification).map(_ => Some(notification.notificationId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
         Future.successful(None)

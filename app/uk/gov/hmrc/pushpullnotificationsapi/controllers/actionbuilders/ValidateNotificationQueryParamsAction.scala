@@ -45,13 +45,23 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   }
 
   val statusParamKey = "status"
-  val fromDateParamKey = "from_date"
-  val toDateParamKey = "to_date"
+  val fromDateParamKey = "fromDate"
+  val toDateParamKey = "toDate"
+  val validKeys = List(statusParamKey, fromDateParamKey, toDateParamKey)
 
+
+  def validateQueryParamsKeys(maybeKeys: Option[List[String]]): Either[Result, Boolean] = {
+    maybeKeys match {
+      case Some(keys) => if (!keys.forall(validKeys.contains(_))) {
+        Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid / Unknown query parameter provided")))
+      } else Right(true)
+      case None => Right(true)
+    }
+  }
 
   private def validateNotificationQueryParams[A](request: AuthenticatedNotificationRequest[A]): Either[Result, NotificationQueryParams] = {
-
     for {
+      _ <- validateQueryParamsKeys(Some(request.request.queryString.keys.toList))
       statusVal <- validateStatusParamValue(request.request.getQueryString(statusParamKey))
       fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
       toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
@@ -59,16 +69,15 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   }
 
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {
-
     maybeStatusStr match {
       case Some(statusVal) => Try[NotificationStatus] {
         NotificationStatus.withName(statusVal)
       } match {
         case Success(x) => Right(Some(x))
         case Failure(_) => Logger.info(s"Invalid Status Param provided: $statusVal")
-          Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status Param provided")))
+          Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
       }
-      case _ => Right(None)
+      case None => Right(None)
     }
   }
 
