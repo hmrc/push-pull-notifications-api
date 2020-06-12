@@ -20,35 +20,35 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class TopicsService @Inject()(repository: TopicsRepository) {
+class BoxService @Inject()(repository: BoxRepository) {
 
-  def createTopic(topicId: TopicId, clientId: ClientId, topicName: String)
-                 (implicit ec: ExecutionContext): Future[TopicCreateResult] = {
-    repository.createTopic(Topic(topicId, topicName, TopicCreator(clientId))) flatMap {
-      case Some(id) => Future.successful(TopicCreatedResult(id))
-      case None => repository.getTopicByNameAndClientId(topicName, clientId)
+  def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
+               (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
+    repository.createBox(Box(boxId, boxName, BoxCreator(clientId))) flatMap {
+      case Some(id) => Future.successful(BoxCreatedResult(id))
+      case None => repository.getBoxByNameAndClientId(boxName, clientId)
         .map(_.headOption) map {
-        case Some(x) => TopicRetrievedResult(x.topicId)
+        case Some(x) => BoxRetrievedResult(x.boxId)
         case _ =>
-          Logger.info(s"Topic with name :$topicName already exists for clientId: $clientId but unable to retrieve")
-          TopicCreateFailedResult(s"Topic with name :$topicName already exists for this clientId but unable to retrieve it")
+          Logger.info(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")
+          BoxCreateFailedResult(s"Box with name :$boxName already exists for this clientId but unable to retrieve it")
       }
     }
 
   }
 
-  def getTopicByNameAndClientId(topicName: String, clientId: ClientId)
-                               (implicit ec: ExecutionContext): Future[List[Topic]] = {
-    repository.getTopicByNameAndClientId(topicName, clientId)
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)
+                             (implicit ec: ExecutionContext): Future[List[Box]] = {
+    repository.getBoxByNameAndClientId(boxName, clientId)
   }
 
-  def updateSubscribers(topicId: TopicId, request: UpdateSubscribersRequest)
-                       (implicit ec: ExecutionContext): Future[Option[Topic]] = {
+  def updateSubscribers(boxId: BoxId, request: UpdateSubscribersRequest)
+                       (implicit ec: ExecutionContext): Future[Option[Box]] = {
     val subscribers = request.subscribers.map(subscriber => {
       subscriber.subscriberType match {
         case API_PULL_SUBSCRIBER => subscriber.subscriberId match {
@@ -61,7 +61,7 @@ class TopicsService @Inject()(repository: TopicsRepository) {
         }
       }
     })
-    repository.updateSubscribers(topicId, subscribers.map(new SubscriberContainer(_)))
+    repository.updateSubscribers(boxId, subscribers.map(new SubscriberContainer(_)))
   }
 
 }

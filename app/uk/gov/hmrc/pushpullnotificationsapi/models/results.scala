@@ -18,11 +18,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
-sealed trait TopicCreateResult
-final case class TopicCreateFailedResult(message: String) extends TopicCreateResult
-sealed trait TopicCreateSuccessResult extends TopicCreateResult
-final case class TopicCreatedResult(topicId: TopicId) extends TopicCreateSuccessResult
-final case class TopicRetrievedResult(topicId: TopicId) extends TopicCreateSuccessResult
+sealed trait BoxCreateResult
+final case class BoxCreateFailedResult(message: String) extends BoxCreateResult
+sealed trait BoxCreateSuccessResult extends BoxCreateResult
+final case class BoxCreatedResult(boxId: BoxId) extends BoxCreateSuccessResult
+final case class BoxRetrievedResult(boxId: BoxId) extends BoxCreateSuccessResult
 
 sealed trait NotificationCreateServiceResult
 
@@ -31,7 +31,7 @@ sealed trait NotificationCreateServiceSuccessResult extends NotificationCreateSe
 
 final case class NotificationCreateSuccessResult() extends NotificationCreateServiceSuccessResult
 final case class NotificationCreateFailedDuplicateResult(message: String) extends NotificationCreateServiceFailedResult
-final case class NotificationCreateFailedTopicNotFoundResult(message: String) extends NotificationCreateServiceFailedResult
+final case class NotificationCreateFailedBoxIdNotFoundResult(message: String) extends NotificationCreateServiceFailedResult
 
 sealed trait GetNotificationCreateServiceResult
 
@@ -39,7 +39,7 @@ sealed trait GetNotificationsServiceFailedResult extends GetNotificationCreateSe
 sealed trait GetNotificationsServiceSuccessResult extends GetNotificationCreateServiceResult
 
 
-final case class GetNotificationsServiceTopicNotFoundResult(message: String) extends GetNotificationsServiceFailedResult
+final case class GetNotificationsServiceBoxNotFoundResult(message: String) extends GetNotificationsServiceFailedResult
 final case class GetNotificationsServiceUnauthorisedResult(message: String) extends GetNotificationsServiceFailedResult
 
 final case class GetNotificationsSuccessRetrievedResult(notifications: List[Notification]) extends GetNotificationsServiceSuccessResult

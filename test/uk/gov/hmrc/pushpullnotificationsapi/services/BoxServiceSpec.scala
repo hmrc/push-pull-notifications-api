@@ -25,20 +25,20 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
+class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
-  val mockRepository: TopicsRepository = mock[TopicsRepository]
-  private val topicIdUUID = UUID.randomUUID()
-  private val topicId = TopicId(topicIdUUID)
+  val mockRepository: BoxRepository = mock[BoxRepository]
+  private val boxIdUUID = UUID.randomUUID()
+  private val boxId = BoxId(boxIdUUID)
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)
-  private val topicName: String = "topicName"
+  private val boxName: String = "boxName"
   val endpoint = "/iam/a/callbackurl"
   val subscriberId: SubscriberId = SubscriberId(UUID.randomUUID())
   def updateSubscribersRequestWithId(subtype: SubscriptionType): UpdateSubscribersRequest =
@@ -51,46 +51,46 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   trait Setup {
     reset(mockRepository)
-    val objInTest = new TopicsService(mockRepository)
-    val topic: Topic = Topic(topicId, topicName, TopicCreator(clientId))
-    val argumentCaptor: Captor[Topic] = ArgCaptor[Topic]
+    val objInTest = new BoxService(mockRepository)
+    val box: Box = Box(boxId, boxName, BoxCreator(clientId))
+    val argumentCaptor: Captor[Box] = ArgCaptor[Box]
 
-    when(mockRepository.createTopic(any[Topic])(any[ExecutionContext])).thenReturn(Future.successful(Some(topicId)))
+    when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(Some(boxId)))
 
-    def getByTopicNameAndClientIdReturns(returnList: List[Topic]): Unit = {
-     when(mockRepository.getTopicByNameAndClientId(eqTo(topicName), eqTo(clientId))(any[ExecutionContext]))
+    def getByBoxNameAndClientIdReturns(returnList: List[Box]): Unit = {
+     when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
         .thenReturn(Future.successful(returnList))
     }
 
-    when(mockRepository.updateSubscribers(eqTo(topicId), any[List[SubscriberContainer[PushSubscriber]]])(any[ExecutionContext]))
+    when(mockRepository.updateSubscribers(eqTo(boxId), any[List[SubscriberContainer[PushSubscriber]]])(any[ExecutionContext]))
       .thenReturn(Future.successful(None))
 
   }
 
-  "TopicsService" when {
+  "BoxService" when {
 
-    "createTopic" should {
+    "createBox" should {
 
-      "return Created when topic repo returns true" in new Setup {
-        await(objInTest.createTopic(topicId, clientId, topicName))
+      "return Created when box repo returns true" in new Setup {
+        await(objInTest.createBox(boxId, clientId, boxName))
 
 
-        verify(mockRepository).createTopic(argumentCaptor.capture)(any[ExecutionContext])
-        validateTopic(argumentCaptor.value)
+        verify(mockRepository).createBox(argumentCaptor.capture)(any[ExecutionContext])
+        validateBox(argumentCaptor.value)
       }
     }
 
-    "getByTopicNameAndClientId" should {
-      "return list with one topic when topic exists" in new Setup {
-        getByTopicNameAndClientIdReturns(List(topic))
-        val results: immutable.Seq[Topic] = await(objInTest.getTopicByNameAndClientId(topicName, clientId))
+    "getByBoxNameAndClientId" should {
+      "return list with one box when box exists" in new Setup {
+        getByBoxNameAndClientIdReturns(List(box))
+        val results: immutable.Seq[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
 
         results.size shouldBe 1
       }
 
-      "return empty list when topic does not exists" in new Setup {
-        getByTopicNameAndClientIdReturns(List.empty)
-        val results: immutable.Seq[Topic] = await(objInTest.getTopicByNameAndClientId(topicName, clientId))
+      "return empty list when box does not exists" in new Setup {
+        getByBoxNameAndClientIdReturns(List.empty)
+        val results: immutable.Seq[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
 
         results.size shouldBe 0
       }
@@ -100,10 +100,10 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "pass the correct values to the repository and not generate a new subscriberId when a subscriberId is in the request PUSH SUBSCRIBER" in new Setup {
 
-        await(objInTest.updateSubscribers(topicId, updateSubscribersRequestWithId(API_PUSH_SUBSCRIBER)))
+        await(objInTest.updateSubscribers(boxId, updateSubscribersRequestWithId(API_PUSH_SUBSCRIBER)))
 
         val subscriberCaptor: Captor[List[SubscriberContainer[PushSubscriber]]] = ArgCaptor[List[SubscriberContainer[PushSubscriber]]]
-        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+        verify(mockRepository).updateSubscribers(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
 
         val capturedSubscriber: PushSubscriber = subscriberCaptor.value.head.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
@@ -114,10 +114,10 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "pass the correct values to the repository and not generate a new subscriberId when a subscriberId is in the request PULL SUBSCRIBER" in new Setup {
 
-        await(objInTest.updateSubscribers(topicId, updateSubscribersRequestWithId(API_PULL_SUBSCRIBER)))
+        await(objInTest.updateSubscribers(boxId, updateSubscribersRequestWithId(API_PULL_SUBSCRIBER)))
 
         val subscriberCaptor: Captor[List[SubscriberContainer[PullSubscriber]]] = ArgCaptor[List[SubscriberContainer[PullSubscriber]]]
-        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+        verify(mockRepository).updateSubscribers(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
 
         val capturedSubscriber: PullSubscriber = subscriberCaptor.value.head.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
@@ -128,12 +128,12 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "pass the correct values to the repository and generate a new subscriberId when a subscriberId is not in the request PULL SUBSCRIBER" in new Setup {
 
-        await(objInTest.updateSubscribers(topicId,   UpdateSubscribersRequest(List(SubscribersRequest(callBackUrl = endpoint,
+        await(objInTest.updateSubscribers(boxId,   UpdateSubscribersRequest(List(SubscribersRequest(callBackUrl = endpoint,
           subscriberType = API_PULL_SUBSCRIBER,
           subscriberId = None)))))
 
         val subscriberCaptor: Captor[List[SubscriberContainer[PullSubscriber]]] = ArgCaptor[List[SubscriberContainer[PullSubscriber]]]
-        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+        verify(mockRepository).updateSubscribers(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
 
         val capturedSubscriber: PullSubscriber = subscriberCaptor.value.head.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
@@ -144,10 +144,10 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "pass the correct values to the repository and should generate a new subscriberId when a subscriberId is not in the request" in new Setup {
 
-        await(objInTest.updateSubscribers(topicId, updateSubscribersRequestWithOutId))
+        await(objInTest.updateSubscribers(boxId, updateSubscribersRequestWithOutId))
 
         val subscriberCaptor: Captor[List[SubscriberContainer[PushSubscriber]]] = ArgCaptor[List[SubscriberContainer[PushSubscriber]]]
-        verify(mockRepository).updateSubscribers(eqTo(topicId), subscriberCaptor.capture)(any[ExecutionContext])
+        verify(mockRepository).updateSubscribers(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
 
         val capturedSubscriber: PushSubscriber = subscriberCaptor.value.head.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
@@ -160,10 +160,10 @@ class TopicsServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   }
 
-  def validateTopic(topic: Topic): Unit = {
-    topic.topicId shouldBe topicId
-    topic.topicName shouldBe topicName
-    topic.subscribers.size shouldBe 0
-    topic.topicCreator.clientId shouldBe clientId
+  def validateBox(box: Box): Unit = {
+    box.boxId shouldBe boxId
+    box.boxName shouldBe boxName
+    box.subscribers.size shouldBe 0
+    box.boxCreator.clientId shouldBe clientId
   }
 }

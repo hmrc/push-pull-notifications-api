@@ -46,25 +46,25 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
      Some("notifications_index"),
      isUnique = true,
      isBackground = true,
-     List("notificationId", "topicId", "status"): _*
+     List("notificationId", "boxId", "status"): _*
    ),
     createAscendingIndex(
       Some("notifications_created_datetime_index"),
       isUnique = false,
       isBackground = true,
-      List("topicId, createdDateTime"): _*
+      List("boxId, createdDateTime"): _*
     )
   )
 
-  def getByTopicIdAndFilters(topicId: TopicId,
-                             status: Option[NotificationStatus] = None,
-                             fromDateTime: Option[DateTime] = None,
-                             toDateTime: Option[DateTime] = None)
-                           (implicit ec: ExecutionContext): Future[List[Notification]] =
+  def getByBoxIdAndFilters(boxId: BoxId,
+                           status: Option[NotificationStatus] = None,
+                           fromDateTime: Option[DateTime] = None,
+                           toDateTime: Option[DateTime] = None)
+                          (implicit ec: ExecutionContext): Future[List[Notification]] =
   {
 
     val query: (String, JsValueWrapper) =  f"$$and" -> (
-      topicIdQuery(topicId) ++
+      boxIdQuery(boxId) ++
       statusQuery(status) ++
       Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
     find(query)
@@ -81,15 +81,15 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     else empty
   }
 
-  private def topicIdQuery(topicId: TopicId): JsArray ={
-    Json.arr(Json.obj("topicId" -> topicId.value))
+  private def boxIdQuery(boxId: BoxId): JsArray ={
+    Json.arr(Json.obj("boxId" -> boxId.value))
   }
   private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray ={
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
   }
 
-  def getAllByTopicId(topicId: TopicId)
-                     (implicit ec: ExecutionContext): Future[List[Notification]] = getByTopicIdAndFilters(topicId)
+  def getAllByBoxId(boxId: BoxId)
+                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
 

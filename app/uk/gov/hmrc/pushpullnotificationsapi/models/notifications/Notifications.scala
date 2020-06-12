@@ -23,7 +23,7 @@ import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.TopicId
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.RECEIVED
 
 import scala.collection.immutable
@@ -54,7 +54,7 @@ case class NotificationId(value: UUID) extends AnyVal {
 
 
 case class Notification(notificationId: NotificationId,
-                        topicId: TopicId,
+                        boxId: BoxId,
                         messageContentType: MessageContentType,
                         message: String,
                         status: NotificationStatus = RECEIVED,
@@ -64,7 +64,7 @@ case class Notification(notificationId: NotificationId,
 
 object Notification {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val formatTopicID: OFormat[TopicId] = Json.format[TopicId]
+  implicit val formatBoxID: OFormat[BoxId] = Json.format[BoxId]
   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }

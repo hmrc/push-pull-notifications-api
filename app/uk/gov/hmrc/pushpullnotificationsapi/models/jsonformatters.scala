@@ -25,16 +25,16 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, 
 
 object ReactiveMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val topicIdFormatter: Format[TopicId] = Json.valueFormat[TopicId]
+  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit val formatTopicCreator: Format[TopicCreator] = Json.format[TopicCreator]
+  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
-  implicit val topicsFormats: OFormat[Topic] = Json.format[Topic]
+  implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
 }
@@ -45,25 +45,25 @@ object ResponseFormatters{
   implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
   implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val topicIdFormatter: Format[TopicId] = Json.valueFormat[TopicId]
+  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val formatTopicCreator: Format[TopicCreator] = Json.format[TopicCreator]
+  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
-  implicit val topicsFormats: OFormat[Topic] = Json.format[Topic]
+  implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
-  implicit val createTopicResponseFormatter: OFormat[CreateTopicResponse] = Json.format[CreateTopicResponse]
+  implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
   implicit val createNotificationResponseFormatter: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
 }
 
 object RequestFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val topicIdFormatter: Format[TopicId] = Json.valueFormat[TopicId]
+  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
-  implicit val createTopicRequestFormatter: OFormat[CreateTopicRequest] = Json.format[CreateTopicRequest]
+  implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
   implicit val subscribersRequestFormatter: OFormat[SubscribersRequest] = Json.format[SubscribersRequest]
   implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscribersRequest] = Json.format[UpdateSubscribersRequest]
 }

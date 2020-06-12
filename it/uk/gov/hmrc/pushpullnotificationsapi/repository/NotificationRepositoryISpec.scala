@@ -47,7 +47,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
     "save a Notification" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), topicId,
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
         messageContentType = APPLICATION_JSON,
         message = "{\"someJsone\": \"someValue\"}",
         status = RECEIVED)
@@ -58,7 +58,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
     "not save duplicate Notifications" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), topicId = topicId,
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
         messageContentType = APPLICATION_JSON,
         message = "{",
         status = RECEIVED)
@@ -73,40 +73,40 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
   }
-  private val topicIdStr = UUID.randomUUID().toString
-  private val topicId = TopicId(UUID.fromString(topicIdStr))
+  private val boxIdStr = UUID.randomUUID().toString
+  private val boxId = BoxId(UUID.fromString(boxIdStr))
 
-  "getByTopicIdAndFilters" should {
+  "getByBoxIdAndFilters" should {
 
-    "return list of notifications for a topic id when no other filters are present" in {
-      await(repo.getByTopicIdAndFilters(topicId)).isEmpty shouldBe true
+    "return list of notifications for a box id when no other filters are present" in {
+      await(repo.getByBoxIdAndFilters(boxId)).isEmpty shouldBe true
 
       createNotificationInDB()
       createNotificationInDB()
 
-      val notifications: List[Notification] = await(repo.getByTopicIdAndFilters(topicId))
+      val notifications: List[Notification] = await(repo.getByBoxIdAndFilters(boxId))
 
       notifications.isEmpty shouldBe false
       notifications.size shouldBe 2
     }
 
-    "return empty list for a non existent / unknown topic id" in {
-      await(repo.getAllByTopicId(TopicId(UUID.randomUUID()))).isEmpty shouldBe true
+    "return empty list for a non existent / unknown box id" in {
+      await(repo.getAllByBoxId(BoxId(UUID.randomUUID()))).isEmpty shouldBe true
     }
 
-    "return list of notification for topicId filtered by status" in {
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe true
+    "return list of notification for boxId filtered by status" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
 
       createNotificationInDB()
       createNotificationInDB()
       createNotificationInDB(READ)
 
-      val notifications: List[Notification] = await(repo.getAllByTopicId(topicId))
+      val notifications: List[Notification] = await(repo.getAllByBoxId(boxId))
 
       notifications.isEmpty shouldBe false
       notifications.size shouldBe 3
 
-      val filteredList = await(repo.getByTopicIdAndFilters(topicId, Some(RECEIVED)))
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(RECEIVED)))
       filteredList.isEmpty shouldBe false
       filteredList.size shouldBe 2
     }
@@ -115,39 +115,39 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     "return empty List when notifications exist but do not match the given status filter" in {
       createNotificationInDB()
 
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe false
-      await(repo.getByTopicIdAndFilters(topicId, Some(READ))).isEmpty shouldBe true
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe false
+      await(repo.getByBoxIdAndFilters(boxId, Some(READ))).isEmpty shouldBe true
     }
 
-    "return empty List when no notification exist for topicId" in {
+    "return empty List when no notification exist for boxId" in {
       createNotificationInDB()
 
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe false
-      await(repo.getByTopicIdAndFilters(TopicId(UUID.randomUUID()), Some(RECEIVED))).isEmpty shouldBe true
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe false
+      await(repo.getByBoxIdAndFilters(BoxId(UUID.randomUUID()), Some(RECEIVED))).isEmpty shouldBe true
     }
 
 
-    "return list of notification for topicId gte fromDate and lt toDate" in {
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe true
+    "return list of notification for boxId gte fromDate and lt toDate" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByTopicIdAndFilters(topicId,
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(RECEIVED),
         fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
         toDateTime = Some(DateTime.now())))
       filteredList.size shouldBe 3
     }
 
-    "return list of notification for topicId gte fromDate when to date is missing" in {
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe true
+    "return list of notification for boxId gte fromDate when to date is missing" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
 
       val notificationsToCreate = 9
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByTopicIdAndFilters(topicId,
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(RECEIVED),
         fromDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
       ))
@@ -155,29 +155,29 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
 
-    "return list of notification for topicId lt toDate when from date is missing" in {
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe true
+    "return list of notification for boxId lt toDate when from date is missing" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
 
       val notificationsToCreate = 11
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByTopicIdAndFilters(topicId,
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(RECEIVED),
         toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
       ))
       filteredList.size shouldBe 6
     }
 
-    "return list of notification for topicId gte fromDate and lt toDate without status filter" in {
-      await(repo.getAllByTopicId(topicId)).isEmpty shouldBe true
+    "return list of notification for boxId gte fromDate and lt toDate without status filter" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
       createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
       createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
 
-      val filteredList = await(repo.getByTopicIdAndFilters(topicId,
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
         toDateTime = Some(DateTime.now())))
       filteredList.count(n => n.status == READ) shouldBe 2
@@ -186,14 +186,14 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   }
 
   private def validateNotificationsCreated(numberExpected: Int): Unit = {
-    val notifications: List[Notification] = await(repo.getAllByTopicId(topicId))
+    val notifications: List[Notification] = await(repo.getAllByBoxId(boxId))
     notifications.isEmpty shouldBe false
     notifications.size shouldBe numberExpected
   }
 
   private def createNotificationInDB(status: NotificationStatus = RECEIVED, createdDateTime: DateTime = DateTime.now()) = {
     val notification = Notification(NotificationId(UUID.randomUUID()),
-      topicId = topicId,
+      boxId = boxId,
       APPLICATION_JSON,
       message = "{\"someJsone\": \"someValue\"}",
       status = status,
