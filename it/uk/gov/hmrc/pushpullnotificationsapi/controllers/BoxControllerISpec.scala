@@ -9,17 +9,17 @@ import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.Topic
-import uk.gov.hmrc.pushpullnotificationsapi.repository.TopicsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
+class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
   this: Suite with ServerProvider =>
 
-  def repo: TopicsRepository =
-    app.injector.instanceOf[TopicsRepository]
+  def repo: BoxRepository =
+    app.injector.instanceOf[BoxRepository]
 
   override def beforeEach(): Unit ={
     super.beforeEach()
@@ -41,10 +41,10 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   val url = s"http://localhost:$port"
 
 
-  val topicName = "mytopicName"
+  val boxName = "myBoxName"
   val clientId = "someClientId"
-  val createTopicJsonBody =raw"""{"clientId": "$clientId", "topicName": "$topicName"}"""
-  val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "topicName": "bbyybybyb"}"""
+  val createBoxJsonBody =raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val createBox2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
   val updateSubcribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
                                              |     "subscriberType": "API_PUSH_SUBSCRIBER",
@@ -60,21 +60,21 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   def doPut(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/topics")
+      .url(s"$url/box")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doPut(topicId:String, jsonBody: String, headers: List[(String, String)]): WSResponse =
+  def doPut(boxId:String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/topics/$topicId/subscribers")
+      .url(s"$url/box/$boxId/subscribers")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doGet(topicName:String, clientId: String, headers: List[(String, String)]): WSResponse =
+  def doGet(boxName:String, clientId: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/topics?topicName=$topicName&clientId=$clientId")
+      .url(s"$url/box?boxName=$boxName&clientId=$clientId")
       .withHttpHeaders(headers: _*)
       .get
       .futureValue
@@ -84,31 +84,31 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
 
 
-  "TopicsController" when {
+  "BoxController" when {
 
-    "POST /topics" should {
-      "respond with 201 when topic created" in {
-        val result = doPut(createTopicJsonBody, validHeaders)
+    "POST /box" should {
+      "respond with 201 when box created" in {
+        val result = doPut(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
-      "respond with 200 with topic ID  when topic already exists" in {
-        val result1 = doPut(createTopicJsonBody, validHeaders)
+      "respond with 200 with box ID  when box already exists" in {
+        val result1 = doPut(createBoxJsonBody, validHeaders)
         validateStringIsUUID(result1.body)
 
-        val result2 = doPut(createTopicJsonBody, validHeaders)
+        val result2 = doPut(createBoxJsonBody, validHeaders)
         result2.status shouldBe OK
         validateStringIsUUID(result2.body)
         result2.body shouldBe result1.body
       }
 
-      "respond with 201 when two topics are created" in {
-        val result = doPut(createTopicJsonBody, validHeaders)
+      "respond with 201 when two boxs are created" in {
+        val result = doPut(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
 
-        val result2 = doPut(createTopic2JsonBody, validHeaders)
+        val result2 = doPut(createBox2JsonBody, validHeaders)
         result2.status shouldBe CREATED
         validateStringIsUUID(result2.body)
       }
@@ -146,43 +146,43 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     }
   }
 
-  "GET /topics?topicName=someName&clientId=someClientid" should {
-    "respond with 200 and topic in body when exists" in {
-      val result = doPut(createTopicJsonBody, validHeaders)
+  "GET /box?boxName=someName&clientId=someClientid" should {
+    "respond with 200 and box in body when exists" in {
+      val result = doPut(createBoxJsonBody, validHeaders)
       result.status shouldBe CREATED
       validateStringIsUUID(result.body)
 
-      val result2 = doGet(topicName, clientId, validHeaders)
+      val result2 = doGet(boxName, clientId, validHeaders)
       result2.status shouldBe OK
 
-      val topic = Json.parse(result2.body).as[Topic]
-      topic.topicName shouldBe topicName
-      topic.topicCreator.clientId.value shouldBe clientId
+      val box = Json.parse(result2.body).as[Box]
+      box.boxName shouldBe boxName
+      box.boxCreator.clientId.value shouldBe clientId
 
     }
 
-    "respond with 404 when topic does not exists" in {
-      val result2 = doGet(topicName, clientId, validHeaders)
+    "respond with 404 when box does not exists" in {
+      val result2 = doGet(boxName, clientId, validHeaders)
       result2.status shouldBe NOT_FOUND
 
     }
   }
 
-  "PUT /topics/{topicId}/subscribers" should {
+  "PUT /box/{boxId}/subscribers" should {
 
-    "return 200 and update topic successfully when topic exists" in {
+    "return 200 and update box successfully when box exists" in {
 
-      val createdTopic = createTopicAndCheckExistsWithNoSubscribers()
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
-      val updateResult = doPut(createdTopic.topicId.raw, updateSubcribersJsonBodyWithIds, validHeaders)
+      val updateResult = doPut(createdBox.boxId.raw, updateSubcribersJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe OK
 
-      val updatedTopic = Json.parse(updateResult.body).as[Topic]
-      updatedTopic.subscribers.size shouldBe 1
+      val updatedBox = Json.parse(updateResult.body).as[Box]
+      updatedBox.subscribers.size shouldBe 1
 
     }
 
-    "return 404 when topic does not exist" in {
+    "return 404 when box does not exist" in {
       val updateResult = doPut(UUID.randomUUID().toString, updateSubcribersJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe NOT_FOUND
     }
@@ -193,15 +193,15 @@ class TopicsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     }
   }
 
-  private def createTopicAndCheckExistsWithNoSubscribers(): Topic ={
-    val result = doPut(createTopicJsonBody, validHeaders)
+  private def createBoxAndCheckExistsWithNoSubscribers(): Box ={
+    val result = doPut(createBoxJsonBody, validHeaders)
     result.status shouldBe CREATED
     validateStringIsUUID(result.body)
 
-    val result2 = doGet(topicName, clientId, validHeaders)
+    val result2 = doGet(boxName, clientId, validHeaders)
     result2.status shouldBe OK
-    val topic = Json.parse(result2.body).as[Topic]
-    topic.subscribers.size shouldBe 0
-    topic
+    val box = Json.parse(result2.body).as[Box]
+    box.subscribers.size shouldBe 0
+    box
   }
 }

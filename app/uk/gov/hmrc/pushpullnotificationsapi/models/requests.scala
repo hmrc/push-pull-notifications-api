@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 import play.api.mvc.Request
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 
-case class CreateTopicRequest(topicName: String, clientId: String)
+case class CreateBoxRequest(boxName: String, clientId: String)
 
 case class SubscribersRequest(callBackUrl: String, subscriberType: SubscriptionType, subscriberId: Option[String] = None)
 

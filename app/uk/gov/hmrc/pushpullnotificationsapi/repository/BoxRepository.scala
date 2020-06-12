@@ -32,48 +32,48 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.{createAscend
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class TopicsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
-  extends ReactiveRepository[Topic, BSONObjectID](
-    "topics",
+class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
+  extends ReactiveRepository[Box, BSONObjectID](
+    "box",
     mongoComponent.mongoConnector.db,
-    ReactiveMongoFormatters.topicsFormats,
+    ReactiveMongoFormatters.boxFormats,
     ReactiveMongoFormats.objectIdFormats) {
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
   override def indexes = Seq(
-    createAscendingIndex(Some("topics_index"),
+    createAscendingIndex(Some("box_index"),
       isUnique = true,
       isBackground = true,
-      indexFieldsKey = List("topicName", "topicCreator.clientId"): _*),
-    createSingleFieldAscendingIndex("topicId", Some("topicid_index"), isUnique = true)
+      indexFieldsKey = List("boxName", "boxCreator.clientId"): _*),
+    createSingleFieldAscendingIndex("boxId", Some("boxid_index"), isUnique = true)
   )
 
 
-  def findByTopicId(topicId: TopicId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
-    find("topicId" -> topicId.value)
+  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+    find("boxId" -> boxId.value)
   }
 
-  def createTopic(topic: Topic)(implicit ec: ExecutionContext): Future[Option[TopicId]] =
-    collection.insert.one(topic).map(_ => Some(topic.topicId)).recoverWith {
+  def createBox(box: Box)(implicit ec: ExecutionContext): Future[Option[BoxId]] =
+    collection.insert.one(box).map(_ => Some(box.boxId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Logger.info("unable to create topic")
+        Logger.info("unable to create box")
       Future.successful(None)
     }
 
-  def getTopicByNameAndClientId(topicName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Topic]] = {
-    Logger.info(s"Getting topic by topicName:$topicName & clientId")
-    find("topicName" -> topicName, "topicCreator.clientId" -> clientId.value)
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+    Logger.info(s"Getting box by boxName:$boxName & clientId")
+    find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value)
   }
 
-  def updateSubscribers(topicId: TopicId, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Topic]] = {
+  def updateSubscribers(boxId: BoxId, subscribers: List[SubscriberContainer[Subscriber]])(implicit ec: ExecutionContext): Future[Option[Box]] = {
 
-    updateTopic(topicId, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
+    updateBox(boxId, Json.obj("$set" -> Json.obj("subscribers" -> subscribers.map(_.elem))))
   }
 
-  private def updateTopic(topicId: TopicId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Topic]] =
-    findAndUpdate(Json.obj("topicId" -> topicId.value), updateStatement, fetchNewObject = true) map {
-      _.result[Topic]
+  private def updateBox(boxId: BoxId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Box]] =
+    findAndUpdate(Json.obj("boxId" -> boxId.value), updateStatement, fetchNewObject = true) map {
+      _.result[Box]
     }
 }
 

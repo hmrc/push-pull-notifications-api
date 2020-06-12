@@ -27,47 +27,47 @@ import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateU
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.services.TopicsService
+import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton()
-class TopicsController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
-                                 topicsService: TopicsService,
-                                 cc: ControllerComponents,
-                                 playBodyParsers: PlayBodyParsers)
-                                (implicit val ec: ExecutionContext) extends BackendController(cc) {
+class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
+                              boxService: BoxService,
+                              cc: ControllerComponents,
+                              playBodyParsers: PlayBodyParsers)
+                             (implicit val ec: ExecutionContext) extends BackendController(cc) {
 
-  def createTopic(): Action[JsValue] =
+  def createBox(): Action[JsValue] =
     (Action andThen
       validateUserAgentHeaderAction)
       .async(playBodyParsers.json) { implicit request =>
-        withJsonBody[CreateTopicRequest] {
-          topic: CreateTopicRequest =>
-            val topicId = TopicId(UUID.randomUUID())
-            topicsService.createTopic(topicId, ClientId(topic.clientId), topic.topicName).map {
-              case r: TopicCreatedResult => Created(Json.toJson(CreateTopicResponse(r.topicId.raw)))
-              case r: TopicRetrievedResult => Ok(Json.toJson(CreateTopicResponse(r.topicId.raw)))
-              case r: TopicCreateFailedResult =>
-                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createTopic:${r.message}"))
+        withJsonBody[CreateBoxRequest] {
+          box: CreateBoxRequest =>
+            val boxId = BoxId(UUID.randomUUID())
+            boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
+              case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+              case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+              case r: BoxCreateFailedResult =>
+                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
             }
         } recover recovery
       }
 
-  def getTopicByNameAndClientId(topicName: String, clientId: ClientId): Action[AnyContent] = Action.async {
-    topicsService.getTopicByNameAndClientId(topicName, clientId) map {
-      case List(topic) => Ok(Json.toJson(topic))
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
+    boxService.getBoxByNameAndClientId(boxName, clientId) map {
+      case List(box) => Ok(Json.toJson(box))
       case _ => NotFound
     } recover recovery
   }
 
-  def updateSubscribers(topicId: TopicId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+  def updateSubscribers(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateSubscribersRequest] {
       updateRequest =>
-        topicsService.updateSubscribers(topicId, updateRequest) map {
-          case Some(topic) => Ok(Json.toJson(topic))
-          case _ => Logger.info("topic not found or update failed")
+        boxService.updateSubscribers(boxId, updateRequest) map {
+          case Some(box) => Ok(Json.toJson(box))
+          case _ => Logger.info("box not found or update failed")
             NotFound
         } recover recovery
     }

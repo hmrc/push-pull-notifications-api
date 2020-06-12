@@ -20,41 +20,41 @@ import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, MessageContentType, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, TopicsRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, BoxRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class NotificationsService @Inject()(topicsRepository: TopicsRepository, notificationsRepository: NotificationsRepository) {
+class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository) {
 
-  def getNotifications(topicId: TopicId,
+  def getNotifications(boxId: BoxId,
                        clientId: ClientId,
                        status: Option[NotificationStatus] = None,
                        fromDateTime: Option[DateTime] = None,
                        toDateTime: Option[DateTime] = None)
                       (implicit ec: ExecutionContext): Future[GetNotificationCreateServiceResult] = {
 
-    topicsRepository.findByTopicId(topicId)
+    boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(GetNotificationsServiceTopicNotFoundResult(s"Topic Id: $topicId not found"))
+        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
         case List(x) =>
-          if(x.topicCreator.clientId.equals(clientId)) {
-            notificationsRepository.getByTopicIdAndFilters(topicId, status, fromDateTime, toDateTime)
+          if(x.boxCreator.clientId.equals(clientId)) {
+            notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)
               .map(results => GetNotificationsSuccessRetrievedResult(results))
           }else{
-            Future.successful(GetNotificationsServiceUnauthorisedResult("clientId does not match topicCreator"))
+            Future.successful(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
           }
       }
   }
 
-  def saveNotification(topicId: TopicId, notificationId: NotificationId, contentType: MessageContentType, message: String)
+  def saveNotification(boxId: BoxId, notificationId: NotificationId, contentType: MessageContentType, message: String)
                       (implicit ec: ExecutionContext): Future[NotificationCreateServiceResult] = {
-    topicsRepository.findByTopicId(topicId)
+    boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(NotificationCreateFailedTopicNotFoundResult(s"Topic Id: $topicId not found"))
+        case Nil => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
         case List(_) =>
-          val notification = Notification(notificationId, topicId, contentType, message)
+          val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
             case Some(_) => NotificationCreateSuccessResult()
             case None => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")

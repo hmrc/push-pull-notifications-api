@@ -24,7 +24,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SU
 
 import scala.collection.immutable
 
-case class TopicId(value: UUID) extends AnyVal {
+case class BoxId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
@@ -40,7 +40,7 @@ object SubscriberId{
   }
 }
 
-case class TopicCreator(clientId: ClientId)
+case class BoxCreator(clientId: ClientId)
 
 sealed trait SubscriptionType extends EnumEntry
 
@@ -71,4 +71,4 @@ case class PullSubscriber(callBackUrl: String,
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 
-case class Topic(topicId: TopicId, topicName: String, topicCreator: TopicCreator, subscribers: List[Subscriber] = List.empty)
+case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscribers: List[Subscriber] = List.empty)
