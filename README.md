@@ -4,125 +4,215 @@
 This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) 
 notifications. Notifications are create by other HMRC services. 
 
-An example use case is for asynchronous API requests. For example:
-1. Software developer makes an API request to API X (API X is any API on the HMRC API Platform).
-1. API X sends a response 202 HTTP status to the software developer with a body containing a *Topic Identifier* and 
-    a *Request/Correlation Identifier*.
-1. Software developer polls the get notifications endpoint using the *Topic Identifier*, looking for a notification that
-    contains the *Request/Correlation Identifier*.
-1. API X starts the asynchronous processing of the request.
-1. API X completes the asynchronous processing of the request. API X sends the response as a notification message to 
-    this service using the *Topic Identifier* that was sent to the end user.
-1. Software developer is still polling get notifications endpoint, and finds a match for the *Request/Correlation 
-    Identifier* and can process the contents of the notification message. 
+An example use case is for asynchronous API requests.
+1. API X defines an *api-subscription-field* of type PPNS (see https://confluence.tools.tax.service.gov.uk/pages/viewpage.action?pageId=182540862)
+1. Software developer subscribes to API X in Developer Hub and can optionally add an endpoint where notifications 
+    will be pushed to. This automatically creates a PPNS box called [API_CONTEXT]##[API_VERSION]##[API_SUBSCRIPTION_FIELD_NAME]
+    , Eg `hello/world##1.0##callbackUrl` 
+1. Software developer makes an API request to API X
+1. API X gets the client ID from either the `X-Client-Id` header or from an _auth_ retrieval.
+1. API X makes a request to `GET /box` using the inferred box name and client ID to retrieve the box ID.
+1. API X generates a correlation/request ID.
+1. API X sends a response 202 HTTP status to the software developer with a body containing the box ID and 
+    the correlation/request ID.
+1. API X starts their asynchronous process, saving the state of this with the correlation/request ID and PPNS box ID.
+1. API X complete their asynchronous process, retrieving correlation/request ID and PPNS box ID from state.
+1. API X creates a _message_ which must contain the correlation/request ID, and POSTs it to PPNS using the box ID.
+1. If the software developer has set the api-subscription-field, the notification is POSTed to their endpoint
+    * The API consumer receives the notification and matches the correlation/request ID in the notification with the 
+      correlation/request ID they got from the initial API request, they extract the message and process it accordingly.
+1. If the API consumer chooses to call the PPNS get-notifications endpoint using the box ID, they can retrieve a 
+    list of notifications.
+    * The API consumer iterates over each notification and matches the correlation/request ID in the notification 
+      with the correlation/request ID they got from the initial API request, they extract the message and process it accordingly.
+
+## Terminology
+
+| Term | Description |
+| --- | --- |
+| _box_ | A container for notifications |
+| _notification_ | A wrapper for a message |
+| _message_ | XML or JSON that is being communicated from an API producer to an API consumer |
 
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
 
-## `GET /topics`
-Return the details of a topic
-
-```
-curl https://push-pull-notifications-api.protected.mdtp/topics?topicName=TOPIC%201&clientId=client_id_1
-```
+## `GET /box`
+Return the details of a box
 
 ### Query parameters
 | Name | Description |
 | --- | --- |
-| `topicName` (required) | The name of the topic to get. URL encoded. For example ```Topic%201``` |
-| `clientId` (required)| The Developer Hub Client ID that owns the topic |
+| `boxName` (required) | The name of the box to get. URL encoded. For example ```BOX%202``` |
+| `clientId` (required)| The Developer Hub Client ID that owns the box |
 
 ### Response
 HTTP Status: `200`
 ```
 {
-    "topicId":"1c5b9365-18a6-55a5-99c9-83a091ac7f26",
-    "topicName":"TOPIC 2",
-    "topicCreator":{
-        "clientId":"client_id_2"
+    "boxId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26",
+    "boxName":"BOX 2",
+    "boxCreator":{
+        "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
     },
-    "subscribers":[]
+    "subscribers":[
+        {
+            "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
+            "callBackUrl": "https://www.example.com/callback",
+            "subscriptionType": "API_PUSH_SUBSCRIBER",
+            "subscriberId": "6cdef122-55a6-55a5-99c9-83a091ac7f86"
+        }
+    ]
 }
 ```
+| Name | Description |
+| --- | --- |
+| `boxId` | Identifier for a box
+| `boxName` | Box name 
+| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box.
+| `subscribers` | A list of subscribers to this box |
+| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
+| `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `subscribers.subscriberId` | Unique identifier for the subscriber |
+
 ### Error scenarios
-| Scenario | HTTP Status | Body |
+| Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| Missing query parameter | `400` | `{"statusCode":400,"message":"bad request"}`
+| Missing or incorrect query parameter | `400` | `BAD_REQUEST`
+| Box does not exist | `404` | `BOX_NOT_FOUND`
 
-### Suggested improvements:
-* `Accept` header isn't being checked
-* 400 response body return standard `{"code": "XX", "message": "ZZ"}` format
-   
-
-## `PUT /topics`
-Create a new topic
+## `PUT /box`
+Create a new box
 
 This endpoint is restricted, only a whitelist of services can access it.
 
 ### Request headers
 | Name | Description |
 | --- | --- |
-| `Content-type` | Either `application/json` or `text/json` 
-| `User-agent` | User agent that identifies the calling service 
+| `Content-Type` | Either `application/json` or `text/json` 
+| `User-Agent` | User agent that identifies the calling service 
 
 ### Request
 ```
 {
-    "topicName": "Topic 1", 
-    "clientId": "client_id_1"
+    "boxName": "Box 1", 
+    "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
 }
 ```
 | Name | Description |
 | --- | --- |
-| `topicName` | The name of the topic to create |
-| `clientId` | The Developer Hub Client ID that can access this topic
+| `boxName` | The name of the box to create |
+| `clientId` | The Developer Hub Client ID that can access this box |
 
 ### Response
-HTTP Status: `201` if topic is created
+HTTP Status: `201` if the box is created
 ```
-1c5b9365-18a6-55a5-99c9-83a091ac7f26
+{
+    "boxId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26" 
+}
 ```
 
-HTTP Status: `200` if topic already exists
+HTTP Status: `200` if the box already exists
 ```
-1c5b9365-18a6-55a5-99c9-83a091ac7f26
+{
+    "boxId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26" 
+}
 ```
 
 ### Error scenarios
-| Scenario | HTTP Status | Response |
+| Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| Access denied | `400` | NONE
-| Content-type header is missing | `415` | `{"statusCode":415,"message":"Expecting text/json or application/json body"}`
-| `topicName` or `clientId` missing from request body | `422` | `{"code":"INVALID_REQUEST_PAYLOAD","message":{"obj.topicName":[{"msg":["error.path.missing"],"args":[]}]}}`
+| `boxName` or `clientId` missing from request body | `400` | `INVALID_REQUEST_PAYLOAD`
+| Access denied, service is not whitelisted | `401` | `UNAUTHORISED`
+| Box does not exist | `404` | `BOX_NOT_FOUND`
+| Content-type header is missing or incorrect | `415` | `INVALID_CONTENT_TYPE`
 
-### Suggested improvements:
-* `Accept` header isn't being checked
-* When access is denied return a 403, and return standard `{"code": "XX", "message": "ZZ"}` format 
-* 201 response body JSON rather than text.
-* Validate the Client ID, verify that it exists in third-party-application.
-* Validate topicName. Eg Only allow Alphanumeric, dash and underscore.
-* 422 response body "message" as a sentence, Eg "topicName is missing"
-* 415 response body return standard `{"code": "XX", "message": "ZZ"}` format
+## `PUT /box/:boxId/subscribers`
 
-## `PUT /topics/:topicId/subscribers`
-
-TODO
-
-
-## `POST /notifications/topics/:topicId`
-
-Send a notification to a topic
-
-### Request headers
-| Name | Description |
-| --- | --- |
-| `Content-type` | Either `application/json` or `application/xml` 
+Set the subscribers for a box. The _callbackUrl_ in the subscriber is the endpoint where push notifications will be 
+sent to.
 
 ### Path parameters
 | Name | Description |
 | --- | --- |
-| `topicId` | Identifier for a topic 
+| `boxId` | Unique identifier for a box. Eg `1c5b9365-18a6-55a5-99c9-83a091ac7f26` |
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-type` | Must be `application/json` 
+
+### Request
+```
+{
+    "subscribers":[
+        {
+            "subscriberType": "API_PUSH_SUBSCRIBER",
+            "callBackUrl": "https://www.example.com/callback"
+        }
+    ]
+}
+```
+| Name | Description |
+| --- | --- |
+| `subscriberType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `callBackUrl` | The URL of the endpoint where push notifications will be sent |
+
+### Response
+HTTP Status: `200`
+```
+{
+    "boxId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26",
+    "boxName":"BOX 2",
+    "boxCreator":{
+        "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
+    },
+    "subscribers":[
+        {
+            "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
+            "callBackUrl": "https://www.example.com/callback"
+            "subscriptionType": "API_PUSH_SUBSCRIBER",
+            "subscriberId": "6cdef122-55a6-55a5-99c9-83a091ac7f86"
+        }
+    ]
+}
+```
+| Name | Description |
+| --- | --- |
+| `boxId` | Identifier for a box
+| `boxName` | Box name 
+| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box.
+| `subscribers` | A list of subscribers to this box |
+| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
+| `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `subscribers.subscriberId` | Unique identifier for the subscriber |
+
+### Error scenarios
+| Scenario | HTTP Status | Code |
+| --- | --- | --- |
+| `subscriberType` or `callBackUrl` is missing or invalid in request body | `400` | `INVALID_REQUEST_PAYLOAD`
+| Box does not exist | `404` | `BOX_NOT_FOUND`
+| Content-type header is missing or incorrect | `415` | `INVALID_CONTENT_TYPE`
+
+## `POST /box/:boxId/notifications`
+
+Create a notification
+
+This endpoint is restricted, only a whitelist of services can access it.
+
+### Path parameters
+| Name | Description |
+| --- | --- |
+| `boxId` | Unique identifier for a box. Eg `1c5b9365-18a6-55a5-99c9-83a091ac7f26` |
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-Type` | Either `application/json` or `application/xml` |
+| `User-Agent` | User agent that identifies the calling service | 
 
 ### Request
 The request body can be any JSON or XML (must match the `Content-type` header). The request body is the notification 
@@ -143,37 +233,41 @@ Example 2:
 ### Response
 HTTP Status: `201`
 ```
-1c5b9365-18a6-55a5-99c9-83a091ac7f26
+{
+    "notificationId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26"
+}
 ```
 
 ### Error scenarios
-| Scenario | HTTP Status | Response |
+| Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| Request body content type does not match header `Content-type` | `400` | `{"code":"INVALID_REQUEST_PAYLOAD","message":"Content Type not Supported or message syntax is invalid"}`
+| Request body does not match the Content-Type header | `400` | `INVALID_REQUEST_PAYLOAD` |
+| Access denied, service is not whitelisted | `401` | `UNAUTHORISED`
+| Box does not exist | `404` | `BOX_NOT_FOUND`
 
-### Suggested improvements:
-* `Accept` header isn't being checked.
-* 201 response body JSON rather than text.
-* Restrict access to this endpoint same as POST topic. (In fact POST topic doesn't have to be protected, but this one does)
-
-
-## `GET /notifications/topics/:topicId`
+## `GET /box/:boxId/notifications`
 
 **This endpoint is exposed through the API Platform**
 
-Get a list of notifications that have been sent to a topic
+Get a list of notifications that have been sent to a box
 
 ### Path parameters
 | Name | Description |
 | --- | --- |
-| `topicId` | Identifier for a topic 
+| `boxId` | Unique identifier for a box. Eg `1c5b9365-18a6-55a5-99c9-83a091ac7f26` |
 
 ### Query parameters
 | Name | Description |
 | --- | --- |
-| `status` (optional) | Only return notifications with this status. One of `RECEIVED`, `READ`, `UNKNOWN` |
-| `from_date` (optional)| Only return notifications created after this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.987` |
-| `to_date` (optional)| Only return notifications created before this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.123` |
+| `status` (optional) | Only return notifications with this status. One of `RECEIVED` |
+| `fromDate` (optional)| Only return notifications created after this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.987` |
+| `toDate` (optional)| Only return notifications created before this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.123` |
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Authorization` | A valid _auth_ bearer token |
+| `Accept` | Standard API Platform Accept header. Eg `application/vnd.hmrc.1.0+json` | 
 
 ### Response
 HTTP Status: `200`
@@ -181,16 +275,16 @@ HTTP Status: `200`
 [
     {
         "notificationId":"4e57c65a-f687-442c-b695-f635d5d2e856",
-        "topicId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
-        "notificationContentType":"APPLICATION_JSON",
-        "message":"{\"topicName\": \"TOPIC 4!\", \"clientId\": \"client!!!!Â£$%^&*() id_4\"}",
+        "boxId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
+        "messageContentType":"application/json",
+        "message":"{\"test\": \"hello\"}",
         "status":"RECEIVED",
         "createdDateTime":"2020-06-03T14:14:54.108+0000"
     },
     {
         "notificationId":"583b6394-49ea-4a8e-8d66-c3a8f4b920a3",
-        "topicId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
-        "notificationContentType":"APPLICATION_JSON",
+        "boxId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
+        "messageContentType":"application/xml",
         "message":"<root>XXX</root>",
         "status":"RECEIVED",
         "createdDateTime":"2020-06-03T14:29:10.049+0000"
@@ -199,30 +293,17 @@ HTTP Status: `200`
 ```
 | Name | Description |
 | --- | --- |
-| `notificationId` | Identifier for a notification
-| `topicId` | Identifier for a topic
-| `notificationContentType` | The content type of the notification body, either `APPLICATION_JSON` or `APPLICATION_JSON`
-| `message` | The notification body
-| `status` | The status of the notification. `RECEIVED`, `READ`, `UNKNOWN`
-| `createdDateTime` | UTC date and time that the notification was created
+| `notificationId` | Unique identifier for a notification. |
+| `boxId` | Unique identified for a box that the notification was sent to. |
+| `messageContentType` | Content type of the message, either `application/json` or `application/xml`. |
+| `message` | The notification message. JSON or XML as defined by messageContentType. If this is JSON then it will have been escaped. For details about the structure of this data consult the documentation for the HMRC API that created the notification.
+| `status` | Status of the notification. `RECEIVED`, `READ`, `UNKNOWN` |
+| `createdDateTime` | ISO-8601 UTC date and time that the notification was created.|
 
 ### Error scenarios
-| Scenario | HTTP Status | Response |
+| Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| X-Client-ID header is missing (this will soon be updated when auth is implemented) | `400` | NONE
-| Access denied (this will soon be updated when auth is implemented) | `404` | `{"code":"INVALID_REQUEST_PAYLOAD","message":"client_id_2 does not match topicCreator"}`
-| Topic not found | 404 | NONE
-
-### Suggested improvements:
-* Query params need to be camelCase https://confluence.tools.tax.service.gov.uk/display/AR/Naming+Conventions
-* `Accept` header isn't being checked
-* 400 response body return standard `{"code": "XX", "message": "ZZ"}` format
-* 404 access denied response should be 403
-* 404 access denied response body shouldn't contain the client ID 
-* 404 Topic not found return standard `{"code": "XX", "message": "ZZ"}` format
-* 200 response body `APPLICATION_XML` should be `application/xml` and `APPLICATION_JSON` should be `application/json`
-* 200 response body when there are no notification is text "no results", this should be any empty []
-* If you use an invalid value in `status`, `from_date`, `to_date` query parameter, you get a 404 response. This should 
-    be a 400 standard `{"code": "XX", "message": "ZZ"}` format.
-* Q. Could we have an additional filter that returns all notifications that were created after a notificationId? (Phase 2)
-* Q. Are notification statuses READ and UNKNOWN actually used?
+| Query parameters are invalid | `400` | `INVALID_REQUEST_PAYLOAD` |
+| Access denied, The Developer Hub Client ID in the _auth_ bearer token does not have access to this box | `401` | `UNAUTHORISED`
+| Box does not exist | `404` | `BOX_NOT_FOUND`
+| Accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
