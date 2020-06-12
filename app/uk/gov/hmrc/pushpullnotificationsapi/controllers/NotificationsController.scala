@@ -24,7 +24,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction}
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
@@ -39,44 +39,48 @@ import scala.xml.NodeSeq
 @Singleton()
 class NotificationsController @Inject()(notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
+                                        validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                                         authAction: AuthAction,
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
-  extends BackendController(cc)  {
+  extends BackendController(cc) {
 
-  def saveNotification(boxId: BoxId): Action[String] = Action.async(playBodyParsers.tolerantText) { implicit request =>
-    val maybeConvertedType = contentTypeHeaderToNotificationType
-    maybeConvertedType.fold(
-      Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
-    ){ contentType =>
-      if (validateBodyAgainstContentType(contentType)) {
-        val notificationId = NotificationId(UUID.randomUUID())
-        notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
-          case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
-          case _: NotificationCreateFailedBoxIdNotFoundResult =>
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
-          case _: NotificationCreateFailedDuplicateResult =>
-            InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
-        } recover recovery
-      } else {
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+  def saveNotification(boxId: BoxId): Action[String] =
+    (Action andThen
+      validateUserAgentHeaderAction)
+      .async(playBodyParsers.tolerantText) { implicit request =>
+        val maybeConvertedType = contentTypeHeaderToNotificationType
+        maybeConvertedType.fold(
+          Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+        ) { contentType =>
+          if (validateBodyAgainstContentType(contentType)) {
+            val notificationId = NotificationId(UUID.randomUUID())
+            notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
+              case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+              case _: NotificationCreateFailedBoxIdNotFoundResult =>
+                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
+              case _: NotificationCreateFailedDuplicateResult =>
+                InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
+            } recover recovery
+          } else {
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+          }
+        }
       }
-    }
-  }
 
   def getNotificationsByBoxIdAndFilters(boxId: BoxId): Action[AnyContent] =
     (Action andThen
-            authAction andThen
+      authAction andThen
       queryParamValidatorAction)
       .async { implicit request =>
-            notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-              case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications))
-              case   _: GetNotificationsServiceBoxNotFoundResult =>
-                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
-              case _: GetNotificationsServiceUnauthorisedResult =>
-                Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to view notification for box not created by yourself"))
-            } recover recovery
-        }
+        notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
+          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications))
+          case _: GetNotificationsServiceBoxNotFoundResult =>
+            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
+          case _: GetNotificationsServiceUnauthorisedResult =>
+            Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to view notification for box not created by yourself"))
+        } recover recovery
+      }
 
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
