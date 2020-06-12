@@ -7,7 +7,7 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE, FORBIDDEN}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
@@ -134,14 +134,14 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
-      "respond with 401 when UserAgent is not sent " in {
+      "respond with 403 when UserAgent is not sent " in {
         val result = doPut("{}",  List("Content-Type" -> "application/json"))
-        result.status shouldBe UNAUTHORIZED
+        result.status shouldBe FORBIDDEN
       }
 
-      "respond with 401 when UserAgent is not in whitelist" in {
+      "respond with 403 when UserAgent is not in whitelist" in {
         val result = doPut("{}",  List("Content-Type" -> "application/json", "User-Agent"->"not-a-known-one"))
-        result.status shouldBe UNAUTHORIZED
+        result.status shouldBe FORBIDDEN
       }
     }
   }

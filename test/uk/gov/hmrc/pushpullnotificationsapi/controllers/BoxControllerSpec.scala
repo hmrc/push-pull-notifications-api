@@ -73,8 +73,8 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
     raw"""{"boxName": "$boxName",
          |"clientId": "$clientIdStr" }""".stripMargin
 
-  private val validHeadersWithValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
-  private val validHeadersWithInValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "User-Agent" -> "some-other-service")
+  private val validHeadersWithValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "user-Agent" -> "api-subscription-fields")
+  private val validHeadersWithInValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
 
   private val validHeaders: Map[String, String] = Map("Content-Type" -> "application/json")
 
@@ -125,18 +125,18 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
 
-      "return 401 when invalid useragent provided" in {
+      "return 403 when invalid useragent provided" in {
         setUpAppConfig(List("api-subscription-fields"))
         val result = doPut("/box", validHeadersWithInValidUserAgent, jsonBody)
-        status(result) should be(UNAUTHORIZED)
+        status(result) should be(FORBIDDEN)
 
         verifyNoInteractions(mockBoxService)
       }
 
-      "return 401 when no useragent header provided" in {
+      "return 403 when no useragent header provided" in {
         setUpAppConfig(List("api-subscription-fields"))
         val result = doPut("/box", validHeaders, jsonBody)
-        status(result) should be(UNAUTHORIZED)
+        status(result) should be(FORBIDDEN)
 
         verifyNoInteractions(mockBoxService)
       }

@@ -68,8 +68,10 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
   val jsonBody: String = "{}"
   val xmlBody: String = "<someNode/>"
 
-  private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value)
-  private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value)
+  private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+  private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+  private val headersWithInValidUserAgent: Map[String, String] = Map( "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
+
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
   val notification: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
@@ -128,9 +130,17 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         verifyNoInteractions(mockNotificationService)
       }
 
+      "return 403 when useragent header is not whitelisted" in {
+
+        val result = doPost(s"/box/${boxId.raw}/notifications", headersWithInValidUserAgent, jsonBody)
+        status(result) should be(FORBIDDEN)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
       "return 400 when no contentType header is sent" in {
 
-        val result = doPost(s"/box/${boxId.raw}/notifications", Map.empty, "jsonBody")
+        val result = doPost(s"/box/${boxId.raw}/notifications",  Map("user-Agent" -> "api-subscription-fields"), "jsonBody")
         status(result) should be(BAD_REQUEST)
 
         verifyNoInteractions(mockNotificationService)

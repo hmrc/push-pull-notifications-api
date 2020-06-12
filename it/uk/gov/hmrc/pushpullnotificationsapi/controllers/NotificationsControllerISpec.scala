@@ -8,7 +8,7 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Format
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, FORBIDDEN}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, BoxRepository}
@@ -58,7 +58,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
   val validHeadersJson = List("Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
   val validHeadersJsonWithNoUserAgent = List("Content-Type" -> "application/json")
-  val validHeadersXml = List("Content-Type" -> "application/xml")
+  val validHeadersXml = List("Content-Type" -> "application/xml",  "User-Agent" -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -116,6 +116,20 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         validateStringIsUUID(result.body)
       }
 
+      "respond with 403 when no useragent sent in request" in {
+        val box = createBoxAndReturn()
+        val result = doPost( s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain"))
+        result.status shouldBe FORBIDDEN
+      }
+
+      "respond with 403 when non whitelisted user agent sent in request" in {
+        val box = createBoxAndReturn()
+        val result = doPost( s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-whitelisted-agent"))
+        result.status shouldBe FORBIDDEN
+      }
+
+
+
       "respond with 400 when for valid xml and but json content type" in {
         val box = createBoxAndReturn()
         val result = doPost( s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersJson)
@@ -130,7 +144,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
       "respond with 400 when unknown content type sent in request" in {
         val box = createBoxAndReturn()
-        val result = doPost( s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain"))
+        val result = doPost( s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain",   "User-Agent" -> "api-subscription-fields"))
         result.status shouldBe BAD_REQUEST
       }
 

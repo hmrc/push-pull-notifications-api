@@ -26,6 +26,7 @@ object ErrorCode extends Enumeration {
   type ErrorCode = Value
 
   val UNAUTHORISED = Value("UNAUTHORISED")
+  val FORBIDDEN = Value("FORBIDDEN")
   val BOX_NOT_FOUND = Value("BOX_NOT_FOUND")
   val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
   val DUPLICATE_BOX = Value("DUPLICATE_BOX")

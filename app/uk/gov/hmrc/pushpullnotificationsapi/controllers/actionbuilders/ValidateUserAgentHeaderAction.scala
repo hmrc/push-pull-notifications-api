@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
+import play.api.http.HeaderNames
 import play.api.mvc.{ActionFilter, Request, Result}
 import play.api.mvc.Results._
 import uk.gov.hmrc.http.HttpErrorFunctions
@@ -33,17 +34,16 @@ class ValidateUserAgentHeaderAction @Inject()(appConfig: AppConfig)(implicit ec:
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
-    val userAgent = request.headers.get("User-Agent").getOrElse("")
+    val userAgent = request.headers.get(HeaderNames.USER_AGENT).getOrElse("")
     appConfig.whitelistedUserAgentList match {
       case Nil =>  Future.successful(Some(BadRequest))
       case x: List[String] =>
         if (x.contains(userAgent)) {
           Future.successful(None)
         } else {
-          Future.successful(Some(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Authorisation failed"))))
+          Future.successful(Some(Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Authorisation failed"))))
         }
     }
-
 
   }
 }
