@@ -30,7 +30,7 @@ object ReactiveMongoFormatters {
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit val formatTopicCreator: Format[BoxCreator] = Json.format[BoxCreator]
+  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
@@ -55,7 +55,7 @@ object ResponseFormatters{
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
-  implicit val createTopicResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
+  implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
   implicit val createNotificationResponseFormatter: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
 }
 
@@ -63,7 +63,7 @@ object RequestFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
-  implicit val createTopicRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
+  implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
   implicit val subscribersRequestFormatter: OFormat[SubscribersRequest] = Json.format[SubscribersRequest]
   implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscribersRequest] = Json.format[UpdateSubscribersRequest]
 }

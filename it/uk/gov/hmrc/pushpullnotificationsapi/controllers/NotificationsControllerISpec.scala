@@ -45,8 +45,8 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
   val boxName = "myboxName"
   val clientId = "someClientId"
-  val createTopicJsonBody =raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
-  val createTopic2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
+  val createBoxJsonBody =raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val createBox2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
   val updateSubscribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
                                              |     "subscriberType": "API_PUSH_SUBSCRIBER",
@@ -86,7 +86,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   // need to clean down mongo then run two
 
   def createBoxAndReturn(): Box = {
-    val result = doPut( s"$url/box", createTopicJsonBody, validHeadersJson)
+    val result = doPut( s"$url/box", createBoxJsonBody, validHeadersJson)
     result.status shouldBe CREATED
     await(boxRepository.findAll().head)
   }
