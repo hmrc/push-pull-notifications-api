@@ -1,1 +1,2 @@
-For details on testing this API see the documentation for the API that is creating the notifications.
+To test this API, subscribe to an HMRC API that supports Push Pull Notifications. Following the documentation of that
+API you will be able to generate notifications.
