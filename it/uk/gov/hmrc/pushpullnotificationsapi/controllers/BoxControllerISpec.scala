@@ -7,9 +7,9 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE, FORBIDDEN}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
@@ -32,7 +32,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
         "metrics.enabled"                 -> true,
-        "auditing.enabled"                -> true,
+        "auditing.enabled"                -> false,
         "auditing.consumer.baseUri.host"  -> wireMockHost,
         "auditing.consumer.baseUri.port"  -> wireMockPort,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"

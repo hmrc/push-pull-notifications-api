@@ -45,12 +45,16 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       .async(playBodyParsers.json) { implicit request =>
         withJsonBody[CreateBoxRequest] {
           box: CreateBoxRequest =>
-            val boxId = BoxId(UUID.randomUUID())
-            boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
-              case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
-              case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
-              case r: BoxCreateFailedResult =>
-                UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
+            if(box.boxName.isEmpty|| box.clientId.isEmpty){
+              Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
+            }else {
+              val boxId = BoxId(UUID.randomUUID())
+              boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
+                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+                case r: BoxCreateFailedResult =>
+                  UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
+              }
             }
         } recover recovery
       }
@@ -58,7 +62,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
       case List(box) => Ok(Json.toJson(box))
-      case _ => NotFound
+      case _ => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
     } recover recovery
   }
 
@@ -68,7 +72,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         boxService.updateSubscribers(boxId, updateRequest) map {
           case Some(box) => Ok(Json.toJson(box))
           case _ => Logger.info("box not found or update failed")
-            NotFound
+            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
         } recover recovery
     }
   }
@@ -83,13 +87,15 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   override protected def withJsonBody[T]
   (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
-  = {withJson(request.body)(f)}
+  = {
+    withJson(request.body)(f)
+  }
 
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
       case JsError(errs) =>
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, JsError.toJson(errs))))
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "json body is invalid against expected format")))
     }
   }
 }

@@ -80,7 +80,7 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
           case _: GetNotificationsServiceBoxNotFoundResult =>
             NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
           case _: GetNotificationsServiceUnauthorisedResult =>
-            Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to view notification for box not created by yourself"))
+            Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
       }
 
