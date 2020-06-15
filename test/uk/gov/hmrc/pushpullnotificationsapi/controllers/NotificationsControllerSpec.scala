@@ -25,6 +25,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -38,7 +39,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.RECEIVED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, MessageContentType, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -68,9 +69,11 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
   val jsonBody: String = "{}"
   val xmlBody: String = "<someNode/>"
 
-  private val validHeadersJson: Map[String, String] = Map("Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
-  private val validHeadersXml: Map[String, String] = Map("Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
-  private val headersWithInValidUserAgent: Map[String, String] = Map( "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
+  private val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
+  private val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
+  private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+  private val validHeadersXml: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+  private val headersWithInValidUserAgent: Map[String, String] = Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
 
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
@@ -320,6 +323,18 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
         status(result) shouldBe UNAUTHORIZED
+      }
+
+      "return 406 when accept header is missing" in {
+        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT))
+
+        status(result) shouldBe NOT_ACCEPTABLE
+      }
+
+      "return 406 when accept header is invalid" in {
+        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader))
+
+        status(result) shouldBe NOT_ACCEPTABLE
       }
     }
   }

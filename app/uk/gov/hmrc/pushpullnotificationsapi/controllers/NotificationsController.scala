@@ -24,7 +24,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
@@ -41,6 +41,7 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
                                         validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                                         authAction: AuthAction,
+                                        validateAcceptHeaderAction: ValidateAcceptHeaderAction,
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
   extends BackendController(cc) {
@@ -70,6 +71,7 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
 
   def getNotificationsByBoxIdAndFilters(boxId: BoxId): Action[AnyContent] =
     (Action andThen
+      validateAcceptHeaderAction andThen
       authAction andThen
       queryParamValidatorAction)
       .async { implicit request =>

@@ -8,10 +8,10 @@ import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Format
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, NOT_FOUND, OK, UNAUTHORIZED, FORBIDDEN}
+import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{NotificationsRepository, BoxRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuditService, AuthService, MongoApp, ServerBaseISpec}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,9 +56,10 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
                                              |}
                                              |""".stripMargin
 
-  val validHeadersJson = List("Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
-  val validHeadersJsonWithNoUserAgent = List("Content-Type" -> "application/json")
-  val validHeadersXml = List("Content-Type" -> "application/xml",  "User-Agent" -> "api-subscription-fields")
+  val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
+  val validHeadersJson = List(acceptHeader, "Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
+  val validHeadersJsonWithNoUserAgent = List(acceptHeader, "Content-Type" -> "application/json")
+  val validHeadersXml = List(acceptHeader, "Content-Type" -> "application/xml",  "User-Agent" -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -163,29 +164,29 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
         result.status shouldBe OK
       }
-    }
 
-    "respond with 401 on create when clientId returned from auth does not match" in {
-      primeAuthServiceSuccess("UnknownClientId","{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-      val box =  createBoxAndReturn()
-      createNotifications(box.boxId, 4)
-      val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
-      result.status shouldBe UNAUTHORIZED
-    }
+      "respond with 401 on create when clientId returned from auth does not match" in {
+        primeAuthServiceSuccess("UnknownClientId","{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box =  createBoxAndReturn()
+        createNotifications(box.boxId, 4)
+        val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
+        result.status shouldBe UNAUTHORIZED
+      }
 
-    "respond with 401 on create when no clientID in response from auth" in {
-      primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-      val box =  createBoxAndReturn()
-      createNotifications(box.boxId, 4)
-      val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
-      result.status shouldBe UNAUTHORIZED
-    }
-    "respond with 401 when authorisation fails" in {
-      primeAuthServiceFail()
-      val box =  createBoxAndReturn()
-      createNotifications(box.boxId, 4)
-      val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
-      result.status shouldBe UNAUTHORIZED
+      "respond with 401 on create when no clientID in response from auth" in {
+        primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box =  createBoxAndReturn()
+        createNotifications(box.boxId, 4)
+        val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
+        result.status shouldBe UNAUTHORIZED
+      }
+      "respond with 401 when authorisation fails" in {
+        primeAuthServiceFail()
+        val box =  createBoxAndReturn()
+        createNotifications(box.boxId, 4)
+        val result: WSResponse = doGet( s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
+        result.status shouldBe UNAUTHORIZED
+      }
     }
   }
 }
