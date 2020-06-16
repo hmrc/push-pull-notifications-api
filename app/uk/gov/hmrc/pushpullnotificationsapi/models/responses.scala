@@ -32,7 +32,7 @@ object ErrorCode extends Enumeration {
   val DUPLICATE_BOX = Value("DUPLICATE_BOX")
   val DUPLICATE_NOTIFICATION = Value("DUPLICATE_NOTIFICATION")
   val UNKNOWN_ERROR = Value("UNKNOWN_ERROR")
-  val INVALID_ACCEPT_HEADER = Value("INVALID_ACCEPT_HEADER")
+  val ACCEPT_HEADER_INVALID = Value("ACCEPT_HEADER_INVALID")
 }
 
 object JsErrorResponse {
