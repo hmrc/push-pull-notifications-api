@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.http.HeaderNames.ACCEPT
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.INVALID_ACCEPT_HEADER
+import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID
 import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
 
 import scala.concurrent.Future.successful
@@ -34,7 +34,7 @@ class ValidateAcceptHeaderAction @Inject()(implicit ec: ExecutionContext) extend
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(ACCEPT) match {
       case Some("application/vnd.hmrc.1.0+json") => successful(None)
-      case _ => successful(Some(NotAcceptable(JsErrorResponse(INVALID_ACCEPT_HEADER, "The accept header is missing or invalid"))))
+      case _ => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
     }
   }
 }

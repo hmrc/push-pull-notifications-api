@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
 
+import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
@@ -30,8 +31,8 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
-import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
+import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
@@ -55,6 +56,8 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     .overrides(bind[NotificationsService].to(mockNotificationService))
     .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
+
+  lazy implicit val mat: Materializer = app.materializer
 
   override def beforeEach(): Unit = {
     reset(mockNotificationService, mockAuthConnector)
@@ -329,12 +332,16 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT))
 
         status(result) shouldBe NOT_ACCEPTABLE
+        (jsonBodyOf(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (jsonBodyOf(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
 
       "return 406 when accept header is invalid" in {
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader))
 
         status(result) shouldBe NOT_ACCEPTABLE
+        (jsonBodyOf(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (jsonBodyOf(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
     }
   }
