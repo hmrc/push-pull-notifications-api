@@ -7,12 +7,12 @@
     "type": "object",
     "properties": {
       "notificationId": {
-        "description": "Unique identified for a notification.",
+        "description": "Unique identifier for a notification.",
         "type": "string",
         "example": "86bb5f82-452e-49c8-88af-1f321d573960"
       },
       "boxId": {
-        "description": "Unique identified for a box that the notification was sent to.",
+        "description": "Unique identifier for a box the notification was sent to.",
         "type": "string",
         "example": "50dca3fc-c37c-4f03-b719-63571333624c"
       },
@@ -25,7 +25,7 @@
         ]
       },
       "message": {
-        "description": "The notification message. JSON or XML as defined by messageContentType. If this is JSON then it will have been escaped. For details about the structure of this data consult the documentation for the HMRC API that created the notification.",
+        "description": "The notification message defined by messageContentType (JSON or XML). If this is JSON then it will have been escaped. Details on the structure of this data can be found in the documentation for the HMRC API that created the notification.",
         "type": "string",
         "example": "{\\\"key\\\":\\\"value\\\"}"
       },
@@ -37,7 +37,7 @@
         ]
       },
       "createdDateTime": {
-        "description": "ISO-8601 UTC date and time that the notification was created.",
+        "description": "ISO-8601 UTC date and time the notification was created.",
         "type": "string",
         "example": "2020-06-01T10:27:33.613+0000"
       }

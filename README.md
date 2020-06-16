@@ -70,9 +70,9 @@ HTTP Status: `200`
 | --- | --- |
 | `boxId` | Identifier for a box
 | `boxName` | Box name 
-| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box.
+| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box
 | `subscribers` | A list of subscribers to this box |
-| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
+| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
 | `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
 | `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
 | `subscribers.subscriberId` | Unique identifier for the subscriber |
@@ -125,9 +125,7 @@ HTTP Status: `200` if the box already exists
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
 | `boxName` or `clientId` missing from request body | `400` | `INVALID_REQUEST_PAYLOAD`
-| Access denied, service is not whitelisted | `401` | `UNAUTHORISED`
-| Box does not exist | `404` | `BOX_NOT_FOUND`
-| Content-type header is missing or incorrect | `415` | `INVALID_CONTENT_TYPE`
+| Access denied, service is not whitelisted | `403` | `FORBIDDEN`
 
 ## `PUT /box/:boxId/subscribers`
 
@@ -193,9 +191,9 @@ HTTP Status: `200`
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
+| Box ID is not a UUID | `400` | `BAD_REQUEST`
 | `subscriberType` or `callBackUrl` is missing or invalid in request body | `400` | `INVALID_REQUEST_PAYLOAD`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
-| Content-type header is missing or incorrect | `415` | `INVALID_CONTENT_TYPE`
 
 ## `POST /box/:boxId/notifications`
 
@@ -241,13 +239,14 @@ HTTP Status: `201`
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
+| Box ID is not a UUID | `400` | `BAD_REQUEST`
 | Request body does not match the Content-Type header | `400` | `INVALID_REQUEST_PAYLOAD` |
-| Access denied, service is not whitelisted | `401` | `UNAUTHORISED`
+| Access denied, service is not whitelisted | `403` | `FORBIDDEN`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 
 ## `GET /box/:boxId/notifications`
 
-**This endpoint is exposed through the API Platform**
+**This endpoint is exposed through the API Platform see documentation on https://developer.qa.tax.service.gov.uk/**
 
 Get a list of notifications that have been sent to a box
 
@@ -267,7 +266,7 @@ Get a list of notifications that have been sent to a box
 | Name | Description |
 | --- | --- |
 | `Authorization` | A valid _auth_ bearer token |
-| `Accept` | Standard API Platform Accept header. Eg `application/vnd.hmrc.1.0+json` | 
+| `Accept` | Standard API Platform Accept header. `application/vnd.hmrc.1.0+json` | 
 
 ### Response
 HTTP Status: `200`
@@ -293,17 +292,18 @@ HTTP Status: `200`
 ```
 | Name | Description |
 | --- | --- |
-| `notificationId` | Unique identifier for a notification. |
-| `boxId` | Unique identified for a box that the notification was sent to. |
-| `messageContentType` | Content type of the message, either `application/json` or `application/xml`. |
-| `message` | The notification message. JSON or XML as defined by messageContentType. If this is JSON then it will have been escaped. For details about the structure of this data consult the documentation for the HMRC API that created the notification.
+| `notificationId` | Unique identifier for a notification |
+| `boxId` | Unique identified for a box that the notification was sent to |
+| `messageContentType` | Content type of the message, either `application/json` or `application/xml` |
+| `message` | The notification message. JSON or XML as defined by messageContentType. If this is JSON then it will have been escaped. For details about the structure of this data consult the documentation for the HMRC API that created the notification
 | `status` | Status of the notification. `RECEIVED`, `READ`, `UNKNOWN` |
-| `createdDateTime` | ISO-8601 UTC date and time that the notification was created.|
+| `createdDateTime` | ISO-8601 UTC date and time that the notification was created|
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
+| Box ID is not a UUID | `400` | `BAD_REQUEST`
 | Query parameters are invalid | `400` | `INVALID_REQUEST_PAYLOAD` |
-| Access denied, The Developer Hub Client ID in the _auth_ bearer token does not have access to this box | `401` | `UNAUTHORISED`
+| Access denied, The Developer Hub Client ID in the _auth_ bearer token does not have access to this box | `403` | `FORBIDDEN`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
-| Accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
+| The accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
