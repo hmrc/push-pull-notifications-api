@@ -204,7 +204,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         testAndValidateGetByQueryParams(boxId, OK, Some("READ"))
       }
 
-      "return 400 when no query parameters are provided" in {
+      "return 200 list of notification when no query parameters are provided" in {
         primeAuthAction(clientIdStr)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
@@ -215,9 +215,10 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
-        status(result) shouldBe BAD_REQUEST
+        status(result) shouldBe OK
         val resultStr =  Helpers.contentAsString(result)
-        resultStr shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Query params are missing\"}"
+        resultStr.contains("\"messageContentType\":\"application/json\"") shouldBe true
+        resultStr.contains("\"messageContentType\":\"application/xml\"") shouldBe true
       }
 
       "return 400 when invalid status filter provided" in {

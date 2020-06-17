@@ -56,7 +56,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
         Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid / Unknown query parameter provided")))
       } else Right(true)
     } else {
-      Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "Query params are missing")))
+      Right(true)
     }
   }
 
