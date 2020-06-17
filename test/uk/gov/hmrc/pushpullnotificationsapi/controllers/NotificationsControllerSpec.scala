@@ -198,7 +198,13 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
     "getNotificationsByBoxIdAndFilters" should {
 
-      "return 200 and list of matching notifications when no filters provided" in {
+
+
+      "return 200 and list of matching notifications when status filter provided" in {
+        testAndValidateGetByQueryParams(boxId, OK, Some("READ"))
+      }
+
+      "return 400 when no query parameters are provided" in {
         primeAuthAction(clientIdStr)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
@@ -209,14 +215,9 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
-        status(result) shouldBe OK
-          val resultStr =  Helpers.contentAsString(result)
-        resultStr.contains("\"messageContentType\":\"application/json\"") shouldBe true
-        resultStr.contains("\"messageContentType\":\"application/xml\"") shouldBe true
-      }
-
-      "return 200 and list of matching notifications when status filter provided" in {
-        testAndValidateGetByQueryParams(boxId, OK, Some("READ"))
+        status(result) shouldBe BAD_REQUEST
+        val resultStr =  Helpers.contentAsString(result)
+        resultStr shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Query params are missing\"}"
       }
 
       "return 400 when invalid status filter provided" in {
@@ -248,6 +249,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       }
 
+      "return 400 when fromdate is after toDate" in {
+        val fromdateStr = "2020-02-05T00:54:00Z"
+        val toDateStr = "2020-02-02T00:54:00Z"
+        testAndValidateGetByQueryParams(boxId, BAD_REQUEST, None, maybeFromDateStr = Some(fromdateStr), maybeToDateStr = Some(toDateStr))
+      }
+
       "return 400 when invalid status query parameter is provided" in {
         primeAuthAction(clientIdStr)
         val result = await(doGet(s"/box/${boxId.raw}/notifications?status=SOMEVALUE", validHeadersJson))
@@ -266,7 +273,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       "return 404 when boxId is not found does not match" in {
         val fromdatStr = "2020-02-02T00:54:00Z"
-        val toDateStr = "2020-02-02T00:54:00Z"
+        val toDateStr = "2020-02-03T00:54:00Z"
         primeAuthAction(UUID.randomUUID().toString)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
@@ -278,11 +285,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
         status(result) shouldBe NOT_FOUND
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Unable to save Notification: boxId not found\"}"
       }
 
       "return 401 when clientId does not match" in {
         val fromdatStr = "2020-02-02T00:54:00Z"
-        val toDateStr = "2020-02-02T00:54:00Z"
+        val toDateStr = "2020-02-03T00:54:00Z"
         primeAuthAction(UUID.randomUUID().toString)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
@@ -293,12 +301,13 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
-        status(result) shouldBe UNAUTHORIZED
+        println(Helpers.contentAsString(result))
+        status(result) shouldBe FORBIDDEN
       }
 
       "return 200 with empty List when no notifications returned" in {
         val fromdatStr = "2020-02-02T00:54:00Z"
-        val toDateStr = "2020-02-02T00:54:00Z"
+        val toDateStr = "2020-02-03T00:54:00Z"
         primeAuthAction(clientIdStr)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),

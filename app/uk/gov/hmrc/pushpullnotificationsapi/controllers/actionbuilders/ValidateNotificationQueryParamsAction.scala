@@ -50,21 +50,23 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   val validKeys = List(statusParamKey, fromDateParamKey, toDateParamKey)
 
 
-  def validateQueryParamsKeys(maybeKeys: Option[List[String]]): Either[Result, Boolean] = {
-    maybeKeys match {
-      case Some(keys) => if (!keys.forall(validKeys.contains(_))) {
+  def validateQueryParamsKeys(queryParams: Map[String, Seq[String]]): Either[Result, Boolean] = {
+    if (!queryParams.isEmpty) {
+      if (!queryParams.keys.forall(validKeys.contains(_))) {
         Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid / Unknown query parameter provided")))
       } else Right(true)
-      case None => Right(true)
+    } else {
+      Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "Query params are missing")))
     }
   }
 
   private def validateNotificationQueryParams[A](request: AuthenticatedNotificationRequest[A]): Either[Result, NotificationQueryParams] = {
     for {
-      _ <- validateQueryParamsKeys(Some(request.request.queryString.keys.toList))
+      _ <- validateQueryParamsKeys(request.request.queryString)
       statusVal <- validateStatusParamValue(request.request.getQueryString(statusParamKey))
       fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
       toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
+      _ <-  validateToDateIsAfterFRomDate(fromDateVal, toDateVal)
     } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
   }
 
@@ -95,5 +97,19 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
       case None => Right(None)
     }
   }
+
+  def validateToDateIsAfterFRomDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime] ): Either[Result, Option[Boolean]] = {
+    (fromDateVal, toDateVal) match {
+      case (Some(fromDate), Some(toDate)) => {
+        if(fromDate.isBefore(toDate)){
+          Right(Some(true))
+        }else{
+          Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "fromDate parameter is before toDateParameter")))
+        }
+      }
+      case _ => Right(Some(true))
+    }
+  }
+
 
 }
