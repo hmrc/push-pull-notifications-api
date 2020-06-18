@@ -46,7 +46,11 @@ class PPNSJsonErrorHandler @Inject()(
         case NOT_FOUND =>
           NotFound(toJson(ErrorResponse(NOT_FOUND, "URI not found", requested = Some(request.path))))
         case BAD_REQUEST =>
-          BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
+          if(message.contains("Invalid Json")) {
+            BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format"))
+          }else {
+            BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
+          }
         case _ =>
           auditConnector.sendEvent(
             dataEvent(

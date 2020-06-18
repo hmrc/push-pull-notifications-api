@@ -119,7 +119,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
           .thenReturn(Future.successful(BoxCreatedResult(boxId)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}"))
         status(result) should be(BAD_REQUEST)
-        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"json body is invalid against expected format"}"""
+        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         jsonBodyOf(result) should be (Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
@@ -316,7 +316,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         
         status(result) should be(BAD_REQUEST)
 
-        Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"json body is invalid against expected format\"}"
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
         verifyNoInteractions(mockBoxService)
 
       }
@@ -352,7 +352,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         val result = doPut(s"/box/${boxId.raw}/subscribers", validHeaders, "{}")
 
         status(result) should be(BAD_REQUEST)
-        Helpers.contentAsString(result) shouldBe  "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"json body is invalid against expected format\"}"
+        Helpers.contentAsString(result) shouldBe  "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
       }
 
       "return 400 when Non JSON payload is sent" in {
@@ -362,6 +362,17 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         val result = doPut(s"/box/$boxId/subscribers", validHeaders, "IamNotJson")
 
         status(result) should be(BAD_REQUEST)
+      }
+
+      "return 400 when boxId is not UUid" in {
+        when(mockBoxService.updateSubscribers(any[BoxId], any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/subscribers", validHeaders, validUpdateSubscribersRequestJson))
+        status(result) should be(OK)
+
+        verify(mockBoxService).updateSubscribers(any[BoxId], any[UpdateSubscribersRequest])(any[ExecutionContext])
+
       }
 
     }

@@ -95,7 +95,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
       case JsError(errs) =>
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "json body is invalid against expected format")))
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }
 }
