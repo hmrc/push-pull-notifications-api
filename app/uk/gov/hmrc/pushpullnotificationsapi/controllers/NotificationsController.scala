@@ -59,7 +59,7 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
               case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
               case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
+                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: NotificationCreateFailedDuplicateResult =>
                 InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
             } recover recovery
@@ -78,7 +78,7 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
           case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications))
           case _: GetNotificationsServiceBoxNotFoundResult =>
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Unable to save Notification: boxId not found"))
+            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case _: GetNotificationsServiceUnauthorisedResult =>
             Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery

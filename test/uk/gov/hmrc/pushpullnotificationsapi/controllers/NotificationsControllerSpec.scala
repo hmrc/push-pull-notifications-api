@@ -286,7 +286,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
         status(result) shouldBe NOT_FOUND
-        Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Unable to save Notification: boxId not found\"}"
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
 
       "return 401 when clientId does not match" in {
@@ -302,7 +302,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
 
         val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
-        println(Helpers.contentAsString(result))
         status(result) shouldBe FORBIDDEN
       }
 
