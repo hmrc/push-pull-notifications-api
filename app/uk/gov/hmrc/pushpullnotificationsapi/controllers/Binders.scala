@@ -19,7 +19,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import play.api.mvc.{PathBindable, QueryStringBindable}
 import java.util.UUID
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ClientId, BoxId}
+import play.api.Logger
+import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, ClientId}
 object Binders {
 
   implicit object clientIdPathBindable extends QueryStringBindable.Parsing[ClientId](
@@ -31,6 +32,9 @@ object Binders {
   implicit object boxIdPathBindable extends PathBindable.Parsing[BoxId](
     s => BoxId(UUID.fromString(s)),
     _.value.toString,
-    (key: String, e: Exception) => "Cannot parse parameter %s as BoxId: %s".format(key, e.getMessage)
+    (key: String, e: Exception) => {
+      Logger.info("Cannot parse parameter %s as BoxId: %s".format(key, e.getMessage))
+      "Box ID is not a UUID"
+    }
   )
 }
