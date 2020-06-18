@@ -185,11 +185,19 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     "return 404 when box does not exist" in {
       val updateResult = doPut(UUID.randomUUID().toString, updateSubcribersJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe NOT_FOUND
+      updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+    }
+
+    "return 400 when boxId is not a UUID" in {
+      val updateResult = await(doPut("NotaUUid", updateSubcribersJsonBodyWithIds, validHeaders))
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
     }
 
     "return 400 when requestBody is not a valid payload" in {
       val updateResult = doPut(UUID.randomUUID().toString, "{}", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"json body is invalid against expected format\"}"
     }
   }
 

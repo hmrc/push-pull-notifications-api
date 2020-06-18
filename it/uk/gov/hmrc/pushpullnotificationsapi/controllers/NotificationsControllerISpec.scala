@@ -122,6 +122,13 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         validateStringIsUUID(result.body)
       }
 
+      "respond with 400 when boxId is not a UUID" in {
+        val box = createBoxAndReturn()
+        val result = doPost(s"$url/box/ImNotaUUid/notifications", "{}", validHeadersJson)
+        result.status shouldBe BAD_REQUEST
+        result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+      }
+
       "respond with 403 when no useragent sent in request" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain"))
@@ -169,6 +176,23 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         result.status shouldBe OK
       }
 
+      "respond with 400 when box Id is not a UUID" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        createNotifications(box.boxId, 4)
+        val result: WSResponse = doGet(s"$url/box/NotAUUid/notifications?status=RECEIVED", validHeadersJson)
+        result.status shouldBe BAD_REQUEST
+        result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+      }
+
+      "respond with 404 when box Id is not found" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        createNotifications(box.boxId, 1)
+        val result: WSResponse = doGet(s"$url/box/${UUID.randomUUID().toString}/notifications?status=RECEIVED", validHeadersJson)
+        result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Unable to save Notification: boxId not found\"}"
+      }
 
       "respond with 401 on create when clientId returned from auth does not match" in {
         primeAuthServiceSuccess("UnknownClientId", "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
