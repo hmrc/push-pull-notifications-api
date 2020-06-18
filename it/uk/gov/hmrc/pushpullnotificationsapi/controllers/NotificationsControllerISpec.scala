@@ -162,8 +162,9 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
       "respond with 404 when unknown / non existent box id sent" in {
         createBoxAndReturn()
-        val result = doPost(s"$url/box/${UUID.randomUUID().toString}notifications/", "{}", validHeadersJson)
+        val result = doPost(s"$url/box/${UUID.randomUUID().toString}/notifications/", "{}", validHeadersJson)
         result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
     }
 
@@ -191,7 +192,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         createNotifications(box.boxId, 1)
         val result: WSResponse = doGet(s"$url/box/${UUID.randomUUID().toString}/notifications?status=RECEIVED", validHeadersJson)
         result.status shouldBe NOT_FOUND
-        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Unable to save Notification: boxId not found\"}"
+        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
 
       "respond with 401 on create when clientId returned from auth does not match" in {

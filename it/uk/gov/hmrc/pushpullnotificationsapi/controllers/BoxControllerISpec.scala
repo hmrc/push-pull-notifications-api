@@ -21,7 +21,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
   def repo: BoxRepository =
     app.injector.instanceOf[BoxRepository]
 
-  override def beforeEach(): Unit ={
+  override def beforeEach(): Unit = {
     super.beforeEach()
     dropMongoDb()
     await(repo.ensureIndexes)
@@ -31,10 +31,10 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     new GuiceApplicationBuilder()
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
-        "metrics.enabled"                 -> true,
-        "auditing.enabled"                -> false,
-        "auditing.consumer.baseUri.host"  -> wireMockHost,
-        "auditing.consumer.baseUri.port"  -> wireMockPort,
+        "metrics.enabled" -> true,
+        "auditing.enabled" -> false,
+        "auditing.consumer.baseUri.host" -> wireMockHost,
+        "auditing.consumer.baseUri.port" -> wireMockPort,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
       )
 
@@ -43,18 +43,19 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   val boxName = "myBoxName"
   val clientId = "someClientId"
-  val createBoxJsonBody =raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
-  val createBox2JsonBody =raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
+  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
-  val updateSubcribersJsonBodyWithIds: String = raw"""{ "subscribers":[{
-                                             |     "subscriberType": "API_PUSH_SUBSCRIBER",
-                                             |     "callBackUrl":"somepath/firstOne",
-                                             |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
-                                             |   }]
-                                             |}
-                                             |""".stripMargin
+  val updateSubcribersJsonBodyWithIds: String =
+    raw"""{ "subscribers":[{
+         |     "subscriberType": "API_PUSH_SUBSCRIBER",
+         |     "callBackUrl":"somepath/firstOne",
+         |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
+         |   }]
+         |}
+         |""".stripMargin
 
-  val validHeaders = List("Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
+  val validHeaders = List("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -65,14 +66,14 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       .put(jsonBody)
       .futureValue
 
-  def doPut(boxId:String, jsonBody: String, headers: List[(String, String)]): WSResponse =
+  def doPut(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/$boxId/subscribers")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doGet(boxName:String, clientId: String, headers: List[(String, String)]): WSResponse =
+  def doGet(boxName: String, clientId: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=$clientId")
       .withHttpHeaders(headers: _*)
@@ -80,8 +81,6 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       .futureValue
 
   // need to clean down mongo then run two
-
-
 
 
   "BoxController" when {
@@ -130,18 +129,29 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       }
 
       "respond with 415 when request content Type header is not JSON " in {
-        val result = doPut("{}",  List("Content-Type" -> "application/xml"))
+        val result = doPut("{}", List("Content-Type" -> "application/xml"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 403 when UserAgent is not sent " in {
-        val result = doPut("{}",  List("Content-Type" -> "application/json"))
+        val result = doPut("{}", List("Content-Type" -> "application/json"))
         result.status shouldBe FORBIDDEN
       }
 
       "respond with 403 when UserAgent is not in whitelist" in {
-        val result = doPut("{}",  List("Content-Type" -> "application/json", "User-Agent"->"not-a-known-one"))
+        val result = doPut("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
         result.status shouldBe FORBIDDEN
+      }
+
+      "respond with 404 when invalid uri provided" in {
+        val result = wsClient
+          .url(s"$url/box/unKnownPath")
+          .withHttpHeaders(validHeaders: _*)
+          .get
+          .futureValue
+
+        result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"statusCode\":404,\"message\":\"URI not found\",\"requested\":\"/box/unKnownPath\"}"
       }
     }
   }
@@ -162,9 +172,9 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
 
     "respond with 404 when box does not exists" in {
-      val result2 = doGet(boxName, clientId, validHeaders)
-      result2.status shouldBe NOT_FOUND
-
+      val result = doGet(boxName, clientId, validHeaders)
+      result.status shouldBe NOT_FOUND
+      result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
   }
 
@@ -201,7 +211,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
   }
 
-  private def createBoxAndCheckExistsWithNoSubscribers(): Box ={
+  private def createBoxAndCheckExistsWithNoSubscribers(): Box = {
     val result = doPut(createBoxJsonBody, validHeaders)
     result.status shouldBe CREATED
     validateStringIsUUID(result.body)
