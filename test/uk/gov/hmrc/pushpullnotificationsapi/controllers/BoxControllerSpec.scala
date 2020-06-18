@@ -226,7 +226,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
     "getBoxByNameAndClientId" should {
 
-      "return OK and requested box when it exists" in {
+      "return 200 and requested box when it exists" in {
 
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
           .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
@@ -239,6 +239,36 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         val bodyVal = Helpers.contentAsString(result)
         val box = Json.parse(bodyVal).as[Box]
         box.subscribers shouldBe empty
+      }
+
+      "return 400 when no parameters provided" in {
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doGet(s"/box", validHeaders))
+        status(result) should be(BAD_REQUEST)
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Missing parameter: boxName\"}"
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 400 when boxName is missing" in {
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doGet(s"/box?clientId=$clientIdStr", validHeaders))
+        status(result) should be(BAD_REQUEST)
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Missing parameter: boxName\"}"
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 400 when clientId is missing" in {
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
+          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doGet(s"/box?boxName=$boxName", validHeaders))
+        status(result) should be(BAD_REQUEST)
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Missing parameter: clientId\"}"
+        verifyNoInteractions(mockBoxService)
       }
 
       "return NOTFOUND when requested box does not exist" in {
