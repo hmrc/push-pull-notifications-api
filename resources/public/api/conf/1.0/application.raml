@@ -28,7 +28,7 @@ uses:
   /box/{boxId}/notifications:
     uriParameters:
       boxId:
-        description: Unique identified for a box
+        description: Unique identifier for a box
         type: string
         required: true
         example: 50dca3fc-c37c-4f03-b719-63571333624c
@@ -81,25 +81,29 @@ uses:
               type: types.errorResponse
               examples:
                 example-1:
-                  description: The provided query parameters don't match the specification.
+                  description: The box identifier is not valid
+                  value:
+                    code: BAD_REQUEST
+                example-2:
+                  description: The provided query parameters don't match the specification
                   value:
                     code: INVALID_REQUEST_PAYLOAD
-        401:
+        403:
           body:
             application/json:
               type: types.errorResponse
               examples:
                 example-1:
-                  description: You do not have access to the specified box.
+                  description: You do not have access to the specified box
                   value:
-                    code: UNAUTHORISED
+                    code: FORBIDDEN
         404:
           body:
             application/json:
               type: types.errorResponse
               examples:
                 example-1:
-                  description: The unique identified for the box does not exist.
+                  description: The unique identifier for the box does not exist
                   value:
                     code: BOX_NOT_FOUND
         406:
