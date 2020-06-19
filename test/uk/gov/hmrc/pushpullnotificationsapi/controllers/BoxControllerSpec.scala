@@ -288,12 +288,22 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
     "updateSubscribers" should {
 
       val validUpdateSubscribersRequestJson = "{ \"subscribers\":[" +
-        "{\"subscriberId\": \"somesubscriberId\", \"subscriberType\": \"API_PUSH_SUBSCRIBER\", " +
+        "{\"subscriberId\": \"09a654ee-e727-48d8-8858-d32d70321ad1\", \"subscriberType\": \"API_PUSH_SUBSCRIBER\", " +
+        "\"callBackUrl\":\"someURL\"}" +
+        "]}"
+
+      val validUpdateSubscribersRequestJsonWithoutSubscriberId = "{ \"subscribers\":[" +
+        "{ \"subscriberType\": \"API_PUSH_SUBSCRIBER\", " +
         "\"callBackUrl\":\"someURL\"}" +
         "]}"
 
        val invalidUpdateSubscribersRequestWithUnknownTypeJson = "{ \"subscribers\":[" +
-        "{\"subscriberId\": \"somesubscriberId\", \"subscriberType\": \"SOME_UNKNOWN_TYPE\", " +
+        "{\"subscriberId\": \"09a654ee-e727-48d8-8858-d32d70321ad1\", \"subscriberType\": \"SOME_UNKNOWN_TYPE\", " +
+        "\"callBackUrl\":\"someURL\"}" +
+        "]}"
+
+      val invalidUpdateSubscribersRequestWithNonUUIDSubscriberIdJson = "{ \"subscribers\":[" +
+        "{\"subscriberId\": \"NotAUUID\", \"subscriberType\": \"API_PUSH_SUBSCRIBER\", " +
         "\"callBackUrl\":\"someURL\"}" +
         "]}"
 
@@ -308,6 +318,16 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       }
 
+      "return 200 when valid request without subscriberId and box update is successful" in {
+        when(mockBoxService.updateSubscribers(eqTo(boxId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doPut(s"/box/${boxId.raw}/subscribers", validHeaders, validUpdateSubscribersRequestJsonWithoutSubscriberId))
+        status(result) should be(OK)
+
+        verify(mockBoxService).updateSubscribers(eqTo(boxId), any[UpdateSubscribersRequest])(any[ExecutionContext])
+      }
+
        "return 400 when request contains invalid subscriber type" in {
         when(mockBoxService.updateSubscribers(eqTo(boxId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
           .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
@@ -319,6 +339,18 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
         verifyNoInteractions(mockBoxService)
 
+      }
+
+      "return 400 when request contains subscriberId That is not a UUID type" in {
+        when(mockBoxService.updateSubscribers(eqTo(boxId), any[UpdateSubscribersRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
+
+        val result: Result = await(doPut(s"/box/${boxId.raw}/subscribers", validHeaders, invalidUpdateSubscribersRequestWithNonUUIDSubscriberIdJson))
+
+        status(result) should be(BAD_REQUEST)
+
+        Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+        verifyNoInteractions(mockBoxService)
       }
 
       "return 404 when valid request and box update is successful" in {

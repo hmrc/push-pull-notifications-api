@@ -28,6 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
+import uk.gov.hmrc.pushpullnotificationsapi.util.BodyValidationHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -45,9 +46,9 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       .async(playBodyParsers.json) { implicit request =>
         withJsonBody[CreateBoxRequest] {
           box: CreateBoxRequest =>
-            if(box.boxName.isEmpty|| box.clientId.isEmpty){
+            if (box.boxName.isEmpty || box.clientId.isEmpty) {
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
-            }else {
+            } else {
               val boxId = BoxId(UUID.randomUUID())
               boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
                 case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
@@ -69,11 +70,14 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
   def updateSubscribers(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateSubscribersRequest] {
       updateRequest =>
-        boxService.updateSubscribers(boxId, updateRequest) map {
-          case Some(box) => Ok(Json.toJson(box))
-          case _ => Logger.info("box not found or update failed")
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-        } recover recovery
+        validateUpdateBoxSubscriberBody(updateRequest) match {
+          case Right(validatedRequestBody) => boxService.updateSubscribers(boxId, validatedRequestBody) map {
+            case Some(box) => Ok(Json.toJson(box))
+            case _ => Logger.info("box not found or update failed")
+              NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          } recover recovery
+          case Left(result) => Future.successful(result)
+        }
     }
   }
 
