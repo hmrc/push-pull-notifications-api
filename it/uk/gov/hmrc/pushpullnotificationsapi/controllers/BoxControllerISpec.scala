@@ -207,7 +207,19 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     "return 400 when requestBody is not a valid payload" in {
       val updateResult = doPut(UUID.randomUUID().toString, "{}", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"json body is invalid against expected format\"}"
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is not a valid payload against expected format" in {
+      val updateResult = doPut(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is missing" in {
+      val updateResult = doPut(UUID.randomUUID().toString, "", validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
   }
 
