@@ -55,6 +55,9 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
          |}
          |""".stripMargin
 
+  val updateSubscribersInvalidUUIDFormat: String =
+    raw"""{ "subscribers":[{"subscriberId": "", "subscriberType": "API_PUSH_SUBSCRIBER", "callBackUrl":"testurl.co.uk"}]}"""
+
   val validHeaders = List("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
@@ -215,6 +218,15 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
+
+    "return 400 when requestBody is contains invalid UUID" in {
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = doPut(createdBox.boxId.raw, updateSubscribersInvalidUUIDFormat, validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
 
     "return 400 when requestBody is missing" in {
       val updateResult = doPut(UUID.randomUUID().toString, "", validHeaders)
