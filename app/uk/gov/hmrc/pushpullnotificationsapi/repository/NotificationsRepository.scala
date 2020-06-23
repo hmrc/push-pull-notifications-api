@@ -18,16 +18,18 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createAscendingIndex
+import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,40 +41,102 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     ReactiveMongoFormatters.notificationsFormats,
     ReactiveMongoFormats.objectIdFormats) with ReactiveMongoFormats {
 
+  private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
+  private lazy val notifications_index_name = "notifications_idx"
+  private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
+  private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
 
+
+  private lazy val expireAfterSeconds = 300
+  //API-4370 need to delete old indexes this code can be removed once this has been run
+  private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
 
   override def indexes = Seq(
    createAscendingIndex(
-     Some("notifications_index"),
+     Some(notifications_index_name),
      isUnique = true,
      isBackground = true,
      List("notificationId", "boxId", "status"): _*
    ),
     createAscendingIndex(
-      Some("notifications_created_datetime_index"),
+      Some(created_datetime_index_name),
       isUnique = false,
       isBackground = true,
       List("boxId, createdDateTime"): _*
+    ),
+    Index(
+      key = Seq("createdDateTime" -> IndexType.Ascending),
+      name = Some(create_datetime_ttlIndexName),
+      background = true,
+      options = BSONDocument(OptExpireAfterSeconds -> expireAfterSeconds)
     )
   )
+
+  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+    import reactivemongo.bson.DefaultBSONHandlers._
+
+    super.ensureIndexes
+    val indexes = collection.indexesManager.list()
+
+    //API-4370 need to delete old indexes this code can be removed once this has been run
+    oldIndexes.map(idxName =>  collection.indexesManager.drop(idxName))
+
+    indexes.flatMap { idxs =>
+      val idxToUpdate = idxs.find(index =>
+        index.eventualName == create_datetime_ttlIndexName
+          && index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != expireAfterSeconds))
+
+      idxToUpdate.fold(ensureIndexList) { index =>
+        collection.indexesManager.drop(index.eventualName).flatMap(_ => ensureIndexList)
+      }
+
+    }
+    Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
+    ensureIndexList
+  }
+
+  private def ensureIndexList(implicit ec: ExecutionContext) = {
+    Future.sequence(Seq(collection.indexesManager.ensure(
+      Index(
+        key = Seq("createdDateTime" -> IndexType.Ascending),
+        name = Some(create_datetime_ttlIndexName),
+        options = BSONDocument(OptExpireAfterSeconds -> expireAfterSeconds)
+      )),
+      collection.indexesManager.ensure(createAscendingIndex(
+        Some(created_datetime_index_name),
+        isUnique = false,
+        isBackground = true,
+        List("boxId, createdDateTime"): _*
+      )),
+      collection.indexesManager.ensure(
+        createAscendingIndex(
+          Some(notifications_index_name),
+          isUnique = true,
+          isBackground = true,
+          List("notificationId", "boxId", "status"): _*
+        )
+      )
+    ))
+  }
+
+
 
   def getByBoxIdAndFilters(boxId: BoxId,
                            status: Option[NotificationStatus] = None,
                            fromDateTime: Option[DateTime] = None,
                            toDateTime: Option[DateTime] = None)
-                          (implicit ec: ExecutionContext): Future[List[Notification]] =
-  {
+                          (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
-    val query: (String, JsValueWrapper) =  f"$$and" -> (
+    val query: (String, JsValueWrapper) = f"$$and" -> (
       boxIdQuery(boxId) ++
-      statusQuery(status) ++
-      Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
+        statusQuery(status) ++
+        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
     find(query)
   }
 
   val empty: JsObject = Json.obj()
 
- private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): JsObject = {
+  private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): JsObject = {
     if (start.isDefined || end.isDefined) {
       val startCompare = if (start.isDefined) Json.obj("$gte" -> Json.obj("$date" -> start.get.getMillis)) else empty
       val endCompare = if (end.isDefined) Json.obj("$lte" -> Json.obj("$date" -> end.get.getMillis)) else empty
@@ -81,10 +145,11 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     else empty
   }
 
-  private def boxIdQuery(boxId: BoxId): JsArray ={
+  private def boxIdQuery(boxId: BoxId): JsArray = {
     Json.arr(Json.obj("boxId" -> boxId.value))
   }
-  private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray ={
+
+  private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray = {
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
   }
 
