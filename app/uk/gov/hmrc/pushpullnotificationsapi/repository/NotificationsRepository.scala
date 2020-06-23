@@ -47,7 +47,7 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
 
 
-  private lazy val expireAfterSeconds = 300
+  private lazy val expireAfterSeconds = 300L
   //API-4370 need to delete old indexes this code can be removed once this has been run
   private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
 
@@ -76,26 +76,10 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     import reactivemongo.bson.DefaultBSONHandlers._
 
     super.ensureIndexes
-    val indexes = collection.indexesManager.list()
-
-    //API-4370 need to delete old indexes this code can be removed once this has been run
-    oldIndexes.map(idxName =>  collection.indexesManager.drop(idxName))
-
-    indexes.flatMap { idxs =>
-      val idxToUpdate = idxs.find(index =>
-        index.eventualName == create_datetime_ttlIndexName
-          && index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != expireAfterSeconds))
-
-      idxToUpdate.fold(ensureIndexList) { index =>
-        collection.indexesManager.drop(index.eventualName).flatMap(_ => ensureIndexList)
-      }
-
-    }
     Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
-    ensureIndexList
-  }
+    dropOldIndexes
+    dropTTLIndexIfChanged
 
-  private def ensureIndexList(implicit ec: ExecutionContext) = {
     Future.sequence(Seq(collection.indexesManager.ensure(
       Index(
         key = Seq("createdDateTime" -> IndexType.Ascending),
@@ -117,6 +101,35 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
         )
       )
     ))
+
+  }
+
+  private def dropOldIndexes()(implicit ec: ExecutionContext): List[Future[Int]] = {
+    //API-4370 need to delete old indexes this code can be removed once this has been run
+    oldIndexes.map(idxName =>  collection.indexesManager.drop(idxName))
+  }
+
+  private def dropTTLIndexIfChanged(implicit ec: ExecutionContext) = {
+    val indexes = collection.indexesManager.list()
+
+    def matchIndexName(index: Index) = {
+      index.eventualName == create_datetime_ttlIndexName
+    }
+
+    def compareTTLValueWithConfig(index: Index) = {
+      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != expireAfterSeconds)
+    }
+
+    def checkIfTTLChanged(index:Index): Boolean ={
+      matchIndexName(index) && compareTTLValueWithConfig(index)
+    }
+
+    indexes.map(_.exists(checkIfTTLChanged))
+    .map( if(_){
+      Logger.info(s"Dropping time to live index for entries in ${collection.name}")
+      collection.indexesManager.drop(create_datetime_ttlIndexName)
+    })
+
   }
 
 
