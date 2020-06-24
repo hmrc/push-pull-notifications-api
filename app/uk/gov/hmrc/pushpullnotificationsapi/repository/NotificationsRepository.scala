@@ -27,6 +27,7 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
@@ -34,7 +35,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
+class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[Notification, BSONObjectID](
     "notifications",
     mongoComponent.mongoConnector.db,
@@ -46,18 +47,16 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
   private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
 
-
-  private lazy val expireAfterSeconds = 300L
   //API-4370 need to delete old indexes this code can be removed once this has been run
   private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
 
   override def indexes = Seq(
-   createAscendingIndex(
-     Some(notifications_index_name),
-     isUnique = true,
-     isBackground = true,
-     List("notificationId", "boxId", "status"): _*
-   ),
+    createAscendingIndex(
+      Some(notifications_index_name),
+      isUnique = true,
+      isBackground = true,
+      List("notificationId", "boxId", "status"): _*
+    ),
     createAscendingIndex(
       Some(created_datetime_index_name),
       isUnique = false,
@@ -68,45 +67,27 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       key = Seq("createdDateTime" -> IndexType.Ascending),
       name = Some(create_datetime_ttlIndexName),
       background = true,
-      options = BSONDocument(OptExpireAfterSeconds -> expireAfterSeconds)
+      options = BSONDocument(OptExpireAfterSeconds -> BSONLong(appConfig.notificationTTLinSeconds))
     )
   )
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    import reactivemongo.bson.DefaultBSONHandlers._
-
     super.ensureIndexes
-    Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
     dropOldIndexes
     dropTTLIndexIfChanged
+    ensureLocalIndexes()
+  }
 
-    Future.sequence(Seq(collection.indexesManager.ensure(
-      Index(
-        key = Seq("createdDateTime" -> IndexType.Ascending),
-        name = Some(create_datetime_ttlIndexName),
-        options = BSONDocument(OptExpireAfterSeconds -> expireAfterSeconds)
-      )),
-      collection.indexesManager.ensure(createAscendingIndex(
-        Some(created_datetime_index_name),
-        isUnique = false,
-        isBackground = true,
-        List("boxId, createdDateTime"): _*
-      )),
-      collection.indexesManager.ensure(
-        createAscendingIndex(
-          Some(notifications_index_name),
-          isUnique = true,
-          isBackground = true,
-          List("notificationId", "boxId", "status"): _*
-        )
-      )
-    ))
-
+  private def ensureLocalIndexes()(implicit ec: ExecutionContext) = {
+    Future.sequence(indexes.map(index => {
+      Logger.info(s"ensuring index ${index.eventualName}")
+      collection.indexesManager.ensure(index)
+    }))
   }
 
   private def dropOldIndexes()(implicit ec: ExecutionContext): List[Future[Int]] = {
     //API-4370 need to delete old indexes this code can be removed once this has been run
-    oldIndexes.map(idxName =>  collection.indexesManager.drop(idxName))
+    oldIndexes.map(idxName => collection.indexesManager.drop(idxName))
   }
 
   private def dropTTLIndexIfChanged(implicit ec: ExecutionContext) = {
@@ -117,21 +98,21 @@ class NotificationsRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     }
 
     def compareTTLValueWithConfig(index: Index) = {
-      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != expireAfterSeconds)
+      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != appConfig.notificationTTLinSeconds)
     }
 
-    def checkIfTTLChanged(index:Index): Boolean ={
+    def checkIfTTLChanged(index: Index): Boolean = {
       matchIndexName(index) && compareTTLValueWithConfig(index)
     }
 
     indexes.map(_.exists(checkIfTTLChanged))
-    .map( if(_){
-      Logger.info(s"Dropping time to live index for entries in ${collection.name}")
-      collection.indexesManager.drop(create_datetime_ttlIndexName)
-    })
+      .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
+        Logger.info(s"Dropping time to live index for entries in ${collection.name}")
+        Future.sequence(Seq(collection.indexesManager.drop(create_datetime_ttlIndexName).map(_ > 0),
+        ensureLocalIndexes))
+      })
 
   }
-
 
 
   def getByBoxIdAndFilters(boxId: BoxId,

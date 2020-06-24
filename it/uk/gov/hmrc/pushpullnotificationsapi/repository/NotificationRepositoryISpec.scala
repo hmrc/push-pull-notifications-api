@@ -1,28 +1,37 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.UUID
+import java.util.concurrent.TimeUnit
+import java.util.{Timer, TimerTask, UUID}
 
 import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.concurrent.Akka
+import reactivemongo.api.indexes.Index
+import reactivemongo.bson.BSONLong
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
+import uk.gov.hmrc.pushpullnotificationsapi.support.{Awaiting, MongoApp}
 
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Success, Try}
 
 class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
+  private val ttlTimeinSeconds = 3
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
+              "notifications.ttlinseconds" -> ttlTimeinSeconds,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
       )
 
@@ -37,6 +46,20 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     await(repo.ensureIndexes)
   }
 
+  def getIndex(indexName: String): Option[Index] ={
+    await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
+  }
+
+  "Indexes" should {
+    "create ttl index and it should have correct value "in {
+      val mayBeIndex = getIndex("create_datetime_ttl_idx")
+      mayBeIndex shouldNot be(None)
+      val mayBeTtlValue: Option[Long] = mayBeIndex.flatMap(_.options.getAs[BSONLong]("expireAfterSeconds").map(_.as[Long]))
+      mayBeTtlValue  shouldNot be(None)
+      mayBeTtlValue.head shouldBe ttlTimeinSeconds
+    }
+
+  }
 
   "saveNotification" should {
 
