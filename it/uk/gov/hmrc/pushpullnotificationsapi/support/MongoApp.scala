@@ -16,6 +16,7 @@ trait MongoApp extends MongoSpecSupport with BeforeAndAfterEach  {
 
   def dropMongoDb()(implicit ec: ExecutionContext = global): Unit =
     Awaiting.await(mongo().drop())
+
 }
 
 object Awaiting extends MongoAwaiting

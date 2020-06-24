@@ -6,6 +6,8 @@ import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import reactivemongo.api.indexes.Index
+import reactivemongo.bson.BSONLong
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
@@ -19,10 +21,12 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
+  private val ttlTimeinSeconds = 3
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
+              "notifications.ttlinseconds" -> ttlTimeinSeconds,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
       )
 
@@ -37,6 +41,21 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     await(repo.ensureIndexes)
   }
 
+  def getIndex(indexName: String): Option[Index] ={
+    await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
+  }
+
+  "Indexes" should {
+    "create ttl index and it should have correct value "in {
+      val mayBeIndex = getIndex("create_datetime_ttl_idx")
+      mayBeIndex shouldNot be(None)
+      val mayBeTtlValue: Option[Long] = mayBeIndex.flatMap(_.options.getAs[BSONLong]("expireAfterSeconds").map(_.as[Long]))
+      mayBeTtlValue  shouldNot be(None)
+      mayBeTtlValue.head shouldBe ttlTimeinSeconds
+    }
+    // to get full coverage we would need to try to get the index created with an expireAfterSeconds as a BSON value that is not a long
+    // not sure their is any value in this test as we know we always create as a long
+  }
 
   "saveNotification" should {
 

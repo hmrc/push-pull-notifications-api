@@ -24,9 +24,9 @@ import scala.collection.JavaConverters._
 
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+  val notificationTTLinSeconds: Long = config.get[Long]("notifications.ttlinseconds")
 
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
-
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 
