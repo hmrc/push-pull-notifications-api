@@ -1,13 +1,11 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.concurrent.TimeUnit
-import java.util.{Timer, TimerTask, UUID}
+import java.util.UUID
 
 import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.concurrent.Akka
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONLong
 import uk.gov.hmrc.play.test.UnitSpec
@@ -15,12 +13,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.support.{Awaiting, MongoApp}
+import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{Success, Try}
 
 class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
 
@@ -58,7 +53,8 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       mayBeTtlValue  shouldNot be(None)
       mayBeTtlValue.head shouldBe ttlTimeinSeconds
     }
-
+    // to get full coverage we would need to try to get the index created with an expireAfterSeconds as a BSON value that is not a long
+    // not sure their is any value in this test as we know we always create as a long
   }
 
   "saveNotification" should {
