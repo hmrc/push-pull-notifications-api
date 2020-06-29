@@ -46,3 +46,9 @@ final case class GetNotificationsSuccessRetrievedResult(notifications: List[Noti
 
 
 
+
+sealed trait PushConnectorResult
+final case class PushConnectorSuccessResult() extends PushConnectorResult
+final case class PushConnectorFailedResult(throwable: Throwable) extends PushConnectorResult
+final case class PushConnectorFailedBadRequest(message: String) extends PushConnectorResult
+
