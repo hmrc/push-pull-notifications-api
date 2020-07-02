@@ -26,6 +26,8 @@ import scala.collection.JavaConverters._
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
   val notificationTTLinSeconds: Long = config.get[Long]("notifications.ttlinseconds")
 
+
+  val outboundNotificationsUrl = servicesConfig.baseUrl("push-pull-notifications-gateway")
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")

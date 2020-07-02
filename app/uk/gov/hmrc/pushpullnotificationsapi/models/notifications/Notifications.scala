@@ -68,3 +68,7 @@ object Notification {
   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
+
+
+case class ForwardedHeader(key: String, value: String)
+case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)

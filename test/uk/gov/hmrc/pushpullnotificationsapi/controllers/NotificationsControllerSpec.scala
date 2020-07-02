@@ -57,6 +57,8 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
 
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
+
   lazy implicit val mat: Materializer = app.materializer
 
   override def beforeEach(): Unit = {
@@ -99,25 +101,25 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         when(mockNotificationService.saveNotification(eqTo(boxId),
           any[NotificationId],
           eqTo(MessageContentType.APPLICATION_JSON),
-          eqTo(jsonBody))(any[ExecutionContext])).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+          eqTo(jsonBody))(any[ExecutionContext], any[HeaderCarrier])).thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext])
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 400 when json content type header is sent but invalid json" in {
@@ -155,7 +157,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       "return 500 when save notification throws Duplicate Notification Exception" in {
 
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
 
 
@@ -166,33 +168,33 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 404 when save notification throws Box not found Exception" in {
 
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(NOT_FOUND)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {
 
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext]))
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext])
+          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
       }
     }
 

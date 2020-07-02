@@ -5,18 +5,19 @@ import java.util.UUID
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Format
+import play.api.libs.json.{Format, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.support.{AuditService, AuthService, MongoApp, ServerBaseISpec}
+import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService {
+class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService with PushGatewayService{
   this: Suite with ServerProvider =>
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
@@ -36,6 +37,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     new GuiceApplicationBuilder()
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
+        "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
         "metrics.enabled" -> true,
         "auditing.enabled" -> true,
         "auditing.consumer.baseUri.host" -> wireMockHost,
@@ -56,6 +58,17 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
          |     "callBackUrl":"somepath/firstOne",
          |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
          |   }]
+         |}
+         |""".stripMargin
+
+  val validConnectorJsonBody =
+    raw"""{
+         |   "destinationUrl":"https://somedomain.com/post-handler",
+         |   "forwardedHeaders": [
+         |      {"key": "Content-Type", "value": "application/json"},
+         |      {"key": "User-Agent", "value": "header-2-value"}
+         |   ],
+         |   "payload":"{}"
          |}
          |""".stripMargin
 
@@ -96,6 +109,17 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     await(boxRepository.findAll().head)
   }
 
+  def createBoxWithSubscribersAndReturn(): Box = {
+    val result: WSResponse = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
+    result.status shouldBe CREATED
+    val boxId = (Json.parse(result.body) \ "boxId").as[String]
+
+    val updateResult = doPut(s"$url/box/${boxId}/subscribers", updateSubscribersJsonBodyWithIds, validHeadersJson)
+    updateResult.status shouldBe OK
+
+    await(boxRepository.findAll().head)
+  }
+
   def createNotifications(boxId: BoxId, numberToCreate: Int): Unit = {
     for (_ <- 0 until numberToCreate) {
       val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
@@ -108,19 +132,52 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   "NotificationsController" when {
 
     "POST /box/[boxId]/notifications" should {
-      "respond with 201 when notification created for valid json and json content type" in {
+      "respond with 201 when notification created for valid json and json content type with push subscriber" in {
+        primeGatewayService(Status.OK)
+        val box = createBoxWithSubscribersAndReturn()
+        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+      }
+
+      "respond with 201 when notification created for valid json and json content type with no subscriber" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
-      "respond with 201 when notification created for valid xml and xml content type" in {
+      "respond with 201 when notification created for valid xml and xml content type with push subscriber" in {
+        primeGatewayService(Status.OK)
+        val box = createBoxWithSubscribersAndReturn()
+        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+      }
+
+      "respond with 201 when notification created for valid xml and xml content type with no subscribers" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
+
+      "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
+        primeGatewayService(Status.BAD_REQUEST)
+        val box = createBoxWithSubscribersAndReturn()
+        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+      }
+
+      "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
+        primeGatewayService(Status.INTERNAL_SERVER_ERROR)
+        val box = createBoxWithSubscribersAndReturn()
+        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+      }
+
 
       "respond with 400 when boxId is not a UUID" in {
         val box = createBoxAndReturn()
