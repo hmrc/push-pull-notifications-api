@@ -20,9 +20,9 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedBadRequest, PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,8 +32,8 @@ class NotificationPushService @Inject()(connector: PushConnector){
 
   def handlePushNotification(subscribers: List[Subscriber], notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     Future
-      .sequence(subscribers.filter(isValidPushSubscriber(_)).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification)))
-      .map(results => if(!results.isEmpty){results.reduce(_ && _)} else {
+      .sequence(subscribers.filter(isValidPushSubscriber).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification)))
+      .map(results => if(results.nonEmpty){results.reduce(_ && _)} else {
       Logger.debug("Nothing pushed")
       true
     })
@@ -47,10 +47,7 @@ class NotificationPushService @Inject()(connector: PushConnector){
     connector.send(outboundNotification).map {
       case _ : PushConnectorSuccessResult => true
       case error: PushConnectorFailedResult =>
-        Logger.info("Error calling gateway exception occurred:", error.throwable)
-        false
-      case error: PushConnectorFailedBadRequest =>
-        Logger.info(s"Error calling gateway payload invalid: ${error.message}")
+        Logger.info("Error calling gateway :", error.throwable)
         false
     }
   }

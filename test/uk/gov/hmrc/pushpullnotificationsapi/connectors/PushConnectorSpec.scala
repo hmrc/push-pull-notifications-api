@@ -26,7 +26,7 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpReads, HttpResp
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedBadRequest, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -72,7 +72,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
     }
 
-    "call the gateway correctly and return left with bad request result when status 400 is returned" in new SetUp {
+    "call the gateway correctly and return left when bad request occurs" in new SetUp {
       val exceptionVal = new BadRequestException("Some error")
 
       when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
@@ -80,7 +80,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
         .thenReturn(Future.failed(exceptionVal))
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result shouldBe PushConnectorFailedBadRequest("Some error")
+      result shouldBe PushConnectorFailedResult(exceptionVal)
 
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
