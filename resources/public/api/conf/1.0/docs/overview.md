@@ -8,7 +8,7 @@ Notifications will be deleted after 30 days.
 
 ## Push notifications
 
-After subscribing to an HMRC API that supports Push Pull Notifications, you can enter a Push/Callback URL. 
+You can enter a Push/Callback URL after subscribing to an HMRC API that supports Push Pull Notifications. 
 
 Created notifications are sent automatically by a POST request to the Push/Callback URL. 
 
