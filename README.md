@@ -31,12 +31,8 @@ An example use case is for asynchronous API requests.
 | Term | Description |
 | --- | --- |
 | _box_ | A container for notifications |
-| _notification_ | A wrapper for a message |
+| _notification_ | A wrapper for a message. Notifications expire after 30 days |
 | _message_ | XML or JSON that is being communicated from an API producer to an API consumer |
-
-### License
-
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
 
 ## `GET /box`
 Return the details of a box
@@ -307,3 +303,7 @@ HTTP Status: `200`
 | Access denied, The Developer Hub Client ID in the _auth_ bearer token does not have access to this box | `403` | `FORBIDDEN`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 | The accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
+
+### License
+
+This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

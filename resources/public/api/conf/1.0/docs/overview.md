@@ -4,6 +4,8 @@ Other HMRC APIs create notifications in response to events like asynchronous API
 
 Check if the HMRC API you are using supports Push Pull Notifications in the API documentation.
 
+Notifications will be deleted after 30 days.
+
 ## Push notifications
 
 After subscribing to an HMRC API that supports Push Pull Notifications, you can enter a Push/Callback URL. 
