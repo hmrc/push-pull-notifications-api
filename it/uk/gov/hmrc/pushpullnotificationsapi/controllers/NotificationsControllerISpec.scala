@@ -61,7 +61,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
          |}
          |""".stripMargin
 
-  val validConnectorJsonBody =
+  val validConnectorJsonBody: String =
     raw"""{
          |   "destinationUrl":"https://somedomain.com/post-handler",
          |   "forwardedHeaders": [
@@ -114,7 +114,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     result.status shouldBe CREATED
     val boxId = (Json.parse(result.body) \ "boxId").as[String]
 
-    val updateResult = doPut(s"$url/box/${boxId}/subscribers", updateSubscribersJsonBodyWithIds, validHeadersJson)
+    val updateResult = doPut(s"$url/box/$boxId/subscribers", updateSubscribersJsonBodyWithIds, validHeadersJson)
     updateResult.status shouldBe OK
 
     await(boxRepository.findAll().head)
@@ -180,7 +180,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
 
       "respond with 400 when boxId is not a UUID" in {
-        val box = createBoxAndReturn()
         val result = doPost(s"$url/box/ImNotaUUid/notifications", "{}", validHeadersJson)
         result.status shouldBe BAD_REQUEST
         result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"

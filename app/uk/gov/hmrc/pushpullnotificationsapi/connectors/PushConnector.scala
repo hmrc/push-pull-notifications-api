@@ -41,13 +41,14 @@ class PushConnector @Inject()(http: HttpClient,
   private def doSend(notification: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/notify"
 
-    val msg = "Calling outbound notification gateway"
-    Logger.debug(s"$msg url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
+    Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
     http.POST[OutboundNotification, HttpResponse](url, notification, hc.headers)
       .map[PushConnectorResult](_ => PushConnectorSuccessResult())
       .recoverWith {
-        case NonFatal(e) => Future.successful(PushConnectorFailedResult(e))
+        case NonFatal(e) =>
+          Logger.info("Call to ppns gateway failed:",e)
+          Future.successful(PushConnectorFailedResult(e))
       }
   }
 
