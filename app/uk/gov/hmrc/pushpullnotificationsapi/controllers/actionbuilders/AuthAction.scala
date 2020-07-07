@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
 import play.api.mvc.Results._
 import play.api.mvc.{ActionRefiner, Request, Result}
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
@@ -41,7 +42,10 @@ class AuthAction @Inject()(override val authConnector: AuthConnector)(implicit e
       maybeClientId: Option[String] =>
         maybeClientId match {
           case Some(clientId) => Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
-          case _ => Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
+          case _ => {
+            Logger.info("Unable to retrieve ClientId for request")
+            Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
+          }
         }
     } recover {
       case e: AuthorisationException =>Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
