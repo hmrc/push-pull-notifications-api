@@ -229,7 +229,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=RECEIVED", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe OK
       }
 
@@ -237,7 +237,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/NotAUUid/notifications?status=RECEIVED", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/NotAUUid/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe BAD_REQUEST
         result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
       }
@@ -246,7 +246,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 1)
-        val result: WSResponse = doGet(s"$url/box/${UUID.randomUUID().toString}/notifications?status=RECEIVED", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${UUID.randomUUID().toString}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe NOT_FOUND
         result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
@@ -255,7 +255,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         primeAuthServiceSuccess("UnknownClientId", "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=RECEIVED", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe FORBIDDEN
       }
 

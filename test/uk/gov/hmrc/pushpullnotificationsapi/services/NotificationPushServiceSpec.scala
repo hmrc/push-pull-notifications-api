@@ -56,7 +56,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.RECEIVED)
+        "{}", NotificationStatus.PENDING)
       val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
       result shouldBe true
     }
@@ -69,7 +69,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.RECEIVED)
+        "{}", NotificationStatus.PENDING)
       val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
       result shouldBe false
     }
@@ -81,7 +81,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.RECEIVED)
+        "{}", NotificationStatus.PENDING)
       val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
       result shouldBe true
       verifyZeroInteractions(mockConnector)
@@ -93,7 +93,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.RECEIVED)
+        "{}", NotificationStatus.PENDING)
       val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
       result shouldBe true
       verifyZeroInteractions(mockConnector)

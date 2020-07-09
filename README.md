@@ -254,7 +254,7 @@ Get a list of notifications that have been sent to a box
 ### Query parameters
 | Name | Description |
 | --- | --- |
-| `status` (optional) | Only return notifications with this status. One of `RECEIVED` |
+| `status` (optional) | Only return notifications with this status. One of `PENDING` |
 | `fromDate` (optional)| Only return notifications created after this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.987` |
 | `toDate` (optional)| Only return notifications created before this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.123` |
 
@@ -273,7 +273,7 @@ HTTP Status: `200`
         "boxId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
         "messageContentType":"application/json",
         "message":"{\"test\": \"hello\"}",
-        "status":"RECEIVED",
+        "status":"PENDING",
         "createdDateTime":"2020-06-03T14:14:54.108+0000"
     },
     {
@@ -281,7 +281,7 @@ HTTP Status: `200`
         "boxId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
         "messageContentType":"application/xml",
         "message":"<root>XXX</root>",
-        "status":"RECEIVED",
+        "status":"PENDING",
         "createdDateTime":"2020-06-03T14:29:10.049+0000"
     }
 ]
@@ -292,7 +292,7 @@ HTTP Status: `200`
 | `boxId` | Unique identified for a box that the notification was sent to |
 | `messageContentType` | Content type of the message, either `application/json` or `application/xml` |
 | `message` | The notification message. JSON or XML as defined by messageContentType. If this is JSON then it will have been escaped. For details about the structure of this data consult the documentation for the HMRC API that created the notification
-| `status` | Status of the notification. `RECEIVED`, `READ`, `UNKNOWN` |
+| `status` | Status of the notification. `PENDING`, `ACKNOWLEDGED`, `FAILED` |
 | `createdDateTime` | ISO-8601 UTC date and time that the notification was created|
 
 ### Error scenarios

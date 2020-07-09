@@ -20,7 +20,7 @@ request is sent to `https://www.example.com/push` with a body similar to:
     "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
     "messageContentType": "application/json",
     "message": "{\"key\":\"value\"}",
-    "status": "RECEIVED",
+    "status": "PENDING",
     "createdDateTime": "2020-06-01T10:20:23.160+0000"
 }
 `

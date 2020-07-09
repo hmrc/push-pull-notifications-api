@@ -69,7 +69,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
         messageContentType = APPLICATION_JSON,
         message = "{\"someJsone\": \"someValue\"}",
-        status = RECEIVED)
+        status = PENDING)
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
 
@@ -80,7 +80,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
         messageContentType = APPLICATION_JSON,
         message = "{",
-        status = RECEIVED)
+        status = PENDING)
 
 
       val result: Unit = await(repo.saveNotification(notification))
@@ -118,14 +118,14 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       createNotificationInDB()
       createNotificationInDB()
-      createNotificationInDB(READ)
+      createNotificationInDB(ACKNOWLEDGED)
 
       val notifications: List[Notification] = await(repo.getAllByBoxId(boxId))
 
       notifications.isEmpty shouldBe false
       notifications.size shouldBe 3
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(RECEIVED)))
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING)))
       filteredList.isEmpty shouldBe false
       filteredList.size shouldBe 2
     }
@@ -135,14 +135,14 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createNotificationInDB()
 
       await(repo.getAllByBoxId(boxId)).isEmpty shouldBe false
-      await(repo.getByBoxIdAndFilters(boxId, Some(READ))).isEmpty shouldBe true
+      await(repo.getByBoxIdAndFilters(boxId, Some(ACKNOWLEDGED))).isEmpty shouldBe true
     }
 
     "return empty List when no notification exist for boxId" in {
       createNotificationInDB()
 
       await(repo.getAllByBoxId(boxId)).isEmpty shouldBe false
-      await(repo.getByBoxIdAndFilters(BoxId(UUID.randomUUID()), Some(RECEIVED))).isEmpty shouldBe true
+      await(repo.getByBoxIdAndFilters(BoxId(UUID.randomUUID()), Some(PENDING))).isEmpty shouldBe true
     }
 
 
@@ -153,7 +153,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       validateNotificationsCreated(notificationsToCreate)
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(RECEIVED),
+        Some(PENDING),
         fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
         toDateTime = Some(DateTime.now())))
       filteredList.size shouldBe 3
@@ -167,7 +167,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       validateNotificationsCreated(notificationsToCreate)
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(RECEIVED),
+        Some(PENDING),
         fromDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
       ))
       filteredList.size shouldBe 5
@@ -182,7 +182,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       validateNotificationsCreated(notificationsToCreate)
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(RECEIVED),
+        Some(PENDING),
         toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
       ))
       filteredList.size shouldBe 6
@@ -193,14 +193,14 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = READ)
+      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
+      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
         toDateTime = Some(DateTime.now())))
-      filteredList.count(n => n.status == READ) shouldBe 2
-      filteredList.count(n => n.status == RECEIVED) shouldBe 3
+      filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
+      filteredList.count(n => n.status == PENDING) shouldBe 3
     }
   }
 
@@ -210,7 +210,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     notifications.size shouldBe numberExpected
   }
 
-  private def createNotificationInDB(status: NotificationStatus = RECEIVED, createdDateTime: DateTime = DateTime.now()) = {
+  private def createNotificationInDB(status: NotificationStatus = PENDING, createdDateTime: DateTime = DateTime.now()) = {
     val notification = Notification(NotificationId(UUID.randomUUID()),
       boxId = boxId,
       APPLICATION_JSON,

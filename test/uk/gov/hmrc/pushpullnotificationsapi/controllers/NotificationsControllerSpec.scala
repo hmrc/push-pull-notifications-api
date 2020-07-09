@@ -39,7 +39,7 @@ import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.RECEIVED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
@@ -86,7 +86,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     messageContentType = MessageContentType.APPLICATION_JSON,
     message = "{}",
     createdDateTime = createdDateTime,
-    status = RECEIVED)
+    status = PENDING)
 
   val notification2: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
     messageContentType = MessageContentType.APPLICATION_XML,
@@ -232,7 +232,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 200 when valid status, fromDate filter are provided" in {
-        testAndValidateGetByQueryParams(boxId, OK, Some("RECEIVED"), maybeFromDateStr = Some("2020-02-02T00:54:00Z"))
+        testAndValidateGetByQueryParams(boxId, OK, Some("PENDING"), maybeFromDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
       "return 400 when invalid fromDate filter provided" in {
@@ -244,7 +244,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 200 when valid toDate and status filters are provided" in {
-        testAndValidateGetByQueryParams(boxId, OK, Some("RECEIVED"), maybeToDateStr = Some("2020-02-02T00:54:00Z"))
+        testAndValidateGetByQueryParams(boxId, OK, Some("PENDING"), maybeToDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
       "return 400 when invalid toDate filter provided" in {
@@ -281,12 +281,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
           any[ClientId],
-          eqTo(Some(RECEIVED)),
+          eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
           .thenReturn(Future.successful(GetNotificationsServiceBoxNotFoundResult("")))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
         status(result) shouldBe NOT_FOUND
         Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
@@ -298,12 +298,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
           any[ClientId],
-          eqTo(Some(RECEIVED)),
+          eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
           .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
         status(result) shouldBe FORBIDDEN
       }
 
@@ -314,12 +314,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
           eqTo(clientId),
-          eqTo(Some(RECEIVED)),
+          eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List.empty)))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=RECEIVED&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
         status(result) shouldBe OK
       }
 

@@ -24,7 +24,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.RECEIVED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 
 import scala.collection.immutable
 
@@ -43,6 +43,11 @@ sealed trait NotificationStatus extends EnumEntry
 object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[NotificationStatus] {
   val values: immutable.IndexedSeq[NotificationStatus] = findValues
 
+  case object PENDING extends NotificationStatus
+  case object ACKNOWLEDGED extends NotificationStatus
+  case object FAILED extends NotificationStatus
+
+  //TODO: these will be deprecated
   case object RECEIVED extends NotificationStatus
   case object READ extends NotificationStatus
 }
@@ -57,7 +62,7 @@ case class Notification(notificationId: NotificationId,
                         boxId: BoxId,
                         messageContentType: MessageContentType,
                         message: String,
-                        status: NotificationStatus = RECEIVED,
+                        status: NotificationStatus = PENDING,
                         createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
                         readDateTime: Option[DateTime] = None,
                         pushedDateTime: Option[DateTime] = None)
