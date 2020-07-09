@@ -84,10 +84,9 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   private def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
-      Logger.info("An unexpected error occurred:", e)
-      e match {
-        case _ => InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
-      }
+      Logger.error("An unexpected error occurred:", e)
+      InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
+
   }
 
   override protected def withJsonBody[T]
