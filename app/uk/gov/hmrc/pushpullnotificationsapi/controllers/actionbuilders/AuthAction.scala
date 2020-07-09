@@ -48,9 +48,7 @@ class AuthAction @Inject()(override val authConnector: AuthConnector)(implicit e
           }
         }
     } recover {
-      case e: AuthorisationException =>
-        Logger.info("Authorisation Failed")
-        Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
+      case e: AuthorisationException =>Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
     }
   }
 
