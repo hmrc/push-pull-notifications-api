@@ -46,10 +46,6 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
   case object PENDING extends NotificationStatus
   case object ACKNOWLEDGED extends NotificationStatus
   case object FAILED extends NotificationStatus
-
-  //TODO: these will be deprecated
-  case object RECEIVED extends NotificationStatus
-  case object READ extends NotificationStatus
 }
 
 

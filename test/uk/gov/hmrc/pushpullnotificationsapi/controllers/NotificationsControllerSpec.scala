@@ -92,7 +92,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     messageContentType = MessageContentType.APPLICATION_XML,
     message = "<someXml/>",
     createdDateTime = createdDateTime.plusHours(12),
-    status = NotificationStatus.READ)
+    status = NotificationStatus.ACKNOWLEDGED)
 
 
   "NotificationController" when {
@@ -203,7 +203,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
 
       "return 200 and list of matching notifications when status filter provided" in {
-        testAndValidateGetByQueryParams(boxId, OK, Some("READ"))
+        testAndValidateGetByQueryParams(boxId, OK, Some("ACKNOWLEDGED"))
       }
 
       "return 200 list of notification when no query parameters are provided" in {
