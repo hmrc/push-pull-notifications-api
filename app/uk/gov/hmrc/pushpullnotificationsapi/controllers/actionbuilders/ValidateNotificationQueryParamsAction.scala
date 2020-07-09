@@ -51,7 +51,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
 
 
   def validateQueryParamsKeys(queryParams: Map[String, Seq[String]]): Either[Result, Boolean] = {
-    if (!queryParams.isEmpty) {
+    if (queryParams.nonEmpty) {
       if (!queryParams.keys.forall(validKeys.contains(_))) {
         Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid / Unknown query parameter provided")))
       } else Right(true)
@@ -66,7 +66,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
       statusVal <- validateStatusParamValue(request.request.getQueryString(statusParamKey))
       fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
       toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
-      _ <-  validateToDateIsAfterFRomDate(fromDateVal, toDateVal)
+      _ <-  validateToDateIsAfterFromDate(fromDateVal, toDateVal)
     } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
   }
 
@@ -98,15 +98,14 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
     }
   }
 
-  def validateToDateIsAfterFRomDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime] ): Either[Result, Option[Boolean]] = {
+  def validateToDateIsAfterFromDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime] ): Either[Result, Option[Boolean]] = {
     (fromDateVal, toDateVal) match {
-      case (Some(fromDate), Some(toDate)) => {
+      case (Some(fromDate), Some(toDate)) =>
         if(fromDate.isBefore(toDate)){
           Right(Some(true))
         }else{
           Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "fromDate parameter is before toDateParameter")))
         }
-      }
       case _ => Right(Some(true))
     }
   }
