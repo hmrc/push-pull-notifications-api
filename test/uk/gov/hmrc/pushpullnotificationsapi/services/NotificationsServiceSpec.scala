@@ -130,7 +130,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
   "getNotifications" should {
 
-    val status = Some(NotificationStatus.RECEIVED)
+    val status = Some(NotificationStatus.PENDING)
     val fromDate = Some(DateTime.now().minusHours(2))
     val toDate = Some(DateTime.now())
 

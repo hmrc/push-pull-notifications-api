@@ -33,7 +33,7 @@
         "description": "Status of the notification.",
         "type": "string",
         "enum": [
-          "RECEIVED"
+          "PENDING"
         ]
       },
       "createdDateTime": {
