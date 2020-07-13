@@ -57,7 +57,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[Option[BoxId]] =
     collection.insert.one(box).map(_ => Some(box.boxId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Logger.info("unable to create box")
+        Logger.info("box already exists")
       Future.successful(None)
     }
 

@@ -20,14 +20,15 @@ import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.http.Status.{CREATED, OK}
 import play.api.libs.json.Writes
 import play.api.test.Helpers
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpReads, HttpResponse}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
@@ -60,7 +61,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
 
       val httpResponse: HttpResponse = mock[HttpResponse]
       when(httpResponse.body).thenReturn("")
-      when(httpResponse.status).thenReturn(200)
+      when(httpResponse.status).thenReturn(OK)
       when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
         any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.successful(httpResponse))
@@ -70,6 +71,20 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
 
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
+    }
+
+    "call the gateway correctly and return failed result when response status 201 is returned" in new SetUp {
+
+      val httpResponse: HttpResponse = mock[HttpResponse]
+      when(httpResponse.body).thenReturn("")
+      when(httpResponse.status).thenReturn(CREATED)
+      when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
+        any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+        .thenReturn(Future.successful(httpResponse))
+
+      val result: PushConnectorResult = await(connector.send(pushNotification))
+
+      result.asInstanceOf[PushConnectorFailedResult].throwable.getMessage shouldBe "Unexpected HTTP code 201"
     }
 
     "call the gateway correctly and return left when bad request occurs" in new SetUp {

@@ -35,7 +35,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)
+class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)(implicit ec: ExecutionContext)
   extends ReactiveRepository[Notification, BSONObjectID](
     "notifications",
     mongoComponent.mongoConnector.db,
@@ -157,5 +157,12 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
         Future.successful(None)
     }
 
-}
+  def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
+    updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))
+  }
 
+  private def updateNotification(notificationId: NotificationId, updateStatement: JsObject): Future[Notification] =
+    findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map {
+      _.result[Notification].head
+    }
+}

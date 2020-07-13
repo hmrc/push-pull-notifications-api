@@ -21,22 +21,34 @@ import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class NotificationPushService @Inject()(connector: PushConnector){
+class NotificationPushService @Inject()(connector: PushConnector, notificationsRepository: NotificationsRepository){
 
   def handlePushNotification(subscribers: List[Subscriber], notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     Future
       .sequence(subscribers.filter(isValidPushSubscriber).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification)))
-      .map(results => if(results.nonEmpty){results.reduce(_ && _)} else {
-      Logger.debug("Nothing pushed")
-      true
-    })
+      .map(results =>
+        if (results.nonEmpty ) {
+          val combinedResult = results.reduce(_ && _)
+          if (combinedResult) {
+            notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
+          } else {
+            notificationsRepository.updateStatus(notification.notificationId, FAILED)
+          }
+          combinedResult
+        } else {
+          Logger.debug("Nothing pushed")
+          true
+        }
+      )
   }
 
   private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
