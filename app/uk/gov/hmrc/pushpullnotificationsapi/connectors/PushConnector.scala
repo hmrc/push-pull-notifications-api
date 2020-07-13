@@ -19,7 +19,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.Logger
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import play.api.http.Status.OK
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UnprocessableEntityException}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
@@ -44,13 +45,16 @@ class PushConnector @Inject()(http: HttpClient,
     Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
     http.POST[OutboundNotification, HttpResponse](url, notification)
-      .map[PushConnectorResult](_ => PushConnectorSuccessResult())
-      .recoverWith {
+      .map(_.status).map[PushConnectorResult] {
+        case OK => PushConnectorSuccessResult()
+        case httpCode: Int =>
+          Logger.info(s"Unexpected HTTP code $httpCode")
+          PushConnectorFailedResult(new UnprocessableEntityException(s"Unexpected HTTP code $httpCode"))
+      }
+      .recover {
         case NonFatal(e) =>
           Logger.info("Call to ppns gateway failed:",e)
-          Future.successful(PushConnectorFailedResult(e))
+          PushConnectorFailedResult(e)
       }
   }
-
 }
-

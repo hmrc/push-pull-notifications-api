@@ -94,6 +94,31 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
 
   }
+
+  "updateStatus" should {
+    "update the matching notification with a new status" in {
+      val matchingNotificationId = NotificationId(UUID.randomUUID())
+      val nonMatchingNotificationId = NotificationId(UUID.randomUUID())
+      createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
+      createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
+
+      await(repo.updateStatus(matchingNotificationId, ACKNOWLEDGED))
+
+      val notifications = await(repo.findAll())
+      notifications.find(_.notificationId == matchingNotificationId).get.status shouldBe ACKNOWLEDGED
+      notifications.find(_.notificationId == nonMatchingNotificationId).get.status shouldBe PENDING
+    }
+
+    "return the updated notification" in {
+      val notificationId = NotificationId(UUID.randomUUID())
+      createNotificationInDB(status = PENDING, notificationId = notificationId)
+
+      val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
+
+      result.status shouldBe ACKNOWLEDGED
+    }
+  }
+
   private val boxIdStr = UUID.randomUUID().toString
   private val boxId = BoxId(UUID.fromString(boxIdStr))
 
@@ -230,8 +255,10 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     notifications.size shouldBe numberExpected
   }
 
-  private def createNotificationInDB(status: NotificationStatus = PENDING, createdDateTime: DateTime = DateTime.now()) = {
-    val notification = Notification(NotificationId(UUID.randomUUID()),
+  private def createNotificationInDB(status: NotificationStatus = PENDING,
+                                     createdDateTime: DateTime = DateTime.now(),
+                                     notificationId: NotificationId = NotificationId(UUID.randomUUID())) = {
+    val notification = Notification(notificationId,
       boxId = boxId,
       APPLICATION_JSON,
       message = "{\"someJsone\": \"someValue\"}",
