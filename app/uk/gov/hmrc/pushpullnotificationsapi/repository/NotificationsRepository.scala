@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger
-import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
@@ -157,7 +156,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
   }
 
   def getAllByBoxId(boxId: BoxId)
-                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId)
+                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
 

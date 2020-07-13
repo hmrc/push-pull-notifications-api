@@ -57,7 +57,8 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       when(mockNotificationsRepo.getByBoxIdAndFilters(eqTo(boxId),
         any[Option[NotificationStatus]],
         any[Option[DateTime]],
-        any[Option[DateTime]])(any[ExecutionContext])).thenReturn(result)
+        any[Option[DateTime]],
+        any[Int])(any[ExecutionContext])).thenReturn(result)
     }
 
 
@@ -151,7 +152,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       val resultsList : GetNotificationsSuccessRetrievedResult = result.asInstanceOf[GetNotificationsSuccessRetrievedResult]
       resultsList.notifications.isEmpty shouldBe false
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(any[ExecutionContext])
 
     }
 
@@ -168,7 +169,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
       result shouldBe GetNotificationsSuccessRetrievedResult(List.empty)
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(any[ExecutionContext])
     }
 
     "return notfound exception when client id is different from box creator client id" in new Setup {
