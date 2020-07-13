@@ -50,6 +50,9 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
     val serviceToTest = new NotificationsService(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService)
     val notificationCaptor: Captor[Notification] = ArgCaptor[Notification]
 
+    // API-4417: Default the number of notifications
+    when(mockNotificationsRepo.numberOfNotificationsToReturn).thenReturn(100)
+
     def primeNotificationRepoSave(result: Future[Option[NotificationId]]): ScalaOngoingStubbing[Future[Option[NotificationId]]] = {
       when(mockNotificationsRepo.saveNotification(any[Notification])(any[ExecutionContext])).thenReturn(result)
     }
@@ -60,7 +63,6 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
         any[Option[DateTime]],
         any[Int])(any[ExecutionContext])).thenReturn(result)
     }
-
 
     def primeBoxRepo(result: Future[List[Box]], boxId: BoxId): ScalaOngoingStubbing[Future[List[Box]]] = {
       when(mockBoxRepo.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(result)

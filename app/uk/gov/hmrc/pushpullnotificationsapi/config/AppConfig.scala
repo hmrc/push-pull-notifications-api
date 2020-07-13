@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
   val notificationTTLinSeconds: Long = config.get[Long]("notifications.ttlinseconds")
-
+  val numberOfNotificationsToRetrievePerRequest: Int = config.get[Int]("notifications.numberToRetrievePerRequest")
 
   val outboundNotificationsUrl = servicesConfig.baseUrl("push-pull-notifications-gateway")
   val authBaseUrl: String = servicesConfig.baseUrl("auth")

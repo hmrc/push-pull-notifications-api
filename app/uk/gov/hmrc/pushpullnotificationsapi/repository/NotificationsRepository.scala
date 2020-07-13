@@ -49,6 +49,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
   private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
   private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
 
+  lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
+
   //API-4370 need to delete old indexes this code can be removed once this has been run
   private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
 
@@ -120,7 +122,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
                            status: Option[NotificationStatus] = None,
                            fromDateTime: Option[DateTime] = None,
                            toDateTime: Option[DateTime] = None,
-                           numberOfNotificationsToReturn: Int = 100)
+                           numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
     val query =
