@@ -22,9 +22,12 @@ import play.api.Logger
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.Cursor.FailOnError
+import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
+import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -114,18 +117,24 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   }
 
-
   def getByBoxIdAndFilters(boxId: BoxId,
                            status: Option[NotificationStatus] = None,
                            fromDateTime: Option[DateTime] = None,
-                           toDateTime: Option[DateTime] = None)
+                           toDateTime: Option[DateTime] = None,
+                           numberOfNotificationsToReturn: Int = 100)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
-    val query: (String, JsValueWrapper) = f"$$and" -> (
-      boxIdQuery(boxId) ++
+    val query =
+      Json.obj(f"$$and" -> (
+        boxIdQuery(boxId) ++
         statusQuery(status) ++
-        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
-    find(query)
+        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
+
+    collection
+      .find(query, None)
+      .sort(Json.obj("createdDateTime" -> 1))
+      .cursor[Notification](ReadPreference.primaryPreferred)
+      .collect(maxDocs = numberOfNotificationsToReturn, FailOnError[List[Notification]]())
   }
 
   val empty: JsObject = Json.obj()

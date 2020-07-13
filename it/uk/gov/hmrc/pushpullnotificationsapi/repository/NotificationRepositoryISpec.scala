@@ -2,7 +2,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
 
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDate}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -201,6 +201,26 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
         toDateTime = Some(DateTime.now())))
       filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
       filteredList.count(n => n.status == PENDING) shouldBe 3
+    }
+
+    "limit number of results, returning oldest first" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
+
+      val notificationsToReturn = 11
+
+      // Create 10 notifications from yesterday
+      for (_ <- 0 until notificationsToReturn) {
+        createNotificationInDB(createdDateTime = DateTime.now().minusDays(1))
+      }
+
+      // And 1 for today
+      val mostRecentDate = DateTime.now
+      createNotificationInDB(createdDateTime = mostRecentDate)
+
+      val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = notificationsToReturn))
+
+      returnedNotifications.size should be (notificationsToReturn)
+      returnedNotifications.filter(n => n.createdDateTime.isEqual(mostRecentDate)) should be (List.empty)
     }
   }
 
