@@ -44,7 +44,7 @@ class PushConnector @Inject()(http: HttpClient,
 
     Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
-    http.POST[OutboundNotification, HttpResponse](url, notification, hc.headers)
+    http.POST[OutboundNotification, HttpResponse](url, notification)
       .map(_.status).map[PushConnectorResult] {
         case OK => PushConnectorSuccessResult()
         case httpCode: Int =>
