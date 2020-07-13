@@ -50,6 +50,9 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
     val serviceToTest = new NotificationsService(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService)
     val notificationCaptor: Captor[Notification] = ArgCaptor[Notification]
 
+    // API-4417: Default the number of notifications
+    when(mockNotificationsRepo.numberOfNotificationsToReturn).thenReturn(100)
+
     def primeNotificationRepoSave(result: Future[Option[NotificationId]]): ScalaOngoingStubbing[Future[Option[NotificationId]]] = {
       when(mockNotificationsRepo.saveNotification(any[Notification])(any[ExecutionContext])).thenReturn(result)
     }
@@ -57,9 +60,9 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       when(mockNotificationsRepo.getByBoxIdAndFilters(eqTo(boxId),
         any[Option[NotificationStatus]],
         any[Option[DateTime]],
-        any[Option[DateTime]])(any[ExecutionContext])).thenReturn(result)
+        any[Option[DateTime]],
+        any[Int])(any[ExecutionContext])).thenReturn(result)
     }
-
 
     def primeBoxRepo(result: Future[List[Box]], boxId: BoxId): ScalaOngoingStubbing[Future[List[Box]]] = {
       when(mockBoxRepo.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(result)
@@ -151,7 +154,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       val resultsList : GetNotificationsSuccessRetrievedResult = result.asInstanceOf[GetNotificationsSuccessRetrievedResult]
       resultsList.notifications.isEmpty shouldBe false
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(any[ExecutionContext])
 
     }
 
@@ -168,7 +171,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
       result shouldBe GetNotificationsSuccessRetrievedResult(List.empty)
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate))(any[ExecutionContext])
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(any[ExecutionContext])
     }
 
     "return notfound exception when client id is different from box creator client id" in new Setup {

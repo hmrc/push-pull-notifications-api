@@ -22,11 +22,13 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
   private val ttlTimeinSeconds = 3
+  private val numberOfNotificationsToRetrievePerRequest = 100
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
-              "notifications.ttlinseconds" -> ttlTimeinSeconds,
+        "notifications.ttlinseconds" -> ttlTimeinSeconds,
+        "notifications.numberToRetrievePerRequest" -> numberOfNotificationsToRetrievePerRequest,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
       )
 
@@ -201,6 +203,24 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
         toDateTime = Some(DateTime.now())))
       filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
       filteredList.count(n => n.status == PENDING) shouldBe 3
+    }
+
+    "limit number of results, returning oldest first" in {
+      await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
+
+      // Create enough notifications to be returned in one request
+      for (_ <- 0 until numberOfNotificationsToRetrievePerRequest) {
+        createNotificationInDB(createdDateTime = DateTime.now().minusDays(1))
+      }
+
+      // And 1 for today, which should not be returned
+      val mostRecentDate = DateTime.now
+      createNotificationInDB(createdDateTime = mostRecentDate)
+
+      val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId))
+
+      returnedNotifications.size should be (numberOfNotificationsToRetrievePerRequest)
+      returnedNotifications.filter(n => n.createdDateTime.isEqual(mostRecentDate)) should be (List.empty)
     }
   }
 

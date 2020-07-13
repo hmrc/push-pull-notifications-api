@@ -19,12 +19,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger
-import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.Cursor.FailOnError
+import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
+import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -46,6 +48,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
   private lazy val notifications_index_name = "notifications_idx"
   private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
   private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
+
+  lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
   //API-4370 need to delete old indexes this code can be removed once this has been run
   private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
@@ -114,18 +118,24 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   }
 
-
   def getByBoxIdAndFilters(boxId: BoxId,
                            status: Option[NotificationStatus] = None,
                            fromDateTime: Option[DateTime] = None,
-                           toDateTime: Option[DateTime] = None)
+                           toDateTime: Option[DateTime] = None,
+                           numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
-    val query: (String, JsValueWrapper) = f"$$and" -> (
-      boxIdQuery(boxId) ++
+    val query =
+      Json.obj(f"$$and" -> (
+        boxIdQuery(boxId) ++
         statusQuery(status) ++
-        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime)))
-    find(query)
+        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
+
+    collection
+      .find(query, None)
+      .sort(Json.obj("createdDateTime" -> 1))
+      .cursor[Notification](ReadPreference.primaryPreferred)
+      .collect(maxDocs = numberOfNotificationsToReturn, FailOnError[List[Notification]]())
   }
 
   val empty: JsObject = Json.obj()
@@ -148,7 +158,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
   }
 
   def getAllByBoxId(boxId: BoxId)
-                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId)
+                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
 
