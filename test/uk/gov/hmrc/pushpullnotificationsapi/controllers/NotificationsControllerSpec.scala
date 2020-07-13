@@ -359,12 +359,14 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     "acknowledgeNotifications" should {
 
       "return 200 when acknowledge request is valid " in {
+        primeAuthAction(clientIdStr)
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
         status(result) shouldBe OK
       }
 
       "return 400 when acknowledge request is not valid against the model" in {
+        primeAuthAction(clientIdStr)
         val request = "{\"somINvalidKey\": [\"222222\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, request))
         status(result) shouldBe BAD_REQUEST
@@ -373,6 +375,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 400 when request contains and invalid(nonUUID) notificationID" in {
+        primeAuthAction(clientIdStr)
         val request = "{\"notificationIds\": [\"22222222\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, request))
         status(result) shouldBe BAD_REQUEST
@@ -381,6 +384,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 400 when request contains no ids" in {
+        primeAuthAction(clientIdStr)
         val request = "{\"notificationIds\": []}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, request))
         status(result) shouldBe BAD_REQUEST
@@ -389,6 +393,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 400 when acknowledge request contains duplicates" in {
+        primeAuthAction(clientIdStr)
         println(UUID.randomUUID().toString)
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"de396b71-55c7-4a24-954a-df6bd4a85795\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))

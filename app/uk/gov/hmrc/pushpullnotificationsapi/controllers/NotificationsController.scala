@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
-import java.util.regex.Pattern
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
@@ -25,9 +24,9 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
@@ -40,7 +39,8 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 @Singleton()
-class NotificationsController @Inject()(notificationsService: NotificationsService,
+class NotificationsController @Inject()(appConfig: AppConfig,
+                                        notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
                                         validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                                         authAction: AuthAction,
@@ -48,8 +48,6 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
   extends BackendController(cc) {
-
-  private val notificationLimit = 100
 
   def saveNotification(boxId: BoxId): Action[String] =
     (Action andThen
@@ -91,10 +89,10 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
 
   val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
 
-  def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
+  private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
     //duplicates?
 
-    if (request.notificationIds.isEmpty || request.notificationIds.size > notificationLimit) {
+    if (request.notificationIds.isEmpty || request.notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
       false
     } else {
       val uniqueIds = request.notificationIds.distinct
@@ -103,17 +101,26 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
 
   }
 
-  def acknowledgeNotifications(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) {
-    implicit request =>
+  def acknowledgeNotifications(boxId: BoxId): Action[JsValue] =
+    (Action andThen
+      authAction).async(playBodyParsers.json) { implicit request =>
+      implicit val actualBody: Request[JsValue] = request.request
       withJsonBody[AcknowledgeNotificationsRequest] {
         jsonValue =>
           if (validateAcknowledgeRequest(jsonValue)) {
-            Future.successful(Ok(""))
+            notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
+              case results: AcknowledgeNotificationsSuccessUpdatedResult =>
+                Ok(Json.toJson(results.notifications))
+              case _: AcknowledgeNotificationsServiceBoxNotFoundResult =>
+                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+              case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
+                Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+            } recover recovery
           } else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
-      } recover recovery
-  }
+      }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
+    }
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
     request.contentType match {
