@@ -8,14 +8,17 @@ import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse, ResponseFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService with PushGatewayService{
@@ -121,12 +124,14 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     await(boxRepository.findAll().head)
   }
 
-  def createNotifications(boxId: BoxId, numberToCreate: Int): Unit = {
+  def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
+    var notifications: mutable.MutableList[String] = mutable.MutableList[String]()
     for (_ <- 0 until numberToCreate) {
       val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
       result.status shouldBe CREATED
+      notifications += result.body
     }
-
+    List() ++ notifications
 
   }
 
@@ -277,5 +282,30 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
     }
 
+    "GET /box/[boxId]/notifications" should {
+
+      "return OK happy path" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        val notifications = createNotifications(box.boxId, 4)
+        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
+
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe OK
+      }
+    }
+
+  }
+
+  private def buildAcknowledgeRequest(notificationIdList: List[String]): String = {
+    Json.toJson(AcknowledgeNotificationsRequest(notificationIdList)).toString()
+  }
+
+  private def stringToCreateNotificationResponse(notificationIdResponse: String): CreateNotificationResponse ={
+
+    Json.parse(notificationIdResponse).validate[CreateNotificationResponse] match {
+      case JsSuccess(value: CreateNotificationResponse, _) => value
+      case _ => fail()
+    }
   }
 }

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
+import java.util.regex.Pattern
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
@@ -26,6 +27,7 @@ import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
@@ -33,6 +35,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
@@ -45,6 +48,8 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
                                         cc: ControllerComponents,
                                         playBodyParsers: PlayBodyParsers)(implicit val ec: ExecutionContext)
   extends BackendController(cc) {
+
+  private val notificationLimit = 100
 
   def saveNotification(boxId: BoxId): Action[String] =
     (Action andThen
@@ -84,6 +89,31 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
         } recover recovery
       }
 
+  val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
+
+  def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
+    //duplicates?
+
+    if (request.notificationIds.isEmpty || request.notificationIds.size > notificationLimit) {
+      false
+    } else {
+      val uniqueIds = request.notificationIds.distinct
+      request.notificationIds.exists(UUIDRegex.findFirstIn(_).isDefined) && uniqueIds.equals(request.notificationIds)
+    }
+
+  }
+
+  def acknowledgeNotifications(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) {
+    implicit request =>
+      withJsonBody[AcknowledgeNotificationsRequest] {
+        jsonValue =>
+          if (validateAcknowledgeRequest(jsonValue)) {
+            Future.successful(Ok(""))
+          } else {
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
+          }
+      } recover recovery
+  }
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
     request.contentType match {
@@ -115,6 +145,20 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
     } match {
       case Success(_) => true
       case Failure(_) => false
+    }
+  }
+
+  override protected def withJsonBody[T]
+  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
+  = {
+    withJson(request.body)(f)
+  }
+
+  private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
+    json.validate[T] match {
+      case JsSuccess(payload, _) => f(payload)
+      case JsError(errs) =>
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }
 

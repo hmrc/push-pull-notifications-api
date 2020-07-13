@@ -10,4 +10,6 @@ PUT       /box/:boxId/subscriber        uk.gov.hmrc.pushpullnotificationsapi.con
 # Notifications
 POST      /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)
 
-GET       /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
+GET       /box/:boxId/notifications  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
+
+PUT       /box/:boxId/notifications  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.acknowledgeNotifications(boxId: BoxId)
