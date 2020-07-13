@@ -41,10 +41,17 @@ sealed trait GetNotificationsServiceSuccessResult extends GetNotificationCreateS
 
 final case class GetNotificationsServiceBoxNotFoundResult(message: String) extends GetNotificationsServiceFailedResult
 final case class GetNotificationsServiceUnauthorisedResult(message: String) extends GetNotificationsServiceFailedResult
-
 final case class GetNotificationsSuccessRetrievedResult(notifications: List[Notification]) extends GetNotificationsServiceSuccessResult
 
 
+sealed trait AcknowledgeNotificationsServiceResult
+
+sealed trait AcknowledgeNotificationsServiceResultSuccess extends AcknowledgeNotificationsServiceResult
+sealed trait AcknowledgeNotificationsServiceResultFailure extends AcknowledgeNotificationsServiceResult
+
+final case class AcknowledgeNotificationsServiceBoxNotFoundResult(message: String) extends AcknowledgeNotificationsServiceResultFailure
+final case class AcknowledgeNotificationsServiceUnauthorisedResult(message: String) extends AcknowledgeNotificationsServiceResultFailure
+final case class AcknowledgeNotificationsSuccessUpdatedResult(notifications: List[Notification]) extends AcknowledgeNotificationsServiceResultSuccess
 
 
 sealed trait PushConnectorResult

@@ -22,7 +22,7 @@ import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.ReadPreference
+import reactivemongo.api.{ReadPreference, WriteConcern}
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
@@ -31,6 +31,7 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
@@ -153,6 +154,10 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     Json.arr(Json.obj("boxId" -> boxId.value))
   }
 
+  private def notificationIdsQuery(notificationIds: List[String]): JsArray ={
+    Json.arr(Json.obj("notificationId" -> Json.obj("$in" -> notificationIds)))
+  }
+
   private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray = {
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
   }
@@ -167,6 +172,22 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
         Future.successful(None)
     }
 
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[List[Notification]] = {
+
+    val query =   Json.obj(f"$$and" -> (boxIdQuery(boxId) ++ notificationIdsQuery(notificationIds)))
+
+
+
+    collection.findAndUpdate(query, Json.obj("status" -> ACKNOWLEDGED),   fetchNewObject = true,
+      upsert = false,
+      sort = None,
+      fields = None,
+      bypassDocumentValidation = false,
+      writeConcern = WriteConcern.Default,
+      maxTime = None,
+      collation = None,
+      arrayFilters = Seq.empty).map(_.result[List[Notification]].head)
+  }
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))
   }
