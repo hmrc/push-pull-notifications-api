@@ -28,6 +28,10 @@ request is sent to `https://www.example.com/push` with a body similar to:
 See <a href="#_get-a-list-of-notifications_get_accordion">get a list of notifications</a> for details about the
 structure of this JSON object.
 
+If your service responds to this request with a HTTP status code 200, then the notification status will be updated
+to `ACKNOWLEDGED`. If your service responds with any other status code, the notification status will be updated to
+`FAILED`.
+
 ## Pull notifications
 
 Regardless of whether a Push/Callback URL is set up, notifications can be retrieved by polling
