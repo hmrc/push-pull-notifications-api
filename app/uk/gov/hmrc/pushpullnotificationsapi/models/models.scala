@@ -71,4 +71,4 @@ case class PullSubscriber(callBackUrl: String,
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 
-case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscribers: List[Subscriber] = List.empty)
+case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscriber: Option[Subscriber] = None)

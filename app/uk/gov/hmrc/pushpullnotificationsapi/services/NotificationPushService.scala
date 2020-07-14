@@ -32,23 +32,32 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class NotificationPushService @Inject()(connector: PushConnector, notificationsRepository: NotificationsRepository){
 
-  def handlePushNotification(subscribers: List[Subscriber], notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    Future
-      .sequence(subscribers.filter(isValidPushSubscriber).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification)))
-      .map(results =>
-        if (results.nonEmpty ) {
-          val combinedResult = results.reduce(_ && _)
-          if (combinedResult) {
-            notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
-          } else {
-            notificationsRepository.updateStatus(notification.notificationId, FAILED)
-          }
-          combinedResult
-        } else {
-          Logger.debug("Nothing pushed")
+  def handlePushNotification(subscriber: Subscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+    if (isValidPushSubscriber(subscriber)) {
+      sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification) map {
+        case true =>
+          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
           true
-        }
-      )
+        case false =>
+          notificationsRepository.updateStatus(notification.notificationId, FAILED)
+          false
+      }
+    } else Future.successful(true)
+//    subscriber.filter(isValidPushSubscriber).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification))
+//      .map(results =>
+//        if (results.nonEmpty ) {
+//          val combinedResult = results.reduce(_ && _)
+//          if (combinedResult) {
+//            notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
+//          } else {
+//            notificationsRepository.updateStatus(notification.notificationId, FAILED)
+//          }
+//          combinedResult
+//        } else {
+//          Logger.debug("Nothing pushed")
+//          true
+//        }
+//      )
   }
 
   private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {

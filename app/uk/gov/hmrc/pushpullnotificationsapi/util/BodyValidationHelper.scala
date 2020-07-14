@@ -18,24 +18,28 @@ package uk.gov.hmrc.pushpullnotificationsapi.util
 
 import play.api.mvc.Result
 import play.api.mvc.Results._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse, SubscriberId, SubscribersRequest, UpdateSubscribersRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse, SubscriberId, SubscriberRequest, UpdateSubscriberRequest}
 
 import scala.util.{Failure, Success, Try}
 
 object BodyValidationHelper {
 
 
-  def validateUpdateBoxSubscriberBody(updateSubscribersRequest: UpdateSubscribersRequest): Either[Result, UpdateSubscribersRequest] = {
-    val results = updateSubscribersRequest.subscribers.map(validateBoxSubscriber).collect { case Left(x) => x }
-    if (results.nonEmpty) Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
-    else Right(updateSubscribersRequest)
+  def validateUpdateBoxSubscriberBody(updateSubscribersRequest: UpdateSubscriberRequest): Either[Result, UpdateSubscriberRequest] = {
+    validateBoxSubscriber(updateSubscribersRequest.subscriber) match {
+      case Left(_) => Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
+      case _ => Right(updateSubscribersRequest)
+    }
+//    val results = updateSubscribersRequest.subscribers.map(validateBoxSubscriber).collect { case Left(x) => x }
+//    if (results.nonEmpty) Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
+//    else Right(updateSubscribersRequest)
   }
 
-  private def validateBoxSubscriber(request: SubscribersRequest): Either[Result, Option[SubscriberId]] = {
+  private def validateBoxSubscriber(request: SubscriberRequest): Either[Result, Option[SubscriberId]] = {
     for {result <- validateBoxSubscriberId(request)} yield result
   }
 
-  private def validateBoxSubscriberId(request: SubscribersRequest): Either[Result, Option[SubscriberId]] = request.subscriberId.map { id =>
+  private def validateBoxSubscriberId(request: SubscriberRequest): Either[Result, Option[SubscriberId]] = request.subscriberId.map { id =>
     Try[SubscriberId] {
       SubscriberId.fromString(id)
     } match {

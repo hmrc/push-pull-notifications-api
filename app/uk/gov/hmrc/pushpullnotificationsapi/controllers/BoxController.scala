@@ -68,11 +68,11 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     } recover recovery
   }
 
-  def updateSubscribers(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[UpdateSubscribersRequest] {
+  def updateSubscriber(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+    withJsonBody[UpdateSubscriberRequest] {
       updateRequest =>
         validateUpdateBoxSubscriberBody(updateRequest) match {
-          case Right(validatedRequestBody) => boxService.updateSubscribers(boxId, validatedRequestBody) map {
+          case Right(validatedRequestBody) => boxService.updateSubscriber(boxId, validatedRequestBody) map {
             case Some(box) => Ok(Json.toJson(box))
             case _ => Logger.info("box not found or update failed")
               NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))

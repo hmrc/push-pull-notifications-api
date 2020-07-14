@@ -47,10 +47,11 @@ class BoxService @Inject()(repository: BoxRepository) {
     repository.getBoxByNameAndClientId(boxName, clientId)
   }
 
-  def updateSubscribers(boxId: BoxId, request: UpdateSubscribersRequest)
-                       (implicit ec: ExecutionContext): Future[Option[Box]] = {
-    val subscribers = request.subscribers.map(subscriber => {
-      subscriber.subscriberType match {
+  def updateSubscriber(boxId: BoxId, request: UpdateSubscriberRequest)
+                      (implicit ec: ExecutionContext): Future[Option[Box]] = {
+    val subscriber = request.subscriber
+
+    val subscriberObject = subscriber.subscriberType match {
         case API_PULL_SUBSCRIBER => subscriber.subscriberId match {
           case Some(id) => PullSubscriber(callBackUrl = subscriber.callBackUrl, subscriberId = SubscriberId.fromString(id))
           case None => PullSubscriber(callBackUrl = subscriber.callBackUrl)
@@ -60,8 +61,8 @@ class BoxService @Inject()(repository: BoxRepository) {
           case None => PushSubscriber(callBackUrl = subscriber.callBackUrl)
         }
       }
-    })
-    repository.updateSubscribers(boxId, subscribers.map(new SubscriberContainer(_)))
+
+    repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))
   }
 
 }
