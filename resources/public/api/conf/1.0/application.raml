@@ -34,21 +34,27 @@ uses:
         example: 50dca3fc-c37c-4f03-b719-63571333624c
     get:
       displayName: Get a list of notifications
-      description: Returns a list of notifications that have been sent to a box. The OAuth bearer token used by this
-        endpoint must have the scope `read:pull-notifications`.
+      description: Returns a list of notifications that have been sent to a box.
+        <br><br>A maximum of 100 notifications will be returned. These will be ordered oldest first.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:pull-notifications`.
       is: [headers.acceptHeader]
 #      TODO Documentation doesn't render the required scope !!!!!
       securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
       (annotations.scope): "read:pull-notifications"
       queryParameters:
+        status:
+          type: string
+          description: Only return notifications with this status.<br>Either `PENDING`, `FAILED` or `ACKNOWLEDGED`.
+          required: false
+          example: FAILED
         fromDate:
           type: string
-          description: Only return notifications created after this datetime. ISO-8601 UTC date and time.
+          description: Only return notifications created after this datetime.<br>ISO-8601 UTC date and time.
           required: false
           example: 2020-06-03T14:20:54.987
         toDate:
           type: string
-          description: Only return notifications created before this datetime. ISO-8601 UTC date and time.
+          description: Only return notifications created before this datetime.<br>ISO-8601 UTC date and time.
           required: false
           example: 2020-06-03T14:20:54.987
       responses:
@@ -72,7 +78,7 @@ uses:
                       "messageContentType": "application/xml",
                       "message": "<someXml>xmlValue</someXml>",
                       "status": "PENDING",
-                      "createdDateTime": "2020-06-01T10:27:33.613+0000"
+                      "createdDateTime": "2020-06-02T10:27:33.613+0000"
                   }
                 ]
         400:
