@@ -114,7 +114,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
       .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
         Logger.info(s"Dropping time to live index for entries in ${collection.name}")
         Future.sequence(Seq(collection.indexesManager.drop(create_datetime_ttlIndexName).map(_ > 0),
-        ensureLocalIndexes))
+          ensureLocalIndexes))
       })
 
   }
@@ -129,8 +129,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     val query =
       Json.obj(f"$$and" -> (
         boxIdQuery(boxId) ++
-        statusQuery(status) ++
-        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
+          statusQuery(status) ++
+          Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
 
     collection
       .find(query, None)
@@ -154,7 +154,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     Json.arr(Json.obj("boxId" -> boxId.value))
   }
 
-  private def notificationIdsQuery(notificationIds: List[String]): JsArray ={
+  private def notificationIdsQuery(notificationIds: List[String]): JsArray = {
     Json.arr(Json.obj("notificationId" -> Json.obj("$in" -> notificationIds)))
   }
 
@@ -172,22 +172,22 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
         Future.successful(None)
     }
 
-  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[List[Notification]] = {
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
 
-    val query =   Json.obj(f"$$and" -> (boxIdQuery(boxId) ++ notificationIdsQuery(notificationIds)))
+    val query = Json.obj(f"$$and" -> (
+      boxIdQuery(boxId) ++
+        notificationIdsQuery(notificationIds)))
 
+    collection
+      .update(false)
+      .one(query,
+        Json.obj("$set" -> Json.obj("status" -> ACKNOWLEDGED)),
+        upsert = false,
+        multi = true)
+      .map(_.ok)
 
-
-    collection.findAndUpdate(query, Json.obj("status" -> ACKNOWLEDGED),   fetchNewObject = true,
-      upsert = false,
-      sort = None,
-      fields = None,
-      bypassDocumentValidation = false,
-      writeConcern = WriteConcern.Default,
-      maxTime = None,
-      collation = None,
-      arrayFilters = Seq.empty).map(_.result[List[Notification]].head)
   }
+
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))
   }

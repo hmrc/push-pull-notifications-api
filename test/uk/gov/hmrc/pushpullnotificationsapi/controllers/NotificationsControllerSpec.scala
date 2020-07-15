@@ -360,9 +360,39 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       "return 200 when acknowledge request is valid " in {
         primeAuthAction(clientIdStr)
+        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
         status(result) shouldBe OK
+      }
+
+      "return 403 when service returns unauthorised result" in {
+        primeAuthAction(clientIdStr)
+        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
+        val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
+        val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
+        status(result) shouldBe FORBIDDEN
+      }
+
+      "return 404 when service returns box not found result" in {
+        primeAuthAction(clientIdStr)
+        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
+        val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
+        val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
+        status(result) shouldBe NOT_FOUND
+      }
+
+
+      "return 403 when acknowledge request is valid but service return unauthorised" in {
+        primeAuthAction(clientIdStr)
+        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
+        val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
+        val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
+        status(result) shouldBe FORBIDDEN
       }
 
       "return 400 when acknowledge request is not valid against the model" in {
@@ -372,6 +402,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         status(result) shouldBe BAD_REQUEST
         (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
         (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when request contains and invalid(nonUUID) notificationID" in {
@@ -390,16 +421,17 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         status(result) shouldBe BAD_REQUEST
         (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
         (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when acknowledge request contains duplicates" in {
         primeAuthAction(clientIdStr)
-        println(UUID.randomUUID().toString)
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"de396b71-55c7-4a24-954a-df6bd4a85795\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = await(doPut(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
         status(result) shouldBe BAD_REQUEST
         (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
         (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        verifyNoInteractions(mockNotificationService)
       }
 
     }
