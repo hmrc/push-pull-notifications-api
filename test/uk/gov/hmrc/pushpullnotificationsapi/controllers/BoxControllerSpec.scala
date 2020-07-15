@@ -36,6 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthActio
 import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
+import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -77,14 +78,13 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
      raw"""{"boxName": "$boxNameVal",
              |"clientId": "$clientIdVal" }""".stripMargin
 
-  private val validHeadersWithValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "user-Agent" -> "api-subscription-fields")
-  private val validHeadersWithInValidUserAgent: Map[String, String] = Map("Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
+  private val validHeadersWithValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
+  private val validHeadersWithInValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "some-other-service")
 
-  private val validHeadersWithInValidContentType: Map[String, String] = Map("Content-Type" -> "text/plain", "user-Agent" -> "api-subscription-fields")
-  private val validHeadersWithEmptyContentType: Map[String, String] = Map("Content-Type" -> "", "user-Agent" -> "api-subscription-fields")
+  private val validHeadersWithInValidContentType: Map[String, String] = Map(CONTENT_TYPE -> "text/plain", USER_AGENT -> "api-subscription-fields")
+  private val validHeadersWithEmptyContentType: Map[String, String] = Map(CONTENT_TYPE -> "", USER_AGENT -> "api-subscription-fields")
 
-
-  private val validHeaders: Map[String, String] = Map("Content-Type" -> "application/json")
+  private val validHeaders: Map[String, String] = Map(CONTENT_TYPE -> "application/json")
 
 
   "BoxController" when {
@@ -292,20 +292,9 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
           |{
           | "subscriber":
           |   {
-          |   "subscriberId": "09a654ee-e727-48d8-8858-d32d70321ad1",
           |   "subscriberType": "API_PUSH_SUBSCRIBER",
           |   "callBackUrl":"someURL"
           |   }
-          |}
-          |""".stripMargin
-
-      val validUpdateSubscriberRequestJsonWithoutSubscriberId =
-        """
-          |{
-          | "subscriber": {
-          |   "subscriberType": "API_PUSH_SUBSCRIBER",
-          |   "callBackUrl":"someURL"
-          | }
           |}
           |""".stripMargin
 
@@ -316,18 +305,6 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
           |   {
           |   "subscriberId": "09a654ee-e727-48d8-8858-d32d70321ad1",
           |   "subscriberType": "SOME_UNKNOWN_TYPE",
-          |   "callBackUrl":"someURL"
-          |   }
-          |}
-          |""".stripMargin
-
-      val invalidUpdateSubscriberRequestWithNonUUIDSubscriberIdJson =
-        """
-          |{
-          | "subscriber":
-          |   {
-          |   "subscriberId": "NotAUUID",
-          |   "subscriberType": "API_PUSH_SUBSCRIBER",
           |   "callBackUrl":"someURL"
           |   }
           |}
@@ -344,16 +321,6 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       }
 
-      "return 200 when valid request without subscriberId and box update is successful" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result: Result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, validUpdateSubscriberRequestJsonWithoutSubscriberId))
-        status(result) should be(OK)
-
-        verify(mockBoxService).updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext])
-      }
-
        "return 400 when request contains invalid subscriber type" in {
         when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
           .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
@@ -365,18 +332,6 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
         verifyNoInteractions(mockBoxService)
 
-      }
-
-      "return 400 when request contains subscriberId That is not a UUID type" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result: Result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, invalidUpdateSubscriberRequestWithNonUUIDSubscriberIdJson))
-
-        status(result) should be(BAD_REQUEST)
-
-        Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-        verifyNoInteractions(mockBoxService)
       }
 
       "return 404 when valid request and box update is successful" in {

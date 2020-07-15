@@ -76,7 +76,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   private val messageContentTypeXml = MessageContentType.APPLICATION_XML
   private val message = "message"
-  private val subscriber =  PushSubscriber("mycallbackUrl", subscriberId = SubscriberId(UUID.randomUUID()))
+  private val subscriber =  PushSubscriber("mycallbackUrl")
   private val BoxObjectWIthNoSubscribers = Box(boxId, "boxName", BoxCreator(clientId))
   private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId), Some(subscriber))
   private implicit val hc: HeaderCarrier = HeaderCarrier()

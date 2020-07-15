@@ -52,14 +52,11 @@ HTTP Status: `200`
     "boxCreator":{
         "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
     },
-    "subscribers":[
-        {
-            "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
-            "callBackUrl": "https://www.example.com/callback",
-            "subscriptionType": "API_PUSH_SUBSCRIBER",
-            "subscriberId": "6cdef122-55a6-55a5-99c9-83a091ac7f86"
-        }
-    ]
+    "subscriber": {
+        "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
+        "callBackUrl": "https://www.example.com/callback",
+        "subscriptionType": "API_PUSH_SUBSCRIBER",
+    }
 }
 ```
 | Name | Description |
@@ -71,7 +68,6 @@ HTTP Status: `200`
 | `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
 | `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
 | `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
-| `subscribers.subscriberId` | Unique identifier for the subscriber |
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |
@@ -123,9 +119,9 @@ HTTP Status: `200` if the box already exists
 | `boxName` or `clientId` missing from request body | `400` | `INVALID_REQUEST_PAYLOAD`
 | Access denied, service is not whitelisted | `403` | `FORBIDDEN`
 
-## `PUT /box/:boxId/subscribers`
+## `PUT /box/:boxId/subscriber`
 
-Set the subscribers for a box. The _callbackUrl_ in the subscriber is the endpoint where push notifications will be 
+Set the subscriber for a box. The _callbackUrl_ in the subscriber is the endpoint where push notifications will be 
 sent to.
 
 ### Path parameters
@@ -141,12 +137,10 @@ sent to.
 ### Request
 ```
 {
-    "subscribers":[
-        {
-            "subscriberType": "API_PUSH_SUBSCRIBER",
-            "callBackUrl": "https://www.example.com/callback"
-        }
-    ]
+    "subscriber": {
+        "subscriberType": "API_PUSH_SUBSCRIBER",
+        "callBackUrl": "https://www.example.com/callback"
+    }
 }
 ```
 | Name | Description |
@@ -163,14 +157,11 @@ HTTP Status: `200`
     "boxCreator":{
         "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
     },
-    "subscribers":[
-        {
-            "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
-            "callBackUrl": "https://www.example.com/callback"
-            "subscriptionType": "API_PUSH_SUBSCRIBER",
-            "subscriberId": "6cdef122-55a6-55a5-99c9-83a091ac7f86"
-        }
-    ]
+    "subscriber": {
+        "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
+        "callBackUrl": "https://www.example.com/callback"
+        "subscriptionType": "API_PUSH_SUBSCRIBER",
+    }
 }
 ```
 | Name | Description |
@@ -182,7 +173,6 @@ HTTP Status: `200`
 | `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
 | `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
 | `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
-| `subscribers.subscriberId` | Unique identifier for the subscriber |
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |

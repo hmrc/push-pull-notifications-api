@@ -4,6 +4,7 @@ import java.util.UUID
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -50,25 +51,12 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     raw"""{ "subscriber":
          |  {
          |     "subscriberType": "API_PUSH_SUBSCRIBER",
-         |     "callBackUrl":"somepath/firstOne",
-         |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
+         |     "callBackUrl":"somepath/firstOne"
          |  }
          |}
          |""".stripMargin
 
-  val updateSubscriberInvalidUUIDFormat: String =
-    raw"""
-         |{
-         |  "subscriber":
-         |    {
-         |      "subscriberId": "",
-         |      "subscriberType": "API_PUSH_SUBSCRIBER",
-         |      "callBackUrl":"testurl.co.uk"
-         |    }
-         |}
-         |""".stripMargin
-
-  val validHeaders = List("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
+  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -228,15 +216,6 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
-
-    "return 400 when requestBody is contains invalid UUID" in {
-      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
-
-      val updateResult = doPut(createdBox.boxId.raw, updateSubscriberInvalidUUIDFormat, validHeaders)
-      updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-    }
-
 
     "return 400 when requestBody is missing" in {
       val updateResult = doPut(UUID.randomUUID().toString, "", validHeaders)

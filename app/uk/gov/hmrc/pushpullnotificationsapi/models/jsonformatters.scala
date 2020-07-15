@@ -26,7 +26,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeade
 object ReactiveMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
@@ -50,7 +49,6 @@ object ResponseFormatters{
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
-  implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
@@ -66,7 +64,6 @@ object ResponseFormatters{
 object RequestFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
   implicit val subscribersRequestFormatter: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
   implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]

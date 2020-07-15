@@ -129,12 +129,6 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
   }
   "updateSubscribers" should {
 
-    "subscriberId toString should match UUID string" in{
-      val subscriberIdStr = UUID.randomUUID().toString
-      val subscriberId = SubscriberId(UUID.fromString(subscriberIdStr))
-      subscriberId.raw shouldBe subscriberIdStr
-    }
-
     "update the subscriber list" in {
       await(repo.createBox(box))
       val fetchedRecords = await(repo.find())
