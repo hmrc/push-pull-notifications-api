@@ -52,12 +52,13 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
-  val updateSubscribersJsonBodyWithIds: String =
-    raw"""{ "subscribers":[{
+  val updateSubscriberJsonBodyWithIds: String =
+    raw"""{ "subscriber":
+         |  {
          |     "subscriberType": "API_PUSH_SUBSCRIBER",
          |     "callBackUrl":"somepath/firstOne",
          |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
-         |   }]
+         |  }
          |}
          |""".stripMargin
 
@@ -114,7 +115,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     result.status shouldBe CREATED
     val boxId = (Json.parse(result.body) \ "boxId").as[String]
 
-    val updateResult = doPut(s"$url/box/$boxId/subscribers", updateSubscribersJsonBodyWithIds, validHeadersJson)
+    val updateResult = doPut(s"$url/box/$boxId/subscriber", updateSubscriberJsonBodyWithIds, validHeadersJson)
     updateResult.status shouldBe OK
 
     await(boxRepository.findAll().head)

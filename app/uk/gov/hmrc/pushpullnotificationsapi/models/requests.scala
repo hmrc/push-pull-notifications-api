@@ -25,9 +25,9 @@ case class CreateBoxRequest(boxName: String, clientId: String)
 case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A])
   extends WrappedRequest[A](request)
 
-case class SubscribersRequest(callBackUrl: String, subscriberType: SubscriptionType, subscriberId: Option[String] = None)
+case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType, subscriberId: Option[String] = None)
 
-case class UpdateSubscribersRequest(subscribers: List[SubscribersRequest])
+case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
 // Notifications
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])

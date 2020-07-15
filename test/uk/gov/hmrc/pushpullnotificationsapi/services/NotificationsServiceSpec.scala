@@ -76,23 +76,23 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   private val messageContentTypeXml = MessageContentType.APPLICATION_XML
   private val message = "message"
-  private val subscriberList =  List(PushSubscriber("mycallbackUrl", subscriberId = SubscriberId(UUID.randomUUID())))
+  private val subscriber =  PushSubscriber("mycallbackUrl", subscriberId = SubscriberId(UUID.randomUUID()))
   private val BoxObjectWIthNoSubscribers = Box(boxId, "boxName", BoxCreator(clientId))
-  private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId),subscriberList)
+  private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId), Some(subscriber))
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "SaveNotification" should {
     "return NotificationCreateSuccessResult when box exists , push is called with List of subscribers  & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(List(BoxObjectWIthSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
-      when(mockNotificationsPushService.handlePushNotification(eqTo(subscriberList),  any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
+      when(mockNotificationsPushService.handlePushNotification(eqTo(subscriber),  any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(true))
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId,
         NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(any[ExecutionContext])
-      verify(mockNotificationsPushService).handlePushNotification(eqTo(subscriberList), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockNotificationsPushService).handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
       verify(mockNotificationsRepo).saveNotification(notificationCaptor.capture)(any[ExecutionContext])
       notificationCaptor.value.boxId shouldBe boxId
       notificationCaptor.value.messageContentType shouldBe messageContentTypeJson

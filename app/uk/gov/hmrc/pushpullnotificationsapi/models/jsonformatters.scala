@@ -68,8 +68,8 @@ object RequestFormatters {
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val subscriberIdFormatter: Format[SubscriberId] = Json.valueFormat[SubscriberId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
-  implicit val subscribersRequestFormatter: OFormat[SubscribersRequest] = Json.format[SubscribersRequest]
-  implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscribersRequest] = Json.format[UpdateSubscribersRequest]
+  implicit val subscribersRequestFormatter: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
+  implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
 }
 
 object ConnectorFormatters {

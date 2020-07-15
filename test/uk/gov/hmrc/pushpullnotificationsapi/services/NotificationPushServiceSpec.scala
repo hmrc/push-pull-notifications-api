@@ -52,13 +52,13 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
   "handlePushNotification" should {
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       when(mockConnector.send(any[OutboundNotification])(any[HeaderCarrier])).thenReturn(Future.successful(PushConnectorSuccessResult()))
-      val subscribers = List(PushSubscriber("somecallbackUrl", DateTime.now(),SubscriberId(UUID.randomUUID())))
+      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now(),SubscriberId(UUID.randomUUID()))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
 
       result shouldBe true
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
@@ -67,26 +67,26 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     "return false when connector returns failed result due to exception and update the notification status to FAILED" in new Setup {
       when(mockConnector.send(any[OutboundNotification])(any[HeaderCarrier]))
         .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
-      val subscribers = List(PushSubscriber("somecallbackUrl", DateTime.now(),SubscriberId(UUID.randomUUID())))
+      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now(),SubscriberId(UUID.randomUUID()))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
 
       result shouldBe false
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, FAILED)
     }
 
     "return true when subscriber has no callback url" in new Setup {
-      val subscribers = List(PushSubscriber("", DateTime.now(),SubscriberId(UUID.randomUUID())))
+      val subscriber = PushSubscriber("", DateTime.now(),SubscriberId(UUID.randomUUID()))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
 
       result shouldBe true
       verifyZeroInteractions(mockConnector)
@@ -94,13 +94,13 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     }
 
     "return true when there are no push subscribers" in new Setup {
-      val subscribers = List(PullSubscriber("", DateTime.now(),SubscriberId(UUID.randomUUID())))
+      val subscriber = PullSubscriber("", DateTime.now(),SubscriberId(UUID.randomUUID()))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscribers, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
 
       result shouldBe true
       verifyZeroInteractions(mockConnector)

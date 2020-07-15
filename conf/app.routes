@@ -1,13 +1,13 @@
 # microservice specific routes
 
 # Box
-PUT       /box                         uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
+PUT       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
 
-GET       /box                         uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxByNameAndClientId(boxName: String, clientId: ClientId)
+GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxByNameAndClientId(boxName: String, clientId: ClientId)
 
-PUT       /box/:boxId/subscribers    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateSubscribers(boxId: BoxId)
+PUT       /box/:boxId/subscriber        uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateSubscriber(boxId: BoxId)
 
 # Notifications
-POST      /box/:boxId/notifications  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)
+POST      /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)
 
-GET       /box/:boxId/notifications  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
+GET       /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)

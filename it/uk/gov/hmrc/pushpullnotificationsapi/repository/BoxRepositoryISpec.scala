@@ -51,7 +51,7 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
       fetchedBox.boxName shouldBe boxName
       fetchedBox.boxCreator.clientId shouldBe clientId
       fetchedBox.boxId shouldBe box.boxId
-      fetchedBox.subscribers.size shouldBe 0
+      fetchedBox.subscriber.isDefined shouldBe false
 
 
     }
@@ -141,15 +141,13 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
       fetchedRecords.size shouldBe 1
 
       val createdBox = fetchedRecords.head
-      createdBox.subscribers.size shouldBe 0
+      createdBox.subscriber.isDefined shouldBe false
 
-      val subscribers = List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))
-
-      val updated = await(repo.updateSubscribers(createdBox.boxId, subscribers))
+      val updated = await(repo.updateSubscriber(createdBox.boxId, new SubscriberContainer(PushSubscriber(callBackEndpoint))))
       val updatedBox = updated.head
-      updatedBox.subscribers.size shouldBe 1
+      updatedBox.subscriber.isDefined shouldBe true
 
-      val subscriber = updatedBox.subscribers.head.asInstanceOf[PushSubscriber]
+      val subscriber = updatedBox.subscriber.get.asInstanceOf[PushSubscriber]
       subscriber.callBackUrl shouldBe callBackEndpoint
       subscriber.subscribedDateTime.isBefore(DateTime.now())
 
@@ -157,7 +155,7 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
     }
 
     "return None when the box doesn't exist" in {
-      val updated = await(repo.updateSubscribers(BoxId(UUID.randomUUID()), List(new SubscriberContainer(PushSubscriber(callBackEndpoint)))))
+      val updated = await(repo.updateSubscriber(BoxId(UUID.randomUUID()), new SubscriberContainer(PushSubscriber(callBackEndpoint))))
       updated shouldBe None
 
     }

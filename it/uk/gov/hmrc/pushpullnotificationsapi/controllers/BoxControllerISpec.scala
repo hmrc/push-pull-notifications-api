@@ -46,17 +46,27 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
   val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
-  val updateSubcribersJsonBodyWithIds: String =
-    raw"""{ "subscribers":[{
+  val updateSubscriberJsonBodyWithIds: String =
+    raw"""{ "subscriber":
+         |  {
          |     "subscriberType": "API_PUSH_SUBSCRIBER",
          |     "callBackUrl":"somepath/firstOne",
          |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
-         |   }]
+         |  }
          |}
          |""".stripMargin
 
-  val updateSubscribersInvalidUUIDFormat: String =
-    raw"""{ "subscribers":[{"subscriberId": "", "subscriberType": "API_PUSH_SUBSCRIBER", "callBackUrl":"testurl.co.uk"}]}"""
+  val updateSubscriberInvalidUUIDFormat: String =
+    raw"""
+         |{
+         |  "subscriber":
+         |    {
+         |      "subscriberId": "",
+         |      "subscriberType": "API_PUSH_SUBSCRIBER",
+         |      "callBackUrl":"testurl.co.uk"
+         |    }
+         |}
+         |""".stripMargin
 
   val validHeaders = List("Content-Type" -> "application/json", "User-Agent" -> "api-subscription-fields")
 
@@ -71,7 +81,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   def doPut(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/box/$boxId/subscribers")
+      .url(s"$url/box/$boxId/subscriber")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
@@ -181,28 +191,28 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
   }
 
-  "PUT /box/{boxId}/subscribers" should {
+  "PUT /box/{boxId}/subscriber" should {
 
     "return 200 and update box successfully when box exists" in {
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
-      val updateResult = doPut(createdBox.boxId.raw, updateSubcribersJsonBodyWithIds, validHeaders)
+      val updateResult = doPut(createdBox.boxId.raw, updateSubscriberJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe OK
 
       val updatedBox = Json.parse(updateResult.body).as[Box]
-      updatedBox.subscribers.size shouldBe 1
+      updatedBox.subscriber.isDefined shouldBe true
 
     }
 
     "return 404 when box does not exist" in {
-      val updateResult = doPut(UUID.randomUUID().toString, updateSubcribersJsonBodyWithIds, validHeaders)
+      val updateResult = doPut(UUID.randomUUID().toString, updateSubscriberJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe NOT_FOUND
       updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
 
     "return 400 when boxId is not a UUID" in {
-      val updateResult = await(doPut("NotaUUid", updateSubcribersJsonBodyWithIds, validHeaders))
+      val updateResult = await(doPut("NotaUUid", updateSubscriberJsonBodyWithIds, validHeaders))
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
     }
@@ -222,7 +232,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     "return 400 when requestBody is contains invalid UUID" in {
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
-      val updateResult = doPut(createdBox.boxId.raw, updateSubscribersInvalidUUIDFormat, validHeaders)
+      val updateResult = doPut(createdBox.boxId.raw, updateSubscriberInvalidUUIDFormat, validHeaders)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
@@ -243,7 +253,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     val result2 = doGet(boxName, clientId, validHeaders)
     result2.status shouldBe OK
     val box = Json.parse(result2.body).as[Box]
-    box.subscribers.size shouldBe 0
+    box.subscriber.isDefined shouldBe false
     box
   }
 }
