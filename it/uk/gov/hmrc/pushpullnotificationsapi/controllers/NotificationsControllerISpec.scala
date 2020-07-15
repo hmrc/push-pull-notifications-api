@@ -10,7 +10,7 @@ import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, NO_CONTENT,CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
+import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
