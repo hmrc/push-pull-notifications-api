@@ -39,7 +39,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
         case List(x) =>
           if(x.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
-              .map(results => AcknowledgeNotificationsSuccessUpdatedResult(results))
+              .map(AcknowledgeNotificationsSuccessUpdatedResult)
           }else{
             Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
           }
@@ -56,7 +56,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
+        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
         case List(x) =>
           if(x.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)

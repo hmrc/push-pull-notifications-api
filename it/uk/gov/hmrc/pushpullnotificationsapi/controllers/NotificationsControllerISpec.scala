@@ -12,9 +12,9 @@ import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse, ResponseFormatters}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
@@ -104,8 +104,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       .withHttpHeaders(headers: _*)
       .get
       .futureValue
-
-  // need to clean down mongo then run two
 
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
@@ -302,7 +300,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   }
 
   private def stringToCreateNotificationResponse(notificationIdResponse: String): CreateNotificationResponse ={
-
     Json.parse(notificationIdResponse).validate[CreateNotificationResponse] match {
       case JsSuccess(value: CreateNotificationResponse, _) => value
       case _ => fail()
