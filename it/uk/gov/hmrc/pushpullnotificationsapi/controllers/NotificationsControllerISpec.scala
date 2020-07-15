@@ -10,7 +10,7 @@ import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
+import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, NO_CONTENT,CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -282,14 +282,35 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
     "GET /box/[boxId]/notifications" should {
 
-      "return OK happy path" in {
+      "return 204 happy path" in {
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
 
-        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status shouldBe OK
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe NO_CONTENT
+      }
+
+      "return 401 when no client id in auth response" in {
+        primeAuthServiceNoCLientId( "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        val notifications = createNotifications(box.boxId, 4)
+        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
+
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe UNAUTHORIZED
+        result.body shouldBe "{\"code\":\"UNAUTHORISED\",\"message\":\"Unable to retrieve ClientId\"}"
+      }
+
+      "return NOT_FOUND when box doesn't exist" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        val notifications = createNotifications(box.boxId, 4)
+        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
+
+        val result: WSResponse = doPut(s"$url/box/${UUID.randomUUID().toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe NOT_FOUND
       }
     }
 
