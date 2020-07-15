@@ -30,9 +30,6 @@ object BodyValidationHelper {
       case Left(_) => Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
       case _ => Right(updateSubscribersRequest)
     }
-//    val results = updateSubscribersRequest.subscribers.map(validateBoxSubscriber).collect { case Left(x) => x }
-//    if (results.nonEmpty) Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
-//    else Right(updateSubscribersRequest)
   }
 
   private def validateBoxSubscriber(request: SubscriberRequest): Either[Result, Option[SubscriberId]] = {
