@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import play.api.http.HeaderNames.CONTENT_TYPE
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
@@ -27,7 +28,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, P
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 import scala.concurrent.{ExecutionContext, Future}
-
 
 @Singleton
 class NotificationPushService @Inject()(connector: PushConnector, notificationsRepository: NotificationsRepository){
@@ -43,27 +43,12 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
           false
       }
     } else Future.successful(true)
-//    subscriber.filter(isValidPushSubscriber).map(subscriber => sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification))
-//      .map(results =>
-//        if (results.nonEmpty ) {
-//          val combinedResult = results.reduce(_ && _)
-//          if (combinedResult) {
-//            notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
-//          } else {
-//            notificationsRepository.updateStatus(notification.notificationId, FAILED)
-//          }
-//          combinedResult
-//        } else {
-//          Logger.debug("Nothing pushed")
-//          true
-//        }
-//      )
   }
 
-  private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
-   val outboundNotification =  OutboundNotification(subscriber.callBackUrl,
-     List(ForwardedHeader("Content-Type", notification.messageContentType.value)),
-     notification.message)
+  private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)
+                                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+   val outboundNotification =
+     OutboundNotification(subscriber.callBackUrl, List(ForwardedHeader(CONTENT_TYPE, notification.messageContentType.value)), notification.message)
 
     connector.send(outboundNotification).map {
       case _ : PushConnectorSuccessResult => true
@@ -73,7 +58,7 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
     }
   }
 
-  private def isValidPushSubscriber(subscriber: Subscriber): Boolean = subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) &&
-    (!subscriber.asInstanceOf[PushSubscriber].callBackUrl.isEmpty)
+  private def isValidPushSubscriber(subscriber: Subscriber): Boolean =
+    subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && (!subscriber.asInstanceOf[PushSubscriber].callBackUrl.isEmpty)
 
 }
