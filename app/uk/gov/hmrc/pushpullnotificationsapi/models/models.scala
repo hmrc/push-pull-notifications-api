@@ -30,16 +30,6 @@ case class BoxId(value: UUID) extends AnyVal {
 
 case class ClientId(value: String) extends AnyVal
 
-case class SubscriberId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
-}
-
-object SubscriberId{
-  def fromString(value: String)={
-    SubscriberId(UUID.fromString(value))
-  }
-}
-
 case class BoxCreator(clientId: ClientId)
 
 sealed trait SubscriptionType extends EnumEntry
@@ -52,7 +42,6 @@ object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[Subscri
 }
 
 sealed trait Subscriber {
-  val subscriberId: SubscriberId
   val subscribedDateTime: DateTime
   val subscriptionType: SubscriptionType
 }
@@ -60,14 +49,12 @@ sealed trait Subscriber {
 class SubscriberContainer[+A] (val elem: A)
 
 case class PushSubscriber(callBackUrl: String,
-                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                          override val subscriberId: SubscriberId = SubscriberId(UUID.randomUUID())) extends Subscriber {
+                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC)) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PUSH_SUBSCRIBER
 }
 
 case class PullSubscriber(callBackUrl: String,
-                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                          override val subscriberId: SubscriberId = SubscriberId(UUID.randomUUID())) extends Subscriber {
+                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC)) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 

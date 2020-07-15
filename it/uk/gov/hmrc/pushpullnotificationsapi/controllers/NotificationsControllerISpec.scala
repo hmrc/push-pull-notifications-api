@@ -5,6 +5,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, Json}
@@ -56,8 +57,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     raw"""{ "subscriber":
          |  {
          |     "subscriberType": "API_PUSH_SUBSCRIBER",
-         |     "callBackUrl":"somepath/firstOne",
-         |     "subscriberId": "74d3ef1e-9b6f-4e75-897d-217cc270140f"
+         |     "callBackUrl":"somepath/firstOne"
          |  }
          |}
          |""".stripMargin
@@ -74,9 +74,9 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
          |""".stripMargin
 
   val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
-  val validHeadersJson = List(acceptHeader, "Content-Type" -> "application/json",  "User-Agent" -> "api-subscription-fields")
-  val validHeadersJsonWithNoUserAgent = List(acceptHeader, "Content-Type" -> "application/json")
-  val validHeadersXml = List(acceptHeader, "Content-Type" -> "application/xml",  "User-Agent" -> "api-subscription-fields")
+  val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json",  USER_AGENT -> "api-subscription-fields")
+  val validHeadersJsonWithNoUserAgent = List(acceptHeader, CONTENT_TYPE -> "application/json")
+  val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml",  USER_AGENT -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 

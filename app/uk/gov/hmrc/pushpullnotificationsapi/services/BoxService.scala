@@ -52,14 +52,8 @@ class BoxService @Inject()(repository: BoxRepository) {
     val subscriber = request.subscriber
 
     val subscriberObject = subscriber.subscriberType match {
-        case API_PULL_SUBSCRIBER => subscriber.subscriberId match {
-          case Some(id) => PullSubscriber(callBackUrl = subscriber.callBackUrl, subscriberId = SubscriberId.fromString(id))
-          case None => PullSubscriber(callBackUrl = subscriber.callBackUrl)
-        }
-        case API_PUSH_SUBSCRIBER => subscriber.subscriberId match {
-          case Some(id) => PushSubscriber(callBackUrl = subscriber.callBackUrl, subscriberId =  SubscriberId.fromString(id))
-          case None => PushSubscriber(callBackUrl = subscriber.callBackUrl)
-        }
+        case API_PULL_SUBSCRIBER => PullSubscriber(callBackUrl = subscriber.callBackUrl)
+        case API_PUSH_SUBSCRIBER => PushSubscriber(callBackUrl = subscriber.callBackUrl)
       }
 
     repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))

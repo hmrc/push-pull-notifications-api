@@ -40,9 +40,8 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
   private val clientId: ClientId = ClientId(clientIDUUID)
   private val boxName: String = "boxName"
   val endpoint = "/iam/a/callbackurl"
-  val subscriberId: SubscriberId = SubscriberId(UUID.randomUUID())
   def updateSubscribersRequestWithId(subtype: SubscriptionType): UpdateSubscriberRequest =
-    UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = subtype, subscriberId = Some(subscriberId.value.toString)))
+    UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = subtype))
 
   val updateSubscribersRequestWithOutId: UpdateSubscriberRequest =
     UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = API_PUSH_SUBSCRIBER))
@@ -95,7 +94,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     "updateSubscribers" should {
 
-      "pass the correct values to the repository and not generate a new subscriberId when a subscriberId is in the request PUSH SUBSCRIBER" in new Setup {
+      "correctly update box with a PUSH SUBSCRIBER" in new Setup {
 
         await(objInTest.updateSubscriber(boxId, updateSubscribersRequestWithId(API_PUSH_SUBSCRIBER)))
 
@@ -104,12 +103,11 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
         val capturedSubscriber: PushSubscriber = subscriberCaptor.value.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
-        capturedSubscriber.subscriberId shouldBe subscriberId
         capturedSubscriber.subscriptionType shouldBe API_PUSH_SUBSCRIBER
 
       }
 
-      "pass the correct values to the repository and not generate a new subscriberId when a subscriberId is in the request PULL SUBSCRIBER" in new Setup {
+      "correctly update box with a PULL SUBSCRIBER" in new Setup {
 
         await(objInTest.updateSubscriber(boxId, updateSubscribersRequestWithId(API_PULL_SUBSCRIBER)))
 
@@ -118,39 +116,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
         val capturedSubscriber: PullSubscriber = subscriberCaptor.value.elem
         capturedSubscriber.callBackUrl shouldBe endpoint
-        capturedSubscriber.subscriberId shouldBe subscriberId
         capturedSubscriber.subscriptionType shouldBe API_PULL_SUBSCRIBER
-
-      }
-
-      "pass the correct values to the repository and generate a new subscriberId when a subscriberId is not in the request PULL SUBSCRIBER" in new Setup {
-
-        await(
-          objInTest.updateSubscriber(
-            boxId,
-            UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = API_PULL_SUBSCRIBER, subscriberId = None))))
-
-        val subscriberCaptor: Captor[SubscriberContainer[PullSubscriber]] = ArgCaptor[SubscriberContainer[PullSubscriber]]
-        verify(mockRepository).updateSubscriber(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
-
-        val capturedSubscriber: PullSubscriber = subscriberCaptor.value.elem
-        capturedSubscriber.callBackUrl shouldBe endpoint
-        capturedSubscriber.subscriberId shouldNot be(subscriberId)
-        capturedSubscriber.subscriptionType shouldBe API_PULL_SUBSCRIBER
-
-      }
-
-      "pass the correct values to the repository and should generate a new subscriberId when a subscriberId is not in the request" in new Setup {
-
-        await(objInTest.updateSubscriber(boxId, updateSubscribersRequestWithOutId))
-
-        val subscriberCaptor: Captor[SubscriberContainer[PushSubscriber]] = ArgCaptor[SubscriberContainer[PushSubscriber]]
-        verify(mockRepository).updateSubscriber(eqTo(boxId), subscriberCaptor.capture)(any[ExecutionContext])
-
-        val capturedSubscriber: PushSubscriber = subscriberCaptor.value.elem
-        capturedSubscriber.callBackUrl shouldBe endpoint
-        capturedSubscriber.subscriberId shouldNot be(subscriberId)
-        capturedSubscriber.subscriptionType shouldBe API_PUSH_SUBSCRIBER
 
       }
 

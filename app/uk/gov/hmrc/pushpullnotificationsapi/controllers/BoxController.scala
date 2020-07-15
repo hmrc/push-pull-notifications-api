@@ -28,7 +28,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-import uk.gov.hmrc.pushpullnotificationsapi.util.BodyValidationHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -69,16 +68,12 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
   }
 
   def updateSubscriber(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[UpdateSubscriberRequest] {
-      updateRequest =>
-        validateUpdateBoxSubscriberBody(updateRequest) match {
-          case Right(validatedRequestBody) => boxService.updateSubscriber(boxId, validatedRequestBody) map {
-            case Some(box) => Ok(Json.toJson(box))
-            case _ => Logger.info("box not found or update failed")
-              NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          } recover recovery
-          case Left(result) => Future.successful(result)
-        }
+    withJsonBody[UpdateSubscriberRequest] { updateSubscriberRequest =>
+      boxService.updateSubscriber(boxId, updateSubscriberRequest) map {
+        case Some(box) => Ok(Json.toJson(box))
+        case _ => Logger.info("box not found or update failed")
+          NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+      } recover recovery
     }
   }
 
