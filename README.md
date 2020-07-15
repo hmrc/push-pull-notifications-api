@@ -2,7 +2,7 @@
 # push-pull-notifications-api
 
 This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) 
-notifications. Notifications are create by other HMRC services. 
+notifications. Notifications are created by other HMRC services.
 
 An example use case is for asynchronous API requests.
 1. API X defines an *api-subscription-field* of type PPNS (see https://confluence.tools.tax.service.gov.uk/pages/viewpage.action?pageId=182540862)
@@ -13,7 +13,7 @@ An example use case is for asynchronous API requests.
 1. API X gets the client ID from either the `X-Client-Id` header or from an _auth_ retrieval.
 1. API X makes a request to `GET /box` using the inferred box name and client ID to retrieve the box ID.
 1. API X generates a correlation/request ID.
-1. API X sends a response 202 HTTP status to the software developer with a body containing the box ID and 
+1. API X sends a response 200 HTTP status to the software developer with a body containing the box ID and 
     the correlation/request ID.
 1. API X starts their asynchronous process, saving the state of this with the correlation/request ID and PPNS box ID.
 1. API X complete their asynchronous process, retrieving correlation/request ID and PPNS box ID from state.
@@ -254,7 +254,7 @@ Get a list of notifications that have been sent to a box
 ### Query parameters
 | Name | Description |
 | --- | --- |
-| `status` (optional) | Only return notifications with this status. One of `PENDING` |
+| `status` (optional) | Only return notifications with this status. One of `PENDING`, `FAILED` or `ACKNOWLEDGED` |
 | `fromDate` (optional)| Only return notifications created after this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.987` |
 | `toDate` (optional)| Only return notifications created before this UTC datetime. ISO-8601 format. Eg `2020-06-03T14:20:54.123` |
 
@@ -273,7 +273,7 @@ HTTP Status: `200`
         "boxId":"7fe732c9-af27-4a94-973d-5c60d0a133d8",
         "messageContentType":"application/json",
         "message":"{\"test\": \"hello\"}",
-        "status":"PENDING",
+        "status":"ACKNOWLEDGED",
         "createdDateTime":"2020-06-03T14:14:54.108+0000"
     },
     {
