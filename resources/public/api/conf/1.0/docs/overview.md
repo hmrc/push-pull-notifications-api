@@ -41,6 +41,11 @@ Regardless of whether a Push/Callback URL is set up, notifications can be retrie
 
 You will need a Box Identifier to use this endpoint. A Box Identifier is made available by the HMRC API you are using.
 
+## Acknowledging notifications
+
+If you wish to update the notifications you can call the acknowledge endpoint
+
+
 ## Processing notifications
 
 The notifications process is different for each HMRC API that creates notifications. 

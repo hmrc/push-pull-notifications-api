@@ -110,7 +110,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
           if (validateAcknowledgeRequest(jsonValue)) {
             notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
               case results: AcknowledgeNotificationsSuccessUpdatedResult =>
-                Ok(Json.toJson(results.result))
+                NoContent
               case _: AcknowledgeNotificationsServiceBoxNotFoundResult =>
                 NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
