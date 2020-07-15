@@ -64,10 +64,10 @@ HTTP Status: `200`
 | `boxId` | Identifier for a box
 | `boxName` | Box name 
 | `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box
-| `subscribers` | A list of subscribers to this box |
-| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
-| `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
-| `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `subscriber` | Details of the subscriber to this box |
+| `subscriber.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
+| `subscriber.callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `subscriber.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |
@@ -169,10 +169,10 @@ HTTP Status: `200`
 | `boxId` | Identifier for a box
 | `boxName` | Box name 
 | `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box.
-| `subscribers` | A list of subscribers to this box |
-| `subscribers.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
-| `subscribers.callBackUrl` | The URL of the endpoint where push notifications will be sent |
-| `subscribers.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `subscriber` | Details of the subscriber to this box |
+| `subscriber.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
+| `subscriber.callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `subscriber.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |
