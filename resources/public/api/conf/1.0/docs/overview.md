@@ -41,6 +41,17 @@ Regardless of whether a Push/Callback URL is set up, notifications can be retrie
 
 You will need a Box Identifier to use this endpoint. A Box Identifier is made available by the HMRC API you are using.
 
+When you have successfully processed the notification, you can update its status to `ACKNOWLEDGED` by calling the 
+<a href="#_acknowledge-a-list-of-notifications_get_accordion">acknowledge a list of notifications</a> endpoint.
+
+## Notification statuses
+
+* `PENDING` = The notification has been created but has not been processed.
+* `FAILED` = The notification was pushed to your Push/Callback URL, but a HTTP status code 200 was not returned.
+* `ACKNOWLEDGED` = The notification was pushed to your Push/Callback URL and was successful, or you processed this 
+notification and then acknowledged it with the <a href="#_acknowledge-a-list-of-notifications_get_accordion">acknowledge 
+a list of notifications</a> endpoint.
+
 ## Processing notifications
 
 The notifications process is different for each HMRC API that creates notifications. 

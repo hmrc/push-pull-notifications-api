@@ -28,12 +28,12 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   private val numberOfNotificationsToRetrievePerRequest = 100
 
   protected def appBuilder: GuiceApplicationBuilder =
-    new GuiceApplicationBuilder()
-      .configure(
-        "notifications.ttlinseconds" -> ttlTimeinSeconds,
-        "notifications.numberToRetrievePerRequest" -> numberOfNotificationsToRetrievePerRequest,
-        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
-      )
+  new GuiceApplicationBuilder()
+    .configure(
+  "notifications.ttlinseconds" -> ttlTimeinSeconds,
+  "notifications.numberToRetrievePerRequest" -> numberOfNotificationsToRetrievePerRequest,
+  "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
+  )
 
   override implicit lazy val app: Application = appBuilder.build()
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
@@ -50,6 +50,14 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   def getIndex(indexName: String): Option[Index] ={
     await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
   }
+
+  private val oneHourAgo = now(UTC).minusHours(1)
+  private val boxIdStr = UUID.randomUUID().toString
+  private val boxId = BoxId(UUID.fromString(boxIdStr))
+  val box: Box = Box(boxName = UUID.randomUUID().toString,
+    boxId = boxId,
+    boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+    subscriber = Some(PushSubscriber("http://example.com")))
 
   "Indexes" should {
     "create ttl index and it should have correct value "in {
@@ -73,28 +81,23 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
     "save a Notification" in {
       val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
-        messageContentType = APPLICATION_JSON,
-        message = "{\"someJsone\": \"someValue\"}",
-        status = PENDING)
+      messageContentType = APPLICATION_JSON,
+      message = "{\"someJsone\": \"someValue\"}",
+      status = PENDING)
+
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
-
-
     }
 
     "not save duplicate Notifications" in {
       val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
-        messageContentType = APPLICATION_JSON,
-        message = "{",
-        status = PENDING)
-
-
+      messageContentType = APPLICATION_JSON,
+      message = "{",
+      status = PENDING)
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
 
-
       await(repo.saveNotification(notification))
-
     }
 
   }
@@ -118,18 +121,9 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createNotificationInDB(status = PENDING, notificationId = notificationId)
 
       val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
-
       result.status shouldBe ACKNOWLEDGED
     }
   }
-
-  private val oneHourAgo = now(UTC).minusHours(1)
-  private val boxIdStr = UUID.randomUUID().toString
-  private val boxId = BoxId(UUID.fromString(boxIdStr))
-  val box: Box = Box(boxName = UUID.randomUUID().toString,
-    boxId = boxId,
-    boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-  subscriber = Some(PushSubscriber("http://example.com")))
 
   "fetchRetryableNotifications" should {
     "return matching notifications and subscribers" in {
@@ -213,7 +207,6 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createNotificationInDB()
 
       val notifications: List[Notification] = await(repo.getByBoxIdAndFilters(boxId))
-
       notifications.isEmpty shouldBe false
       notifications.size shouldBe 2
     }
@@ -230,7 +223,6 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       createNotificationInDB(ACKNOWLEDGED)
 
       val notifications: List[Notification] = await(repo.getAllByBoxId(boxId))
-
       notifications.isEmpty shouldBe false
       notifications.size shouldBe 3
 
@@ -331,6 +323,27 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
   }
 
+  "AcknowledgeNotifications" should {
+    "update the statuses of ALL created notifications to ACKNOWLEDGED" in {
+      val notificationIdsDoNotUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
+      val notificationIdsToUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
+      createNotificationsWithIds(notificationIdsDoNotUpdate)
+      createNotificationsWithIds(notificationIdsToUpdate)
+
+      val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
+      returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
+      returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
+
+      val result = await(repo.acknowledgeNotifications(boxId,notificationIdsToUpdate.map(_.value.toString)))
+      result shouldBe true
+
+      val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
+      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
+      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
+    }
+
+  }
+
   private def validateNotificationsCreated(numberExpected: Int): Unit = {
     val notifications: List[Notification] = await(repo.getAllByBoxId(boxId))
     notifications.isEmpty shouldBe false
@@ -355,6 +368,12 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   private def createHistoricalNotifications(numberToCreate: Int): Unit = {
     for (a <- 0 until numberToCreate) {
       createNotificationInDB(createdDateTime = DateTime.now().minusHours(a))
+    }
+  }
+
+  private def createNotificationsWithIds(notificationIds: List[NotificationId]): Unit = {
+    for (a <- notificationIds.indices) {
+      createNotificationInDB(createdDateTime = DateTime.now().minusHours(a), notificationId = notificationIds(a))
     }
   }
 

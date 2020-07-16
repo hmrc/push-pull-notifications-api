@@ -25,8 +25,8 @@ import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.akkastream.{State, cursorProducer}
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.ReadPreference
-import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.{ReadPreference, WriteConcern}
+import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
@@ -35,7 +35,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
@@ -119,7 +119,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
       .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
         Logger.info(s"Dropping time to live index for entries in ${collection.name}")
         Future.sequence(Seq(collection.indexesManager.drop(create_datetime_ttlIndexName).map(_ > 0),
-        ensureLocalIndexes))
+          ensureLocalIndexes))
       })
 
   }
@@ -134,8 +134,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     val query =
       Json.obj(f"$$and" -> (
         boxIdQuery(boxId) ++
-        statusQuery(status) ++
-        Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
+          statusQuery(status) ++
+          Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
 
     collection
       .find(query, None)
@@ -159,6 +159,10 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     Json.arr(Json.obj("boxId" -> boxId.value))
   }
 
+  private def notificationIdsQuery(notificationIds: List[String]): JsArray = {
+    Json.arr(Json.obj("notificationId" -> Json.obj("$in" -> notificationIds)))
+  }
+
   private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray = {
     maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
   }
@@ -172,6 +176,28 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
         Future.successful(None)
     }
+
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
+
+    val query = Json.obj(f"$$and" -> (
+      boxIdQuery(boxId) ++
+        notificationIdsQuery(notificationIds)))
+
+    collection
+      .update(false)
+      .one(query,
+        Json.obj("$set" -> Json.obj("status" -> ACKNOWLEDGED)),
+        upsert = false,
+        multi = true)
+      .map((result: UpdateWriteResult) => {
+
+        if(result.nModified!=notificationIds.size){
+          Logger.warn(s"for boxId: ${boxId.raw} ${notificationIds.size} requested to be Acknowledged but only ${result.nModified} were modified")
+        }
+        result.ok
+      })
+
+  }
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))

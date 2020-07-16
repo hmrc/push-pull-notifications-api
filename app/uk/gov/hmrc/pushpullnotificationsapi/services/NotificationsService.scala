@@ -29,6 +29,24 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService) {
 
+
+  def acknowledgeNotifications(boxId: BoxId,
+                               clientId: ClientId,
+                               request: AcknowledgeNotificationsRequest)(implicit ec: ExecutionContext): Future[AcknowledgeNotificationsServiceResult] = {
+    boxRepository.findByBoxId(boxId)
+      .flatMap {
+        case Nil => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
+        case List(x) =>
+          if(x.boxCreator.clientId.equals(clientId)) {
+            notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
+              .map(AcknowledgeNotificationsSuccessUpdatedResult)
+          }else{
+            Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
+          }
+      }
+  }
+
+
   def getNotifications(boxId: BoxId,
                        clientId: ClientId,
                        status: Option[NotificationStatus] = None,
@@ -38,7 +56,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
+        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
         case List(x) =>
           if(x.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)

@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import org.joda.time.DateTime
 import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
@@ -30,6 +30,11 @@ case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionTy
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
 // Notifications
+
+
+case class AcknowledgeNotificationsRequest(notificationIds: List[String])
+case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationIds: Set[NotificationId])
+
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 
 case class NotificationQueryParams(status: Option[NotificationStatus],

@@ -4,6 +4,11 @@
       "key": "read:pull-notifications",
       "name": "Read pull notifications",
       "description": "Read pull notifications"
+    },
+    {
+      "key": "write:notifications",
+      "name": "Write notifications",
+      "description": "Write notifications"
     }
   ],
   "api": {
