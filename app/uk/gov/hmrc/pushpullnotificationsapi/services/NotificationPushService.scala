@@ -39,7 +39,9 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
           true
         case false =>
-          notificationsRepository.updateStatus(notification.notificationId, FAILED)
+          if (notification.status != FAILED) {
+            notificationsRepository.updateStatus(notification.notificationId, FAILED)
+          }
           false
       }
     } else Future.successful(true)

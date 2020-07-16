@@ -79,6 +79,21 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, FAILED)
     }
 
+    "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
+      when(mockConnector.send(any[OutboundNotification])(any[HeaderCarrier]))
+        .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
+      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
+        BoxId(UUID.randomUUID()),
+        MessageContentType.APPLICATION_JSON,
+        "{}", NotificationStatus.FAILED)
+
+      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+
+      result shouldBe false
+      verifyZeroInteractions(mockNotificationsRepo)
+    }
+
     "return true when subscriber has no callback url" in new Setup {
       val subscriber = PushSubscriber("", DateTime.now)
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
