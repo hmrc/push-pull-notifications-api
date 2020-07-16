@@ -152,7 +152,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
           .futureValue
 
         result.status shouldBe NOT_FOUND
-        result.body shouldBe "{\"statusCode\":404,\"message\":\"URI not found\",\"requested\":\"/box/unKnownPath\"}"
+        result.body shouldBe "{\"code\":\"NOT_FOUND\",\"message\":\"URI not found /box/unKnownPath\"}"
       }
     }
   }

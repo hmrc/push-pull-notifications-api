@@ -24,6 +24,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -33,11 +34,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
 @Singleton()
-class NotificationsController @Inject()(notificationsService: NotificationsService,
+class NotificationsController @Inject()(appConfig: AppConfig,
+                                        notificationsService: NotificationsService,
                                         queryParamValidatorAction: ValidateNotificationQueryParamsAction,
                                         validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                                         authAction: AuthAction,
@@ -84,6 +87,40 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
         } recover recovery
       }
 
+  val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
+
+  private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
+
+    val notificationIds = request.notificationIds
+
+    if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
+      false
+    } else {
+      notificationIds.count(UUIDRegex.findFirstIn(_).isDefined) == notificationIds.size &&
+      notificationIds.distinct.equals(notificationIds)
+    }
+
+  }
+
+  def acknowledgeNotifications(boxId: BoxId): Action[JsValue] =
+    (Action andThen
+      validateAcceptHeaderAction andThen
+      authAction).async(playBodyParsers.json) { implicit request =>
+      implicit val actualBody: Request[JsValue] = request.request
+      withJsonBody[AcknowledgeNotificationsRequest] {
+        jsonValue =>
+          if (validateAcknowledgeRequest(jsonValue)) notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
+            case _: AcknowledgeNotificationsSuccessUpdatedResult =>
+              NoContent
+            case _: AcknowledgeNotificationsServiceBoxNotFoundResult =>
+              NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+            case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
+              Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          } recover recovery else {
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
+          }
+      }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
+    }
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
     request.contentType match {
@@ -115,6 +152,20 @@ class NotificationsController @Inject()(notificationsService: NotificationsServi
     } match {
       case Success(_) => true
       case Failure(_) => false
+    }
+  }
+
+  override protected def withJsonBody[T]
+  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
+  = {
+    withJson(request.body)(f)
+  }
+
+  private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
+    json.validate[T] match {
+      case JsSuccess(payload, _) => f(payload)
+      case JsError(errs) =>
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }
 
