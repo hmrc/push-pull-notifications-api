@@ -23,7 +23,7 @@ import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.{ReadPreference, WriteConcern}
-import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
@@ -184,7 +184,13 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
         Json.obj("$set" -> Json.obj("status" -> ACKNOWLEDGED)),
         upsert = false,
         multi = true)
-      .map(_.ok)
+      .map((result: UpdateWriteResult) => {
+
+        if(result.nModified!=notificationIds.size){
+          Logger.warn(s"for boxId: ${boxId.raw} ${notificationIds.size} requested to be Acknowledged but only ${result.nModified} were modified")
+        }
+        result.ok
+      })
 
   }
 

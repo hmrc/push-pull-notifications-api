@@ -90,33 +90,33 @@ class NotificationsController @Inject()(appConfig: AppConfig,
   val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
 
   private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
-    //duplicates?
 
-    if (request.notificationIds.isEmpty || request.notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
+    val notificationIds = request.notificationIds
+
+    if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
       false
     } else {
-      val uniqueIds = request.notificationIds.distinct
-      request.notificationIds.exists(UUIDRegex.findFirstIn(_).isDefined) && uniqueIds.equals(request.notificationIds)
+      notificationIds.count(UUIDRegex.findFirstIn(_).isDefined) == notificationIds.size &&
+      notificationIds.distinct.equals(notificationIds)
     }
 
   }
 
   def acknowledgeNotifications(boxId: BoxId): Action[JsValue] =
     (Action andThen
+      validateAcceptHeaderAction andThen
       authAction).async(playBodyParsers.json) { implicit request =>
       implicit val actualBody: Request[JsValue] = request.request
       withJsonBody[AcknowledgeNotificationsRequest] {
         jsonValue =>
-          if (validateAcknowledgeRequest(jsonValue)) {
-            notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
-              case results: AcknowledgeNotificationsSuccessUpdatedResult =>
-                NoContent
-              case _: AcknowledgeNotificationsServiceBoxNotFoundResult =>
-                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-              case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
-                Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
-            } recover recovery
-          } else {
+          if (validateAcknowledgeRequest(jsonValue)) notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
+            case _: AcknowledgeNotificationsSuccessUpdatedResult =>
+              NoContent
+            case _: AcknowledgeNotificationsServiceBoxNotFoundResult =>
+              NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+            case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
+              Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          } recover recovery else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
       }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)

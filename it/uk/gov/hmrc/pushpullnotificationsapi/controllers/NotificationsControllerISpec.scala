@@ -10,7 +10,7 @@ import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED}
+import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, INTERNAL_SERVER_ERROR}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -21,7 +21,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService with PushGatewayService{
+class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService with PushGatewayService {
   this: Suite with ServerProvider =>
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
@@ -77,9 +77,9 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
          |""".stripMargin
 
   val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
-  val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json",  USER_AGENT -> "api-subscription-fields")
+  val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
   val validHeadersJsonWithNoUserAgent = List(acceptHeader, CONTENT_TYPE -> "application/json")
-  val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml",  USER_AGENT -> "api-subscription-fields")
+  val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml", USER_AGENT -> "api-subscription-fields")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -292,8 +292,28 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         result.status shouldBe NO_CONTENT
       }
 
+      "return 204 when unknown UUID is included" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        val notifications = createNotifications(box.boxId, 4)
+        val notificationIdList: List[String] = UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
+
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe NO_CONTENT
+      }
+
+      "return 400 when invalid UUID is included" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val box = createBoxAndReturn()
+        val notifications = createNotifications(box.boxId, 4)
+        val notificationIdList: List[String] = "fooBar" :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
+
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        result.status shouldBe BAD_REQUEST
+      }
+
       "return 401 when no client id in auth response" in {
-        primeAuthServiceNoCLientId( "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)
@@ -320,7 +340,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     Json.toJson(AcknowledgeNotificationsRequest(notificationIdList)).toString()
   }
 
-  private def stringToCreateNotificationResponse(notificationIdResponse: String): CreateNotificationResponse ={
+  private def stringToCreateNotificationResponse(notificationIdResponse: String): CreateNotificationResponse = {
     Json.parse(notificationIdResponse).validate[CreateNotificationResponse] match {
       case JsSuccess(value: CreateNotificationResponse, _) => value
       case _ => fail()
