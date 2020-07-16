@@ -121,62 +121,66 @@ uses:
                   description: The accept header is missing or invalid
                   value:
                     code: ACCEPT_HEADER_INVALID
-   /box/{boxId}/notifications/acknowledge:
+  /box/{boxId}/notifications/acknowledge:
     uriParameters:
       boxId:
         description: Unique identifier for a box
         type: string
         required: true
         example: 50dca3fc-c37c-4f03-b719-63571333624c
-     put:
-      displayName: acknowledge a list of notifications
-      description: updates the status of a list of notifications to acknowledged.
+    put:
+      displayName: Acknowledge a list of notifications
+      description: Updates the status of one or more notifications to `ACKNOWLEDGED`.
         <br><br>A maximum of 100 notifications will be updated.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:pull-notifications`.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:notifications`.
       is: [headers.acceptHeader]
        #      TODO Documentation doesn't render the required scope !!!!!
       securedBy: [ sec.x-application: { scopes: [ "write:pull-notifications" ] }  ]
-      (annotations.scope): "write:pull-notifications"
+      (annotations.scope): "write:notifications"
+      body:
+        application/json:
+          example: |
+            {
+              "notificationIds": [
+                "50dca3fc-c37c-4f03-b719-63571333624c",
+                "86bb5f82-452e-49c8-88af-1f321d573960"
+              ]
+            }
       responses:
-             204:
-
-             400:
-               body:
-                 application/json:
-                   type: types.errorResponse
-                   examples:
-                     example-1:
-                       description: The box identifier is not valid
-                       value:
-                         code: BAD_REQUEST
-                     example-2:
-                       description: The provided query parameters don't match the specification
-                       value:
-                         code: INVALID_REQUEST_PAYLOAD
-             403:
-               body:
-                 application/json:
-                   type: types.errorResponse
-                   examples:
-                     example-1:
-                       description: You do not have access to the specified box
-                       value:
-                         code: FORBIDDEN
-             404:
-               body:
-                 application/json:
-                   type: types.errorResponse
-                   examples:
-                     example-1:
-                       description: The unique identifier for the box does not exist
-                       value:
-                         code: BOX_NOT_FOUND
-             406:
-               body:
-                 application/json:
-                   type: types.errorResponse
-                   examples:
-                     example-1:
-                       description: The accept header is missing or invalid
-                       value:
-                         code: ACCEPT_HEADER_INVALID
+        204:
+        400:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The request body does not match the specification
+                 value:
+                   code: INVALID_REQUEST_PAYLOAD
+        403:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: You do not have access to the specified box
+                 value:
+                   code: FORBIDDEN
+        404:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The unique identifier for the box does not exist
+                 value:
+                   code: BOX_NOT_FOUND
+        406:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The accept header is missing or invalid
+                 value:
+                   code: ACCEPT_HEADER_INVALID
