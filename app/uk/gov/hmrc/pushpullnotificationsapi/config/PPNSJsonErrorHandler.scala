@@ -31,10 +31,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 import scala.concurrent.{ExecutionContext, Future}
 
 class PPNSJsonErrorHandler @Inject()(
-                                  auditConnector: AuditConnector,
-                                  httpAuditEvent: HttpAuditEvent,
-                                  configuration: Configuration
-                                )(implicit ec: ExecutionContext)
+                                      auditConnector: AuditConnector,
+                                      httpAuditEvent: HttpAuditEvent,
+                                      configuration: Configuration
+                                    )(implicit ec: ExecutionContext)
   extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {
 
   import httpAuditEvent.dataEvent
@@ -44,20 +44,20 @@ class PPNSJsonErrorHandler @Inject()(
       implicit val headerCarrier: HeaderCarrier = hc(request)
       statusCode match {
         case NOT_FOUND =>
-          NotFound(toJson(ErrorResponse(NOT_FOUND, "URI not found", requested = Some(request.path))))
+          NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"URI not found ${request.path}"))
         case BAD_REQUEST =>
-          if(message.contains("Invalid Json")) {
+          if (message.contains("Invalid Json")) {
             BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format"))
-          }else {
+          } else {
             BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
           }
         case _ =>
           auditConnector.sendEvent(
             dataEvent(
-              eventType       = "ClientError",
+              eventType = "ClientError",
               transactionName = s"A client error occurred, status: $statusCode",
-              request         = request,
-              detail          = Map.empty
+              request = request,
+              detail = Map.empty
             )
           )
           Status(statusCode)(toJson(ErrorResponse(statusCode, message)))
