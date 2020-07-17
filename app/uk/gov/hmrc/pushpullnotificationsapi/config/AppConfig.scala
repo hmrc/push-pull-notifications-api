@@ -28,9 +28,12 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val numberOfNotificationsToRetrievePerRequest: Int = config.get[Int]("notifications.numberToRetrievePerRequest")
 
   val outboundNotificationsUrl = servicesConfig.baseUrl("push-pull-notifications-gateway")
+  val gatewayAuthToken: String = config.get[String]("microservice.services.push-pull-notifications-gateway.authorizationKey")
+
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 
   val whitelistedUserAgentList: List[String] = config.underlying.getStringList("whitelisted.useragents").asScala.toList
+
 }

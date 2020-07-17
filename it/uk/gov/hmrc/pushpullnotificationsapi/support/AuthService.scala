@@ -1,6 +1,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import play.api.http.Status
 
@@ -9,7 +10,7 @@ trait AuthService {
   private val authUrlMatcher = urlEqualTo(authUrl)
 
 
-  def primeAuthServiceNoCLientId( body: String): StubMapping = {
+  def primeAuthServiceNoClientId( body: String): StubMapping = {
     stubFor(post(authUrlMatcher)
       .withRequestBody(equalToJson(body))
       .willReturn(

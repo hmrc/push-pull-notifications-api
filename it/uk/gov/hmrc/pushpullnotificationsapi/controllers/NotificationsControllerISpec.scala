@@ -42,6 +42,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
+        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
         "metrics.enabled" -> true,
         "auditing.enabled" -> true,
         "auditing.consumer.baseUri.host" -> wireMockHost,
@@ -264,7 +265,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
 
       "respond with 401 on create when no clientID in response from auth" in {
-        primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
@@ -313,7 +314,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
 
       "return 401 when no client id in auth response" in {
-        primeAuthServiceNoCLientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse(_)).map(_.notificationId)

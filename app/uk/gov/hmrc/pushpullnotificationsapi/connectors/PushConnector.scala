@@ -26,6 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.http.logging.Authorization
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -36,13 +37,17 @@ class PushConnector @Inject()(http: HttpClient,
                              (implicit ec: ExecutionContext) {
 
   def send(pushNotificationRequest: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
-    doSend(pushNotificationRequest)
+    doSend(pushNotificationRequest, hc)
   }
 
-  private def doSend(notification: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
+  private def doSend(notification: OutboundNotification, hc: HeaderCarrier): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/notify"
 
+    val authorizationKey = appConfig.gatewayAuthToken
     Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
+
+    implicit val modifiedHeaderCarrier: HeaderCarrier =
+     hc.copy(authorization = Some(Authorization(authorizationKey)))
 
     http.POST[OutboundNotification, HttpResponse](url, notification)
       .map(_.status).map[PushConnectorResult] {

@@ -32,6 +32,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, P
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
+import org.mockito.captor.ArgCaptor
 
 class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach{
   private val mockHttpClient = mock[HttpClient]
@@ -49,6 +50,9 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   }
 
   trait SetUp{
+    val gatewayAuthToken = "gwauthtoken"
+    when(mockAppConfig.gatewayAuthToken).thenReturn(gatewayAuthToken)
+
     val connector = new PushConnector(
       mockHttpClient,
       mockAppConfig)
@@ -62,6 +66,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val httpResponse: HttpResponse = mock[HttpResponse]
       when(httpResponse.body).thenReturn("")
       when(httpResponse.status).thenReturn(OK)
+      val headerCarrierCaptor = ArgCaptor[HeaderCarrier]
       when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
         any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.successful(httpResponse))
@@ -70,7 +75,10 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       result shouldBe PushConnectorSuccessResult()
 
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
-        any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
+        any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
+
+      val headerCarrierValue = headerCarrierCaptor.value
+      headerCarrierValue.headers.contains("Authorization" -> gatewayAuthToken) shouldBe true
     }
 
     "call the gateway correctly and return failed result when response status 201 is returned" in new SetUp {
