@@ -8,11 +8,11 @@
         </encoder>
     </appender>
 
-    <logger name="application" level="${logger.application:-WARN}">
+    <logger name="application" level="${logger.application:-INFO}">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="${logger.application:-WARN}">
+    <root level="${logger.application:-INFO}">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

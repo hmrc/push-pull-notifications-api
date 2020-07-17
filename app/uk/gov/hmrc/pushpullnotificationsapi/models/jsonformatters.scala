@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, NotificationId, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
 
 object ReactiveMongoFormatters {
@@ -38,6 +38,7 @@ object ReactiveMongoFormatters {
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
+  implicit val retryableNotificationFormat: OFormat[RetryableNotification] = Json.format[RetryableNotification]
 }
 
 object ResponseFormatters{

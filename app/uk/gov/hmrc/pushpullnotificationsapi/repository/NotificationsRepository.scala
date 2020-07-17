@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.akkastream.{State, cursorProducer}
 import reactivemongo.api.Cursor.FailOnError
 import reactivemongo.api.{ReadPreference, WriteConcern}
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
@@ -30,15 +33,17 @@ import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)(implicit ec: ExecutionContext)
+class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)
+                                       (implicit ec: ExecutionContext, mat: Materializer)
   extends ReactiveRepository[Notification, BSONObjectID](
     "notifications",
     mongoComponent.mongoConnector.db,
@@ -202,4 +207,23 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map {
       _.result[Notification].head
     }
+
+  def fetchRetryableNotifications(createdAfter: DateTime): Source[RetryableNotification, Future[Any]] = {
+    import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters.retryableNotificationFormat
+
+    val builder = collection.BatchCommands.AggregationFramework
+    val pipeline = List(
+      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> FAILED), Json.obj("createdDateTime" -> Json.obj("$gte" -> createdAfter))))),
+      builder.Lookup(from = "box", localField = "boxId", foreignField = "boxId", as = "boxes"),
+      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("boxes.subscriber.subscriptionType" -> API_PUSH_SUBSCRIBER),
+        Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
+      builder.Project(
+        Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
+          "message" -> "$message", "status" -> "$status", "createdDateTime" -> "$createdDateTime"),
+        "subscriber" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes.subscriber"), JsNumber(0))))
+      ))
+    )
+
+    collection.aggregateWith[RetryableNotification]()(_ => (pipeline.head, pipeline.tail)).documentSource()
+  }
 }

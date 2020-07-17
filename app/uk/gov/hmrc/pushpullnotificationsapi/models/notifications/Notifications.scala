@@ -23,8 +23,8 @@ import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, PushSubscriber}
 
 import scala.collection.immutable
 
@@ -73,3 +73,5 @@ object Notification {
 
 case class ForwardedHeader(key: String, value: String)
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
+
+case class RetryableNotification(notification: Notification, subscriber: PushSubscriber)

@@ -28,7 +28,9 @@ lazy val compileDeps = Seq(
   "com.github.blemale" %% "scaffeine" % "3.1.0",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.4.0",
   "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-26",
+  "org.reactivemongo" %% "reactivemongo-akkastream" % "0.18.8",
   "com.typesafe.play" %% "play-json-joda" % "2.7.1",
+  "uk.gov.hmrc" %% "play-scheduling" % "7.4.0-play-26",
   ws
 )
 

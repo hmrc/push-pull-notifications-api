@@ -2,7 +2,10 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
 
+import akka.stream.scaladsl.Sink
 import org.joda.time.DateTime
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -12,7 +15,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,9 +36,10 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   )
 
   override implicit lazy val app: Application = appBuilder.build()
+  implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
 
-  def repo: NotificationsRepository =
-  app.injector.instanceOf[NotificationsRepository]
+  def repo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
+  def boxRepo: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -47,8 +51,13 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
   }
 
+  private val oneHourAgo = now(UTC).minusHours(1)
   private val boxIdStr = UUID.randomUUID().toString
   private val boxId = BoxId(UUID.fromString(boxIdStr))
+  val box: Box = Box(boxName = UUID.randomUUID().toString,
+    boxId = boxId,
+    boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+    subscriber = Some(PushSubscriber("http://example.com")))
 
   "Indexes" should {
     "create ttl index and it should have correct value "in {
@@ -116,6 +125,78 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
   }
 
+  "fetchRetryableNotifications" should {
+    "return matching notifications and subscribers" in {
+      val expectedNotification1 = createNotificationInDB(status = FAILED)
+      val expectedNotification2 = createNotificationInDB(status = FAILED)
+      await(boxRepo.createBox(box))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 2
+      retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2)
+      retryableNotifications.map(_.subscriber) should contain only box.subscriber.get
+    }
+
+    "not return notifications that are not failed" in {
+      createNotificationInDB(status = PENDING)
+      createNotificationInDB(status = ACKNOWLEDGED)
+      await(boxRepo.createBox(box))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 0
+    }
+
+    "not return failed notifications that were created before the cut-off datetime" in {
+      createNotificationInDB(status = FAILED, createdDateTime = now(UTC).minusHours(2))
+      createNotificationInDB(status = FAILED, createdDateTime = now(UTC).minusDays(1))
+      await(boxRepo.createBox(box))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 0
+    }
+
+    "not return failed notifications for pull subscribers" in {
+      val boxForPullSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
+        boxId = boxId,
+        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+        subscriber = Some(PullSubscriber("http://example.com")))
+      createNotificationInDB(status = FAILED)
+      await(boxRepo.createBox(boxForPullSubscriber))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 0
+    }
+
+    "not return failed notifications for which the box has no subscriber" in {
+      val boxWithNoSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
+        boxId = boxId,
+        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+        subscriber = None)
+      createNotificationInDB(status = FAILED)
+      await(boxRepo.createBox(boxWithNoSubscriber))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 0
+    }
+
+    "not return failed notifications with emtpy callback URL" in {
+      val boxWithNoCallbackUrl: Box = Box(boxName = UUID.randomUUID().toString,
+        boxId = boxId,
+        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+        subscriber = Some(PushSubscriber("")))
+      createNotificationInDB(status = FAILED)
+      await(boxRepo.createBox(boxWithNoCallbackUrl))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+
+      retryableNotifications should have size 0
+    }
+  }
 
   "getByBoxIdAndFilters" should {
 
@@ -270,8 +351,8 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   }
 
   private def createNotificationInDB(status: NotificationStatus = PENDING,
-                                     createdDateTime: DateTime = DateTime.now(),
-                                     notificationId: NotificationId = NotificationId(UUID.randomUUID())) = {
+                                     createdDateTime: DateTime = now(UTC),
+                                     notificationId: NotificationId = NotificationId(UUID.randomUUID())): Notification = {
     val notification = Notification(notificationId,
       boxId = boxId,
       APPLICATION_JSON,
@@ -281,6 +362,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
     val result: Unit = await(repo.saveNotification(notification))
     result shouldBe ((): Unit)
+    notification
   }
 
   private def createHistoricalNotifications(numberToCreate: Int): Unit = {
