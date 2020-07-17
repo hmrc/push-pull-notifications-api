@@ -28,9 +28,8 @@ request is sent to `https://www.example.com/push` with a body similar to:
 See <a href="#_get-a-list-of-notifications_get_accordion">get a list of notifications</a> for details about the
 structure of this JSON object.
 
-If your service responds to this request with a HTTP status code 200, then the notification status will be updated
-to `ACKNOWLEDGED`. If your service responds with any other status code, the notification status will be updated to
-`FAILED`.
+If your service responds to this request with an HTTP status code 200, the notification status is updated to
+`ACKNOWLEDGED`. If your service responds with any other status code, the notification status is updated to `FAILED`.
 
 ## Pull notifications
 
@@ -46,15 +45,15 @@ When you have successfully processed the notification, you can update its status
 
 ## Notification statuses
 
-* `PENDING` = The notification has been created but has not been processed.
-* `FAILED` = The notification was pushed to your Push/Callback URL, but a HTTP status code 200 was not returned.
-* `ACKNOWLEDGED` = The notification was pushed to your Push/Callback URL and was successful, or you processed this 
-notification and then acknowledged it with the <a href="#_acknowledge-a-list-of-notifications_get_accordion">acknowledge 
-a list of notifications</a> endpoint.
+* `PENDING` means the notification was created but has not been processed
+* `FAILED` means the notification was pushed to your Push/Callback URL, but no HTTP status code 200 was returned
+* `ACKNOWLEDGED` means the notification was successfully pushed to your Push/Callback URL or you processed the
+notification using the <a href="#_acknowledge-a-list-of-notifications_get_accordion">acknowledge
+a list of notifications</a> endpoint
 
 ## Processing notifications
 
-The notifications process is different for each HMRC API that creates notifications. 
+The way to process notifications is different for each HMRC API. Check the documentation for the HMRC API you are using.
 
 Notification messages should include information like a correlation or request identifier that allows notifications to
 be identified.

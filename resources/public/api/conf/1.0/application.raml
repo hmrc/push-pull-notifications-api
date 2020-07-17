@@ -139,6 +139,7 @@ uses:
       (annotations.scope): "write:notifications"
       body:
         application/json:
+          type: !include schemas/acknowledge.json
           example: |
             {
               "notificationIds": [
