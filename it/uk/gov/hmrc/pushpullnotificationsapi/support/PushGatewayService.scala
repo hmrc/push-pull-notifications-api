@@ -10,6 +10,7 @@ trait PushGatewayService {
 
   def primeGatewayService(status : Int)= {
     stubFor(post(gatewayUrlMatcher)
+      .withHeader("Authorization", equalTo("iampushpullapi"))
       .willReturn(
         aResponse()
           .withStatus(status)
