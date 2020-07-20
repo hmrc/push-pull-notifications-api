@@ -20,12 +20,15 @@ import controllers.Assets
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 
 @Singleton
-class DocumentationController @Inject()(assets: Assets, cc: ControllerComponents) extends BackendController(cc) {
+class DocumentationController @Inject()(appconfig: AppConfig, assets: Assets, cc: ControllerComponents) extends BackendController(cc) {
 
-  def definition(): Action[AnyContent] = {
-    assets.at("/public/api", "definition.json")
+
+  def definition(): Action[AnyContent] = Action {
+     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
   def raml(version: String, file: String): Action[AnyContent] = {

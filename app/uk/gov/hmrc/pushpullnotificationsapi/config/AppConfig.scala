@@ -36,4 +36,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val whitelistedUserAgentList: List[String] = config.underlying.getStringList("whitelisted.useragents").asScala.toList
 
+  val apiStatus = config.get[String]("apiStatus")
+
 }
