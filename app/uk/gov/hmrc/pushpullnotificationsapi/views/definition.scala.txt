@@ -1,0 +1,35 @@
+
+@(apiStatus: String)
+{
+  "scopes": [
+    {
+      "key": "read:pull-notifications",
+      "name": "Read pull notifications",
+      "description": "Read pull notifications"
+    },
+    {
+      "key": "write:notifications",
+      "name": "Write notifications",
+      "description": "Write notifications"
+    }
+  ],
+  "api": {
+    "name": "Push Pull Notifications",
+    "description": "This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) \nnotifications. Notifications are create by other HMRC services.",
+    "context": "misc/push-pull-notification",
+    "categories": [
+      "OTHER"
+    ],
+    "versions": [
+      {
+        "version": "1.0",
+        "status": "@{apiStatus}",
+        "endpointsEnabled": @{!apiStatus.equalsIgnoreCase("ALPHA")},
+        "access": {
+          "type": "PUBLIC"
+        }
+      }
+    ]
+  }
+}
+

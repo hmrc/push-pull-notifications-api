@@ -27,7 +27,8 @@ class DocumentationControllerISpec extends UnitSpec with GuiceOneAppPerTest with
         "appUrl" -> "http://example.com",
         "auditing.enabled" -> false,
         "Test.microservice.services.service-locator.host" -> stubHost,
-        "Test.microservice.services.service-locator.port" -> stubPort))
+        "Test.microservice.services.service-locator.port" -> stubPort,
+        "apiStatus" -> "ALPHA"))
       .in(Mode.Test).build()
 
     override def beforeEach() {
@@ -55,6 +56,11 @@ class DocumentationControllerISpec extends UnitSpec with GuiceOneAppPerTest with
         // None of these lines below should throw if successful.
         (jsonResponse \\ "version") map (_.as[String])
         (jsonResponse \\ "endpoints").map(_ \\ "endpointName").map(_.map(_.as[String]))
+
+        val statuses = (jsonResponse \\ "status") map (_.as[String])
+        statuses.find(_ == "ALPHA").size should be (statuses.size) // All instances of status should be ALPHA
+        val endpointsEnabledList = (jsonResponse \\ "endpointsEnabled") map (_.as[Boolean])
+        endpointsEnabledList.find(_ == false).size should be (endpointsEnabledList.size) // All instances of endpointsEnabled should be false
       }
 
       "provide raml documentation" in new Setup {
