@@ -18,23 +18,21 @@ package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import javax.inject.Inject
 import play.api.Configuration
-import play.api.http.Status.{BAD_REQUEST, NOT_FOUND}
-import play.api.libs.json.Json.toJson
-import play.api.mvc.Results.{BadRequest, NotFound, Status}
+import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, UNSUPPORTED_MEDIA_TYPE}
+import play.api.mvc.Results.{BadRequest, NotFound, Status, UnsupportedMediaType}
 import play.api.mvc.{RequestHeader, Result}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.HttpAuditEvent
-import uk.gov.hmrc.play.bootstrap.http.{ErrorResponse, JsonErrorHandler}
+import uk.gov.hmrc.play.bootstrap.http.JsonErrorHandler
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PPNSJsonErrorHandler @Inject()(
-                                      auditConnector: AuditConnector,
-                                      httpAuditEvent: HttpAuditEvent,
-                                      configuration: Configuration
-                                    )(implicit ec: ExecutionContext)
+class PPNSJsonErrorHandler @Inject()(auditConnector: AuditConnector,
+                                     httpAuditEvent: HttpAuditEvent,
+                                     configuration: Configuration)
+                                    (implicit ec: ExecutionContext)
   extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {
 
   import httpAuditEvent.dataEvent
@@ -51,6 +49,7 @@ class PPNSJsonErrorHandler @Inject()(
           } else {
             BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
           }
+        case UNSUPPORTED_MEDIA_TYPE => UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
         case _ =>
           auditConnector.sendEvent(
             dataEvent(
@@ -60,7 +59,7 @@ class PPNSJsonErrorHandler @Inject()(
               detail = Map.empty
             )
           )
-          Status(statusCode)(toJson(ErrorResponse(statusCode, message)))
+          Status(statusCode)(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, message))
       }
     }
 
