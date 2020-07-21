@@ -79,7 +79,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
   private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
   private val validHeadersXml: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
   private val headersWithInValidUserAgent: Map[String, String] = Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
-
+  private val headersWithInvalidContentType: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
   val notification: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
@@ -146,10 +146,10 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         verifyNoInteractions(mockNotificationService)
       }
 
-      "return 400 when no contentType header is sent" in {
+      "return 415 when bad contentType header is sent" in {
 
-        val result = doPost(s"/box/${boxId.raw}/notifications",  Map("user-Agent" -> "api-subscription-fields"), "jsonBody")
-        status(result) should be(BAD_REQUEST)
+        val result = doPost(s"/box/${boxId.raw}/notifications",  Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), jsonBody)
+        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockNotificationService)
       }
@@ -443,6 +443,14 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         verifyNoInteractions(mockNotificationService)
       }
 
+      "return 415 if Content-Type header is invalid" in {
+        val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
+        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", headersWithInvalidContentType, validatedAcknowledgeRequest))
+        status(result) should be (UNSUPPORTED_MEDIA_TYPE)
+
+        val jsonBody = Helpers.contentAsJson(result)
+        (jsonBody \ "code").as[String] shouldBe "BAD_REQUEST"
+      }
     }
   }
 

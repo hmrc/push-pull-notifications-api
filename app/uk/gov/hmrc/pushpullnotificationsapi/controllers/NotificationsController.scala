@@ -55,7 +55,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
       .async(playBodyParsers.tolerantText) { implicit request =>
         val maybeConvertedType = contentTypeHeaderToNotificationType
         maybeConvertedType.fold(
-          Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+          Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
         ) { contentType =>
           if (validateBodyAgainstContentType(contentType)) {
             val notificationId = NotificationId(UUID.randomUUID())
@@ -67,7 +67,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
                 InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
             } recover recovery
           } else {
-            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Content Type not Supported or message syntax is invalid")))
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
           }
         }
       }

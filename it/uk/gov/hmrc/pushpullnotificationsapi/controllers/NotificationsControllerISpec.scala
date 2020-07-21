@@ -10,7 +10,7 @@ import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, INTERNAL_SERVER_ERROR}
+import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -215,10 +215,10 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         result.status shouldBe BAD_REQUEST
       }
 
-      "respond with 400 when unknown content type sent in request" in {
+      "respond with 415 when unknown content type sent in request" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "api-subscription-fields"))
-        result.status shouldBe BAD_REQUEST
+        result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 404 when unknown / non existent box id sent" in {
