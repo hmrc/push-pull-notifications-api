@@ -137,6 +137,12 @@ uses:
        #      TODO Documentation doesn't render the required scope !!!!!
       securedBy: [ sec.x-application: { scopes: [ "write:pull-notifications" ] }  ]
       (annotations.scope): "write:notifications"
+      headers:
+        Content-Type:
+          description: The format of the request body. If this is specified it must be `application/json`.
+          type: string
+          required: false
+          example: application/json
       body:
         application/json:
           type: !include schemas/acknowledge.json
@@ -182,6 +188,15 @@ uses:
              type: types.errorResponse
              examples:
                example-1:
-                 description: The accept header is missing or invalid
+                 description: The Accept header is missing or invalid
                  value:
                    code: ACCEPT_HEADER_INVALID
+        415:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The Content-Type header is incorrect
+                 value:
+                   code: BAD_REQUEST
