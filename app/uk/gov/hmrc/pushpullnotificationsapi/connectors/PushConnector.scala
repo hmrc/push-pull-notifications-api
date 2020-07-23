@@ -52,14 +52,10 @@ class PushConnector @Inject()(http: HttpClient,
     http.POST[OutboundNotification, HttpResponse](url, notification)
       .map(_.status).map[PushConnectorResult] {
         case OK => PushConnectorSuccessResult()
-        case httpCode: Int =>
-          Logger.info(s"Unexpected HTTP code $httpCode")
-          PushConnectorFailedResult(new UnprocessableEntityException(s"Unexpected HTTP code $httpCode"))
+        case httpCode: Int => PushConnectorFailedResult(new UnprocessableEntityException(s"Unexpected HTTP code $httpCode"))
       }
       .recover {
-        case NonFatal(e) =>
-          Logger.info("Call to ppns gateway failed:",e)
-          PushConnectorFailedResult(e)
+        case NonFatal(e) => PushConnectorFailedResult(e)
       }
   }
 }
