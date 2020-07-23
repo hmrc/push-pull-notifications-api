@@ -55,7 +55,7 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
     connector.send(outboundNotification).map {
       case _ : PushConnectorSuccessResult => true
       case error: PushConnectorFailedResult =>
-        Logger.info("Error calling gateway :", error.throwable)
+        Logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.throwable.getMessage}", error.throwable)
         false
     }
   }
