@@ -47,9 +47,10 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
   override def initialDelay: FiniteDuration = jobConfig.initialDelay
   override val isEnabled: Boolean = jobConfig.enabled
   implicit val hc: HeaderCarrier = HeaderCarrier()
-  val createdAfter: DateTime = now(UTC).minusHours(jobConfig.numberOfHoursToRetry)
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
+    val createdAfter: DateTime = now(UTC).minusHours(jobConfig.numberOfHoursToRetry)
+
     notificationsRepository
       .fetchRetryableNotifications(createdAfter)
       .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification))
