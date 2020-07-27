@@ -57,8 +57,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
-
   lazy implicit val mat: Materializer = app.materializer
 
   override def beforeEach(): Unit = {

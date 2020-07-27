@@ -61,7 +61,8 @@ case class Notification(notificationId: NotificationId,
                         status: NotificationStatus = PENDING,
                         createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
                         readDateTime: Option[DateTime] = None,
-                        pushedDateTime: Option[DateTime] = None)
+                        pushedDateTime: Option[DateTime] = None,
+                        retryAfterDateTime: Option[DateTime] = None)
 
 object Notification {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats

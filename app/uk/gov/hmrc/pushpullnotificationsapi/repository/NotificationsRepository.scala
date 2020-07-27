@@ -20,12 +20,14 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.akkastream.{State, cursorProducer}
+import reactivemongo.akkastream.cursorProducer
 import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.{ReadPreference, WriteConcern}
+import reactivemongo.api.ReadPreference
 import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
@@ -35,7 +37,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, PENDING}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
@@ -203,23 +205,29 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))
   }
 
+  def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
+    updateNotification(notificationId, Json.obj("$set" -> Json.obj("retryAfterDateTime" -> newRetryAfterDateTime)))
+  }
+
   private def updateNotification(notificationId: NotificationId, updateStatement: JsObject): Future[Notification] =
     findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map {
       _.result[Notification].head
     }
 
-  def fetchRetryableNotifications(createdAfter: DateTime): Source[RetryableNotification, Future[Any]] = {
+  def fetchRetryableNotifications: Source[RetryableNotification, Future[Any]] = {
     import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters.retryableNotificationFormat
 
     val builder = collection.BatchCommands.AggregationFramework
     val pipeline = List(
-      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> FAILED), Json.obj("createdDateTime" -> Json.obj("$gte" -> createdAfter))))),
+      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> PENDING),
+        Json.obj("$or" -> Json.arr(Json.obj("retryAfterDateTime" -> Json.obj("$lte" -> now(UTC))),
+          Json.obj("retryAfterDateTime" -> Json.obj("$exists" -> false))))))),
       builder.Lookup(from = "box", localField = "boxId", foreignField = "boxId", as = "boxes"),
       builder.Match(Json.obj("$and" -> Json.arr(Json.obj("boxes.subscriber.subscriptionType" -> API_PUSH_SUBSCRIBER),
         Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
       builder.Project(
         Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-          "message" -> "$message", "status" -> "$status", "createdDateTime" -> "$createdDateTime"),
+          "message" -> "$message", "status" -> "$status", "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime"),
         "subscriber" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes.subscriber"), JsNumber(0))))
       ))
     )
