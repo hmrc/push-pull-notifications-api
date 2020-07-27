@@ -21,7 +21,9 @@ import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source.{fromFutureSource, fromIterator}
-import org.joda.time.{DateTime, Duration}
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
+import org.joda.time.Duration
 import org.mockito.ArgumentMatchers.{any, eq => meq}
 import org.mockito.Mockito.{never, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar
@@ -34,6 +36,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.mongo.{MongoConnector, MongoSpecSupport}
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, PushSubscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
@@ -79,13 +82,13 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
 
   "RetryPushNotificationsJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
+    val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", now)
 
     "retry pushing the notifications" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
-      when(mockNotificationsRepository.fetchRetryableNotifications(any()))
+      when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(true))
 
@@ -95,18 +98,49 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
+    "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
+      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
+        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(5))
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
+      when(mockNotificationsRepository.fetchRetryableNotifications)
+        .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
+      when(mockNotificationsRepository.updateRetryAfterDateTime(NotificationId(any[UUID]), any())).thenReturn(successful(notification))
+      when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(false))
+
+      val result: underTest.Result = await(underTest.execute)
+
+      verify(mockNotificationsRepository, times(1)).updateRetryAfterDateTime(NotificationId(any[UUID]), any())
+      result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
+    }
+
+    "set notification status to failed when it fails to push and the notification is too old for further retries" in new Setup {
+      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
+        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
+      when(mockNotificationsRepository.fetchRetryableNotifications)
+        .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
+      when(mockNotificationsRepository.updateStatus(notification.notificationId, FAILED)).thenReturn(successful(notification))
+      when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(false))
+
+      val result: underTest.Result = await(underTest.execute)
+
+      verify(mockNotificationsRepository, times(1)).updateStatus(notification.notificationId, FAILED)
+      verify(mockNotificationsRepository, never).updateRetryAfterDateTime(NotificationId(any[UUID]), any())
+      result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
+    }
+
     "not execute if the job is already running" in new Setup {
       override val lockKeeperSuccess: () => Boolean = () => false
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationsRepository, never).fetchRetryableNotifications(any())
+      verify(mockNotificationsRepository, never).fetchRetryableNotifications
       verify(mockNotificationPushService, never).handlePushNotification(any(), any())(any(), any())
       result.message shouldBe "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
     }
 
     "handle error when something fails" in new Setup {
-      when(mockNotificationsRepository.fetchRetryableNotifications(any()))
+      when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource[RetryableNotification, State](failed(new RuntimeException("Failed"))))
 
       val result: underTest.Result = await(underTest.execute)

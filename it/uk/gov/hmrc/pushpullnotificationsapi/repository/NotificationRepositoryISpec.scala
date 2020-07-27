@@ -125,74 +125,108 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     }
   }
 
+  "updateRetryAfterDateTime" should {
+    "update the matching notification with a new retry after date time" in {
+      val matchingNotificationId = NotificationId(UUID.randomUUID())
+      val nonMatchingNotificationId = NotificationId(UUID.randomUUID())
+      createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
+      createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
+      val newDateTime = now(UTC).plusHours(2)
+
+      await(repo.updateRetryAfterDateTime(matchingNotificationId, newDateTime))
+
+      val notifications = await(repo.findAll())
+      notifications.find(_.notificationId == matchingNotificationId).get.retryAfterDateTime shouldBe Some(newDateTime)
+      notifications.find(_.notificationId == nonMatchingNotificationId).get.retryAfterDateTime shouldBe None
+    }
+
+    "return the updated notification" in {
+      val notificationId = NotificationId(UUID.randomUUID())
+      createNotificationInDB(status = PENDING, notificationId = notificationId)
+
+      val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
+      result.status shouldBe ACKNOWLEDGED
+    }
+  }
+
   "fetchRetryableNotifications" should {
     "return matching notifications and subscribers" in {
-      val expectedNotification1 = createNotificationInDB(status = FAILED)
-      val expectedNotification2 = createNotificationInDB(status = FAILED)
+      val expectedNotification1 = createNotificationInDB(status = PENDING)
+      val expectedNotification2 = createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(box))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 2
       retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2)
       retryableNotifications.map(_.subscriber) should contain only box.subscriber.get
     }
 
-    "not return notifications that are not failed" in {
-      createNotificationInDB(status = PENDING)
+    "not return notifications that are not pending" in {
+      createNotificationInDB(status = FAILED)
       createNotificationInDB(status = ACKNOWLEDGED)
       await(boxRepo.createBox(box))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 0
     }
 
-    "not return failed notifications that were created before the cut-off datetime" in {
-      createNotificationInDB(status = FAILED, createdDateTime = now(UTC).minusHours(2))
-      createNotificationInDB(status = FAILED, createdDateTime = now(UTC).minusDays(1))
+    "return pending notifications that were to be retried in the past" in {
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).minusHours(2)))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).minusDays(1)))
       await(boxRepo.createBox(box))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
+
+      retryableNotifications should have size 2
+    }
+
+    "not return pending notifications that are not yet to be retried" in {
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).plusHours(2)))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).plusDays(1)))
+      await(boxRepo.createBox(box))
+
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 0
     }
 
-    "not return failed notifications for pull subscribers" in {
+    "not return pending notifications for pull subscribers" in {
       val boxForPullSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
         boxId = boxId,
         boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
         subscriber = Some(PullSubscriber("http://example.com")))
-      createNotificationInDB(status = FAILED)
+      createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxForPullSubscriber))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 0
     }
 
-    "not return failed notifications for which the box has no subscriber" in {
+    "not return pending notifications for which the box has no subscriber" in {
       val boxWithNoSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
         boxId = boxId,
         boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
         subscriber = None)
-      createNotificationInDB(status = FAILED)
+      createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxWithNoSubscriber))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 0
     }
 
-    "not return failed notifications with emtpy callback URL" in {
+    "not return pending notifications with emtpy callback URL" in {
       val boxWithNoCallbackUrl: Box = Box(boxName = UUID.randomUUID().toString,
         boxId = boxId,
         boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
         subscriber = Some(PushSubscriber("")))
-      createNotificationInDB(status = FAILED)
+      createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxWithNoCallbackUrl))
 
-      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications(oneHourAgo).runWith(Sink.seq))
+      val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 0
     }
@@ -352,13 +386,15 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
   private def createNotificationInDB(status: NotificationStatus = PENDING,
                                      createdDateTime: DateTime = now(UTC),
-                                     notificationId: NotificationId = NotificationId(UUID.randomUUID())): Notification = {
+                                     notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+                                     retryAfterDateTime: Option[DateTime] = None): Notification = {
     val notification = Notification(notificationId,
       boxId = boxId,
       APPLICATION_JSON,
       message = "{\"someJsone\": \"someValue\"}",
       status = status,
-      createdDateTime = createdDateTime)
+      createdDateTime = createdDateTime,
+      retryAfterDateTime = retryAfterDateTime)
 
     val result: Unit = await(repo.saveNotification(notification))
     result shouldBe ((): Unit)

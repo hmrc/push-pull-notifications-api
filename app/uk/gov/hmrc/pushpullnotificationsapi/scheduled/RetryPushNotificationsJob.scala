@@ -27,10 +27,12 @@ import play.api.Logger
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
+import scala.concurrent.Future.successful
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -49,11 +51,11 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
-    val createdAfter: DateTime = now(UTC).minusHours(jobConfig.numberOfHoursToRetry)
+    val retryAfterDateTime: DateTime = now(UTC).plus(jobConfig.interval.toMillis)
 
     notificationsRepository
-      .fetchRetryableNotifications(createdAfter)
-      .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification))
+      .fetchRetryableNotifications
+      .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
       .map(_ => RunningOfJobSuccessful)
       .recoverWith {
         case NonFatal(e) =>
@@ -62,15 +64,23 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
     }
   }
 
-  private def retryPushNotification(retryableNotification: RetryableNotification)(implicit ec: ExecutionContext): Future[Unit] = {
+  private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: DateTime)(implicit ec: ExecutionContext): Future[Unit] = {
     notificationPushService
       .handlePushNotification(retryableNotification.subscriber, retryableNotification.notification)
-      .map(_ => ())
+      .flatMap(success => if (success) successful(()) else updateFailedNotification(retryableNotification.notification, retryAfterDateTime))
       .recover {
         case NonFatal(e) =>
           Logger.error(s"Unexpected error retrying notification ${retryableNotification.notification.notificationId} with exception: $e")
           throw e
       }
+  }
+
+  private def updateFailedNotification(notification: Notification, retryAfterDateTime: DateTime)(implicit ec: ExecutionContext): Future[Unit] = {
+    if (notification.createdDateTime.isAfter(now(UTC).minusHours(jobConfig.numberOfHoursToRetry))) {
+      notificationsRepository.updateRetryAfterDateTime(notification.notificationId, retryAfterDateTime).map(_ => ())
+    } else {
+      notificationsRepository.updateStatus(notification.notificationId, FAILED).map(_ => ())
+    }
   }
 }
 
@@ -82,4 +92,8 @@ class RetryPushNotificationsJobLockKeeper @Inject()(mongo: ReactiveMongoComponen
   override val forceLockReleaseAfter: Duration = Duration.standardMinutes(60) // scalastyle:off magic.number
 }
 
-case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, enabled: Boolean, numberOfHoursToRetry: Int, parallelism: Int)
+case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration,
+                                           interval: FiniteDuration,
+                                           enabled: Boolean,
+                                           numberOfHoursToRetry: Int,
+                                           parallelism: Int)

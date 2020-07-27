@@ -22,7 +22,7 @@ import play.api.http.HeaderNames.CONTENT_TYPE
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
@@ -38,11 +38,7 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
         case true =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
           true
-        case false =>
-          if (notification.status != FAILED) {
-            notificationsRepository.updateStatus(notification.notificationId, FAILED)
-          }
-          false
+        case false => false
       }
     } else Future.successful(true)
   }
