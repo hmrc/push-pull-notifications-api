@@ -47,6 +47,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
+import org.joda.time.format.DateTimeFormat
 
 class NotificationsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
@@ -204,7 +205,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         testAndValidateGetByQueryParams(boxId, OK, Some("ACKNOWLEDGED"))
       }
 
-      "should not return retryAfterDateTime" in {
+      "not return retryAfterDateTime" in {
         primeAuthAction(clientIdStr)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
@@ -217,6 +218,27 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
 
         Helpers.contentAsString(result).contains("retryAfterDateTime") shouldBe false
+      }
+
+      "not expand value classes" in {
+        primeAuthAction(clientIdStr)
+        when(mockNotificationService.getNotifications(
+          eqTo(boxId),
+          eqTo(clientId),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None))(any[ExecutionContext]))
+          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification))))
+
+        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+
+        val resultStr =  Helpers.contentAsString(result)
+        println(resultStr)
+        val expectedCreatedDateTime = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ").print(notification.createdDateTime)
+        resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
+        resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
+        resultStr.contains(s""""createdDateTime":"$expectedCreatedDateTime"""") shouldBe true
+
       }
 
       "return 200 list of notification when no query parameters are provided" in {

@@ -16,11 +16,30 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
 case class CreateBoxResponse(boxId: String)
 case class CreateNotificationResponse(notificationId: String)
+
+case class NotificationResponse(notificationId: NotificationId,
+                                boxId: BoxId,
+                                messageContentType: MessageContentType,
+                                message: String,
+                                status: NotificationStatus = PENDING,
+                                createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
+                                readDateTime: Option[DateTime] = None,
+                                pushedDateTime: Option[DateTime] = None)
+
+object NotificationResponse {
+  def fromNotification(notification: Notification): NotificationResponse = {
+    NotificationResponse(notification.notificationId, notification.boxId, notification.messageContentType, notification.message,
+      notification.status, notification.createdDateTime, notification.readDateTime, notification.pushedDateTime)
+  }
+}
 
 object ErrorCode extends Enumeration {
   type ErrorCode = Value
