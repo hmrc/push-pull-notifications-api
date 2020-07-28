@@ -25,6 +25,7 @@ import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationResponse.{format, fromNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -79,7 +80,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
       queryParamValidatorAction)
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications))
+          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications.map(fromNotification)))
           case _: GetNotificationsServiceBoxNotFoundResult =>
             NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case _: GetNotificationsServiceUnauthorisedResult =>

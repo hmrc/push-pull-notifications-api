@@ -45,6 +45,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
 
 class NotificationsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
@@ -198,10 +200,23 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
     "getNotificationsByBoxIdAndFilters" should {
 
-
-
       "return 200 and list of matching notifications when status filter provided" in {
         testAndValidateGetByQueryParams(boxId, OK, Some("ACKNOWLEDGED"))
+      }
+
+      "should not return retryAfterDateTime" in {
+        primeAuthAction(clientIdStr)
+        when(mockNotificationService.getNotifications(
+          eqTo(boxId),
+          eqTo(clientId),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None))(any[ExecutionContext]))
+          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(now(UTC)))))))
+
+        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+
+        Helpers.contentAsString(result).contains("retryAfterDateTime") shouldBe false
       }
 
       "return 200 list of notification when no query parameters are provided" in {
