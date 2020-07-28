@@ -19,22 +19,22 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.Logger
-import play.api.http.Status.OK
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UnprocessableEntityException}
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.http.{HeaderCarrier, UnprocessableEntityException}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
-import uk.gov.hmrc.http.logging.Authorization
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class PushConnector @Inject()(http: HttpClient,
-                              appConfig: AppConfig)
-                             (implicit ec: ExecutionContext) {
+class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def send(pushNotificationRequest: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
     doSend(pushNotificationRequest, hc)
@@ -46,16 +46,19 @@ class PushConnector @Inject()(http: HttpClient,
     val authorizationKey = appConfig.gatewayAuthToken
     Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
-    implicit val modifiedHeaderCarrier: HeaderCarrier =
-     hc.copy(authorization = Some(Authorization(authorizationKey)))
+    implicit val modifiedHeaderCarrier: HeaderCarrier = hc.copy(authorization = Some(Authorization(authorizationKey)))
 
-    http.POST[OutboundNotification, HttpResponse](url, notification)
-      .map(_.status).map[PushConnectorResult] {
-        case OK => PushConnectorSuccessResult()
-        case httpCode: Int => PushConnectorFailedResult(new UnprocessableEntityException(s"Unexpected HTTP code $httpCode"))
-      }
-      .recover {
+    http.POST[OutboundNotification, PushConnectorResponse](url, notification)
+      .map(_.successful) map {
+        case true => PushConnectorSuccessResult()
+        case false => PushConnectorFailedResult(new UnprocessableEntityException("PPNS Gateway was unable to successfully deliver notification"))
+      } recover {
         case NonFatal(e) => PushConnectorFailedResult(e)
       }
   }
+}
+
+object PushConnector {
+  implicit val pushConnectorResponseFormat: OFormat[PushConnectorResponse] = Json.format[PushConnectorResponse]
+  private[connectors] case class PushConnectorResponse(successful: Boolean)
 }
