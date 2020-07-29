@@ -1,0 +1,155 @@
+{
+	"info": {
+		"_postman_id": "a0f0a6b0-370a-4045-82cb-5f36ec020999",
+		"name": "push-pull-testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Step 1 -> create new Box",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7c8eca56-67fd-4af7-ac11-b8d75f1368fd",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.collectionVariables.set(\"BoxId\", jsonData[\"boxId\"]);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "User-Agent",
+						"value": "api-subscription-fields",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"clientId\": \"jhgj98989879jb\",\n\t\"boxName\": \"SomeNewBox\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:6701/box",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6701",
+					"path": [
+						"box"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 2 -> Subscribe to box",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \"subscriber\": {  \n     \"subscriberType\": \"API_PUSH_SUBSCRIBER\", \n     \"callBackUrl\":\"https://localhost/somepath/firstOnew\"\n   }\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:6701/box/{{BoxId}}/subscriber",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6701",
+					"path": [
+						"box",
+						"{{BoxId}}",
+						"subscriber"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 3 -> publish notification",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "User-Agent",
+						"value": "api-subscription-fields",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<someXmls/>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:6701/box/{{BoxId}}/notifications",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6701",
+					"path": [
+						"box",
+						"{{BoxId}}",
+						"notifications"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "07a847ed-d27e-4240-8695-1c371c4aa8c0",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "fdc4f35d-9e45-4f94-806e-fd644cc40a51",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "a8aa727c-edc4-436f-b7be-f7f691ddcfe1",
+			"key": "BoxId",
+			"value": ""
+		}
+	],
+	"protocolProfileBehavior": {}
+}

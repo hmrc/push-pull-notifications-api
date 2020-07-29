@@ -18,21 +18,21 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, when}
+import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.http.Status.{CREATED, OK}
 import play.api.libs.json.Writes
 import play.api.test.Helpers
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.NodeSeq
-import org.mockito.captor.ArgCaptor
+import scala.util.Random
 
 class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach{
   private val mockHttpClient = mock[HttpClient]
@@ -50,7 +50,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   }
 
   trait SetUp{
-    val gatewayAuthToken = "gwauthtoken"
+    val gatewayAuthToken = Random.nextString(10) //scalastyle:off magic.number
     when(mockAppConfig.gatewayAuthToken).thenReturn(gatewayAuthToken)
 
     val connector = new PushConnector(
@@ -61,46 +61,51 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   }
 
   "PushConnector" should {
-    "call the gateway correctly and return right with response when response status 200 is returned" in new SetUp {
+    def httpCallWillSucceedWithResponse(response: PushConnectorResponse) =
+      when(mockHttpClient.POST[OutboundNotification, PushConnectorResponse]
+        (eqTo(outboundUrlAndPath), any[OutboundNotification](), any[Seq[(String,String)]]())
+        (any[Writes[OutboundNotification]](), any[HttpReads[PushConnectorResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+        .thenReturn(Future.successful(response))
 
-      val httpResponse: HttpResponse = mock[HttpResponse]
-      when(httpResponse.body).thenReturn("")
-      when(httpResponse.status).thenReturn(OK)
-      val headerCarrierCaptor = ArgCaptor[HeaderCarrier]
-      when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
-        any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
-        .thenReturn(Future.successful(httpResponse))
+    def httpCallWillFailWithException(exception: Throwable) =
+      when(mockHttpClient.POST[OutboundNotification, PushConnectorResponse]
+        (eqTo(outboundUrlAndPath), any[OutboundNotification](), any[Seq[(String,String)]]())
+        (any[Writes[OutboundNotification]](), any[HttpReads[PushConnectorResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+        .thenReturn(Future.failed(exception))
+
+    def containsCorrectAuthorizationHeader(headerCarrier: HeaderCarrier, authToken: String) =
+      headerCarrier.headers.contains("Authorization" -> authToken) shouldBe true
+
+    "call the gateway correctly and return PushConnectorSuccessResult if notification has been successfully sent" in new SetUp {
+      httpCallWillSucceedWithResponse(PushConnectorResponse(true))
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
       result shouldBe PushConnectorSuccessResult()
 
+      val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
-      val headerCarrierValue = headerCarrierCaptor.value
-      headerCarrierValue.headers.contains("Authorization" -> gatewayAuthToken) shouldBe true
+      containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
     }
 
-    "call the gateway correctly and return failed result when response status 201 is returned" in new SetUp {
-
-      val httpResponse: HttpResponse = mock[HttpResponse]
-      when(httpResponse.body).thenReturn("")
-      when(httpResponse.status).thenReturn(CREATED)
-      when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
-        any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
-        .thenReturn(Future.successful(httpResponse))
+    "call the gateway correctly and return PushConnectorFailedResult if notification has not been successfully sent" in new SetUp {
+      httpCallWillSucceedWithResponse(PushConnectorResponse(false))
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
+      result.asInstanceOf[PushConnectorFailedResult].throwable.getMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
 
-      result.asInstanceOf[PushConnectorFailedResult].throwable.getMessage shouldBe "Unexpected HTTP code 201"
+      val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
+
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
+        any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
+
+      containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
     }
 
     "call the gateway correctly and return left when bad request occurs" in new SetUp {
       val exceptionVal = new BadRequestException("Some error")
-
-      when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
-        any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
-        .thenReturn(Future.failed(exceptionVal))
+      httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
       result shouldBe PushConnectorFailedResult(exceptionVal)
@@ -110,13 +115,12 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
     }
 
     "call the gateway and return Left when error occurs" in new SetUp {
-    val exceptionVal = new IllegalArgumentException("Some error")
-      when(mockHttpClient.POST(eqTo(outboundUrlAndPath), any[NodeSeq](), any[Seq[(String,String)]]())(
-        any[Writes[NodeSeq]](), any[HttpReads[HttpResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
-        .thenReturn(Future.failed(exceptionVal))
+      val exceptionVal = new IllegalArgumentException("Some error")
+      httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
       result shouldBe PushConnectorFailedResult(exceptionVal)
+
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
     }
