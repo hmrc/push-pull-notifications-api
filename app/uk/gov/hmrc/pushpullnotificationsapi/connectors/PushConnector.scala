@@ -27,6 +27,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 
@@ -46,7 +47,9 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
     val authorizationKey = appConfig.gatewayAuthToken
     Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
-    implicit val modifiedHeaderCarrier: HeaderCarrier = hc.copy(authorization = Some(Authorization(authorizationKey)))
+    implicit val modifiedHeaderCarrier: HeaderCarrier =
+      hc.copy(authorization = Some(Authorization(authorizationKey)))
+        .withExtraHeaders("Content-Type" -> APPLICATION_JSON.value)
 
     http.POST[OutboundNotification, PushConnectorResponse](url, notification)
       .map(_.successful) map {

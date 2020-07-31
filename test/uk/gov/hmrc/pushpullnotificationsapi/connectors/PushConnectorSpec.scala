@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
+import java.util.UUID
+
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, when}
 import org.mockito.captor.{ArgCaptor, Captor}
@@ -28,8 +30,8 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -41,8 +43,8 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   private implicit val hc: HeaderCarrier = HeaderCarrier()
   val outboundUrl = "outboundUrl"
   val outboundUrlAndPath = "outboundUrl/notify"
-  val headers = List(ForwardedHeader("header1", "value1"))
-  val pushNotification: OutboundNotification = OutboundNotification("someUrl", headers, "{}")
+  val notificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
+  val pushNotification: OutboundNotification = OutboundNotification("someUrl", notificationResponse)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -76,6 +78,8 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
     def containsCorrectAuthorizationHeader(headerCarrier: HeaderCarrier, authToken: String) =
       headerCarrier.headers.contains("Authorization" -> authToken) shouldBe true
 
+    def contentTypeIsCorrectlySet(headerCarrier: HeaderCarrier) = headerCarrier.headers.contains("Content-Type" -> "application/json") shouldBe true
+
     "call the gateway correctly and return PushConnectorSuccessResult if notification has been successfully sent" in new SetUp {
       httpCallWillSucceedWithResponse(PushConnectorResponse(true))
 
@@ -87,6 +91,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
+      contentTypeIsCorrectlySet(headerCarrierCaptor.value)
     }
 
     "call the gateway correctly and return PushConnectorFailedResult if notification has not been successfully sent" in new SetUp {
@@ -101,6 +106,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
+      contentTypeIsCorrectlySet(headerCarrierCaptor.value)
     }
 
     "call the gateway correctly and return left when bad request occurs" in new SetUp {
