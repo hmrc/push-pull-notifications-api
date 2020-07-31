@@ -19,13 +19,15 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{NotificationResponse, PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -45,8 +47,10 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
 
   private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)
                                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-   val outboundNotification =
-     OutboundNotification(subscriber.callBackUrl, List(ForwardedHeader(CONTENT_TYPE, notification.messageContentType.value)), notification.message)
+    val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
+
+    val outboundNotification =
+      OutboundNotification(subscriber.callBackUrl, List(ForwardedHeader(CONTENT_TYPE, notification.messageContentType.value)), notificationAsJsonString)
 
     connector.send(outboundNotification).map {
       case _ : PushConnectorSuccessResult => true
