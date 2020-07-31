@@ -38,6 +38,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   private val mockHttpClient = mock[HttpClient]
   private val mockAppConfig = mock[AppConfig]
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
   val outboundUrl = "outboundUrl"
   val outboundUrlAndPath = "outboundUrl/notify"
   val headers = List(ForwardedHeader("header1", "value1"))

@@ -20,20 +20,21 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.libs.json.Json
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{NotificationResponse, PushConnectorFailedResult, PushConnectorSuccessResult, PushSubscriber, Subscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class NotificationPushService @Inject()(connector: PushConnector, notificationsRepository: NotificationsRepository){
 
-  def handlePushNotification(subscriber: Subscriber, notification: Notification)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def handlePushNotification(subscriber: Subscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (isValidPushSubscriber(subscriber)) {
       sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification) map {
         case true =>
@@ -45,7 +46,7 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
   }
 
   private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)
-                                    (implicit ec: ExecutionContext): Future[Boolean] = {
+                                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
 
     val outboundNotification =

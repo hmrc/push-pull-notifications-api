@@ -90,11 +90,11 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
       val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
-      when(mockNotificationPushService.handlePushNotification(any(), any())(any())).thenReturn(successful(true))
+      when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(true))
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, times(1)).handlePushNotification(meq(subscriber), meq(notification))(any())
+      verify(mockNotificationPushService, times(1)).handlePushNotification(meq(subscriber), meq(notification))(any(), any())
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
@@ -105,7 +105,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateRetryAfterDateTime(NotificationId(any[UUID]), any())).thenReturn(successful(notification))
-      when(mockNotificationPushService.handlePushNotification(any(), any())(any())).thenReturn(successful(false))
+      when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(false))
 
       val result: underTest.Result = await(underTest.execute)
 
@@ -120,7 +120,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateStatus(notification.notificationId, FAILED)).thenReturn(successful(notification))
-      when(mockNotificationPushService.handlePushNotification(any(), any())(any())).thenReturn(successful(false))
+      when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(false))
 
       val result: underTest.Result = await(underTest.execute)
 
@@ -135,7 +135,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
       val result: underTest.Result = await(underTest.execute)
 
       verify(mockNotificationsRepository, never).fetchRetryableNotifications
-      verify(mockNotificationPushService, never).handlePushNotification(any(), any())(any())
+      verify(mockNotificationPushService, never).handlePushNotification(any(), any())(any(), any())
       result.message shouldBe "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
     }
 
@@ -145,7 +145,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, never).handlePushNotification(any(), any())(any())
+      verify(mockNotificationPushService, never).handlePushNotification(any(), any())(any(), any())
       result.message shouldBe "The execution of scheduled job RetryPushNotificationsJob failed with error 'Failed'. " +
         "The next execution of the job will do retry."
     }

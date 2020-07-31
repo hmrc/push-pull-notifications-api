@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
@@ -67,7 +68,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
   }
 
   def saveNotification(boxId: BoxId, notificationId: NotificationId, contentType: MessageContentType, message: String)
-                      (implicit ec: ExecutionContext): Future[NotificationCreateServiceResult] = {
+                      (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[NotificationCreateServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
         case Nil => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))

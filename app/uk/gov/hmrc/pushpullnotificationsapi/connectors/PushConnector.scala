@@ -36,18 +36,17 @@ import scala.util.control.NonFatal
 @Singleton
 class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
-  def send(pushNotificationRequest: OutboundNotification): Future[PushConnectorResult] = {
-    doSend(pushNotificationRequest)
+  def send(pushNotificationRequest: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
+    doSend(pushNotificationRequest, hc)
   }
 
-  private def doSend(notification: OutboundNotification): Future[PushConnectorResult] = {
+  private def doSend(notification: OutboundNotification, hc: HeaderCarrier): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/notify"
 
     val authorizationKey = appConfig.gatewayAuthToken
+    Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
-    implicit val modifiedHeaderCarrier: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(authorizationKey)))
-
-    Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${modifiedHeaderCarrier.headers} \npayload= ${notification.payload}")
+    implicit val modifiedHeaderCarrier: HeaderCarrier = hc.copy(authorization = Some(Authorization(authorizationKey)))
 
     http.POST[OutboundNotification, PushConnectorResponse](url, notification)
       .map(_.successful) map {

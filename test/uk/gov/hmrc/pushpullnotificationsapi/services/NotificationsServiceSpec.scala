@@ -19,14 +19,15 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import org.joda.time.DateTime
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.stubbing.ScalaOngoingStubbing
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -78,19 +79,20 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private val subscriber =  PushSubscriber("mycallbackUrl")
   private val BoxObjectWIthNoSubscribers = Box(boxId, "boxName", BoxCreator(clientId))
   private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId), Some(subscriber))
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "SaveNotification" should {
     "return NotificationCreateSuccessResult when box exists , push is called with List of subscribers  & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(List(BoxObjectWIthSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
-      when(mockNotificationsPushService.handlePushNotification(eqTo(subscriber), any[Notification])(any[ExecutionContext]))
+      when(mockNotificationsPushService.handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(true))
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId,
         NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(any[ExecutionContext])
-      verify(mockNotificationsPushService).handlePushNotification(eqTo(subscriber), any[Notification])(any[ExecutionContext])
+      verify(mockNotificationsPushService).handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
       validateNotificationSaved(notificationCaptor)
     }
 
