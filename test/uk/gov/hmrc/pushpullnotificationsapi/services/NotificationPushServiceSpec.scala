@@ -39,7 +39,6 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
   private val mockConnector = mock[PushConnector]
   private val mockNotificationsRepo = mock[NotificationsRepository]
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -67,7 +66,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier])).thenReturn(Future.successful(PushConnectorSuccessResult()))
+      when(mockConnector.send(outboundNotificationCaptor.capture())).thenReturn(Future.successful(PushConnectorSuccessResult()))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val notification: Notification =
@@ -87,7 +86,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return false when connector returns failed result due to exception" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
+      when(mockConnector.send(outboundNotificationCaptor.capture()))
         .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
@@ -104,7 +103,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
+      when(mockConnector.send(outboundNotificationCaptor.capture()))
         .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
