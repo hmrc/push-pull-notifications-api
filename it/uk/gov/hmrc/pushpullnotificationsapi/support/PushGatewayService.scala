@@ -8,7 +8,21 @@ trait PushGatewayService {
   private val gatewayUrlMatcher = urlEqualTo(gatewayUrl)
 
 
-  def primeGatewayService(status : Int)= {
+  def primeGatewayServiceWithBody(status : Int, successfulResult: Boolean = true)= {
+    val body = raw"""{"successful": ${successfulResult} }"""
+    stubFor(post(gatewayUrlMatcher)
+      .withHeader("Authorization", equalTo("iampushpullapi"))
+      .willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type","application/json")
+          .withBody(body)
+      )
+    )
+  }
+
+  def primeGatewayServiceNoBody(status : Int)= {
+
     stubFor(post(gatewayUrlMatcher)
       .withHeader("Authorization", equalTo("iampushpullapi"))
       .willReturn(

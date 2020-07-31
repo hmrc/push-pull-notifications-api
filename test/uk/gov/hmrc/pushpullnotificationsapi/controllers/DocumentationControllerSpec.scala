@@ -16,30 +16,21 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
-
 import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
+import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsArray, JsLookupResult, JsValue, Json}
 import play.api.mvc.Result
-import play.api.test.Helpers.{BAD_REQUEST, route, _}
+import play.api.test.Helpers.{route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
-import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
 
 class DocumentationControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {

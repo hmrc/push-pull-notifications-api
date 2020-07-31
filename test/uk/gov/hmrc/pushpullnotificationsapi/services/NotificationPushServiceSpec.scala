@@ -67,7 +67,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier])).thenReturn(Future.successful(PushConnectorSuccessResult()))
+      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(Future.successful(PushConnectorSuccessResult()))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val notification: Notification =
