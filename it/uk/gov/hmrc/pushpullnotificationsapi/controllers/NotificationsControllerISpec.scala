@@ -138,7 +138,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
-        primeGatewayService(Status.OK)
+        primeGatewayServiceWithBody(Status.OK)
         val box = createBoxWithSubscribersAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
         result.status shouldBe CREATED
@@ -153,7 +153,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
 
       "respond with 201 when notification created for valid xml and xml content type with push subscriber" in {
-        primeGatewayService(Status.OK)
+        primeGatewayServiceWithBody(Status.OK)
         val box = createBoxWithSubscribersAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
@@ -168,7 +168,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
-        primeGatewayService(Status.BAD_REQUEST)
+        primeGatewayServiceWithBody(Status.BAD_REQUEST)
         val box = createBoxWithSubscribersAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
@@ -176,7 +176,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
-        primeGatewayService(Status.INTERNAL_SERVER_ERROR)
+        primeGatewayServiceWithBody(Status.INTERNAL_SERVER_ERROR)
         val box = createBoxWithSubscribersAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
