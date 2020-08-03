@@ -56,7 +56,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {
       sentOutboundNotification.destinationUrl shouldBe subscriber.callBackUrl
 
-      val jsonPayload = Json.parse(sentOutboundNotification.payload)
+      val jsonPayload = Json.toJson(sentOutboundNotification.payload)
       (jsonPayload \ "notificationId").as[String] shouldBe originalNotification.notificationId.value.toString
       (jsonPayload \ "boxId").as[UUID] shouldBe originalNotification.boxId.value
       (jsonPayload \ "messageContentType").as[String] shouldBe originalNotification.messageContentType.value

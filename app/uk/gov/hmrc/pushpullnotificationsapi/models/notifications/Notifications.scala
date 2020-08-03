@@ -24,7 +24,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, PushSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, NotificationResponse, PushSubscriber}
 
 import scala.collection.immutable
 
@@ -53,7 +53,6 @@ case class NotificationId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
-
 case class Notification(notificationId: NotificationId,
                         boxId: BoxId,
                         messageContentType: MessageContentType,
@@ -71,8 +70,6 @@ object Notification {
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
-
-case class ForwardedHeader(key: String, value: String)
-case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
+case class OutboundNotification(destinationUrl: String, payload: NotificationResponse)
 
 case class RetryableNotification(notification: Notification, subscriber: PushSubscriber)
