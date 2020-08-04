@@ -403,7 +403,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
       "return 204 when request is successful" in {
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result: Result =
@@ -417,7 +417,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
        }
 
        "return 404 if Box does not exist" in {
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
            .thenReturn(Future.successful(BoxIdNotFound()))
 
          val result: Result =
@@ -431,7 +431,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
        }
 
        "return 400 if Callback Url cannot be verified" in {
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
            .thenReturn(Future.successful(UnableToUpdateCallbackUrl()))
 
          val result: Result =

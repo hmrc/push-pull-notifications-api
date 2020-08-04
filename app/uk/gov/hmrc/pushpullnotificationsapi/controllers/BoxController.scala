@@ -77,8 +77,8 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     }
   }
 
-  def addCallbackUrl(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[AddCallbackUrlRequest] { addCallbackUrlRequest =>
+  def updateCallbackUrl(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+    withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
       if (addCallbackUrlRequest.clientId.value.isEmpty || addCallbackUrlRequest.callbackUrl.isEmpty || addCallbackUrlRequest.verifyToken.isEmpty) {
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId, callbackUrl and verifyToken properties are all required")))
       } else {

@@ -70,7 +70,7 @@ object RequestFormatters {
   implicit val subscribersRequestFormatter: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
   implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
   implicit val acknowledgeRequestFormatter: OFormat[AcknowledgeNotificationsRequest] = Json.format[AcknowledgeNotificationsRequest]
-  implicit val addCallbackUrlRequestFormatter: OFormat[AddCallbackUrlRequest] = Json.format[AddCallbackUrlRequest]
+  implicit val addCallbackUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
 }
 
 object ConnectorFormatters {

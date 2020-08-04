@@ -29,7 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AddCallbackUrlRequest, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{UpdateCallbackUrlRequest, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -60,7 +60,7 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
       }
   }
 
-  def verifyCallbackUrl(addCallbackUrlRequest: AddCallbackUrlRequest): Future[Boolean] = { // Response type here
+  def verifyCallbackUrl(addCallbackUrlRequest: UpdateCallbackUrlRequest): Future[Boolean] = { // Response type here
     val authorizationKey = appConfig.gatewayAuthToken
     implicit val headerCarrier: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(authorizationKey)))
 
@@ -79,6 +79,6 @@ object PushConnector {
   private[connectors] case class VerifyCallbackUrlRequest(callbackUrl: String, verifyToken: String)
   private[connectors] case class VerifyCallbackUrlResponse(successful: Boolean)
 
-  private[connectors] def fromAddCallbackUrlRequest(addCallbackUrlRequest: AddCallbackUrlRequest): VerifyCallbackUrlRequest =
+  private[connectors] def fromAddCallbackUrlRequest(addCallbackUrlRequest: UpdateCallbackUrlRequest): VerifyCallbackUrlRequest =
     VerifyCallbackUrlRequest(addCallbackUrlRequest.callbackUrl, addCallbackUrlRequest.verifyToken)
 }

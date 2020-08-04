@@ -6,7 +6,7 @@ PUT       /box                          uk.gov.hmrc.pushpullnotificationsapi.con
 GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxByNameAndClientId(boxName: String, clientId: ClientId)
 
 PUT       /box/:boxId/subscriber        uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateSubscriber(boxId: BoxId)
-PUT       /box/:boxId/callback          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.addCallbackUrl(boxId: BoxId)
+PUT       /box/:boxId/callback          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
 
 # Notifications
 POST      /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)

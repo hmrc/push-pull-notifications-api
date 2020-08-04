@@ -124,7 +124,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
     "updateCallbackUrl" should {
     
        "return CallbackUrlUpdated when process completes successfully" in new Setup {
-          val validRequest: AddCallbackUrlRequest = AddCallbackUrlRequest(ClientId("someID"), "callbackUrl", "token")
+          val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("someID"), "callbackUrl", "token")
           val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(BoxId(UUID.randomUUID()), validRequest))
           result.isInstanceOf[CallbackUrlUpdated] shouldBe true
        }
