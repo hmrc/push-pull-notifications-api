@@ -35,9 +35,9 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
                                request: AcknowledgeNotificationsRequest)(implicit ec: ExecutionContext): Future[AcknowledgeNotificationsServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
-        case List(x) =>
-          if(x.boxCreator.clientId.equals(clientId)) {
+        case None => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
+        case Some(box) =>
+          if(box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(AcknowledgeNotificationsSuccessUpdatedResult)
           }else{
@@ -45,7 +45,6 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
           }
       }
   }
-
 
   def getNotifications(boxId: BoxId,
                        clientId: ClientId,
@@ -56,9 +55,9 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
-        case List(x) =>
-          if(x.boxCreator.clientId.equals(clientId)) {
+        case None => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+        case Some(box) =>
+          if(box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)
               .map(results => GetNotificationsSuccessRetrievedResult(results))
           }else{
@@ -71,8 +70,8 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[NotificationCreateServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case Nil => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
-        case List(box) =>
+        case None => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
+        case Some(box) =>
           val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
             case Some(_) => if(box.subscriber.isDefined) pushService.handlePushNotification(box.subscriber.get, notification)

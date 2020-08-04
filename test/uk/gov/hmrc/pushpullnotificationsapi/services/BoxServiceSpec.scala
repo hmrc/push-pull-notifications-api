@@ -27,7 +27,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SU
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -54,10 +53,8 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(Some(boxId)))
 
-    def getByBoxNameAndClientIdReturns(returnList: List[Box]): Unit = {
-     when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-        .thenReturn(Future.successful(returnList))
-    }
+    def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]) =
+     when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(optionalBox))
 
     when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext])).thenReturn(Future.successful(None))
 
@@ -78,17 +75,18 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     "getByBoxNameAndClientId" should {
       "return list with one box when box exists" in new Setup {
-        getByBoxNameAndClientIdReturns(List(box))
-        val results: immutable.Seq[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
+        getByBoxNameAndClientIdReturns(Some(box))
+        val result: Option[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
 
-        results.size shouldBe 1
+        result shouldBe Some(box)
       }
 
       "return empty list when box does not exists" in new Setup {
-        getByBoxNameAndClientIdReturns(List.empty)
-        val results: immutable.Seq[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
+        getByBoxNameAndClientIdReturns(None)
 
-        results.size shouldBe 0
+        val result: Option[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
+
+        result shouldBe None
       }
     }
 

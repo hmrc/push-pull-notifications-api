@@ -82,7 +82,6 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
 
       await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
 
-
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
     }
@@ -99,32 +98,33 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
   }
 
   "getBoxByBoxNameAndClientId" should {
-    "should return a list containing one box when box exists" in {
+    "should return box when it exists" in {
       val result = await(repo.getBoxByNameAndClientId(boxName, clientId))
-      result.isEmpty shouldBe true
+      result shouldBe None
+
       await(repo.createBox(box))
 
-      val result2 = await(repo.getBoxByNameAndClientId(boxName, clientId))
-      result2.isEmpty shouldBe false
-      result2.head.boxCreator.clientId shouldBe clientId
-      result2.head.boxName shouldBe boxName
-      result2.size shouldBe 1
+      val retrievedBox = await(repo.getBoxByNameAndClientId(boxName, clientId)).get
+
+      retrievedBox.boxCreator.clientId shouldBe clientId
+      retrievedBox.boxName shouldBe boxName
     }
 
-    "should return an empty list  when box does not exists (boxName)" in {
-
+    "should return None when box does not exists (boxName)" in {
       await(repo.createBox(box))
 
       val result = await(repo.getBoxByNameAndClientId("differentBoxName", clientId))
-      result.isEmpty shouldBe true
+
+      result shouldBe None
     }
 
-    "should return an empty list  when box does not exists (clientId)" in {
+    "should return None when box does not exist (clientId)" in {
 
       await(repo.createBox(box))
 
       val result = await(repo.getBoxByNameAndClientId(boxName, ClientId(UUID.randomUUID().toString)))
-      result.isEmpty shouldBe true
+
+      result shouldBe None
     }
   }
   "updateSubscribers" should {
@@ -158,16 +158,18 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
 
     "return box when box exists" in {
       await(repo.createBox(box))
-      val result = await(repo.findByBoxId(box.boxId))
-      result.isEmpty shouldBe false
-      result.size shouldBe 1
-      result.head.boxId shouldBe box.boxId
+
+      val result: Option[Box] = await(repo.findByBoxId(box.boxId))
+
+      result shouldBe Some(box)
     }
 
     "return empty list when box does not exist" in {
       await(repo.createBox(box))
+
       val result = await(repo.findByBoxId(BoxId(UUID.randomUUID())))
-      result.isEmpty shouldBe true
+
+      result shouldBe None
     }
   }
 }

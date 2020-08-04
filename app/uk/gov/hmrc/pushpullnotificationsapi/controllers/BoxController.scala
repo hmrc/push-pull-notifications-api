@@ -62,8 +62,8 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
-      case List(box) => Ok(Json.toJson(box))
-      case _ => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+      case Some(box) => Ok(Json.toJson(box))
+      case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
     } recover recovery
   }
 

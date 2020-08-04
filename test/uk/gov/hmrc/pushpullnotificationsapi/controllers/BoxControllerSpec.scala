@@ -229,7 +229,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 200 and requested box when it exists" in {
 
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders))
 
@@ -243,7 +243,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when no parameters provided" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -253,7 +253,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when boxName is missing" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?clientId=$clientIdStr", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -263,7 +263,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when clientId is missing" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -272,9 +272,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
       "return NOTFOUND when requested box does not exist" in {
-
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List.empty))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders))
 

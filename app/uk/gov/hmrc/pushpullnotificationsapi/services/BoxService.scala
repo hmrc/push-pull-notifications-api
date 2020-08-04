@@ -42,10 +42,8 @@ class BoxService @Inject()(repository: BoxRepository) {
 
   }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)
-                             (implicit ec: ExecutionContext): Future[List[Box]] = {
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
-  }
 
   def updateSubscriber(boxId: BoxId, request: UpdateSubscriberRequest)
                       (implicit ec: ExecutionContext): Future[Option[Box]] = {

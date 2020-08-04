@@ -61,8 +61,6 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
       val notification = OutboundNotification("someDestination", notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
-      val castResult = result.asInstanceOf[PushConnectorFailedResult]
-
     }
   }
 
