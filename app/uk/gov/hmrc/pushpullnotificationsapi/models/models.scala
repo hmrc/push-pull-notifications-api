@@ -38,7 +38,7 @@ object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[Subscri
    val values: immutable.IndexedSeq[SubscriptionType] = findValues
 
   case object API_PUSH_SUBSCRIBER extends SubscriptionType
-  case object API_PULL_SUBSCRIBER extends SubscriptionType
+  case object API_PULL_SUBSCRIBER extends SubscriptionType // Does this need to exist?
 }
 
 sealed trait Subscriber {
@@ -53,9 +53,9 @@ case class PushSubscriber(callBackUrl: String,
   override val subscriptionType: SubscriptionType = API_PUSH_SUBSCRIBER
 }
 
-case class PullSubscriber(callBackUrl: String,
+case class PullSubscriber(callBackUrl: String, // Remove callbackUrl
                           override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC)) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 
-case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscriber: Option[Subscriber] = None)
+case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscriber: Option[Subscriber] = None) // Default to PullSubscriber?

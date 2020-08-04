@@ -77,6 +77,23 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     }
   }
 
+  def addCallbackUrl(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
+    withJsonBody[AddCallbackUrlRequest] { addCallbackUrlRequest =>
+      // Validate request object
+      if (addCallbackUrlRequest.clientId.value.isEmpty || addCallbackUrlRequest.callbackUrl.isEmpty() || addCallbackUrlRequest.verifyToken.isEmpty()) {
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId, callbackUrl and verifyToken properties are all required"))) 
+      } else {
+        Future.successful(NoContent)
+      }
+
+      //  boxService.addCallbackUrl(boxId, addCallbackUrlRequest) map {
+      //    case Some(box) => Ok(Json.toJson(box)) // If callback url on box == request, then ok? If not, then not ok?
+      //    case _ => Logger.info("box not found or update failed")
+      //      NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+      //  } recover recovery
+    }
+  }
+
   private def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
       Logger.error("An unexpected error occurred:", e)

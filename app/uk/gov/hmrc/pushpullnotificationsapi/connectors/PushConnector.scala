@@ -25,11 +25,11 @@ import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.{HeaderCarrier, UnprocessableEntityException}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse, fromAddCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AddCallbackUrlRequest, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -59,9 +59,26 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
         case NonFatal(e) => PushConnectorFailedResult(e)
       }
   }
+
+  def verifyCallbackUrl(addCallbackUrlRequest: AddCallbackUrlRequest): Future[Boolean] = { // Response type here
+    val authorizationKey = appConfig.gatewayAuthToken
+    implicit val headerCarrier: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(authorizationKey)))
+
+    val url = s"${appConfig.outboundNotificationsUrl}/verify-callback-url"
+    http.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse](url, fromAddCallbackUrlRequest(addCallbackUrlRequest)).map(_.successful)
+    // Use doSend() or some version of it with response types
+  }
 }
 
 object PushConnector {
   implicit val pushConnectorResponseFormat: OFormat[PushConnectorResponse] = Json.format[PushConnectorResponse]
   private[connectors] case class PushConnectorResponse(successful: Boolean)
+
+  implicit val verifyCallbackUrlRequestFormat: OFormat[VerifyCallbackUrlRequest] = Json.format[VerifyCallbackUrlRequest]
+  implicit val verifyCallbackUrlResponseFormat: OFormat[VerifyCallbackUrlResponse] = Json.format[VerifyCallbackUrlResponse]
+  private[connectors] case class VerifyCallbackUrlRequest(callbackUrl: String, verifyToken: String)
+  private[connectors] case class VerifyCallbackUrlResponse(successful: Boolean)
+
+  private[connectors] def fromAddCallbackUrlRequest(addCallbackUrlRequest: AddCallbackUrlRequest): VerifyCallbackUrlRequest =
+    VerifyCallbackUrlRequest(addCallbackUrlRequest.callbackUrl, addCallbackUrlRequest.verifyToken)
 }

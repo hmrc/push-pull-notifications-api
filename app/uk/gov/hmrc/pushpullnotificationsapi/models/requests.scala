@@ -29,6 +29,8 @@ case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionTy
 
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
+case class AddCallbackUrlRequest(clientId: ClientId, callbackUrl: String, verifyToken: String)
+
 // Notifications
 
 

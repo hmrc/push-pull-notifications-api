@@ -50,7 +50,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   )
 
 
-  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[List[Box]] = { // Future[Option[Box]]
     find("boxId" -> boxId.value)
   }
 
@@ -61,7 +61,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       Future.successful(None)
     }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Box]] = { // Future[Option[Box]]
     Logger.info(s"Getting box by boxName:$boxName & clientId")
     find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value)
   }

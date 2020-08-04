@@ -389,6 +389,54 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
     }
+
+     "addCallbackUrl" should {
+
+      def createRequest(clientId: String, verifyToken: String, callBackUrl:String)= {
+      raw"""
+        |{
+        |   "clientId": "$clientId",
+        |   "verifyToken": "$verifyToken",
+        |   "callbackUrl": "$callBackUrl"
+        |}
+        |""".stripMargin
+      }
+
+      "return 204 when valid payload is sent " in {
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "verifyToken", "callbackUrl")))
+        status(result) should be(NO_CONTENT)
+
+       }
+
+      "return 400 when payload is non JSON" in {
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, "someBody"))
+        status(result) should be(BAD_REQUEST)
+        verifyNoInteractions(mockBoxService)
+
+       }
+
+      "return 400 when payload is missing the token value" in {
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "", "callbackUrl")))
+        status(result) should be(BAD_REQUEST)
+         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+         verifyNoInteractions(mockBoxService)
+       }
+
+
+      "return 400 when payload is missing the clientId value" in {
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("", "verifyToken", "callbackUrl")))
+        status(result) should be(BAD_REQUEST)
+         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+         verifyNoInteractions(mockBoxService)
+       }
+
+       "return 400 when payload is missing the callbackUrl value" in {
+        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "verifyToken", "")))
+        status(result) should be(BAD_REQUEST)
+         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+        verifyNoInteractions(mockBoxService)
+      }
+     }
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
