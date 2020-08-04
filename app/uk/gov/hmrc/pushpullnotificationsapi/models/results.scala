@@ -57,3 +57,11 @@ final case class AcknowledgeNotificationsSuccessUpdatedResult(result: Boolean) e
 sealed trait PushConnectorResult
 final case class PushConnectorSuccessResult() extends PushConnectorResult
 final case class PushConnectorFailedResult(throwable: Throwable) extends PushConnectorResult
+
+sealed trait UpdateCallbackUrlResult
+sealed trait UpdateCallbackUrlSuccessResult extends UpdateCallbackUrlResult
+sealed trait UpdateCallbackUrlFailedResult extends UpdateCallbackUrlResult
+
+final case class CallbackUrlUpdated() extends UpdateCallbackUrlSuccessResult
+final case class BoxIdNotFound() extends UpdateCallbackUrlFailedResult
+final case class UnableToUpdateCallbackUrl() extends UpdateCallbackUrlFailedResult

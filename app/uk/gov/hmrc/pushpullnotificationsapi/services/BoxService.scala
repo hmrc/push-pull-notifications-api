@@ -59,12 +59,12 @@ class BoxService @Inject()(repository: BoxRepository) {
     repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))
   }
 
-  def addCallbackUrl(boxId: BoxId, request: AddCallbackUrlRequest)(implicit ec: ExecutionContext): Future[Option[Box]] = { // Result type here
+  def updateCallbackUrl(boxId: BoxId, request: AddCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
     // Determine whether box exists, if not don't try URL validation and return
     // Call connector to have Gateway verify callback url
     // If successful, update box record (with Subscriber?)
     // If unsuccessful, return without updating
-    Future.successful(None)
+    Future.successful(CallbackUrlUpdated())
   }
 
 }

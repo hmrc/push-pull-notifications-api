@@ -402,39 +402,80 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         |""".stripMargin
       }
 
-      "return 204 when valid payload is sent " in {
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "verifyToken", "callbackUrl")))
-        status(result) should be(NO_CONTENT)
+      "return 204 when request is successful" in {
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
 
+        val result: Result =
+          await(
+            doPut(
+              s"/box/${boxId.value}/callback",
+              validHeaders,
+              createRequest("clientId", "verifyToken", "callbackUrl")))
+
+        status(result) should be(NO_CONTENT)
+       }
+
+       "return 404 if Box does not exist" in {
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(BoxIdNotFound()))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeaders,
+               createRequest("clientId", "verifyToken", "callbackUrl")))
+
+         status(result) should be(NOT_FOUND)
+       }
+
+       "return 400 if Callback Url cannot be verified" in {
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[AddCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(UnableToUpdateCallbackUrl()))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeaders,
+               createRequest("clientId", "verifyToken", "callbackUrl")))
+
+         status(result) should be(BAD_REQUEST)
        }
 
       "return 400 when payload is non JSON" in {
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, "someBody"))
-        status(result) should be(BAD_REQUEST)
-        verifyNoInteractions(mockBoxService)
+          val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, "someBody"))
 
+          status(result) should be(BAD_REQUEST)
+          verifyNoInteractions(mockBoxService)
        }
 
       "return 400 when payload is missing the token value" in {
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "", "callbackUrl")))
-        status(result) should be(BAD_REQUEST)
-         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
-         verifyNoInteractions(mockBoxService)
+        val result: Result =
+          await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "", "callbackUrl")))
+
+          status(result) should be(BAD_REQUEST)
+          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+          verifyNoInteractions(mockBoxService)
        }
 
 
       "return 400 when payload is missing the clientId value" in {
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("", "verifyToken", "callbackUrl")))
-        status(result) should be(BAD_REQUEST)
-         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
-         verifyNoInteractions(mockBoxService)
+          val result: Result =
+            await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("", "verifyToken", "callbackUrl")))
+
+          status(result) should be(BAD_REQUEST)
+          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+          verifyNoInteractions(mockBoxService)
        }
 
        "return 400 when payload is missing the callbackUrl value" in {
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "verifyToken", "")))
-        status(result) should be(BAD_REQUEST)
-         Helpers.contentAsString(result) shouldBe raw"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
-        verifyNoInteractions(mockBoxService)
+          val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, createRequest("clientId", "verifyToken", "")))
+
+          status(result) should be(BAD_REQUEST)
+          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId, callbackUrl and verifyToken properties are all required"}"""
+          verifyNoInteractions(mockBoxService)
       }
      }
   }
