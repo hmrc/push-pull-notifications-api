@@ -92,4 +92,5 @@ object ConnectorFormatters {
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
+  implicit val updateCallBAckUrlRequestFormatter =Json.format[UpdateCallbackUrlRequest]
 }

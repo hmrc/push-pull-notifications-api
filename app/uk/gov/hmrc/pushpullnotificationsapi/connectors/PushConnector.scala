@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.Logger
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{Json, OFormat, Writes}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.{HeaderCarrier, UnprocessableEntityException}
@@ -29,7 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.{UpdateCallbackUrlRequest, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult, UpdateCallbackUrlRequest}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -42,32 +42,49 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
   }
 
   private def doSend(notification: OutboundNotification, hc: HeaderCarrier): Future[PushConnectorResult] = {
+//    val url = s"${appConfig.outboundNotificationsUrl}/notify"
+//
+//    val authorizationKey = appConfig.gatewayAuthToken
+//    Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
+//
+//    implicit val modifiedHeaderCarrier: HeaderCarrier =
+//      hc.copy(authorization = Some(Authorization(authorizationKey)))
+//        .withExtraHeaders("Content-Type" -> APPLICATION_JSON.value)
+//
+//    http.POST[OutboundNotification, PushConnectorResponse](url, notification)
+//      .map(_.successful) map {
+//        case true => PushConnectorSuccessResult()
+//        case false => PushConnectorFailedResult(new UnprocessableEntityException("PPNS Gateway was unable to successfully deliver notification"))
+//      } recover {
+//        case NonFatal(e) => PushConnectorFailedResult(e)
+//      }
     val url = s"${appConfig.outboundNotificationsUrl}/notify"
+    doSend[OutboundNotification](url, notification, hc)
+  }
+
+
+  def verifyCallbackUrl(addCallbackUrlRequest: UpdateCallbackUrlRequest): Future[PushConnectorResult] = { // Response type here
+    val url = s"${appConfig.outboundNotificationsUrl}/validate-callback"
+    doSend[UpdateCallbackUrlRequest](url, addCallbackUrlRequest, HeaderCarrier())
+  }
+
+  private def doSend[T](url:String, payload: T, hc: HeaderCarrier)(implicit wr: Writes[T]): Future[PushConnectorResult] = {
 
     val authorizationKey = appConfig.gatewayAuthToken
-    Logger.debug(s"Calling outbound notification gateway url=${notification.destinationUrl} \nheaders=${hc.headers} \npayload= ${notification.payload}")
 
     implicit val modifiedHeaderCarrier: HeaderCarrier =
       hc.copy(authorization = Some(Authorization(authorizationKey)))
         .withExtraHeaders("Content-Type" -> APPLICATION_JSON.value)
 
-    http.POST[OutboundNotification, PushConnectorResponse](url, notification)
+    http.POST[T, PushConnectorResponse](url, payload)
       .map(_.successful) map {
-        case true => PushConnectorSuccessResult()
-        case false => PushConnectorFailedResult(new UnprocessableEntityException("PPNS Gateway was unable to successfully deliver notification"))
-      } recover {
-        case NonFatal(e) => PushConnectorFailedResult(e)
-      }
+      case true => PushConnectorSuccessResult()
+      case false => PushConnectorFailedResult(new UnprocessableEntityException("PPNS Gateway was unable to successfully deliver notification"))
+    } recover {
+      case NonFatal(e) => PushConnectorFailedResult(e)
+    }
   }
 
-  def verifyCallbackUrl(addCallbackUrlRequest: UpdateCallbackUrlRequest): Future[Boolean] = { // Response type here
-    val authorizationKey = appConfig.gatewayAuthToken
-    implicit val headerCarrier: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization(authorizationKey)))
-
-    val url = s"${appConfig.outboundNotificationsUrl}/verify-callback-url"
-    http.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse](url, fromAddCallbackUrlRequest(addCallbackUrlRequest)).map(_.successful)
-    // Use doSend() or some version of it with response types
-  }
 }
 
 object PushConnector {

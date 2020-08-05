@@ -65,3 +65,4 @@ sealed trait UpdateCallbackUrlFailedResult extends UpdateCallbackUrlResult
 final case class CallbackUrlUpdated() extends UpdateCallbackUrlSuccessResult
 final case class BoxIdNotFound() extends UpdateCallbackUrlFailedResult
 final case class UnableToUpdateCallbackUrl() extends UpdateCallbackUrlFailedResult
+final case class UpdateCallbackUrlUnauthorisedResult() extends UpdateCallbackUrlFailedResult

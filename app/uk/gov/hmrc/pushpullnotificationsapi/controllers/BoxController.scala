@@ -79,13 +79,14 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
-      if (addCallbackUrlRequest.clientId.value.isEmpty || addCallbackUrlRequest.callbackUrl.isEmpty || addCallbackUrlRequest.verifyToken.isEmpty) {
+      if (addCallbackUrlRequest.isInvalid) {
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId, callbackUrl and verifyToken properties are all required")))
       } else {
         boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
-          case CallbackUrlUpdated() => NoContent
-          case BoxIdNotFound() => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case UnableToUpdateCallbackUrl() => BadRequest(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "Unable to update Callback URL"))
+          case _: CallbackUrlUpdated => NoContent
+          case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case _: UnableToUpdateCallbackUrl => BadRequest(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "Unable to update Callback URL"))
+          case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
         } recover recovery
       }
     }

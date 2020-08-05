@@ -10,8 +10,9 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, NotificationResponse, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, NotificationResponse, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult, UpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
 
 class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAppPerSuite with ScalaFutures with PushGatewayService with MetricsTestSupport  {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -35,31 +36,55 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
       )
 
   trait SetUp {
-    val notificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
-    val objInTest = app.injector.instanceOf[PushConnector]
+    val notificationResponse: NotificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
+    val objInTest: PushConnector = app.injector.instanceOf[PushConnector]
   }
 
-  "PushConnector" should {
+  "PushConnector send" should {
     "return PushConnectorSuccessResult when OK result and Success true is returned in payload" in new SetUp() {
       primeGatewayServiceWithBody(Status.OK)
-      val notification = OutboundNotification("someDestination", notificationResponse)
+      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result shouldBe PushConnectorSuccessResult()
     }
 
     "return PushConnectorFailedResult UnprocessableEntity when OK result and Success false is returned in payload" in new SetUp() {
       primeGatewayServiceWithBody(Status.OK, successfulResult = false)
-      val notification = OutboundNotification("someDestination", notificationResponse)
+      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
-      val castResult = result.asInstanceOf[PushConnectorFailedResult]
+      val castResult: PushConnectorFailedResult = result.asInstanceOf[PushConnectorFailedResult]
       castResult.throwable.getMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
     }
 
     "return PushConnectorFailedResult Notfound when Notfound result" in new SetUp() {
-      primeGatewayServiceNoBody(Status.NOT_FOUND)
-      val notification = OutboundNotification("someDestination", notificationResponse)
+      primeGatewayServicPostNoBody(Status.NOT_FOUND)
+      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
+      result.isInstanceOf[PushConnectorFailedResult] shouldBe true
+    }
+  }
+
+  "PushConnector send" should {
+
+    "return PushConnectorSuccessResult when validate-callback call returns true" in new SetUp() {
+      primeGatewayServiceValidateCallBack(Status.OK)
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
+      val result = await(objInTest.verifyCallbackUrl(request))
+      result.isInstanceOf[PushConnectorSuccessResult] shouldBe true
+    }
+
+    "return PushConnectorFailedResult when validate-callback call returns false" in new SetUp() {
+      primeGatewayServiceValidateCallBack(Status.OK, false)
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
+      val result = await(objInTest.verifyCallbackUrl(request))
+      result.isInstanceOf[PushConnectorFailedResult] shouldBe true
+    }
+
+     "return summat when validate-callback call returns false" in new SetUp() {
+      primeGatewayServiceValidateNoBody(Status.BAD_REQUEST)
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
+      val result = await(objInTest.verifyCallbackUrl(request))
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
     }
   }

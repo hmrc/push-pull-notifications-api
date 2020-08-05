@@ -442,6 +442,20 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
          status(result) should be(BAD_REQUEST)
        }
 
+       "return 401 if client id does not match that on the box" in {
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeaders,
+               createRequest("clientId", "verifyToken", "callbackUrl")))
+
+         status(result) should be(UNAUTHORIZED)
+       }
+
       "return 400 when payload is non JSON" in {
           val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeaders, "someBody"))
 
