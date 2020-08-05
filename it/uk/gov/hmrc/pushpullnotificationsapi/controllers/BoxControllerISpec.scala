@@ -8,15 +8,16 @@ import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNSUPPORTED_MEDIA_TYPE}
-import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNSUPPORTED_MEDIA_TYPE, UNAUTHORIZED}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Random
 
-class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp {
+class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with PushGatewayService {
   this: Suite with ServerProvider =>
 
   def repo: BoxRepository =
@@ -36,7 +37,9 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
         "auditing.enabled" -> false,
         "auditing.consumer.baseUri.host" -> wireMockHost,
         "auditing.consumer.baseUri.port" -> wireMockPort,
-        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
+        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
+        "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
+        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi"
       )
 
   val url = s"http://localhost:$port"
@@ -60,21 +63,28 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
-  def doPut(jsonBody: String, headers: List[(String, String)]): WSResponse =
+  def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doPut(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
+  def callUpdateSubscriberEndpoint(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/$boxId/subscriber")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
-  def doGet(boxName: String, clientId: String, headers: List[(String, String)]): WSResponse =
+  def callUpdateCallbackUrlEndpoint(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/box/$boxId/callback")
+      .withHttpHeaders(headers: _*)
+      .put(jsonBody)
+      .futureValue
+
+  def callGetBoxByNameAndClientIdEndpoint(boxName: String, clientId: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=$clientId")
       .withHttpHeaders(headers: _*)
@@ -88,59 +98,59 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
     "POST /box" should {
       "respond with 201 when box created" in {
-        val result = doPut(createBoxJsonBody, validHeaders)
+        val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 200 with box ID  when box already exists" in {
-        val result1 = doPut(createBoxJsonBody, validHeaders)
+        val result1 = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         validateStringIsUUID(result1.body)
 
-        val result2 = doPut(createBoxJsonBody, validHeaders)
+        val result2 = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         result2.status shouldBe OK
         validateStringIsUUID(result2.body)
         result2.body shouldBe result1.body
       }
 
       "respond with 201 when two boxs are created" in {
-        val result = doPut(createBoxJsonBody, validHeaders)
+        val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
 
-        val result2 = doPut(createBox2JsonBody, validHeaders)
+        val result2 = callCreateBoxEndpoint(createBox2JsonBody, validHeaders)
         result2.status shouldBe CREATED
         validateStringIsUUID(result2.body)
       }
 
       "respond with 400 when NonJson is sent" in {
-        val result = doPut("nonJsonPayload", validHeaders)
+        val result = callCreateBoxEndpoint("nonJsonPayload", validHeaders)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 400 when invalid Json is sent" in {
-        val result = doPut("{}", validHeaders)
+        val result = callCreateBoxEndpoint("{}", validHeaders)
         result.status shouldBe BAD_REQUEST
         result.body.contains("INVALID_REQUEST_PAYLOAD") shouldBe true
       }
 
       "respond with 415 when request content Type headers are empty" in {
-        val result = doPut("{}", List("someHeader" -> "someValue"))
+        val result = callCreateBoxEndpoint("{}", List("someHeader" -> "someValue"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 415 when request content Type header is not JSON " in {
-        val result = doPut("{}", List("Content-Type" -> "application/xml"))
+        val result = callCreateBoxEndpoint("{}", List("Content-Type" -> "application/xml"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 403 when UserAgent is not sent " in {
-        val result = doPut("{}", List("Content-Type" -> "application/json"))
+        val result = callCreateBoxEndpoint("{}", List("Content-Type" -> "application/json"))
         result.status shouldBe FORBIDDEN
       }
 
       "respond with 403 when UserAgent is not in whitelist" in {
-        val result = doPut("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
+        val result = callCreateBoxEndpoint("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
         result.status shouldBe FORBIDDEN
       }
 
@@ -159,11 +169,11 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   "GET /box?boxName=someName&clientId=someClientid" should {
     "respond with 200 and box in body when exists" in {
-      val result = doPut(createBoxJsonBody, validHeaders)
+      val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
       result.status shouldBe CREATED
       validateStringIsUUID(result.body)
 
-      val result2 = doGet(boxName, clientId, validHeaders)
+      val result2 = callGetBoxByNameAndClientIdEndpoint(boxName, clientId, validHeaders)
       result2.status shouldBe OK
 
       val box = Json.parse(result2.body).as[Box]
@@ -173,7 +183,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
 
     "respond with 404 when box does not exists" in {
-      val result = doGet(boxName, clientId, validHeaders)
+      val result = callGetBoxByNameAndClientIdEndpoint(boxName, clientId, validHeaders)
       result.status shouldBe NOT_FOUND
       result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
@@ -185,7 +195,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
-      val updateResult = doPut(createdBox.boxId.raw, updateSubscriberJsonBodyWithIds, validHeaders)
+      val updateResult = callUpdateSubscriberEndpoint(createdBox.boxId.raw, updateSubscriberJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe OK
 
       val updatedBox = Json.parse(updateResult.body).as[Box]
@@ -194,42 +204,123 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
 
     "return 404 when box does not exist" in {
-      val updateResult = doPut(UUID.randomUUID().toString, updateSubscriberJsonBodyWithIds, validHeaders)
+      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, updateSubscriberJsonBodyWithIds, validHeaders)
       updateResult.status shouldBe NOT_FOUND
       updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
 
     "return 400 when boxId is not a UUID" in {
-      val updateResult = await(doPut("NotaUUid", updateSubscriberJsonBodyWithIds, validHeaders))
+      val updateResult = await(callUpdateSubscriberEndpoint("NotaUUid", updateSubscriberJsonBodyWithIds, validHeaders))
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
     }
 
     "return 400 when requestBody is not a valid payload" in {
-      val updateResult = doPut(UUID.randomUUID().toString, "{}", validHeaders)
+      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "{}", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
 
     "return 400 when requestBody is not a valid payload against expected format" in {
-      val updateResult = doPut(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeaders)
+      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
 
     "return 400 when requestBody is missing" in {
-      val updateResult = doPut(UUID.randomUUID().toString, "", validHeaders)
+      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "", validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+  }
+
+  "PUT /box/{boxId}/callback" should {
+    val callbackUrl = "https://some.callback.url"
+    val verifyToken = Random.nextString(10) //scalastyle:off magic.number
+
+    def updateCallbackUrlRequestJson(boxClientId: String): String =
+      s"""
+         |{
+         | "clientId": "$boxClientId",
+         | "callbackUrl": "$callbackUrl",
+         | "verifyToken": "$verifyToken"
+         |}
+         |""".stripMargin
+
+    "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
+      primeGatewayServiceValidateCallBack(OK)
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId), validHeaders)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe true
+
+      val updatedBox = await(repo.findByBoxId(createdBox.boxId))
+      updatedBox.get.subscriber.get.asInstanceOf[PushSubscriber].callBackUrl shouldBe callbackUrl
+    }
+
+    "return 200 with {successful:false} when Callback Url cannot be validated" in {
+      val errorMessage = "Unable to verify callback url"
+      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some(errorMessage))
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId), validHeaders)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe false
+      responseBody.errorMessage shouldBe Some(errorMessage)
+    }
+
+    "return 401 when clientId does not match that on the Box" in {
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson("notTheCorrectClientId"), validHeaders)
+
+      updateResult.status shouldBe UNAUTHORIZED
+    }
+
+    "return 404 when box does not exist" in {
+      val updateResult = callUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, updateCallbackUrlRequestJson(clientId), validHeaders)
+      updateResult.status shouldBe NOT_FOUND
+      updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+    }
+
+    "return 400 when boxId is not a UUID" in {
+      val updateResult = callUpdateCallbackUrlEndpoint("NotaUUid", updateCallbackUrlRequestJson(clientId), validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+    }
+
+    "return 400 when requestBody is not a valid payload" in {
+      val updateResult = callUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "{}", validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is not a valid payload against expected format" in {
+      val updateResult = callUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeaders)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is missing" in {
+      val updateResult = callUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
   }
 
   private def createBoxAndCheckExistsWithNoSubscribers(): Box = {
-    val result = doPut(createBoxJsonBody, validHeaders)
+    val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
     result.status shouldBe CREATED
     validateStringIsUUID(result.body)
 
-    val result2 = doGet(boxName, clientId, validHeaders)
+    val result2 = callGetBoxByNameAndClientIdEndpoint(boxName, clientId, validHeaders)
     result2.status shouldBe OK
     val box = Json.parse(result2.body).as[Box]
     box.subscriber.isDefined shouldBe false

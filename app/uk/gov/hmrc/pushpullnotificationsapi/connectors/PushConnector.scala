@@ -19,13 +19,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.libs.json.{Json, OFormat, Writes}
-import uk.gov.hmrc.http.HttpReads
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.logging.Authorization
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
@@ -53,9 +52,9 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
 
   def validateCallbackUrl(addCallbackUrlRequest: UpdateCallbackUrlRequest): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/validate-callback"
-    doSend[UpdateCallbackUrlRequest, VerifyCallbackUrlResponse](url, addCallbackUrlRequest, HeaderCarrier()).map { 
+    doSend[UpdateCallbackUrlRequest, VerifyCallbackUrlResponse](url, addCallbackUrlRequest, HeaderCarrier()).map {
       result: VerifyCallbackUrlResponse => if(result.successful) PushConnectorSuccessResult()
-      else result.errorMessage.fold(PushConnectorFailedResult("Unknown Error"))(PushConnectorFailedResult(_))
+      else result.errorMessage.fold(PushConnectorFailedResult("Unknown Error"))(PushConnectorFailedResult)
     } recover {
       case NonFatal(e) => PushConnectorFailedResult(e.getMessage)
     }

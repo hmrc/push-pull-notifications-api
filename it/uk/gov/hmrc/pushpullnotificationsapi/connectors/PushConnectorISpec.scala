@@ -10,16 +10,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, NotificationResponse, PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult, UpdateCallbackUrlRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
 
 class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAppPerSuite with ScalaFutures with PushGatewayService with MetricsTestSupport  {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  override def commonStubs(): Unit = {
-    givenCleanMetricRegistry()
-  }
+  override def commonStubs(): Unit = givenCleanMetricRegistry()
 
   override implicit lazy val app: Application = appBuilder.build()
 
@@ -36,7 +33,8 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
       )
 
   trait SetUp {
-    val notificationResponse: NotificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
+    val notificationResponse: NotificationResponse =
+      NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
     val objInTest: PushConnector = app.injector.instanceOf[PushConnector]
   }
 
@@ -69,24 +67,30 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
 
     "return PushConnectorSuccessResult when validate-callback call returns true" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK)
+
       val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
       val result = await(objInTest.validateCallbackUrl(request))
+
       result.isInstanceOf[PushConnectorSuccessResult] shouldBe true
     }
 
     "return PushConnectorFailedResult when validate-callback call returns false" in new SetUp() {
-      primeGatewayServiceValidateCallBack(Status.OK, false, Some("someError"))
+      primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false, Some("someError"))
+
       val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
       val result = await(objInTest.validateCallbackUrl(request))
+
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
       val convertedResult = result.asInstanceOf[PushConnectorFailedResult]
       convertedResult.errorMessage shouldBe "someError"
     }
 
      "return PushConnectorFailedResult when validate-callback call returns false with no error message" in new SetUp() {
-      primeGatewayServiceValidateCallBack(Status.OK, false)
+      primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false)
+
       val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
       val result = await(objInTest.validateCallbackUrl(request))
+
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
       val convertedResult = result.asInstanceOf[PushConnectorFailedResult]
       convertedResult.errorMessage shouldBe "Unknown Error"
@@ -94,8 +98,10 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
 
      "return summat when validate-callback call returns false" in new SetUp() {
       primeGatewayServiceValidateNoBody(Status.BAD_REQUEST)
+
       val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl","verifyToken" )
       val result = await(objInTest.validateCallbackUrl(request))
+
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
     }
   }

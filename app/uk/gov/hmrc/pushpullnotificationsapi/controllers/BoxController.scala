@@ -79,13 +79,13 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
-      if (addCallbackUrlRequest.isInvalid) {
+      if (addCallbackUrlRequest.isInvalid()) {
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId, callbackUrl and verifyToken properties are all required")))
       } else {
         boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
-          case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(true)))
-          case c: CallbackValidationFailed  => Ok(Json.toJson(UpdateCallbackUrlResponse(false, Some(c.errorMessage))))
-          case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(false, Some(u.errorMessage))))
+          case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
+          case c: CallbackValidationFailed  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
+          case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
           case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
         } recover recovery
@@ -99,16 +99,13 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
   }
 
-  override protected def withJsonBody[T]
-  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
-  = {
+  override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =
     withJson(request.body)(f)
-  }
 
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
-      case JsError(errs) =>
+      case JsError(_) =>
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }
