@@ -59,29 +59,25 @@ class BoxService @Inject()(repository: BoxRepository, pushConnector: PushConnect
   }
 
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
-    // Determine whether box exists, if not don't try URL validation and return
-    // Call connector to have Gateway verify callback url
-    // If successful, update box record (with Subscriber?)
-    // If unsuccessful, return without updating
     repository.findByBoxId(boxId) flatMap  {
-      case Some(box) => if(box.boxCreator.clientId.equals(request.clientId)) verifyCallBack(boxId, request) 
+      case Some(box) => if(box.boxCreator.clientId.equals(request.clientId)) validateCallBack(boxId, request) 
                         else Future.successful(UpdateCallbackUrlUnauthorisedResult())
       case None => Future.successful(BoxIdNotFound())
     }
 
   }
 
-  private def verifyCallBack(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
-    pushConnector.verifyCallbackUrl(request) flatMap  {
+  private def validateCallBack(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+    pushConnector.validateCallbackUrl(request) flatMap  {
       case _: PushConnectorSuccessResult => updateBoxWithCallBack(boxId, request.callbackUrl)
-      case _: PushConnectorFailedResult => Future.successful(UnableToUpdateCallbackUrl())
+      case result: PushConnectorFailedResult => Future.successful(CallbackValidationFailed(result.errorMessage))
     }
   }
 
   private def updateBoxWithCallBack(boxId: BoxId, callbackUrl: String)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult]  = {
       repository.updateSubscriber(boxId, new SubscriberContainer(PushSubscriber(callBackUrl = callbackUrl))).map {
         case Some(box) => CallbackUrlUpdated()
-        case _ => UnableToUpdateCallbackUrl()
+        case _ => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
       } 
   }
 

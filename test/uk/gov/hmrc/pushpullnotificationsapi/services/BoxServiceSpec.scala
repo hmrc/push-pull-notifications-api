@@ -129,10 +129,25 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
         .thenReturn(Future.successful(Some(box)))
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl", "token")
-         when(mockConnector.verifyCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
+         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
 
           val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
           result.isInstanceOf[CallbackUrlUpdated] shouldBe true
+       }
+
+      "return UnableToUpdateCallbackUrl when update of box with callback fails" in new Setup {
+         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
+        .thenReturn(Future.successful(None))
+
+          val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl", "token")
+         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
+
+          val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
+          result.isInstanceOf[UnableToUpdateCallbackUrl] shouldBe true
+
+
+         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
        }
 
       "return UpdateCallbackUrlUnauthorisedResult when clientId of box is different from request clientId" in new Setup {
@@ -145,14 +160,14 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
        }
 
 
-      "return UnableToUpdateCallbackUrl when connector call returns false" in new Setup {
+      "return CallbackValidationFailed when connector call returns false" in new Setup {
         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl", "token")
-        when(mockConnector.verifyCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorFailedResult(new RuntimeException())))
+        when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorFailedResult("")))
 
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
-        result.isInstanceOf[UnableToUpdateCallbackUrl] shouldBe true
+        result.isInstanceOf[CallbackValidationFailed] shouldBe true
       }
 
       "return BoxIdNotFound when boxId is not found" in new Setup {

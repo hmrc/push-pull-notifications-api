@@ -98,7 +98,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       httpCallWillSucceedWithResponse(PushConnectorResponse(false))
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result.asInstanceOf[PushConnectorFailedResult].throwable.getMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
+      result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
 
       val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
 
@@ -114,7 +114,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result shouldBe PushConnectorFailedResult(exceptionVal)
+      result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
 
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
@@ -125,7 +125,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result shouldBe PushConnectorFailedResult(exceptionVal)
+      result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
 
       verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])

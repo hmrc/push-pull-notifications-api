@@ -83,9 +83,10 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId, callbackUrl and verifyToken properties are all required")))
       } else {
         boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
-          case _: CallbackUrlUpdated => NoContent
+          case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(true)))
+          case c: CallbackValidationFailed  => Ok(Json.toJson(UpdateCallbackUrlResponse(false, Some(c.errorMessage))))
+          case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(false, Some(u.errorMessage))))
           case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: UnableToUpdateCallbackUrl => BadRequest(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, "Unable to update Callback URL"))
           case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
         } recover recovery
       }

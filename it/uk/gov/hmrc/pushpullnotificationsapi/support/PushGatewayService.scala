@@ -6,13 +6,15 @@ trait PushGatewayService {
   val gatewayPostUrl = "/notify"
   val gatewayValidateCalllBackUrl = "/validate-callback"
 
-  def primeGatewayServiceValidateCallBack(status : Int, successfulResult: Boolean = true) = {
-    primeGatewayWithBody(gatewayValidateCalllBackUrl, status, successfulResult)
+  def primeGatewayServiceValidateCallBack(status : Int, successfulResult: Boolean = true, errorMessage: Option[String] = None) = {
+    val errorMessageStr = errorMessage.fold("")(value => raw""","errorMessage":"${value}"""")
+    primeGatewayWithBody(gatewayValidateCalllBackUrl, status, successfulResult, raw"""{"successful":${successfulResult}${errorMessageStr} }""")
   }
 
 
   def primeGatewayServiceWithBody(status : Int, successfulResult: Boolean = true)= {
-   primeGatewayWithBody(gatewayPostUrl, status, successfulResult)
+     val body = raw"""{"successful": ${successfulResult} }"""
+   primeGatewayWithBody(gatewayPostUrl, status, successfulResult, body)
   }
 
   def primeGatewayServiceValidateNoBody(status: Int) = {
@@ -34,8 +36,8 @@ trait PushGatewayService {
     )
   }
 
-   private def primeGatewayWithBody(url: String, status : Int, successfulResult: Boolean = true)= {
-    val body = raw"""{"successful": ${successfulResult} }"""
+   private def primeGatewayWithBody(url: String, status : Int, successfulResult: Boolean = true, body: String)= {
+   
     stubFor(post(urlEqualTo(url))
       .withHeader("Authorization", equalTo("iampushpullapi"))
       .willReturn(

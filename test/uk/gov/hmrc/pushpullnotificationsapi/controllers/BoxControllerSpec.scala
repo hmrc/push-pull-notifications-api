@@ -400,7 +400,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
         |""".stripMargin
       }
 
-      "return 204 when request is successful" in {
+      "return 200 when request is successful" in {
         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
@@ -411,7 +411,8 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
               validHeaders,
               createRequest("clientId", "verifyToken", "callbackUrl")))
 
-        status(result) should be(NO_CONTENT)
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
        }
 
        "return 404 if Box does not exist" in {
@@ -428,9 +429,10 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
          status(result) should be(NOT_FOUND)
        }
 
-       "return 400 if Callback Url cannot be verified" in {
+       "return 200, successful false and errormessage when mongo update fails" in {
+         val errorMessage = "Unable to update"
          when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
-           .thenReturn(Future.successful(UnableToUpdateCallbackUrl()))
+           .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
          val result: Result =
            await(
@@ -439,8 +441,26 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
                validHeaders,
                createRequest("clientId", "verifyToken", "callbackUrl")))
 
-         status(result) should be(BAD_REQUEST)
+         status(result) should be(OK)
+         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
        }
+
+      "return 200, successful false and errormessage when callback validation fails" in {
+         val errorMessage = "Unable to update"
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeaders,
+               createRequest("clientId", "verifyToken", "callbackUrl")))
+
+         status(result) should be(OK)
+         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+       }
+
 
        "return 401 if client id does not match that on the box" in {
          when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
