@@ -24,7 +24,8 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlResponse, VerifyCallbackUrlRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.fromUpdateCallbackUrlRequest
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
@@ -50,9 +51,9 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
     }
   }
 
-  def validateCallbackUrl(addCallbackUrlRequest: UpdateCallbackUrlRequest): Future[PushConnectorResult] = {
+  def validateCallbackUrl(request: UpdateCallbackUrlRequest): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/validate-callback"
-    doSend[UpdateCallbackUrlRequest, VerifyCallbackUrlResponse](url, addCallbackUrlRequest, HeaderCarrier()).map {
+    doSend[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse](url, fromUpdateCallbackUrlRequest(request), HeaderCarrier()).map {
       result: VerifyCallbackUrlResponse => if(result.successful) PushConnectorSuccessResult()
       else result.errorMessage.fold(PushConnectorFailedResult("Unknown Error"))(PushConnectorFailedResult)
     } recover {
@@ -78,6 +79,9 @@ object PushConnector {
 
   implicit val verifyCallbackUrlRequestFormat: OFormat[VerifyCallbackUrlRequest] = Json.format[VerifyCallbackUrlRequest]
   implicit val verifyCallbackUrlResponseFormat: OFormat[VerifyCallbackUrlResponse] = Json.format[VerifyCallbackUrlResponse]
-  private[connectors] case class VerifyCallbackUrlRequest(callbackUrl: String, verifyToken: String)
+  private[connectors] case class VerifyCallbackUrlRequest(callbackUrl: String)
   private[connectors] case class VerifyCallbackUrlResponse(successful: Boolean, errorMessage: Option[String])
+
+  private[connectors] def fromUpdateCallbackUrlRequest(updateCallbackUrlRequest: UpdateCallbackUrlRequest): VerifyCallbackUrlRequest =
+   VerifyCallbackUrlRequest(updateCallbackUrlRequest.callbackUrl)
 }

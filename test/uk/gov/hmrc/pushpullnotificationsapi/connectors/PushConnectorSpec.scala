@@ -46,7 +46,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   val outboundUrlAndValidatePath = "outboundUrl/validate-callback"
   val notificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
   val pushNotification: OutboundNotification = OutboundNotification("someUrl", notificationResponse)
-  val validateCallbackRequest = VerifyCallbackUrlRequest("someCallbackUrl", "someToken")
+  val validateCallbackRequest = VerifyCallbackUrlRequest("someCallbackUrl")
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -134,17 +134,19 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   }
 
   "PushConnector validate callback" should {
-    val request =  UpdateCallbackUrlRequest(ClientId("someCLientid"), "callbackUrl", "verifyToken")
+    val request =  UpdateCallbackUrlRequest(ClientId("someCLientid"), "callbackUrl")
+    val outgoingRequest = VerifyCallbackUrlRequest("callbackUrl")
+
     def httpCallWillSucceedWithResponse(response: VerifyCallbackUrlResponse) =
-      when(mockHttpClient.POST[UpdateCallbackUrlRequest, VerifyCallbackUrlResponse]
-        (eqTo(outboundUrlAndValidatePath), any[UpdateCallbackUrlRequest](), any[Seq[(String, String)]]())
-        (any[Writes[UpdateCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockHttpClient.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse]
+        (eqTo(outboundUrlAndValidatePath), any[VerifyCallbackUrlRequest](), any[Seq[(String, String)]]())
+        (any[Writes[VerifyCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.successful(response))
 
     def httpCallWillFailWithException(exception: Throwable) =
-      when(mockHttpClient.POST[UpdateCallbackUrlRequest, VerifyCallbackUrlResponse]
-        (eqTo(outboundUrlAndValidatePath), any[UpdateCallbackUrlRequest](), any[Seq[(String, String)]]())
-        (any[Writes[UpdateCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockHttpClient.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse]
+        (eqTo(outboundUrlAndValidatePath), any[VerifyCallbackUrlRequest](), any[Seq[(String, String)]]())
+        (any[Writes[VerifyCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(exception))
 
     def containsCorrectAuthorizationHeader(headerCarrier: HeaderCarrier, authToken: String) =
@@ -158,7 +160,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
       result shouldBe PushConnectorSuccessResult()
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(request),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
@@ -171,7 +173,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
       result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe "Unknown Error"
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(request),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
@@ -184,7 +186,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
       result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe errorMessage
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(request),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
@@ -199,7 +201,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
       result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(request),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
     }
   }

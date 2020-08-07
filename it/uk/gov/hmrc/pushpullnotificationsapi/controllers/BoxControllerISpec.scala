@@ -15,7 +15,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Random
 
 class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with PushGatewayService {
   this: Suite with ServerProvider =>
@@ -236,14 +235,12 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   "PUT /box/{boxId}/callback" should {
     val callbackUrl = "https://some.callback.url"
-    val verifyToken = Random.nextString(10) //scalastyle:off magic.number
 
     def updateCallbackUrlRequestJson(boxClientId: String): String =
       s"""
          |{
          | "clientId": "$boxClientId",
-         | "callbackUrl": "$callbackUrl",
-         | "verifyToken": "$verifyToken"
+         | "callbackUrl": "$callbackUrl"
          |}
          |""".stripMargin
 
@@ -260,6 +257,16 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
       val updatedBox = await(repo.findByBoxId(createdBox.boxId))
       updatedBox.get.subscriber.get.asInstanceOf[PushSubscriber].callBackUrl shouldBe callbackUrl
+    }
+
+    "return 401 when useragent header is missing" in {
+      primeGatewayServiceValidateCallBack(OK)
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId),  List("Content-Type" -> "application/json"))
+      updateResult.status shouldBe FORBIDDEN
+
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
