@@ -62,8 +62,8 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
-      case List(box) => Ok(Json.toJson(box))
-      case _ => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+      case Some(box) => Ok(Json.toJson(box))
+      case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
     } recover recovery
   }
 
@@ -77,22 +77,38 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     }
   }
 
+  def updateCallbackUrl(boxId: BoxId): Action[JsValue] = 
+    (Action andThen
+      validateUserAgentHeaderAction)
+      .async(playBodyParsers.json) { implicit request =>
+    withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
+      if (addCallbackUrlRequest.isInvalid()) {
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId and callbackUrl properties are both required")))
+      } else {
+        boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
+          case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
+          case c: CallbackValidationFailed  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
+          case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
+          case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
+        } recover recovery
+      }
+    }
+  }
+
   private def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
       Logger.error("An unexpected error occurred:", e)
       InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
   }
 
-  override protected def withJsonBody[T]
-  (f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result]
-  = {
+  override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =
     withJson(request.body)(f)
-  }
 
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
-      case JsError(errs) =>
+      case JsError(_) =>
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }

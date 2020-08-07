@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
@@ -25,7 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class BoxService @Inject()(repository: BoxRepository) {
+class BoxService @Inject()(repository: BoxRepository, pushConnector: PushConnector) {
 
   def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
                (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
@@ -42,21 +43,42 @@ class BoxService @Inject()(repository: BoxRepository) {
 
   }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)
-                             (implicit ec: ExecutionContext): Future[List[Box]] = {
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
-  }
 
   def updateSubscriber(boxId: BoxId, request: UpdateSubscriberRequest)
                       (implicit ec: ExecutionContext): Future[Option[Box]] = {
     val subscriber = request.subscriber
 
     val subscriberObject = subscriber.subscriberType match {
-        case API_PULL_SUBSCRIBER => PullSubscriber(callBackUrl = subscriber.callBackUrl)
-        case API_PUSH_SUBSCRIBER => PushSubscriber(callBackUrl = subscriber.callBackUrl)
-      }
+      case API_PULL_SUBSCRIBER => PullSubscriber(callBackUrl = subscriber.callBackUrl)
+      case API_PUSH_SUBSCRIBER => PushSubscriber(callBackUrl = subscriber.callBackUrl)
+    }
 
     repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))
+  }
+
+  def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+    repository.findByBoxId(boxId) flatMap  {
+      case Some(box) => if(box.boxCreator.clientId.equals(request.clientId)) validateCallBack(boxId, request) 
+                        else Future.successful(UpdateCallbackUrlUnauthorisedResult())
+      case None => Future.successful(BoxIdNotFound())
+    }
+
+  }
+
+  private def validateCallBack(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+    pushConnector.validateCallbackUrl(request) flatMap  {
+      case _: PushConnectorSuccessResult => updateBoxWithCallBack(boxId, request.callbackUrl)
+      case result: PushConnectorFailedResult => Future.successful(CallbackValidationFailed(result.errorMessage))
+    }
+  }
+
+  private def updateBoxWithCallBack(boxId: BoxId, callbackUrl: String)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult]  = {
+      repository.updateSubscriber(boxId, new SubscriberContainer(PushSubscriber(callBackUrl = callbackUrl))).map {
+        case Some(box) => CallbackUrlUpdated()
+        case _ => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
+      } 
   }
 
 }

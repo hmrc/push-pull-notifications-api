@@ -25,6 +25,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 case class CreateBoxResponse(boxId: String)
 case class CreateNotificationResponse(notificationId: String)
 
+case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
+
 case class NotificationResponse(notificationId: NotificationId,
                                 boxId: BoxId,
                                 messageContentType: MessageContentType,

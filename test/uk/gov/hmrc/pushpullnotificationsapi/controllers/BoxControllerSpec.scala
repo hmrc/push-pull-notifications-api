@@ -229,7 +229,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 200 and requested box when it exists" in {
 
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders))
 
@@ -243,7 +243,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when no parameters provided" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -253,7 +253,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when boxName is missing" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?clientId=$clientIdStr", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -263,7 +263,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 400 when clientId is missing" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+          .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName", validHeaders))
         status(result) should be(BAD_REQUEST)
@@ -272,9 +272,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
       "return NOTFOUND when requested box does not exist" in {
-
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext]))
-          .thenReturn(Future.successful(List.empty))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
 
         val result: Result = await(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders))
 
@@ -389,6 +387,141 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
 
     }
+
+     "addCallbackUrl" should {
+
+      def createRequest(clientId: String, callBackUrl:String)= {
+      raw"""
+        |{
+        |   "clientId": "$clientId",
+        |   "callbackUrl": "$callBackUrl"
+        |}
+        |""".stripMargin
+      }
+
+      "return 200 when request is successful" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+
+        val result: Result =
+          await(
+            doPut(
+              s"/box/${boxId.value}/callback",
+              validHeadersWithValidUserAgent,
+              createRequest("clientId", "callbackUrl")))
+
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+       }
+
+       "return 401 if User-Agent is not whitelisted" in {
+          setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+
+        val result: Result =
+          await(
+            doPut(
+              s"/box/${boxId.value}/callback",
+              validHeaders,
+              createRequest("clientId", "callbackUrl")))
+
+        status(result) should be(FORBIDDEN)
+        Helpers.contentAsString(result) shouldBe """{"code":"FORBIDDEN","message":"Authorisation failed"}"""
+       }
+
+       "return 404 if Box does not exist" in {
+         setUpAppConfig(List("api-subscription-fields"))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(BoxIdNotFound()))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeadersWithValidUserAgent,
+               createRequest("clientId", "callbackUrl")))
+
+         status(result) should be(NOT_FOUND)
+       }
+
+       "return 200, successful false and errormessage when mongo update fails" in {
+         setUpAppConfig(List("api-subscription-fields"))
+         val errorMessage = "Unable to update"
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeadersWithValidUserAgent,
+               createRequest("clientId", "callbackUrl")))
+
+         status(result) should be(OK)
+         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+       }
+
+      "return 200, successful false and errormessage when callback validation fails" in {
+        setUpAppConfig(List("api-subscription-fields")) 
+         val errorMessage = "Unable to update"
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeadersWithValidUserAgent,
+               createRequest("clientId", "callbackUrl")))
+
+         status(result) should be(OK)
+         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+       }
+
+
+       "return 401 if client id does not match that on the box" in {
+         setUpAppConfig(List("api-subscription-fields"))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
+
+         val result: Result =
+           await(
+             doPut(
+               s"/box/${boxId.value}/callback",
+               validHeadersWithValidUserAgent,
+               createRequest("clientId", "callbackUrl")))
+
+         status(result) should be(UNAUTHORIZED)
+       }
+
+      "return 400 when payload is non JSON" in {
+          val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, "someBody"))
+
+          status(result) should be(BAD_REQUEST)
+          verifyNoInteractions(mockBoxService)
+       }
+
+      "return 400 when payload is missing the clientId value" in {
+        setUpAppConfig(List("api-subscription-fields"))
+          val result: Result =
+            await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, createRequest("", "callbackUrl")))
+
+          status(result) should be(BAD_REQUEST)
+          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId and callbackUrl properties are both required"}"""
+          verifyNoInteractions(mockBoxService)
+       }
+
+       "return 400 when payload is missing the callbackUrl value" in {
+          setUpAppConfig(List("api-subscription-fields"))
+          val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, createRequest("clientId", "")))
+
+          status(result) should be(BAD_REQUEST)
+          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId and callbackUrl properties are both required"}"""
+          verifyNoInteractions(mockBoxService)
+      }
+     }
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {

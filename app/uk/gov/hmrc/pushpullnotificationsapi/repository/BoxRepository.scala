@@ -50,8 +50,8 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   )
 
 
-  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
-    find("boxId" -> boxId.value)
+  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
+    find("boxId" -> boxId.value).map(_.headOption)
   }
 
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[Option[BoxId]] =
@@ -61,9 +61,9 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       Future.successful(None)
     }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     Logger.info(s"Getting box by boxName:$boxName & clientId")
-    find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value)
+    find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value).map(_.headOption)
   }
 
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {

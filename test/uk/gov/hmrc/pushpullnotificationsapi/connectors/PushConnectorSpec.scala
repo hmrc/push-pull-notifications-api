@@ -29,7 +29,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.PushConnectorResponse
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
@@ -42,9 +42,11 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   private implicit val ec: ExecutionContext = Helpers.stubControllerComponents().executionContext
   private implicit val hc: HeaderCarrier = HeaderCarrier()
   val outboundUrl = "outboundUrl"
-  val outboundUrlAndPath = "outboundUrl/notify"
+  val outboundUrlAndSendPath = "outboundUrl/notify"
+  val outboundUrlAndValidatePath = "outboundUrl/validate-callback"
   val notificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
   val pushNotification: OutboundNotification = OutboundNotification("someUrl", notificationResponse)
+  val validateCallbackRequest = VerifyCallbackUrlRequest("someCallbackUrl")
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -55,6 +57,8 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
     val gatewayAuthToken = Random.nextString(10) //scalastyle:off magic.number
     when(mockAppConfig.gatewayAuthToken).thenReturn(gatewayAuthToken)
 
+    val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
+
     val connector = new PushConnector(
       mockHttpClient,
       mockAppConfig)
@@ -62,16 +66,16 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
 
   }
 
-  "PushConnector" should {
+  "PushConnector send" should {
     def httpCallWillSucceedWithResponse(response: PushConnectorResponse) =
       when(mockHttpClient.POST[OutboundNotification, PushConnectorResponse]
-        (eqTo(outboundUrlAndPath), any[OutboundNotification](), any[Seq[(String,String)]]())
+        (eqTo(outboundUrlAndSendPath), any[OutboundNotification](), any[Seq[(String,String)]]())
         (any[Writes[OutboundNotification]](), any[HttpReads[PushConnectorResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.successful(response))
 
     def httpCallWillFailWithException(exception: Throwable) =
       when(mockHttpClient.POST[OutboundNotification, PushConnectorResponse]
-        (eqTo(outboundUrlAndPath), any[OutboundNotification](), any[Seq[(String,String)]]())
+        (eqTo(outboundUrlAndSendPath), any[OutboundNotification](), any[Seq[(String,String)]]())
         (any[Writes[OutboundNotification]](), any[HttpReads[PushConnectorResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(exception))
 
@@ -86,8 +90,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       val result: PushConnectorResult = await(connector.send(pushNotification))
       result shouldBe PushConnectorSuccessResult()
 
-      val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndSendPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
@@ -98,11 +101,9 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       httpCallWillSucceedWithResponse(PushConnectorResponse(false))
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result.asInstanceOf[PushConnectorFailedResult].throwable.getMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
+      result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe "PPNS Gateway was unable to successfully deliver notification"
 
-      val headerCarrierCaptor: Captor[HeaderCarrier] = ArgCaptor[HeaderCarrier]
-
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndSendPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
 
       containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
@@ -114,20 +115,93 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
       httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result shouldBe PushConnectorFailedResult(exceptionVal)
+      result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndSendPath), eqTo(pushNotification),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
     }
 
-    "call the gateway and return Left when error occurs" in new SetUp {
+    "call the gateway and return PushConnectorFailedResult when error occurs" in new SetUp {
       val exceptionVal = new IllegalArgumentException("Some error")
       httpCallWillFailWithException(exceptionVal)
 
       val result: PushConnectorResult = await(connector.send(pushNotification))
-      result shouldBe PushConnectorFailedResult(exceptionVal)
+      result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
 
-      verify(mockHttpClient).POST(eqTo(outboundUrlAndPath), eqTo(pushNotification),
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndSendPath), eqTo(pushNotification),
+        any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
+    }
+  }
+
+  "PushConnector validate callback" should {
+    val request =  UpdateCallbackUrlRequest(ClientId("someCLientid"), "callbackUrl")
+    val outgoingRequest = VerifyCallbackUrlRequest("callbackUrl")
+
+    def httpCallWillSucceedWithResponse(response: VerifyCallbackUrlResponse) =
+      when(mockHttpClient.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse]
+        (eqTo(outboundUrlAndValidatePath), any[VerifyCallbackUrlRequest](), any[Seq[(String, String)]]())
+        (any[Writes[VerifyCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+        .thenReturn(Future.successful(response))
+
+    def httpCallWillFailWithException(exception: Throwable) =
+      when(mockHttpClient.POST[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse]
+        (eqTo(outboundUrlAndValidatePath), any[VerifyCallbackUrlRequest](), any[Seq[(String, String)]]())
+        (any[Writes[VerifyCallbackUrlRequest]](), any[HttpReads[VerifyCallbackUrlResponse]](), any[HeaderCarrier](), any[ExecutionContext]()))
+        .thenReturn(Future.failed(exception))
+
+    def containsCorrectAuthorizationHeader(headerCarrier: HeaderCarrier, authToken: String) =
+      headerCarrier.headers.contains("Authorization" -> authToken) shouldBe true
+
+    def contentTypeIsCorrectlySet(headerCarrier: HeaderCarrier) = headerCarrier.headers.contains("Content-Type" -> "application/json") shouldBe true
+
+    "call the gateway correctly and return PushConnectorSuccessResult if validate callback return successfully" in new SetUp {
+      httpCallWillSucceedWithResponse(VerifyCallbackUrlResponse(true, None))
+
+      val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
+      result shouldBe PushConnectorSuccessResult()
+
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
+        any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
+
+      containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
+      contentTypeIsCorrectlySet(headerCarrierCaptor.value)
+    }
+
+
+    "call the gateway correctly and return PushConnectorFailedResult if callback validation fails" in new SetUp {
+      httpCallWillSucceedWithResponse(VerifyCallbackUrlResponse(false, None))
+      val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
+      result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe "Unknown Error"
+
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
+        any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
+
+      containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
+      contentTypeIsCorrectlySet(headerCarrierCaptor.value)
+    }
+
+    "call the gateway correctly and return PushConnectorFailedResult if callback validation fails and return error message" in new SetUp {
+      val errorMessage = "errorMessageAmI"
+      httpCallWillSucceedWithResponse(VerifyCallbackUrlResponse(false, Some(errorMessage)))
+      val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
+      result.asInstanceOf[PushConnectorFailedResult].errorMessage shouldBe errorMessage
+
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
+        any[Seq[(String, String)]])(any(),any(), headerCarrierCaptor.capture, any[ExecutionContext])
+
+      containsCorrectAuthorizationHeader(headerCarrierCaptor.value, gatewayAuthToken)
+      contentTypeIsCorrectlySet(headerCarrierCaptor.value)
+    }
+
+
+    "call the gateway and return PushConnectorFailedResult when error occurs" in new SetUp {
+      val exceptionVal = new IllegalArgumentException("Some error")
+      httpCallWillFailWithException(exceptionVal)
+
+      val result: PushConnectorResult = await(connector.validateCallbackUrl(request))
+      result shouldBe PushConnectorFailedResult(exceptionVal.getMessage)
+
+      verify(mockHttpClient).POST(eqTo(outboundUrlAndValidatePath), eqTo(outgoingRequest),
         any[Seq[(String, String)]])(any(),any(),any[HeaderCarrier], any[ExecutionContext])
     }
   }

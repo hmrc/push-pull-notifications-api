@@ -64,7 +64,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
         any[Int])(any[ExecutionContext])).thenReturn(result)
     }
 
-    def primeBoxRepo(result: Future[List[Box]], boxId: BoxId): ScalaOngoingStubbing[Future[List[Box]]] = {
+    def primeBoxRepo(result: Future[Option[Box]], boxId: BoxId): ScalaOngoingStubbing[Future[Option[Box]]] = {
       when(mockBoxRepo.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(result)
     }
   }
@@ -83,7 +83,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
   "SaveNotification" should {
     "return NotificationCreateSuccessResult when box exists , push is called with List of subscribers  & notification successfully saved" in new Setup {
-      primeBoxRepo(Future.successful(List(BoxObjectWIthSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
       when(mockNotificationsPushService.handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(true))
@@ -98,7 +98,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
 
     "return NotificationCreateSuccessResult when box exists, push is called with Empty List &  notification successfully saved" in new Setup {
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
 
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId,
@@ -112,7 +112,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
     }
 
     "return NotificationCreateFailedBoxNotFoundResult when box does not exist" in new Setup {
-      primeBoxRepo(Future.successful(List.empty), boxId)
+      primeBoxRepo(Future.successful(None), boxId)
 
       val result: NotificationCreateServiceResult =
         await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeXml, message))
@@ -139,7 +139,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
     "return list of matched notifications" in new Setup {
 
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(
         Future.successful(List(Notification(NotificationId(UUID.randomUUID()),
           boxId,MessageContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
@@ -159,7 +159,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
     "return empty list when no notifications found" in new Setup {
 
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
       val result: GetNotificationCreateServiceResult =  await(serviceToTest.getNotifications(boxId= boxId,
@@ -175,7 +175,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
     "return notfound exception when client id is different from box creator client id" in new Setup {
 
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
       val result: GetNotificationCreateServiceResult = await(serviceToTest.getNotifications(boxId = boxId,
@@ -194,22 +194,22 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
 
   "Acknowledge notifications" should {
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns true" in new Setup {
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsSuccessUpdatedResult(true), repoResult = Future.successful(true))
     }
 
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns false" in new Setup {
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsSuccessUpdatedResult(false))
     }
 
     "return AcknowledgeNotificationsServiceBoxNotFoundResult when box not found" in new Setup {
-      primeBoxRepo(Future.successful(List.empty), boxId)
+      primeBoxRepo(Future.successful(None), boxId)
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: BoxId(${boxId.raw}) not found"))
     }
 
     "return AcknowledgeNotificationsServiceUnauthorisedResult when caller is not owner of box" in new Setup {
-      primeBoxRepo(Future.successful(List(BoxObjectWIthNoSubscribers)), boxId)
+      primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"),
         ClientId("notTheCLientID"))
     }

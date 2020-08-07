@@ -29,6 +29,14 @@ case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionTy
 
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
+case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String){
+  def isInvalid(): Boolean ={
+    this.clientId.value.isEmpty || this.callbackUrl.isEmpty
+  }
+}
+
+
+
 // Notifications
 
 

@@ -88,7 +88,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     "return false when connector returns failed result due to exception" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
       when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
-        .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
+        .thenReturn(Future.successful(PushConnectorFailedResult("some error")))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
@@ -105,7 +105,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
       when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
-        .thenReturn(Future.successful(PushConnectorFailedResult(new IllegalArgumentException())))
+        .thenReturn(Future.successful(PushConnectorFailedResult("Some Error")))
 
       val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
