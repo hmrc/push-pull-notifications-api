@@ -21,6 +21,7 @@ import java.util.UUID
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
 import org.mockito.captor.{ArgCaptor, Captor}
+import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
@@ -55,7 +56,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(Some(boxId)))
 
-    def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]) =
+    def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]): OngoingStubbing[Future[Option[Box]]] =
      when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(optionalBox))
 
     when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext])).thenReturn(Future.successful(None))
@@ -133,7 +134,21 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
           val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
           result.isInstanceOf[CallbackUrlUpdated] shouldBe true
+         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
        }
+
+      "return CallbackUrlUpdated when callbackUrl is empty and dont call callBackUrl in connector" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(box)))
+
+        val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "")
+
+        val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
+        verifyNoInteractions(mockConnector)
+
+        result.isInstanceOf[CallbackUrlUpdated] shouldBe true
+      }
 
       "return UnableToUpdateCallbackUrl when update of box with callback fails" in new Setup {
          when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
