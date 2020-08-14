@@ -67,6 +67,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     } recover recovery
   }
 
+ @deprecated("this should not be called use updateCallbackUrl instead", since="0.88.x")
   def updateSubscriber(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateSubscriberRequest] { updateSubscriberRequest =>
       boxService.updateSubscriber(boxId, updateSubscriberRequest) map {
@@ -77,13 +78,13 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     }
   }
 
-  def updateCallbackUrl(boxId: BoxId): Action[JsValue] = 
+  def updateCallbackUrl(boxId: BoxId): Action[JsValue] =
     (Action andThen
       validateUserAgentHeaderAction)
       .async(playBodyParsers.json) { implicit request =>
     withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
       if (addCallbackUrlRequest.isInvalid()) {
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId and callbackUrl properties are both required")))
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId is required")))
       } else {
         boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
           case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))

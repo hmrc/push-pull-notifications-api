@@ -8,8 +8,8 @@ import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNSUPPORTED_MEDIA_TYPE, UNAUTHORIZED}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PushSubscriber, UpdateCallbackUrlResponse}
+import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec}
@@ -244,6 +244,14 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
          |}
          |""".stripMargin
 
+    def updateCallbackUrlRequestJsonNoCallBack(boxClientId: String): String =
+      s"""
+         |{
+         | "clientId": "$boxClientId",
+         | "callbackUrl": ""
+         |}
+         |""".stripMargin
+
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
       primeGatewayServiceValidateCallBack(OK)
 
@@ -257,6 +265,20 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
       val updatedBox = await(repo.findByBoxId(createdBox.boxId))
       updatedBox.get.subscriber.get.asInstanceOf[PushSubscriber].callBackUrl shouldBe callbackUrl
+    }
+
+    "return 200 with {successful:true} and update box successfully when Callback Url is empty" in {
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJsonNoCallBack(clientId), validHeaders)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe true
+
+      val updatedBox = await(repo.findByBoxId(createdBox.boxId))
+      updatedBox.get.subscriber.get.asInstanceOf[PullSubscriber].callBackUrl.isEmpty shouldBe true
     }
 
     "return 401 when useragent header is missing" in {
