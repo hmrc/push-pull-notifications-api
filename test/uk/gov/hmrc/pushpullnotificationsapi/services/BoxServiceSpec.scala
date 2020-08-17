@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
+import org.mockito.Mockito.{verify, verifyNoInteractions, verifyNoMoreInteractions, when}
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
@@ -27,19 +27,19 @@ import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
-  val mockRepository: BoxRepository = mock[BoxRepository]
-  val mockConnector: PushConnector = mock[PushConnector]
   private val boxIdUUID = UUID.randomUUID()
   private val boxId = BoxId(boxIdUUID)
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)
+  private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+  private val client: Client = Client(clientId, Seq(clientSecret))
   private val boxName: String = "boxName"
   val endpoint = "/iam/a/callbackurl"
   def updateSubscribersRequestWithId(subtype: SubscriptionType): UpdateSubscriberRequest =
@@ -49,8 +49,12 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
     UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = API_PUSH_SUBSCRIBER))
 
   trait Setup {
-    reset(mockRepository, mockConnector)
-    val objInTest = new BoxService(mockRepository, mockConnector)
+    val mockRepository: BoxRepository = mock[BoxRepository]
+    val mockConnector: PushConnector = mock[PushConnector]
+    val mockClientRepository: ClientRepository = mock[ClientRepository]
+    val mockClientSecretGenerator: ClientSecretGenerator = mock[ClientSecretGenerator]
+
+    val objInTest = new BoxService(mockRepository, mockConnector, mockClientRepository, mockClientSecretGenerator)
     val box: Box = Box(boxId, boxName, BoxCreator(clientId))
     val argumentCaptor: Captor[Box] = ArgCaptor[Box]
 
@@ -60,7 +64,6 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
      when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(optionalBox))
 
     when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext])).thenReturn(Future.successful(None))
-
   }
 
   "BoxService" when {
@@ -68,11 +71,32 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
     "createBox" should {
 
       "return Created when box repo returns true" in new Setup {
-        await(objInTest.createBox(boxId, clientId, boxName))
+        when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
 
+        await(objInTest.createBox(boxId, clientId, boxName))
 
         verify(mockRepository).createBox(argumentCaptor.capture)(any[ExecutionContext])
         validateBox(argumentCaptor.value)
+      }
+
+      "not insert a new client into the client repository when one already exists" in new Setup {
+        when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
+
+        await(objInTest.createBox(boxId, clientId, boxName))
+
+        verify(mockClientRepository).findByClientId(clientId)
+        verifyNoMoreInteractions(mockClientRepository)
+      }
+
+      "insert a new client into the client repository when none already exist" in new Setup {
+        when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(None))
+        when(mockClientRepository.insertClient(client)).thenReturn(Future.successful(client))
+        when(mockClientSecretGenerator.generate).thenReturn(clientSecret)
+
+        await(objInTest.createBox(boxId, clientId, boxName))
+
+        verify(mockClientRepository).findByClientId(clientId)
+        verify(mockClientRepository).insertClient(client)
       }
     }
 
