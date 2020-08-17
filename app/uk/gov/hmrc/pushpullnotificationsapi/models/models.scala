@@ -59,3 +59,6 @@ case class PullSubscriber(callBackUrl: String, // Remove callbackUrl
 }
 
 case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscriber: Option[Subscriber] = None) // Default to PullSubscriber?
+
+case class Client(id: ClientId, secrets: Seq[ClientSecret])
+case class ClientSecret(value: String)

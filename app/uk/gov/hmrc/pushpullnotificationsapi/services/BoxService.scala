@@ -19,28 +19,36 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
 
+import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class BoxService @Inject()(repository: BoxRepository, pushConnector: PushConnector) {
+class BoxService @Inject()(repository: BoxRepository,
+                           pushConnector: PushConnector,
+                           clientRepository: ClientRepository,
+                           clientSecretGenerator: ClientSecretGenerator) {
 
   def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
                (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
-    repository.createBox(Box(boxId, boxName, BoxCreator(clientId))) flatMap {
-      case Some(id) => Future.successful(BoxCreatedResult(id))
-      case None => repository.getBoxByNameAndClientId(boxName, clientId)
-        .map(_.headOption) map {
-        case Some(x) => BoxRetrievedResult(x.boxId)
-        case _ =>
-          Logger.info(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")
-          BoxCreateFailedResult(s"Box with name :$boxName already exists for this clientId but unable to retrieve it")
-      }
-    }
 
+    for {
+      client: Option[Client] <- clientRepository.findByClientId(clientId)
+      _ <- client.fold(clientRepository.insertClient(Client(clientId, Seq(clientSecretGenerator.generate))))(successful)
+      boxId: Option[BoxId] <- repository.createBox(Box(boxId, boxName, BoxCreator(clientId)))
+      boxCreateResult: BoxCreateResult <- boxId match {
+        case Some(id) => successful(BoxCreatedResult(id))
+        case None => repository.getBoxByNameAndClientId(boxName, clientId) map {
+          case Some(x) => BoxRetrievedResult(x.boxId)
+          case _ =>
+            Logger.info(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")
+            BoxCreateFailedResult(s"Box with name :$boxName already exists for this clientId but unable to retrieve it")
+        }
+      }
+    } yield boxCreateResult
   }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
@@ -62,8 +70,8 @@ class BoxService @Inject()(repository: BoxRepository, pushConnector: PushConnect
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
       case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) validateCallBack(boxId, request)
-      else Future.successful(UpdateCallbackUrlUnauthorisedResult())
-      case None => Future.successful(BoxIdNotFound())
+      else successful(UpdateCallbackUrlUnauthorisedResult())
+      case None => successful(BoxIdNotFound())
     }
 
   }
@@ -77,7 +85,7 @@ class BoxService @Inject()(repository: BoxRepository, pushConnector: PushConnect
         }
         case result: PushConnectorFailedResult => {
           Logger.info("Callback validation failed for boxId:${boxId.value}")
-          Future.successful(CallbackValidationFailed(result.errorMessage))
+          successful(CallbackValidationFailed(result.errorMessage))
         }
       }
     } else {

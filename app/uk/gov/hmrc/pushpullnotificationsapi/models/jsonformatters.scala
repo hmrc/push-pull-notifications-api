@@ -36,6 +36,8 @@ object ReactiveMongoFormatters {
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
+  implicit val clientSecretFormats: OFormat[ClientSecret] = Json.format[ClientSecret]
+  implicit val clientFormats: OFormat[Client] = Json.format[Client]
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
   implicit val retryableNotificationFormat: OFormat[RetryableNotification] = Json.format[RetryableNotification]
