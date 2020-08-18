@@ -169,11 +169,4 @@ class NotificationsController @Inject()(appConfig: AppConfig,
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }
-
-  private def recovery: PartialFunction[Throwable, Result] = {
-    case NonFatal(e) =>
-      Logger.error("An unexpected error occurred:", e)
-      InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, e.getMessage))
-  }
-
 }
