@@ -17,13 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
-import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton

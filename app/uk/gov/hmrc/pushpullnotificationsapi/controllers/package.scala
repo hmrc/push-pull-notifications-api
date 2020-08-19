@@ -17,11 +17,8 @@
 package uk.gov.hmrc.pushpullnotificationsapi
 
 import _root_.play.api.Logger
-import _root_.play.api.libs.json.Json.toJson
-import _root_.play.api.libs.json._
 import _root_.play.api.mvc.Result
 import _root_.play.api.mvc.Results._
-import uk.gov.hmrc.http.{ForbiddenException, UnauthorizedException}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 import scala.util.control.NonFatal

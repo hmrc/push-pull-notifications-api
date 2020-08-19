@@ -17,4 +17,4 @@ PUT       /box/:boxId/notifications/acknowledge  uk.gov.hmrc.pushpullnotificatio
 
 # Client
 
-GET      /client/:clientId/secret       uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
+GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)

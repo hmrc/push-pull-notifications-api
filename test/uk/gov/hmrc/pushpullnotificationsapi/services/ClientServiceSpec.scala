@@ -19,18 +19,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{verify, verifyNoInteractions, verifyNoMoreInteractions, when}
-import org.mockito.captor.{ArgCaptor, Captor}
-import org.mockito.stubbing.OngoingStubbing
+import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class ClientServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 

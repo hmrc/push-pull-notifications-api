@@ -16,30 +16,28 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
+import java.util.UUID.randomUUID
 
 import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
+import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json.toJson
 import play.api.mvc.Result
-import play.api.test.Helpers.{BAD_REQUEST, route, _}
-import play.api.test.{FakeRequest, Helpers}
+import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
-import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.services.{BoxService, ClientService}
+import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
@@ -49,19 +47,17 @@ class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
   val mockClientService: ClientService = mock[ClientService]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
-
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[ClientService].to(mockClientService))
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
 
   override def beforeEach(): Unit = {
-    reset(mockClientService)
-    reset(mockAppConfig)
+    reset(mockClientService, mockAppConfig)
   }
 
-  val authToken = "iampushpullapi"
-  private def setUpAppConfig( authHeaderValue: Option[String] = None): Unit = {
+  val authToken = randomUUID.toString
+  private def setUpAppConfig(authHeaderValue: Option[String] = None): Unit = {
     authHeaderValue match {
       case Some(value) =>
         when(mockAppConfig.authorizationToken).thenReturn(value)
@@ -70,20 +66,46 @@ class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
     }
   }
 
-  val clientIdStr: String = UUID.randomUUID().toString
+  private def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    route(app, fakeRequest).get
+  }
+
+  val clientIdStr: String = randomUUID.toString
   val clientId: ClientId = ClientId(clientIdStr)
+  val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
 
     "getClientSecrets" should {
-      "return 201 and boxId when box successfully created" in {
-        setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
-        val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
-        status(result) should be(CREATED)
-        val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
-        jsonBodyOf(result) should be(Json.parse(expectedBodyStr))
+      "return 200 and the array of secrets for the requested client" in {
+        setUpAppConfig(Some(authToken))
+        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(Some(Seq(clientSecret))))
 
-        verify(mockBoxService).createBox(any[BoxId], eqTo(clientId), eqTo(boxName))(any[ExecutionContext])
+        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken)))
+
+        status(result) shouldBe OK
+        jsonBodyOf(result) shouldBe toJson(Seq(clientSecret))
+      }
+
+      "return 404 when there is no matching client for the given client ID" in {
+        setUpAppConfig(Some(authToken))
+        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+
+        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken)))
+
+        status(result) shouldBe NOT_FOUND
+        (jsonBodyOf(result) \ "code").as[String] shouldBe "CLIENT_NOT_FOUND"
+        (jsonBodyOf(result) \ "message").as[String] shouldBe "Client not found"
+      }
+
+      "return 403 when the authorization header does not match the token from the app config" in {
+        setUpAppConfig(Some(authToken))
+        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+
+        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken")))
+
+        status(result) shouldBe FORBIDDEN
+        (jsonBodyOf(result) \ "code").as[String] shouldBe "FORBIDDEN"
+        (jsonBodyOf(result) \ "message").as[String] shouldBe "Authorisation failed"
       }
     }
 }
