@@ -97,12 +97,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     }
   }
 
-  private def recovery: PartialFunction[Throwable, Result] = {
-    case NonFatal(e) =>
-      Logger.error("An unexpected error occurred:", e)
-      InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
-  }
-
   override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =
     withJson(request.body)(f)
 

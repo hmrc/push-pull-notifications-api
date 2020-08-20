@@ -14,3 +14,7 @@ POST      /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.con
 GET       /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
 
 PUT       /box/:boxId/notifications/acknowledge  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.acknowledgeNotifications(boxId: BoxId)
+
+# Client
+
+GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
