@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import java.util.UUID
+import java.util.UUID.randomUUID
 
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{reset, verify, when}
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.libs.json.Json.toJson
 import play.api.libs.json.Writes
 import play.api.test.Helpers
 import uk.gov.hmrc.http._
@@ -30,8 +31,9 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -44,7 +46,7 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   val outboundUrl = "outboundUrl"
   val outboundUrlAndSendPath = "outboundUrl/notify"
   val outboundUrlAndValidatePath = "outboundUrl/validate-callback"
-  val notificationResponse = NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")
+  val notificationResponse = toJson(NotificationResponse(NotificationId(randomUUID), BoxId(randomUUID), MessageContentType.APPLICATION_JSON, "{}")).toString
   val pushNotification: OutboundNotification = OutboundNotification("someUrl", notificationResponse)
   val validateCallbackRequest = VerifyCallbackUrlRequest("someCallbackUrl")
 

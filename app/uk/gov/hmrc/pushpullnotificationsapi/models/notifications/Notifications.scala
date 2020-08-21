@@ -24,7 +24,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, NotificationResponse, PushSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, PushSubscriber}
 
 import scala.collection.immutable
 
@@ -70,6 +70,6 @@ object Notification {
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
-case class OutboundNotification(destinationUrl: String, payload: NotificationResponse)
+case class OutboundNotification(destinationUrl: String, payload: String)
 
 case class RetryableNotification(notification: Notification, subscriber: PushSubscriber)
