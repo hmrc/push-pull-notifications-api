@@ -78,23 +78,7 @@ object RequestFormatters {
 }
 
 object ConnectorFormatters {
-  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
-  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
-  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
-  implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
-  implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
-    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
-    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
-    .format
-  implicit val boxFormats: OFormat[Box] = Json.format[Box]
-  implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
-  implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
   implicit val updateCallBAckUrlRequestFormatter =Json.format[UpdateCallbackUrlRequest]
 }
