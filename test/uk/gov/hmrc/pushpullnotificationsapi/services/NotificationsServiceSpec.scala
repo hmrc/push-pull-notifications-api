@@ -82,22 +82,21 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "SaveNotification" should {
-    "return NotificationCreateSuccessResult when box exists , push is called with List of subscribers  & notification successfully saved" in new Setup {
+    "return NotificationCreateSuccessResult when box exists , push is called with subscriber & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWIthSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
-      when(mockNotificationsPushService.handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
+      when(mockNotificationsPushService.handlePushNotification(eqTo(BoxObjectWIthSubscribers), any[Notification])(any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future.successful(true))
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId,
         NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(any[ExecutionContext])
-      verify(mockNotificationsPushService).handlePushNotification(eqTo(subscriber), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockNotificationsPushService).handlePushNotification(eqTo(BoxObjectWIthSubscribers), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
       validateNotificationSaved(notificationCaptor)
     }
 
-
-    "return NotificationCreateSuccessResult when box exists, push is called with Empty List &  notification successfully saved" in new Setup {
+    "return NotificationCreateSuccessResult when box exists, push is called with empty subscriber & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWIthNoSubscribers)), boxId)
       primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
 
@@ -106,9 +105,8 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(any[ExecutionContext])
-      verifyNoMoreInteractions(mockNotificationsPushService)
+      verify(mockNotificationsPushService).handlePushNotification(eqTo(BoxObjectWIthNoSubscribers), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
       validateNotificationSaved(notificationCaptor)
-
     }
 
     "return NotificationCreateFailedBoxNotFoundResult when box does not exist" in new Setup {

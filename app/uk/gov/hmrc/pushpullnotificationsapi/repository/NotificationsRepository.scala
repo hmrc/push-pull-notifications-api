@@ -228,7 +228,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
       builder.Project(
         Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
           "message" -> "$message", "status" -> "$status", "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime"),
-        "subscriber" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes.subscriber"), JsNumber(0))))
+        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
       ))
     )
 

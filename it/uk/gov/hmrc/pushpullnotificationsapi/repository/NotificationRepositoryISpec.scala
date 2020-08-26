@@ -150,7 +150,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
   }
 
   "fetchRetryableNotifications" should {
-    "return matching notifications and subscribers" in {
+    "return matching notifications and box" in {
       val expectedNotification1 = createNotificationInDB(status = PENDING)
       val expectedNotification2 = createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(box))
@@ -159,7 +159,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       retryableNotifications should have size 2
       retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2)
-      retryableNotifications.map(_.subscriber) should contain only box.subscriber.get
+      retryableNotifications.map(_.box) should contain only box
     }
 
     "not return notifications that are not pending" in {

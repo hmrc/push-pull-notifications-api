@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -30,7 +30,6 @@ import scala.concurrent.Future
 
 class ClientServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
-
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)
   private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
@@ -38,7 +37,8 @@ class ClientServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   trait Setup {
     val mockClientRepository: ClientRepository = mock[ClientRepository]
-    val objInTest = new ClientService(mockClientRepository)
+    val mockClientSecretGenerator: ClientSecretGenerator = mock[ClientSecretGenerator]
+    val objInTest = new ClientService(mockClientRepository, mockClientSecretGenerator)
   }
 
   "getClientSecrets" should {
@@ -57,6 +57,30 @@ class ClientServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       val clientSecrets: Option[Seq[ClientSecret]] = await(objInTest.getClientSecrets(clientId))
 
       clientSecrets shouldBe None
+    }
+  }
+
+  "findOrCreateClient" should {
+    "not insert a new client into the client repository when one already exists" in new Setup {
+      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
+
+      val result: Client = await(objInTest.findOrCreateClient(clientId))
+
+      result shouldBe client
+      verify(mockClientRepository).findByClientId(clientId)
+      verifyNoMoreInteractions(mockClientRepository)
+    }
+
+    "insert a new client into the client repository when none already exist" in new Setup {
+      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(None))
+      when(mockClientRepository.insertClient(client)).thenReturn(Future.successful(client))
+      when(mockClientSecretGenerator.generate).thenReturn(clientSecret)
+
+      val result: Client = await(objInTest.findOrCreateClient(clientId))
+
+      result shouldBe client
+      verify(mockClientRepository).findByClientId(clientId)
+      verify(mockClientRepository).insertClient(client)
     }
   }
 }

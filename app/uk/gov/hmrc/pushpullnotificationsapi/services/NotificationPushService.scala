@@ -20,22 +20,27 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationPushService @Inject()(connector: PushConnector, notificationsRepository: NotificationsRepository){
+class NotificationPushService @Inject()(connector: PushConnector,
+                                        notificationsRepository: NotificationsRepository,
+                                        clientService: ClientService,
+                                        hmacService: HmacService,
+                                        appConfig: AppConfig){
 
-  def handlePushNotification(subscriber: Subscriber, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    if (isValidPushSubscriber(subscriber)) {
-      sendNotificationToPush(subscriber.asInstanceOf[PushSubscriber], notification) map {
+  def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+    if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
+      sendNotificationToPush(box, notification) map {
         case true =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED)
           true
@@ -44,20 +49,33 @@ class NotificationPushService @Inject()(connector: PushConnector, notificationsR
     } else Future.successful(true)
   }
 
-  private def sendNotificationToPush(subscriber: PushSubscriber, notification: Notification)
+  private def sendNotificationToPush(box: Box, notification: Notification)
                                     (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
-    val outboundNotification = OutboundNotification(subscriber.callBackUrl, notificationAsJsonString)
+    val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
-    connector.send(outboundNotification).map {
-      case _ : PushConnectorSuccessResult => true
-      case error: PushConnectorFailedResult =>
-        Logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
-        false
+    clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>
+      val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
+      val outboundNotification = OutboundNotification(subscriber.callBackUrl,
+        calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
+
+      connector.send(outboundNotification).map {
+        case _ : PushConnectorSuccessResult => true
+        case error: PushConnectorFailedResult =>
+          Logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
+          false
+      }
     }
   }
 
   private def isValidPushSubscriber(subscriber: Subscriber): Boolean =
     subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && (!subscriber.asInstanceOf[PushSubscriber].callBackUrl.isEmpty)
 
+  private def calculateForwardedHeaders(client: Client, notificationAsJsonString: String): List[ForwardedHeader] = {
+    if (appConfig.signPushNotifications) {
+      val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)
+      List(ForwardedHeader("X-Hub-Signature", payloadSignature))
+    } else {
+      List.empty
+    }
+  }
 }

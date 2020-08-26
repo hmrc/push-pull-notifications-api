@@ -43,14 +43,14 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
   "PushConnector send" should {
     "return PushConnectorSuccessResult when OK result and Success true is returned in payload" in new SetUp() {
       primeGatewayServiceWithBody(Status.OK)
-      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
+      val notification: OutboundNotification = OutboundNotification("someDestination", List.empty, notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result shouldBe PushConnectorSuccessResult()
     }
 
     "return PushConnectorFailedResult UnprocessableEntity when OK result and Success false is returned in payload" in new SetUp() {
       primeGatewayServiceWithBody(Status.OK, successfulResult = false)
-      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
+      val notification: OutboundNotification = OutboundNotification("someDestination", List.empty, notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
       val castResult: PushConnectorFailedResult = result.asInstanceOf[PushConnectorFailedResult]
@@ -59,7 +59,7 @@ class PushConnectorISpec extends  UnitSpec with WireMockSupport with  GuiceOneAp
 
     "return PushConnectorFailedResult Notfound when Notfound result" in new SetUp() {
       primeGatewayServicPostNoBody(Status.NOT_FOUND)
-      val notification: OutboundNotification = OutboundNotification("someDestination", notificationResponse)
+      val notification: OutboundNotification = OutboundNotification("someDestination", List.empty, notificationResponse)
       val result: PushConnectorResult = await(objInTest.send(notification))
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
     }
