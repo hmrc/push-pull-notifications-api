@@ -1,6 +1,8 @@
 
 # push-pull-notifications-api
 
+**Push Pull notifications must not be used with any OFFICIAL, OFFICIAL SENSITIVE, SECRET or TOP SECRET information.**
+
 This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) 
 notifications. Notifications are created by other HMRC services.
 
