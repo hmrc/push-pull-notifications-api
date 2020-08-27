@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Singleton
-import javax.xml.bind.DatatypeConverter.parseHexBinary
 
 @Singleton
 class HmacService {
@@ -36,7 +35,7 @@ class HmacService {
    * @return The generated HMAC signature in hexadecimal format
    */
   def sign(key: String, message: String): String = {
-    val secretKey = new SecretKeySpec(parseHexBinary(key), algorithm)
+    val secretKey = new SecretKeySpec(key.getBytes(UTF_8), algorithm)
     val mac = Mac.getInstance(algorithm)
     mac.init(secretKey)
     mac.doFinal(message.getBytes(UTF_8)).map("%02x".format(_)).mkString

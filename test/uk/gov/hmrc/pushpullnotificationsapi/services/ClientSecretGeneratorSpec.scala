@@ -30,14 +30,14 @@ class ClientSecretGeneratorSpec extends UnitSpec with MockitoSugar with Argument
   }
 
   "generate" should {
-    "generate a 40 character secret" in new Setup {
+    "generate a 32 character secret" in new Setup {
       val secret: ClientSecret = underTest.generate
 
-      secret.value should have size 40
+      secret.value should have size 32
     }
 
-    "generate a hexadecimal secret" in new Setup {
-      val hexPattern: Regex = "^[0-9a-f]+$".r
+    "use alphanumeric characters from base-32" in new Setup {
+      val hexPattern: Regex = "^[2-7A-Z]+$".r
 
       val secret: ClientSecret = underTest.generate
 

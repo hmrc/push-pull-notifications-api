@@ -23,25 +23,16 @@ import uk.gov.hmrc.play.test.UnitSpec
 class HmacServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup {
-    val validKey = "abc123"
-    val invalidKey = "an invalid key"
+    val validKey = "the signing key"
     val message = "the message to sign"
     val objInTest = new HmacService()
   }
 
   "sign" should {
-    "returned the hmac signature in hexadecimal format" in new Setup {
+    "return the hmac signature in hexadecimal format" in new Setup {
       val result: String = objInTest.sign(validKey, message)
 
-      result shouldBe "c1fa722760512114c44975c64bac5be90a30b695"
-    }
-
-    "fail when the key is not in hexadecimal format" in new Setup {
-      val exception: IllegalArgumentException = intercept[IllegalArgumentException] {
-        objInTest.sign(invalidKey, message)
-      }
-
-      exception.getMessage shouldBe "contains illegal character for hexBinary: an invalid key"
+      result shouldBe "2c20cd60c8d112cceb1ed7314d8e575314c49c16"
     }
   }
 }
