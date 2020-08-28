@@ -29,15 +29,13 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class BoxService @Inject()(repository: BoxRepository,
                            pushConnector: PushConnector,
-                           clientRepository: ClientRepository,
-                           clientSecretGenerator: ClientSecretGenerator) {
+                           clientService: ClientService) {
 
   def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
                (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
 
     for {
-      client: Option[Client] <- clientRepository.findByClientId(clientId)
-      _ <- client.fold(clientRepository.insertClient(Client(clientId, Seq(clientSecretGenerator.generate))))(successful)
+      _ <- clientService.findOrCreateClient(clientId)
       boxId: Option[BoxId] <- repository.createBox(Box(boxId, boxName, BoxCreator(clientId)))
       boxCreateResult: BoxCreateResult <- boxId match {
         case Some(id) => successful(BoxCreatedResult(id))

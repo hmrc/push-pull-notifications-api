@@ -16,21 +16,23 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.security.SecureRandom
+import org.mockito.ArgumentMatchersSugar
+import org.scalatestplus.mockito.MockitoSugar
+import uk.gov.hmrc.play.test.UnitSpec
 
-import javax.inject.Singleton
-import org.apache.commons.codec.binary.Base32
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
+class HmacServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
-@Singleton
-class ClientSecretGenerator {
+  trait Setup {
+    val validKey = "the signing key"
+    val message = "the message to sign"
+    val objInTest = new HmacService()
+  }
 
-  /**
-   * Generates a client secret with 32 random characters (160 bits)
-   */
-  def generate: ClientSecret = {
-    val randomBytes: Array[Byte] = new Array[Byte](20) // scalastyle:off magic.number
-    new SecureRandom().nextBytes(randomBytes)
-    ClientSecret(new Base32().encodeAsString(randomBytes))
+  "sign" should {
+    "return the hmac signature in hexadecimal format" in new Setup {
+      val result: String = objInTest.sign(validKey, message)
+
+      result shouldBe "2c20cd60c8d112cceb1ed7314d8e575314c49c16"
+    }
   }
 }

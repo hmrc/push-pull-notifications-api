@@ -24,21 +24,25 @@ import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{notifications, _}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 
 class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar with  BeforeAndAfterEach {
 
   private val mockConnector = mock[PushConnector]
   private val mockNotificationsRepo = mock[NotificationsRepository]
+  private val mockClientService = mock[ClientService]
+  private val mockHmacService = mock[HmacService]
+  private val mockAppConfig = mock[AppConfig]
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def beforeEach(): Unit = {
@@ -47,11 +51,15 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
   }
 
   trait Setup {
-     val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo)
+     val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService, mockAppConfig)
     }
 
-
   "handlePushNotification" should {
+    val boxId = BoxId(UUID.randomUUID)
+    val boxName: String = "boxName"
+    val clientId: ClientId = ClientId(UUID.randomUUID.toString)
+    val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+    val client: Client = Client(clientId, Seq(clientSecret))
 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {
       sentOutboundNotification.destinationUrl shouldBe subscriber.callBackUrl
@@ -67,9 +75,11 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(Future.successful(PushConnectorSuccessResult()))
+      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
+      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
-      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
       val notification: Notification =
         Notification(
           NotificationId(UUID.randomUUID()),
@@ -78,25 +88,68 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
           """{ "foo": "bar" }""",
           NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
       result shouldBe true
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
     }
 
+    "put the notification signature in the forwarded headers when configured to sign the notifications" in new Setup {
+      when(mockAppConfig.signPushNotifications).thenReturn(true)
+      val expectedSignature = "the signature"
+      when(mockHmacService.sign(any, any)).thenReturn(expectedSignature)
+      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
+      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
+      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val notification: Notification =
+        Notification(
+          NotificationId(UUID.randomUUID()),
+          BoxId(UUID.randomUUID()),
+          MessageContentType.APPLICATION_JSON,
+          """{ "foo": "bar" }""",
+          NotificationStatus.PENDING)
+
+      await(serviceToTest.handlePushNotification(box, notification))
+
+      outboundNotificationCaptor.getValue.forwardedHeaders should contain (ForwardedHeader("X-Hub-Signature", expectedSignature))
+    }
+
+    "not put the notification signature in the forwarded headers when configured to not sign the notifications" in new Setup {
+      when(mockAppConfig.signPushNotifications).thenReturn(false)
+      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
+      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
+      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val notification: Notification =
+        Notification(
+          NotificationId(UUID.randomUUID()),
+          BoxId(UUID.randomUUID()),
+          MessageContentType.APPLICATION_JSON,
+          """{ "foo": "bar" }""",
+          NotificationStatus.PENDING)
+
+      await(serviceToTest.handlePushNotification(box, notification))
+
+      outboundNotificationCaptor.getValue.forwardedHeaders shouldBe empty
+    }
+
     "return false when connector returns failed result due to exception" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
       when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
-        .thenReturn(Future.successful(PushConnectorFailedResult("some error")))
+        .thenReturn(successful(PushConnectorFailedResult("some error")))
 
-      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
       result shouldBe false
@@ -105,15 +158,16 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
       when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
-        .thenReturn(Future.successful(PushConnectorFailedResult("Some Error")))
+        .thenReturn(successful(PushConnectorFailedResult("Some Error")))
 
-      val subscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.FAILED)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
       result shouldBe false
@@ -121,13 +175,14 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     }
 
     "return true when subscriber has no callback url" in new Setup {
-      val subscriber = PushSubscriber("", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       result shouldBe true
       verifyZeroInteractions(mockConnector)
@@ -135,13 +190,14 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     }
 
     "return true when there are no push subscribers" in new Setup {
-      val subscriber = PullSubscriber("", DateTime.now)
+      val subscriber: PullSubscriber = PullSubscriber("", DateTime.now)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
         "{}", NotificationStatus.PENDING)
 
-      val result: Boolean = await(serviceToTest.handlePushNotification(subscriber, notification))
+      val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       result shouldBe true
       verifyZeroInteractions(mockConnector)

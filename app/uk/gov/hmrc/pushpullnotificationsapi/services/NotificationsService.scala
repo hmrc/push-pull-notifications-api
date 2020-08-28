@@ -74,7 +74,8 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
         case Some(box) =>
           val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
-            case Some(_) => if(box.subscriber.isDefined) pushService.handlePushNotification(box.subscriber.get, notification)
+            case Some(_) =>
+              pushService.handlePushNotification(box, notification)
               NotificationCreateSuccessResult()
             case None => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")
           }

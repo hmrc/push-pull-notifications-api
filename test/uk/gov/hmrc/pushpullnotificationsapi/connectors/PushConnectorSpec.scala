@@ -33,7 +33,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, MessageContentType, NotificationId, OutboundNotification}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -47,7 +47,8 @@ class PushConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEa
   val outboundUrlAndSendPath = "outboundUrl/notify"
   val outboundUrlAndValidatePath = "outboundUrl/validate-callback"
   val notificationResponse = toJson(NotificationResponse(NotificationId(randomUUID), BoxId(randomUUID), MessageContentType.APPLICATION_JSON, "{}")).toString
-  val pushNotification: OutboundNotification = OutboundNotification("someUrl", notificationResponse)
+  val headers = List(ForwardedHeader("header1", "value1"))
+  val pushNotification: OutboundNotification = OutboundNotification("someUrl", headers, notificationResponse)
   val validateCallbackRequest = VerifyCallbackUrlRequest("someCallbackUrl")
 
   override def beforeEach(): Unit = {

@@ -16,21 +16,28 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.security.SecureRandom
+import java.nio.charset.StandardCharsets.UTF_8
 
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import javax.inject.Singleton
-import org.apache.commons.codec.binary.Base32
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
 
 @Singleton
-class ClientSecretGenerator {
+class HmacService {
+
+  private val algorithm = "HmacSHA1"
 
   /**
-   * Generates a client secret with 32 random characters (160 bits)
+   * Generates an HMAC-SHA1 signature for the provided message using the provided key.
+   *
+   * @param key The signing key in hexadecimal format
+   * @param message The message to be signed
+   * @return The generated HMAC signature in hexadecimal format
    */
-  def generate: ClientSecret = {
-    val randomBytes: Array[Byte] = new Array[Byte](20) // scalastyle:off magic.number
-    new SecureRandom().nextBytes(randomBytes)
-    ClientSecret(new Base32().encodeAsString(randomBytes))
+  def sign(key: String, message: String): String = {
+    val secretKey = new SecretKeySpec(key.getBytes(UTF_8), algorithm)
+    val mac = Mac.getInstance(algorithm)
+    mac.init(secretKey)
+    mac.doFinal(message.getBytes(UTF_8)).map("%02x".format(_)).mkString
   }
 }

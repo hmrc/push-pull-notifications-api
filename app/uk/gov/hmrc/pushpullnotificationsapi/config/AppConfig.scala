@@ -39,5 +39,5 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val apiStatus = config.get[String]("apiStatus")
   val authorizationToken: String = config.get[String]("authorizationKey")
 
-
+  val signPushNotifications: Boolean = config.getOptional[Boolean]("signPushNotifications").getOrElse(false)
 }

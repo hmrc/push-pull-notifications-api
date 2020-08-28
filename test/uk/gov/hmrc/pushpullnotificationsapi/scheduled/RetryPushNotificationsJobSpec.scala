@@ -38,7 +38,7 @@ import uk.gov.hmrc.mongo.{MongoConnector, MongoSpecSupport}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, PushSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, ClientId, PushSubscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
@@ -82,26 +82,30 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
 
   "RetryPushNotificationsJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
+    val boxId = BoxId(UUID.randomUUID)
+    val boxName: String = "boxName"
+    val clientId: ClientId = ClientId(UUID.randomUUID.toString)
     val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", now)
+    val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
 
     "retry pushing the notifications" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
-      val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationPushService.handlePushNotification(any(), any())(any(), any())).thenReturn(successful(true))
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, times(1)).handlePushNotification(meq(subscriber), meq(notification))(any(), any())
+      verify(mockNotificationPushService, times(1)).handlePushNotification(meq(box), meq(notification))(any(), any())
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(5))
-      val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateRetryAfterDateTime(NotificationId(any[UUID]), any())).thenReturn(successful(notification))
@@ -116,7 +120,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
     "set notification status to failed when it fails to push and the notification is too old for further retries" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
-      val retryableNotification: RetryableNotification = RetryableNotification(notification, subscriber)
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateStatus(notification.notificationId, FAILED)).thenReturn(successful(notification))

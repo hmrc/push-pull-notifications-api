@@ -78,6 +78,7 @@ object RequestFormatters {
 }
 
 object ConnectorFormatters {
+  implicit val forwardedHeadersFormatter = Json.format[ForwardedHeader]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
   implicit val updateCallBAckUrlRequestFormatter =Json.format[UpdateCallbackUrlRequest]

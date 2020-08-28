@@ -66,7 +66,7 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
 
   private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: DateTime)(implicit ec: ExecutionContext): Future[Unit] = {
     notificationPushService
-      .handlePushNotification(retryableNotification.subscriber, retryableNotification.notification)
+      .handlePushNotification(retryableNotification.box, retryableNotification.notification)
       .flatMap(success => if (success) successful(()) else updateFailedNotification(retryableNotification.notification, retryAfterDateTime))
       .recover {
         case NonFatal(e) =>
