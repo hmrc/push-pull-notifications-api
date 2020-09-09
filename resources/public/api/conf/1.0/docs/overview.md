@@ -34,6 +34,35 @@ If your service responds with a different HTTP status code, the request is retri
 
 If after a few hours, an HTTP status code 200 has not been received, the notification status is updated to `FAILED`.
 
+## Push Secret
+
+When you subscribe to an API that sends Push notifications, we will generate a push secret you can use to validate the payload signature and confirm notifications come from HMRC.
+
+### Validate the payload signature
+
+Using the push secret, HMRC will generate a signature of the payload for every notification sent to the callback URL. 
+
+That signature will be available in the HTTP header called `X-Hub-Signature`.
+
+When receiving a notification, you should compute the signature of the payload using the push secret and verify that it matches the value in the X-Hub-Signature header.
+
+The signature is calculated using HMAC-SHA1 and converted to hexadecimal format. For example (example in Scala)
+
+```
+import java.nio.charset.StandardCharsets.UTF_8
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+def sign(pushSecret: String, payload: String): String = {
+ val secretKey = new SecretKeySpec(pushSecret.getBytes(UTF_8), "HmacSHA1")
+ val mac = Mac.getInstance("HmacSHA1")
+ mac.init(secretKey)
+ mac.doFinal(payload.getBytes(UTF_8)).map("%02x".format(_)).mkString
+}
+```
+
+Using `sample key` as a pushSecret and `{"sample": "payload"}` as a payload, will return the signature `c6cdd3e30021fe66d88d37088fed2566453eb7fb`.
+
 ## Pull notifications
 
 Regardless of whether a Push/Callback URL is set up, notifications can be retrieved by polling
