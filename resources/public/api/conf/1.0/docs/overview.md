@@ -48,7 +48,7 @@ When receiving a notification, you should compute the signature of the payload u
 
 The signature is calculated using HMAC-SHA1 and converted to hexadecimal format. For example (example in Scala)
 
-```
+<pre>
 import java.nio.charset.StandardCharsets.UTF_8
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -59,7 +59,7 @@ def sign(pushSecret: String, payload: String): String = {
  mac.init(secretKey)
  mac.doFinal(payload.getBytes(UTF_8)).map("%02x".format(_)).mkString
 }
-```
+</pre>
 
 Using `sample key` as a pushSecret and `{"sample": "payload"}` as a payload, will return the signature `c6cdd3e30021fe66d88d37088fed2566453eb7fb`.
 
