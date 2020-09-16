@@ -16,6 +16,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +52,6 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
     await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
   }
 
-  private val oneHourAgo = now(UTC).minusHours(1)
   private val boxIdStr = UUID.randomUUID().toString
   private val boxId = BoxId(UUID.fromString(boxIdStr))
   val box: Box = Box(boxName = UUID.randomUUID().toString,
@@ -87,6 +87,18 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
+    }
+
+    "encrypt the notification message in the database" in {
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
+        messageContentType = APPLICATION_JSON,
+        message = "{\"someJsone\": \"someValue\"}",
+        status = PENDING)
+
+      await(repo.saveNotification(notification))
+
+      val notifications: List[DbNotification] = await(repo.findAll())
+      notifications.head.encryptedMessage shouldBe Some("7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE=")
     }
 
     "not save duplicate Notifications" in {
@@ -146,6 +158,20 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
       result.status shouldBe ACKNOWLEDGED
+    }
+  }
+
+  "encryptNotificationMessages" should {
+    "encrypt the existing notification messages" in {
+      val firstNotification = DbNotification(NotificationId(UUID.randomUUID()), boxId, APPLICATION_JSON, message = """{"someJson": "value 1"}""", None)
+      val secondNotification = DbNotification(NotificationId(UUID.randomUUID()), boxId, APPLICATION_JSON, message = """{"someJson": "value 2"}""", None)
+      await(repo.insert(firstNotification))
+      await(repo.insert(secondNotification))
+      await(repo.findAll()).map(_.encryptedMessage) should contain only None
+
+      await(repo.encryptNotificationMessages(2))
+
+      await(repo.findAll()).map(_.encryptedMessage) should contain only (Some("Cc2mcjCDA0ML76mCGqp+h43rVoqTWUxkfybTXEvPIvE="), Some("Cc2mcjCDA0ML76mCGqp+h7NeFqrSclOvBQDuTc6dTCY="))
     }
   }
 
