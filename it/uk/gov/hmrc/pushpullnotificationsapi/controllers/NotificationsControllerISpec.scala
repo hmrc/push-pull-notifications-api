@@ -124,7 +124,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
-    var notifications: mutable.MutableList[String] = mutable.MutableList[String]()
+    val notifications: mutable.MutableList[String] = mutable.MutableList[String]()
     for (_ <- 0 until numberToCreate) {
       val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
       result.status shouldBe CREATED

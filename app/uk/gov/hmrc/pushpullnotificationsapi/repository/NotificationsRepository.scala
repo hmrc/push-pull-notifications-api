@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
@@ -32,6 +32,7 @@ import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
+import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, PlainText}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -39,17 +40,21 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUB
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, PENDING}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbNotificationFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent)
+class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent, crypto: CompositeSymmetricCrypto)
                                        (implicit ec: ExecutionContext, mat: Materializer)
-  extends ReactiveRepository[Notification, BSONObjectID](
+  extends ReactiveRepository[DbNotification, BSONObjectID](
     "notifications",
     mongoComponent.mongoConnector.db,
-    ReactiveMongoFormatters.notificationsFormats,
+    dbNotificationFormatter,
     ReactiveMongoFormats.objectIdFormats) with ReactiveMongoFormats {
 
   private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
@@ -133,17 +138,18 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
                            numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
-    val query =
+    val query: JsObject =
       Json.obj(f"$$and" -> (
         boxIdQuery(boxId) ++
           statusQuery(status) ++
           Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
 
     collection
-      .find(query, None)
+      .find(query, Option.empty[DbNotification])
       .sort(Json.obj("createdDateTime" -> 1))
-      .cursor[Notification](ReadPreference.primaryPreferred)
-      .collect(maxDocs = numberOfNotificationsToReturn, FailOnError[List[Notification]]())
+      .cursor[DbNotification](ReadPreference.primaryPreferred)
+      .collect(maxDocs = numberOfNotificationsToReturn, FailOnError[List[DbNotification]]())
+      .map(_.map(toNotification(_, crypto)))
   }
 
   val empty: JsObject = Json.obj()
@@ -174,7 +180,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
 
-    insert(notification).map(_ => Some(notification.notificationId)).recoverWith {
+    insert(fromNotification(notification, crypto)).map(_ => Some(notification.notificationId)).recoverWith {
       case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
         Future.successful(None)
     }
@@ -209,13 +215,26 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("retryAfterDateTime" -> newRetryAfterDateTime)))
   }
 
+  @deprecated("delete after scheduled job encryts the existing notification messages")
+  def encryptNotificationMessages(parallelism: Int): Future[Unit] = {
+    def updateNotificationWithEncryption(notification: Notification): Future[Unit] = {
+      val encryptedMessage = crypto.encrypt(PlainText(notification.message)).value
+      updateNotification(notification.notificationId, Json.obj("$set" -> Json.obj("encryptedMessage" -> encryptedMessage))).map(_ => ())
+    }
+
+    collection.find(Json.obj(), Option.empty[DbNotification]).cursor[DbNotification]()
+      .documentSource()
+      .map(toNotification(_, crypto))
+      .runWith(Sink.foreachAsync(parallelism)(updateNotificationWithEncryption)).map(_ => ())
+  }
+
   private def updateNotification(notificationId: NotificationId, updateStatement: JsObject): Future[Notification] =
-    findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map {
-      _.result[Notification].head
+    findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map { updated =>
+      toNotification(updated.result[DbNotification].head, crypto)
     }
 
   def fetchRetryableNotifications: Source[RetryableNotification, Future[Any]] = {
-    import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters.retryableNotificationFormat
+    import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbRetryableNotificationFormatter
 
     val builder = collection.BatchCommands.AggregationFramework
     val pipeline = List(
@@ -227,11 +246,14 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
         Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
       builder.Project(
         Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-          "message" -> "$message", "status" -> "$status", "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime"),
+          "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
+          "retryAfterDateTime" -> "$retryAfterDateTime"),
         "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
       ))
     )
 
-    collection.aggregateWith[RetryableNotification]()(_ => (pipeline.head, pipeline.tail)).documentSource()
+    collection.aggregateWith[DbRetryableNotification]()(_ => (pipeline.head, pipeline.tail))
+      .documentSource()
+      .map(toRetryableNotification(_, crypto))
   }
 }

@@ -18,30 +18,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import org.joda.time.DateTime
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-
-
-object ReactiveMongoFormatters {
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
-  implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
-  implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
-    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
-    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
-    .format
-  implicit val boxFormats: OFormat[Box] = Json.format[Box]
-  implicit val clientSecretFormats: OFormat[ClientSecret] = Json.format[ClientSecret]
-  implicit val clientFormats: OFormat[Client] = Json.format[Client]
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val notificationsFormats: OFormat[Notification] =Json.format[Notification]
-  implicit val retryableNotificationFormat: OFormat[RetryableNotification] = Json.format[RetryableNotification]
-}
 
 object ResponseFormatters{
   val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"

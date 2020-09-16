@@ -25,8 +25,8 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.{createAscendingIndex, createSingleFieldAscendingIndex}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,7 +36,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[Box, BSONObjectID](
     "box",
     mongoComponent.mongoConnector.db,
-    ReactiveMongoFormatters.boxFormats,
+    boxFormats,
     ReactiveMongoFormats.objectIdFormats) {
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
@@ -75,4 +75,3 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       _.result[Box]
     }
 }
-

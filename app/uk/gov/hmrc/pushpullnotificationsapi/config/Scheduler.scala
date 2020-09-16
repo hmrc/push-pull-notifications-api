@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
 import uk.gov.hmrc.play.scheduling.{RunningOfScheduledJobs, ScheduledJob}
-import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJob
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.{EncryptFieldsJob, RetryPushNotificationsJob}
 
 import scala.concurrent.ExecutionContext
 
@@ -33,8 +33,9 @@ class SchedulerModule extends AbstractModule {
 
 @Singleton
 class Scheduler @Inject()(retryPushNotificationsJob: RetryPushNotificationsJob,
+                          encryptFieldsJob: EncryptFieldsJob,
                           override val applicationLifecycle: ApplicationLifecycle,
                           override val application: Application)
                          (implicit val ec: ExecutionContext) extends RunningOfScheduledJobs {
-  override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob).filter(_.isEnabled)
+  override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob, encryptFieldsJob).filter(_.isEnabled)
 }

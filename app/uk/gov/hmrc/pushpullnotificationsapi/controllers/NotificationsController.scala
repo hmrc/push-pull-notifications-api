@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
@@ -34,7 +33,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
