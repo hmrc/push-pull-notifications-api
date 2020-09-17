@@ -34,6 +34,23 @@ If your service responds with a different HTTP status code, the request is retri
 
 If after a few hours, an HTTP status code 200 has not been received, the notification status is updated to `FAILED`.
 
+### Validating the callback URL
+
+When you save a callback URL to receive push notifications from an API, the system will try to verify it by sending a GET request to the callback URL with the query parameter “challenge”.
+
+You should return a 200 response with the challenge in the JSON response body. For example: 
+
+<pre>
+{
+  “challenge”: “challenge_from_query_parameter”
+}
+</pre>
+
+If we don’t receive a successful response with a matching challenge within 20 seconds, the request to save the callback URL will fail.
+
+You will see an error message to inform you that the callback URL is invalid.
+ 
+
 ## Push Secret
 
 When you subscribe to an API that sends Push notifications, we will generate a push secret you can use to validate the payload signature and confirm notifications come from HMRC.
