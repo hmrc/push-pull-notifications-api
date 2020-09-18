@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
@@ -32,7 +32,7 @@ import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, PlainText}
+import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -213,19 +213,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
     updateNotification(notificationId, Json.obj("$set" -> Json.obj("retryAfterDateTime" -> newRetryAfterDateTime)))
-  }
-
-  @deprecated("delete after scheduled job encryts the existing notification messages")
-  def encryptNotificationMessages(parallelism: Int): Future[Unit] = {
-    def updateNotificationWithEncryption(notification: Notification): Future[Unit] = {
-      val encryptedMessage = crypto.encrypt(PlainText(notification.message)).value
-      updateNotification(notification.notificationId, Json.obj("$set" -> Json.obj("encryptedMessage" -> encryptedMessage))).map(_ => ())
-    }
-
-    collection.find(Json.obj(), Option.empty[DbNotification]).cursor[DbNotification]()
-      .documentSource()
-      .map(toNotification(_, crypto))
-      .runWith(Sink.foreachAsync(parallelism)(updateNotificationWithEncryption)).map(_ => ())
   }
 
   private def updateNotification(notificationId: NotificationId, updateStatement: JsObject): Future[Notification] =

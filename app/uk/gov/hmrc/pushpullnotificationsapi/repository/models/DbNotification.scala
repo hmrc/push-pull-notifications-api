@@ -26,8 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fr
 private[repository] case class DbNotification(notificationId: NotificationId,
                                               boxId: BoxId,
                                               messageContentType: MessageContentType,
-                                              message: String,
-                                              encryptedMessage: Option[String],
+                                              encryptedMessage: String,
                                               status: NotificationStatus = PENDING,
                                               createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
                                               readDateTime: Option[DateTime] = None,
@@ -40,8 +39,7 @@ private[repository] object DbNotification {
       notification.notificationId,
       notification.boxId,
       notification.messageContentType,
-      notification.message,
-      Some(crypto.encrypt(PlainText(notification.message)).value),
+      crypto.encrypt(PlainText(notification.message)).value,
       notification.status,
       notification.createdDateTime,
       notification.readDateTime,
@@ -51,16 +49,11 @@ private[repository] object DbNotification {
   }
 
   def toNotification(dbNotification: DbNotification, crypto: CompositeSymmetricCrypto): Notification = {
-    val message = dbNotification.encryptedMessage match {
-      case Some(encryptedMessage) => crypto.decrypt(Crypted(encryptedMessage)).value
-      case _ => dbNotification.message
-    }
-
     Notification(
       dbNotification.notificationId,
       dbNotification.boxId,
       dbNotification.messageContentType,
-      message,
+      crypto.decrypt(Crypted(dbNotification.encryptedMessage)).value,
       dbNotification.status,
       dbNotification.createdDateTime,
       dbNotification.readDateTime,

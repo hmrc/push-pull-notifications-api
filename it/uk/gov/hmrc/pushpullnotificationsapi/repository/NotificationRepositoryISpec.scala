@@ -98,7 +98,7 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
       await(repo.saveNotification(notification))
 
       val notifications: List[DbNotification] = await(repo.findAll())
-      notifications.head.encryptedMessage shouldBe Some("7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE=")
+      notifications.head.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
     }
 
     "not save duplicate Notifications" in {
@@ -158,20 +158,6 @@ class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAp
 
       val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
       result.status shouldBe ACKNOWLEDGED
-    }
-  }
-
-  "encryptNotificationMessages" should {
-    "encrypt the existing notification messages" in {
-      val firstNotification = DbNotification(NotificationId(UUID.randomUUID()), boxId, APPLICATION_JSON, message = """{"someJson": "value 1"}""", None)
-      val secondNotification = DbNotification(NotificationId(UUID.randomUUID()), boxId, APPLICATION_JSON, message = """{"someJson": "value 2"}""", None)
-      await(repo.insert(firstNotification))
-      await(repo.insert(secondNotification))
-      await(repo.findAll()).map(_.encryptedMessage) should contain only None
-
-      await(repo.encryptNotificationMessages(2))
-
-      await(repo.findAll()).map(_.encryptedMessage) should contain only (Some("Cc2mcjCDA0ML76mCGqp+h43rVoqTWUxkfybTXEvPIvE="), Some("Cc2mcjCDA0ML76mCGqp+h7NeFqrSclOvBQDuTc6dTCY="))
     }
   }
 

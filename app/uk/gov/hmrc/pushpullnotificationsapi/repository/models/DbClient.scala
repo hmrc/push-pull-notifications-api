@@ -33,16 +33,13 @@ private[repository] object DbClient {
   }
 }
 
-private[repository] case class DbClientSecret(value: String, encryptedValue: Option[String])
+private[repository] case class DbClientSecret(encryptedValue: String)
 private[repository] object DbClientSecret {
   def fromClientSecret(clientSecret: ClientSecret, crypto: CompositeSymmetricCrypto): DbClientSecret = {
-    DbClientSecret(clientSecret.value, Some(crypto.encrypt(PlainText(clientSecret.value)).value))
+    DbClientSecret(crypto.encrypt(PlainText(clientSecret.value)).value)
   }
 
   def toClientSecret(dbClientSecret: DbClientSecret, crypto: CompositeSymmetricCrypto): ClientSecret = {
-    dbClientSecret.encryptedValue match {
-      case Some(encryptedSecret) => ClientSecret(crypto.decrypt(Crypted(encryptedSecret)).value)
-      case _ => ClientSecret(dbClientSecret.value)
-    }
+    ClientSecret(crypto.decrypt(Crypted(dbClientSecret.encryptedValue)).value)
   }
 }
