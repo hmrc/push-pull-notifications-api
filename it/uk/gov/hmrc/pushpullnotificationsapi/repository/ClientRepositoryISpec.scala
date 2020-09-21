@@ -8,7 +8,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbClient, DbClientSecret}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -53,7 +53,7 @@ class ClientRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSu
       await(repo.insertClient(client))
 
       val dbClients: List[DbClient] = await(repo.findAll())
-      dbClients.head.secrets.head.encryptedValue shouldBe Some("X+UILjCREN19DnjPfxBDNECPVWlIUfd76KlrwnleZ/o=")
+      dbClients.head.secrets.head.encryptedValue shouldBe "X+UILjCREN19DnjPfxBDNECPVWlIUfd76KlrwnleZ/o="
     }
 
     "fail when a client with the same ID already exists" in {
@@ -82,20 +82,6 @@ class ClientRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSu
       val result: Option[Client] = await(repo.findByClientId(client.id))
 
       result shouldBe None
-    }
-  }
-
-  "encryptClientSecrets" should {
-    "encrypt the existing client secrets" in {
-      val firstClient = DbClient(ClientId("one"), Seq(DbClientSecret("first secret", None)))
-      val secondClient = DbClient(ClientId("two"), Seq(DbClientSecret("second secret", None)))
-      await(repo.insert(firstClient))
-      await(repo.insert(secondClient))
-      await(repo.findAll()).flatMap(_.secrets).map(_.encryptedValue) should contain only None
-
-      await(repo.encryptClientSecrets(2))
-
-      await(repo.findAll()).flatMap(_.secrets).map(_.encryptedValue) should contain only (Some("njrBDARt0GA1GxDxqRRQKw=="), Some("DHXHQsTmkrKKIFTxvcLTwQ=="))
     }
   }
 }
