@@ -28,9 +28,9 @@ request is sent to `https://www.example.com/push` with a body similar to:
 See <a href="#_get-a-list-of-notifications_get_accordion">get a list of notifications</a> for details about the
 structure of this JSON object.
 
-If your service responds to this request with an HTTP status code 200, the notification status is updated to `ACKNOWLEDGED`.
+When a notification is pushed its status will be `PENDING`. If your service responds to this request with an HTTP status code 200, the notification status is updated to `ACKNOWLEDGED`.
 
-If your service responds with a different HTTP status code, the request is retried several times over the next few hours.
+If your service responds with a different HTTP status code, the notification status will remain as `PENDING` and the request is retried several times over the next few hours.
 
 If after a few hours, an HTTP status code 200 has not been received, the notification status is updated to `FAILED`.
 
