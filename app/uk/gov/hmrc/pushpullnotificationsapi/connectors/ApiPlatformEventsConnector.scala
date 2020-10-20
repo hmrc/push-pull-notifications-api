@@ -28,9 +28,21 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnecto
 import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
 
 import scala.concurrent.{ExecutionContext, Future}
+import play.api.libs.json.Reads
+import play.api.libs.json.JodaReads
+import play.api.libs.json.JodaWrites
+import play.api.libs.json.Writes
+import play.api.libs.json.Format
 
 @Singleton
 class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+ 
+  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
+  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
+  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
+
+  implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
 
   def sendEvent(clientId: ClientId, oldUrl: String, newUrl: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
     //TODO - ideally we need the applicationId here..
@@ -45,12 +57,12 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
 
 object ApiPlatformEventsConnector{
 
-  implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
+
   private[connectors] case class Actor(){
     val actorId = ""
     val actorType = "UNKNOWN"
   }
-
+ 
   private[connectors] case class PpnsCallBackUriUpdatedEvent(applicationId: String,
   
                                                              eventDateTime: DateTime,

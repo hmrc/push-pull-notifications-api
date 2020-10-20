@@ -32,6 +32,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
 
   val apiPlatformEventsUrl = servicesConfig.baseUrl("api-platform-events")
+  val thirdPartyApplicationUrl = servicesConfig.baseUrl("third-party-application")
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
