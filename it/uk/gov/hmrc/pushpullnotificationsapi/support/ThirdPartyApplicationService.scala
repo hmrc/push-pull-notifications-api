@@ -6,7 +6,7 @@ trait ThirdPartyApplicationService {
   val queryApplicationsUrl = "/application"
 
 
-  def primeService(status : Int, body: String, clientId: String)= {
+  def primeApplicationQueryEndpoint(status : Int, body: String, clientId: String)= {
     stubFor(get(urlPathEqualTo(queryApplicationsUrl))
       .withQueryParam("clientId", equalTo(clientId))
       .willReturn(

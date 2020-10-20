@@ -20,6 +20,7 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import javax.inject.Singleton
+import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -33,12 +34,16 @@ class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppC
 
   implicit val formats = Json.format[ApplicationResponse]
 
-  def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationResponse] = {
+  def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[Option[ApplicationResponse]] = {
 
     val url = s"${appConfig.thirdPartyApplicationUrl}/application"
     
-    http.GET[ApplicationResponse](url,  Seq(("clientId", clientId.value)))
-
+    http.GET[ApplicationResponse](url, Seq(("clientId", clientId.value))).map(Some(_)) recover {
+      case t: Throwable => {
+        Logger.warn(s"Unable to retrieve Application details for clientId [${clientId.value}]", t)
+        None
+      }
+    }
   }
 }
 
