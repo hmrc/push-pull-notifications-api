@@ -81,7 +81,10 @@ class BoxService @Inject()(repository: BoxRepository,
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
   (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) validateCallBack(box, request)
+      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)){
+          // if unable to update app id or app id is empty fail
+           validateCallBack(box, request)
+      }
       else successful(UpdateCallbackUrlUnauthorisedResult())
       case None => successful(BoxIdNotFound())
     }
@@ -90,6 +93,7 @@ class BoxService @Inject()(repository: BoxRepository,
 
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)
   (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
+  
     if (!request.callbackUrl.isEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult => {
@@ -113,7 +117,7 @@ class BoxService @Inject()(repository: BoxRepository,
       maybeApplicationId <- if(box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(false)
       updateResult  <-      repository.updateSubscriber(box.boxId, subscriber).map {
                                 case Some(_) => { 
-                                  
+
                                   //if(maybeApplicationId.isDefined) sendURLUPDATEDEVENT
                                   CallbackUrlUpdated()
                                 }
