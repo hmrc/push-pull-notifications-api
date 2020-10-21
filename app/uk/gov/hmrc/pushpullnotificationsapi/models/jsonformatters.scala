@@ -20,6 +20,7 @@ import org.joda.time.DateTime
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 
 object ResponseFormatters{
   val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
@@ -28,6 +29,7 @@ object ResponseFormatters{
   implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
+  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
@@ -56,8 +58,10 @@ object RequestFormatters {
 }
 
 object ConnectorFormatters {
+  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val forwardedHeadersFormatter = Json.format[ForwardedHeader]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
   implicit val updateCallBAckUrlRequestFormatter =Json.format[UpdateCallbackUrlRequest]
+  implicit val applicationResponseformater = Json.format[ApplicationResponse]
 }

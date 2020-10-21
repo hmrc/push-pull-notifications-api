@@ -20,6 +20,7 @@ import java.util.UUID
 
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.Mockito.{verify, verifyNoInteractions, when}
+import org.mockito.MockitoSugar.times
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
@@ -31,6 +32,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ThirdPartyApplicationConnector
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 
 class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
 
@@ -41,6 +45,9 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
   private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
   private val client: Client = Client(clientId, Seq(clientSecret))
   private val boxName: String = "boxName"
+
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+
   val endpoint = "/iam/a/callbackurl"
   def updateSubscribersRequestWithId(subtype: SubscriptionType): UpdateSubscriberRequest =
     UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = subtype))
@@ -52,12 +59,15 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
     val mockRepository: BoxRepository = mock[BoxRepository]
     val mockConnector: PushConnector = mock[PushConnector]
     val mockClientService: ClientService = mock[ClientService]
+    val mockThirdPartyApplicationConnector: ThirdPartyApplicationConnector = mock[ThirdPartyApplicationConnector]
 
-    val objInTest = new BoxService(mockRepository, mockConnector, mockClientService)
+    val objInTest = new BoxService(mockRepository, mockConnector, mockThirdPartyApplicationConnector, mockClientService)
     val box: Box = Box(boxId, boxName, BoxCreator(clientId))
     val argumentCaptor: Captor[Box] = ArgCaptor[Box]
 
-    when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(Some(boxId)))
+
+
+
 
     def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]): OngoingStubbing[Future[Option[Box]]] =
      when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(optionalBox))
@@ -69,21 +79,58 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     "createBox" should {
 
-      "return Created when box repo returns true" in new Setup {
+      val applicationId = ApplicationId("12345")
+      
+      "return BoxCreatedResult and call tpa to get application id when box is created" in new Setup {
+       when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
+   
+        when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(box))
+      
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
+        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(Some(ApplicationResponse(applicationId))))
 
-        await(objInTest.createBox(boxId, clientId, boxName))
+        val result = await(objInTest.createBox(clientId, boxName))
 
-        verify(mockRepository).createBox(argumentCaptor.capture)(any[ExecutionContext])
-        validateBox(argumentCaptor.value)
+        result.isInstanceOf[BoxCreatedResult] shouldBe true
+
+        verify(mockRepository, times(1)).createBox(argumentCaptor.capture)(any[ExecutionContext])
+        verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])
+        verify(mockClientService,  times(1)).findOrCreateClient(clientId)
+      
+        validateBox(argumentCaptor.value, Some(applicationId))
       }
 
-      "use the client service to create a new client" in new Setup {
+
+      "return BoxRetrievedResult when box is already exists and verify no attempt to call tpa" in new Setup {
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+   
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
 
-        await(objInTest.createBox(boxId, clientId, boxName))
+        val result = await(objInTest.createBox(clientId, boxName))
+        
+        result.isInstanceOf[BoxRetrievedResult] shouldBe true
 
-        verify(mockClientService).findOrCreateClient(clientId)
+        verify(mockRepository, times(0)).createBox(argumentCaptor.capture)(any[ExecutionContext])
+        verify(mockThirdPartyApplicationConnector, times(0)).getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])
+        verify(mockClientService,  times(0)).findOrCreateClient(clientId)
+
+      }
+
+      "return BoxCreatedResult when attempt to get applicationId fails during box creation" in new Setup {
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
+        when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(box))
+
+        when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
+        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(None))
+
+        await(objInTest.createBox(clientId, boxName))
+
+        verify(mockRepository, times(1)).createBox(argumentCaptor.capture)(any[ExecutionContext])
+
+        verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])
+        verify(mockClientService,  times(1)).findOrCreateClient(clientId)
+
+        validateBox(argumentCaptor.value, None)
       }
     }
 
@@ -208,10 +255,10 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
   }
 
-  def validateBox(box: Box): Unit = {
-    box.boxId shouldBe boxId
+  def validateBox(box: Box, expectedApplicationId: Option[ApplicationId]): Unit = {
     box.boxName shouldBe boxName
     box.subscriber.isDefined shouldBe false
     box.boxCreator.clientId shouldBe clientId
+    box.applicationId shouldBe expectedApplicationId
   }
 }

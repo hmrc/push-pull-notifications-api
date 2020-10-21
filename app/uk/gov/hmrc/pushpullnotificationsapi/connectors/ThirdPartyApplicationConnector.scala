@@ -16,23 +16,19 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import java.util.UUID
-
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.Logger
-import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
-
-  implicit val formats = Json.format[ApplicationResponse]
 
   def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[Option[ApplicationResponse]] = {
 
@@ -47,5 +43,5 @@ class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppC
   }
 }
 
-private[connectors] case class ApplicationResponse(id: UUID, clientId: String)
+case class ApplicationResponse(id: ApplicationId)
 

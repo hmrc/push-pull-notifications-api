@@ -30,6 +30,8 @@ case class BoxId(value: UUID) extends AnyVal {
 
 case class ClientId(value: String) extends AnyVal
 
+case class ApplicationId(value: String) extends AnyVal
+
 case class BoxCreator(clientId: ClientId)
 
 sealed trait SubscriptionType extends EnumEntry
@@ -58,7 +60,11 @@ case class PullSubscriber(callBackUrl: String, // Remove callbackUrl
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 
-case class Box(boxId: BoxId, boxName: String, boxCreator: BoxCreator, subscriber: Option[Subscriber] = None) // Default to PullSubscriber?
+case class Box(boxId: BoxId,
+               boxName: String,
+               boxCreator: BoxCreator,
+               applicationId: Option[ApplicationId] = None,
+               subscriber: Option[Subscriber] = None) // Default to PullSubscriber?
 
 case class Client(id: ClientId, secrets: Seq[ClientSecret])
 case class ClientSecret(value: String)

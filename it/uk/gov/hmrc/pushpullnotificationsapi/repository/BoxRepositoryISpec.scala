@@ -154,6 +154,30 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
 
     }
   }
+
+  "updateApplicationId" should {
+
+    "update applicationId for box if it is not present" in {
+      await(repo.createBox(box))
+      val fetchedRecords = await(repo.find())
+      fetchedRecords.size shouldBe 1
+
+      val createdBox = fetchedRecords.head
+      createdBox.applicationId.isDefined shouldBe false
+
+      val appId = ApplicationId("12345")
+
+      val maybeApplicationId = await(repo.updateApplicationId(createdBox.boxId, appId)).flatMap(_.applicationId)
+      maybeApplicationId shouldBe Some(appId)
+      
+    }
+
+    "return None when the box doesn't exist" in {
+      val updated = await(repo.updateApplicationId(BoxId(UUID.randomUUID()), ApplicationId("123")))
+      updated shouldBe None
+
+    }
+  }
   "getBoxByBoxId" should {
 
     "return box when box exists" in {

@@ -79,7 +79,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
       val notification: Notification =
         Notification(
           NotificationId(UUID.randomUUID()),
@@ -103,7 +103,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(
           NotificationId(UUID.randomUUID()),
@@ -123,7 +123,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(
           NotificationId(UUID.randomUUID()),
@@ -143,7 +143,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
         .thenReturn(successful(PushConnectorFailedResult("some error")))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
@@ -161,7 +161,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
         .thenReturn(successful(PushConnectorFailedResult("Some Error")))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
@@ -176,7 +176,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return true when subscriber has no callback url" in new Setup {
       val subscriber: PushSubscriber = PushSubscriber("", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,
@@ -191,7 +191,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
     "return true when there are no push subscribers" in new Setup {
       val subscriber: PullSubscriber = PullSubscriber("", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()),
         MessageContentType.APPLICATION_JSON,

@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
-
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
@@ -48,8 +46,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
             if (box.boxName.isEmpty || box.clientId.isEmpty) {
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
             } else {
-              val boxId = BoxId(UUID.randomUUID())
-              boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
+              boxService.createBox(ClientId(box.clientId), box.boxName).map {
                 case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
                 case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
                 case r: BoxCreateFailedResult =>

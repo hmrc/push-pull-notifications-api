@@ -18,36 +18,57 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
+import java.{util => ju}
 
 @Singleton
 class BoxService @Inject()(repository: BoxRepository,
                            pushConnector: PushConnector,
+                           applicationConnector: ThirdPartyApplicationConnector,
                            clientService: ClientService) {
 
-  def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
-               (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
+  def createBox(clientId: ClientId, boxName: String)
+               (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[BoxCreateResult] = {
 
-    for {
-      _ <- clientService.findOrCreateClient(clientId)
-      boxId: Option[BoxId] <- repository.createBox(Box(boxId, boxName, BoxCreator(clientId)))
-      boxCreateResult: BoxCreateResult <- boxId match {
-        case Some(id) => successful(BoxCreatedResult(id))
-        case None => repository.getBoxByNameAndClientId(boxName, clientId) map {
-          case Some(x) => BoxRetrievedResult(x.boxId)
-          case _ =>
-            Logger.info(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")
-            BoxCreateFailedResult(s"Box with name :$boxName already exists for this clientId but unable to retrieve it")
-        }
-      }
-    } yield boxCreateResult
+    repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
+      case Some(x) => Future.successful(BoxRetrievedResult(x.boxId))
+      case _ =>
+        for {
+          _ <- clientService.findOrCreateClient(clientId)
+          maybeApplicationDetails <- applicationConnector.getApplicationDetails(clientId)
+          createdBox: Box <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), maybeApplicationDetails.map(_.id)))
+        } yield BoxCreatedResult(createdBox.boxId)
+    }
   }
+
+  // def updateBoxWithApplicationIdIfMissing(boxId: BoxId)
+  //                                    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Box]] ={
+  //   for {
+  //     maybeBox <- repository.findByBoxId(boxId)
+  //     maybeHasApplicationId: Option[Boolean] = maybeBox.map(_.applicationId.isDefined)
+  //     maybeUpdatedBox <- (maybeBox, maybeHasApplicationId) match {
+  //                       case (Some(box), Some(false)) => updateBoxWithApplicationId(box)
+  //                       case _  =>   successful(maybeBox)
+  //                     }
+  //   } yield maybeUpdatedBox
+  // }
+
+  // private def updateBoxWithApplicationId(box:Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Box]] = {
+  //   for {
+  //     maybeResponse <- applicationConnector.getApplicationDetails(box.boxCreator.clientId)
+  //     updatedBox <- maybeResponse.map(_.id) match {
+  //         case Some(applicationId) => repository.updateApplicationId(box.boxId,  applicationId)
+  //         case _ => successful(Some(box))
+  //     } 
+  //   } yield updatedBox
+  // }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
@@ -94,6 +115,7 @@ class BoxService @Inject()(repository: BoxRepository,
 
   private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])
                                    (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+                     
     repository.updateSubscriber(boxId, subscriber).map {
       case Some(_) => CallbackUrlUpdated()
       case _ => {

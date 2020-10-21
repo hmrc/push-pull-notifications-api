@@ -78,7 +78,7 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
   private val message = "message"
   private val subscriber =  PushSubscriber("mycallbackUrl")
   private val BoxObjectWIthNoSubscribers = Box(boxId, "boxName", BoxCreator(clientId))
-  private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId), Some(subscriber))
+  private val BoxObjectWIthSubscribers = Box(boxId, "boxName", BoxCreator(clientId), subscriber = Some(subscriber))
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "SaveNotification" should {

@@ -54,12 +54,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
-  def createBox(box: Box)(implicit ec: ExecutionContext): Future[Option[BoxId]] =
-    collection.insert.one(box).map(_ => Some(box.boxId)).recoverWith {
-      case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Logger.info("box already exists")
-      Future.successful(None)
-    }
+  def createBox(box: Box)(implicit ec: ExecutionContext): Future[Box] = collection.insert.one(box).map(_ => box)
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     Logger.info(s"Getting box by boxName:$boxName & clientId")
@@ -68,6 +63,10 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
 
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
     updateBox(boxId, Json.obj("$set" -> Json.obj("subscriber" -> subscriber.elem)))
+  }
+
+  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Option[Box]] = {
+    updateBox(boxId, Json.obj("$set" -> Json.obj("applicationId" -> applicationId)))
   }
 
   private def updateBox(boxId: BoxId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Box]] =
