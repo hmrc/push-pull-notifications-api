@@ -18,11 +18,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
-sealed trait BoxCreateResult
-final case class BoxCreateFailedResult(message: String) extends BoxCreateResult
-sealed trait BoxCreateSuccessResult extends BoxCreateResult
-final case class BoxCreatedResult(boxId: BoxId) extends BoxCreateSuccessResult
-final case class BoxRetrievedResult(boxId: BoxId) extends BoxCreateSuccessResult
+sealed trait CreateBoxResult
+final case class BoxCreateFailedResult(message: String) extends CreateBoxResult
+sealed trait BoxCreateSuccessResult extends CreateBoxResult
+final case class BoxCreatedResult(box: Box) extends BoxCreateSuccessResult
+final case class BoxRetrievedResult(box: Box) extends BoxCreateSuccessResult
 
 sealed trait NotificationCreateServiceResult
 

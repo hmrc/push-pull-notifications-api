@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.PpnsCallBackUriUpdatedEvent
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
 
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.json.Reads
@@ -41,15 +41,13 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
   implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
   implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
   implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
-
+ 
   implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
 
-  def sendEvent(clientId: ClientId, oldUrl: String, newUrl: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    //TODO - ideally we need the applicationId here..
-    //Actor type and Actor id are hardcoded at present but eventually we will need to populate with
-    // who made the change to the callback url
+  def sendEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = PpnsCallBackUriUpdatedEvent(clientId.value, DateTime.now(), oldUrl, newUrl)
+    val event = PpnsCallBackUriUpdatedEvent(applicationId.value, DateTime.now(), oldUrl, newUrl)
     http.POST(url, event)
       .map(_.status == CREATED)
   }

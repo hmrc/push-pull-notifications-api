@@ -6,7 +6,6 @@ import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
@@ -58,12 +57,12 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
     }
 
     "create a Box should allow boxes for same clientId but different BoxNames" in {
-      val result: Box = await(repo.createBox(box))
-      result.boxId shouldBe boxId
+      val result = await(repo.createBox(box)).asInstanceOf[BoxCreatedResult]
+      result.box.boxId shouldBe boxId
       val newBoxId = BoxId(UUID.randomUUID())
       val newbox = box.copy(newBoxId, boxName = "someNewName")
-      val result2 = await(repo.createBox(newbox))
-      result2 shouldBe newbox
+      val result2 = await(repo.createBox(newbox)).asInstanceOf[BoxCreatedResult]
+      result2.box shouldBe newbox
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
@@ -80,12 +79,11 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
     }
 
     "create a Box should throw and exception and only create box once when box with same name and client id called twice" in {
-      val result: Unit = await(repo.createBox(box))
-      result shouldBe ((): Unit)
+      await(repo.createBox(box))
+      
 
-      intercept[DatabaseException] {
-        await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
-      }
+      val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
+      result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
@@ -95,9 +93,9 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
 
-      intercept[DatabaseException] {
-        await(repo.createBox(box))
-      }
+      
+      val result2 =  await(repo.createBox(box))
+      result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1

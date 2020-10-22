@@ -47,8 +47,8 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
             } else {
               boxService.createBox(ClientId(box.clientId), box.boxName).map {
-                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
-                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxCreateFailedResult =>
                   Logger.info(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))

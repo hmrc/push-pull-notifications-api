@@ -71,6 +71,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   val boxIdstr: String = UUID.randomUUID().toString
   val boxId: BoxId = BoxId(UUID.fromString(boxIdstr))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId))
   val jsonBody: String =
     raw"""{"boxName": "$boxName",
          |"clientId": "$clientIdStr" }""".stripMargin
@@ -93,7 +94,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
@@ -105,7 +106,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 200 and boxId when box already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox( any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxRetrievedResult(boxId)))
+          .thenReturn(Future.successful(BoxRetrievedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(OK)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
@@ -117,7 +118,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 400 when payload is completely invalid against expected format" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}"))
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
@@ -129,7 +130,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
      "return 400 when request payload is missing boxName" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, emptyJsonBody(boxNameVal = "")))
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
@@ -141,7 +142,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 415 when content type header is invalid" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = await(doPut("/box",  validHeadersWithInValidContentType, jsonBody))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
@@ -153,7 +154,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 415 when content type header is empty" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = await(doPut("/box",  validHeadersWithEmptyContentType, jsonBody))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)

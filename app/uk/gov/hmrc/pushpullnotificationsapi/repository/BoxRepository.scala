@@ -30,6 +30,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoForma
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.{createAscendingIndex, createSingleFieldAscendingIndex}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
@@ -54,7 +55,10 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
-  def createBox(box: Box)(implicit ec: ExecutionContext): Future[Box] = collection.insert.one(box).map(_ => box)
+  def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] = 
+  collection.insert.one(box).map(_ => BoxCreatedResult(box)) recoverWith {
+    case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage()))
+  }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     Logger.info(s"Getting box by boxName:$boxName & clientId")
@@ -78,3 +82,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
       _.result[Box]
     }
 }
+
+
+
+
