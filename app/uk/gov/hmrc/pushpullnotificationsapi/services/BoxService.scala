@@ -27,6 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import java.{util => ju}
+import scala.util.control.NonFatal
 
 @Singleton
 class BoxService @Inject()(repository: BoxRepository,
@@ -42,9 +43,11 @@ class BoxService @Inject()(repository: BoxRepository,
       case _ =>
         for {
           _ <- clientService.findOrCreateClient(clientId)
-          maybeApplicationDetails <- applicationConnector.getApplicationDetails(clientId)
-          createdBox: Box <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), maybeApplicationDetails.map(_.id)))
+          appDetails <- applicationConnector.getApplicationDetails(clientId)
+          createdBox: Box <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id)))
         } yield BoxCreatedResult(createdBox.boxId)
+    } recoverWith {
+      case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage()))
     }
   }
 
@@ -59,7 +62,6 @@ class BoxService @Inject()(repository: BoxRepository,
   //                     }
   //   } yield maybeUpdatedBox
   // }
-
 
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
@@ -79,21 +81,25 @@ class BoxService @Inject()(repository: BoxRepository,
   }
 
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
-  (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
+                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)){
-          // if unable to update app id or app id is empty fail
-           validateCallBack(box, request)
+      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) {
+        for {
+          _ <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(false)
+          result <- validateCallBack(box, request)
+        } yield result
       }
       else successful(UpdateCallbackUrlUnauthorisedResult())
       case None => successful(BoxIdNotFound())
+    } recoverWith {
+      case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage()))
     }
 
   }
 
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)
-  (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
-  
+                              (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+
     if (!request.callbackUrl.isEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult => {
@@ -112,30 +118,20 @@ class BoxService @Inject()(repository: BoxRepository,
   }
 
   private def updateBoxWithCallBack(box: Box, subscriber: SubscriberContainer[Subscriber])
-                                   (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
-    for{
-      maybeApplicationId <- if(box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(false)
-      updateResult  <-      repository.updateSubscriber(box.boxId, subscriber).map {
-                                case Some(_) => { 
-
-                                  //if(maybeApplicationId.isDefined) sendURLUPDATEDEVENT
-                                  CallbackUrlUpdated()
-                                }
-                                case _ => {
-                                  UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
-                                }
-                            }
-    } yield updateResult
-}
-
-    private def updateBoxWithApplicationId(box:Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[ApplicationId]] = {
-      for {
-        maybeResponse <- applicationConnector.getApplicationDetails(box.boxCreator.clientId)
-        appId <- maybeResponse.map(_.id) match {
-            case Some(applicationId) => repository.updateApplicationId(box.boxId, applicationId).map(_ => Some(applicationId))
-            case _ => successful(None)
-        }
-      } yield appId
+                                   (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+    repository.updateSubscriber(box.boxId, subscriber).map {
+      case Some(_) => {
+        //if(maybeApplicationId.isDefined) sendURLUPDATEDEVENT
+        CallbackUrlUpdated()
+      }
+      case _ => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
     }
+  }
+
+  private def updateBoxWithApplicationId(box: Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Box] = {
+    applicationConnector.getApplicationDetails(box.boxCreator.clientId)
+      .flatMap(appDetails => repository.updateApplicationId(box.boxId, appDetails.id))
+  }
+
 
 }

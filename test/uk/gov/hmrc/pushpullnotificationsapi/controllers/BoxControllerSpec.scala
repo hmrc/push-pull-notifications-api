@@ -402,7 +402,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 200 when request is successful" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result: Result =
@@ -418,7 +418,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 200 when request contains " in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
 
          val result: Result =
@@ -434,7 +434,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 401 if User-Agent is not whitelisted" in {
           setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result: Result =
@@ -450,7 +450,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 404 if Box does not exist" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(BoxIdNotFound()))
 
          val result: Result =
@@ -466,7 +466,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
        "return 200, successful false and errormessage when mongo update fails" in {
          setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
          val result: Result =
@@ -483,7 +483,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 200, successful false and errormessage when callback validation fails" in {
         setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
          val result: Result =
@@ -501,7 +501,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 401 if client id does not match that on the box" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
          val result: Result =
@@ -533,13 +533,13 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 200 when payload is missing the callbackUrl value" in {
           setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
           val result: Result = await(doPut(s"/box/$boxIdstr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, "")))
 
           status(result) should be(OK)
           Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-          verify(mockBoxService).updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext])
+          verify(mockBoxService).updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier])
       }
      }
   }

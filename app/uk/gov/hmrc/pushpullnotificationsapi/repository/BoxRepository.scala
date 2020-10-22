@@ -65,8 +65,12 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     updateBox(boxId, Json.obj("$set" -> Json.obj("subscriber" -> subscriber.elem)))
   }
 
-  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Option[Box]] = {
+  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
     updateBox(boxId, Json.obj("$set" -> Json.obj("applicationId" -> applicationId)))
+    .flatMap(_ match {
+      case Some(box) => Future.successful(box)
+      case None => Future.failed(new RuntimeException(s"Unable to update box $boxId with applicationId"))
+    })
   }
 
   private def updateBox(boxId: BoxId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Box]] =

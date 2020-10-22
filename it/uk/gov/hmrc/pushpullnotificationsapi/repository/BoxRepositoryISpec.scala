@@ -57,8 +57,8 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
     }
 
     "create a Box should allow boxs for same clientId but different BoxNames" in {
-      val result: Option[BoxId] = await(repo.createBox(box))
-      result shouldBe Some(boxId)
+      val result: Box = await(repo.createBox(box))
+      result.boxId shouldBe boxId
       val newBoxId = BoxId(UUID.randomUUID())
       val result2 = await(repo.createBox(box.copy(newBoxId, boxName = "someNewName")))
       result2 shouldBe Some(newBoxId)

@@ -82,12 +82,10 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
       val applicationId = ApplicationId("12345")
       
       "return BoxCreatedResult and call tpa to get application id when box is created" in new Setup {
-       when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
-   
-        when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(box))
-      
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
+        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(ApplicationResponse(applicationId)))
+        when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(box)) 
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
-        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(Some(ApplicationResponse(applicationId))))
 
         val result = await(objInTest.createBox(clientId, boxName))
 
@@ -116,21 +114,23 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
       }
 
-      "return BoxCreatedResult when attempt to get applicationId fails during box creation" in new Setup {
+      "return BoxCreateFailedResult when attempt to get applicationId fails during box creation" in new Setup {
         when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])).thenReturn(Future.successful(None))
         when(mockRepository.createBox(any[Box])(any[ExecutionContext])).thenReturn(Future.successful(box))
 
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
-        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(None))
+        when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.failed(new RuntimeException("")))
 
-        await(objInTest.createBox(clientId, boxName))
+      
+       val result: BoxCreateResult =  await(objInTest.createBox(clientId, boxName))
+       result.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
-        verify(mockRepository, times(1)).createBox(argumentCaptor.capture)(any[ExecutionContext])
 
+        verify(mockRepository, times(1)).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(any[ExecutionContext])
+        verify(mockRepository, times(0)).createBox(argumentCaptor.capture)(any[ExecutionContext])
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])
         verify(mockClientService,  times(1)).findOrCreateClient(clientId)
 
-        validateBox(argumentCaptor.value, None)
       }
     }
 
@@ -181,9 +181,12 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
     }
     "updateCallbackUrl" should {
-    
+     val applicationId = ApplicationId("123124")
+      // Callback url called with box that has no app id
+      // call back url called and box has app id
        "return CallbackUrlUpdated when process completes successfully" in new Setup {
-         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
+      
         when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
         .thenReturn(Future.successful(Some(box)))
 
@@ -192,11 +195,32 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
           val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
           result.isInstanceOf[CallbackUrlUpdated] shouldBe true
+
+         verifyNoInteractions(mockThirdPartyApplicationConnector)
+         verify(mockRepository, times(0)).updateApplicationId(any[BoxId], any[ApplicationId])(any[ExecutionContext])
          verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
        }
 
-      "return CallbackUrlUpdated when callbackUrl is empty and dont call callBackUrl in connector" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+       "return CallbackUrlUpdated when box has application id added and callback url is validated" in new Setup {
+         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.successful(ApplicationResponse(applicationId)))
+         when(mockRepository.updateApplicationId(eqTo(boxId), eqTo(applicationId))(any[ExecutionContext])).thenReturn(Future.successful(box.copy(applicationId = Some(applicationId))))
+         when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
+        .thenReturn(Future.successful(Some(box)))
+
+          val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
+         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
+
+          val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
+          result.isInstanceOf[CallbackUrlUpdated] shouldBe true
+
+         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])
+         verify(mockRepository, times(1)).updateApplicationId(any[BoxId], any[ApplicationId])(any[ExecutionContext])
+         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
+       }
+
+      "return CallbackUrlUpdated when callbackUrl is empty, applicationId exists, and dont call callBackUrl in connector" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
         when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
           .thenReturn(Future.successful(Some(box)))
 
@@ -208,8 +232,8 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
         result.isInstanceOf[CallbackUrlUpdated] shouldBe true
       }
 
-      "return UnableToUpdateCallbackUrl when update of box with callback fails" in new Setup {
-         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+      "return UnableToUpdateCallbackUrl when update of box with applicationId with callback fails" in new Setup {
+         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
         when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
         .thenReturn(Future.successful(None))
 
@@ -223,6 +247,23 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
          verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
        }
 
+     "return UnableToUpdateCallbackUrl box has no appliction id and call to tpa fails" in new Setup {
+         when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.failed(new RuntimeException("some Error")))
+      
+        // when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
+        // .thenReturn(Future.successful(None))
+
+          val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
+         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
+
+          val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
+          result.isInstanceOf[UnableToUpdateCallbackUrl] shouldBe true
+
+        
+        //  verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
+       }
+
       "return UpdateCallbackUrlUnauthorisedResult when clientId of box is different from request clientId" in new Setup {
          when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
 
@@ -234,7 +275,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
 
 
       "return CallbackValidationFailed when connector call returns false" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorFailedResult("")))

@@ -45,10 +45,9 @@ class ThirdPartyApplicationConnectorISpec
 
       primeApplicationQueryEndpoint(Status.OK, jsonResponse, clientId)
 
-      val result: ApplicationResponse = await(objInTest.getApplicationDetails(ClientId(clientId))).get
+      val result: ApplicationResponse = await(objInTest.getApplicationDetails(ClientId(clientId)))
 
       result.id shouldBe expectedApplicationId
-      result.clientId shouldBe clientId
     }
 
     "return None if TPA returns a 404" in new SetUp {
