@@ -5,6 +5,7 @@ import java.util.UUID
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
+import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -12,11 +13,11 @@ import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UN
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with PushGatewayService {
+class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with PushGatewayService with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>
 
   def repo: BoxRepository =
@@ -38,7 +39,8 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
         "auditing.consumer.baseUri.port" -> wireMockPort,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
-        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi"
+        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
+        "microservice.services.third-party-application.port" -> wireMockPort
       )
 
   val url = s"http://localhost:$port"
@@ -46,9 +48,10 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   val boxName = "myBoxName"
   val clientId = "someClientId"
+  val clientId2 = "someClientId2"
   val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
-  val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
-
+  val createBox2JsonBody = raw"""{"clientId":  "$clientId2", "boxName": "bbyybybyb"}"""
+  val tpaResponse: String = raw"""{"id":  "someappid", "clientId": "$clientId"}"""
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
          |  {
@@ -97,12 +100,15 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
     "POST /box" should {
       "respond with 201 when box created" in {
+
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
         val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 200 with box ID  when box already exists" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
         val result1 = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         validateStringIsUUID(result1.body)
 
@@ -113,10 +119,12 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       }
 
       "respond with 201 when two boxs are created" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
         val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
 
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
         val result2 = callCreateBoxEndpoint(createBox2JsonBody, validHeaders)
         result2.status shouldBe CREATED
         validateStringIsUUID(result2.body)
@@ -168,6 +176,8 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
   "GET /box?boxName=someName&clientId=someClientid" should {
     "respond with 200 and box in body when exists" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
       result.status shouldBe CREATED
       validateStringIsUUID(result.body)
@@ -345,6 +355,9 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
   }
 
   private def createBoxAndCheckExistsWithNoSubscribers(): Box = {
+
+    primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+
     val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
     result.status shouldBe CREATED
     validateStringIsUUID(result.body)
