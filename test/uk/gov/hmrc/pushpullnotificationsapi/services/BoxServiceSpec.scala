@@ -250,9 +250,6 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
      "return UnableToUpdateCallbackUrl box has no appliction id and call to tpa fails" in new Setup {
          when(mockRepository.findByBoxId(eqTo(boxId))(any[ExecutionContext])).thenReturn(Future.successful(Some(box)))
          when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(any[HeaderCarrier])).thenReturn(Future.failed(new RuntimeException("some Error")))
-      
-        // when(mockRepository.updateSubscriber(eqTo(boxId), any[SubscriberContainer[PushSubscriber]])(any[ExecutionContext]))
-        // .thenReturn(Future.successful(None))
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
          when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
@@ -260,8 +257,7 @@ class BoxServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSug
           val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
           result.isInstanceOf[UnableToUpdateCallbackUrl] shouldBe true
 
-        
-        //  verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
+          verifyNoInteractions(mockConnector)
        }
 
       "return UpdateCallbackUrlUnauthorisedResult when clientId of box is different from request clientId" in new Setup {
