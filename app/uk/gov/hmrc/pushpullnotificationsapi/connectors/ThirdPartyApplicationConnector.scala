@@ -18,12 +18,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import com.google.inject.Inject
 import javax.inject.Singleton
-import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, ClientId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,11 +30,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationResponse] = {
-
     val url = s"${appConfig.thirdPartyApplicationUrl}/application"
-    
     http.GET[ApplicationResponse](url, Seq(("clientId", clientId.value)))
-    
   }
 }
 

@@ -28,7 +28,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 @Singleton()
 class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,

@@ -35,7 +35,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnecto
 class BoxService @Inject()(repository: BoxRepository,
                            pushConnector: PushConnector,
                            applicationConnector: ThirdPartyApplicationConnector,
-                           eventsConnecter: ApiPlatformEventsConnector,
+                           eventsConnector: ApiPlatformEventsConnector,
                            clientService: ClientService) {
 
   def createBox(clientId: ClientId, boxName: String)
@@ -50,7 +50,7 @@ class BoxService @Inject()(repository: BoxRepository,
           createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id)))
         } yield createdBox
     } recoverWith {
-      case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage()))
+      case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))
     }
   }
 
@@ -87,32 +87,32 @@ class BoxService @Inject()(repository: BoxRepository,
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
       case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) {
+        val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
+
         for {
           appId <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(box.applicationId.get)
-          result <- validateCallBack(box, appId, request)
+          result <- validateCallBack(box, request)
+          _ = result match {
+            case _: UpdateCallbackUrlSuccessResult => eventsConnector.sendEvent(appId, oldUrl, request.callbackUrl)
+            case _ => Logger.warn("Updating callback URL failed - not sending event")
+          }
         } yield result
       }
       else successful(UpdateCallbackUrlUnauthorisedResult())
       case None => successful(BoxIdNotFound())
     } recoverWith {
-      case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage()))
+      case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage))
     }
 
   }
 
-  private def validateCallBack(box: Box, appId: ApplicationId, request: UpdateCallbackUrlRequest)
+  private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)
                               (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
-     val oldUrl: String = box.subscriber.map(extractCallBackUrl(_)).getOrElse("")
-
     if (!request.callbackUrl.isEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult => {
           Logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
-          updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl))).map(
-            result => {
-              eventsConnecter.sendEvent(appId, oldUrl, request.callbackUrl)
-              result
-            })
+          updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
         }
         case result: PushConnectorFailedResult => {
           Logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
@@ -126,17 +126,18 @@ class BoxService @Inject()(repository: BoxRepository,
   }
 
   private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])
-                                   (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] =                                                              
+                                   (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] =
     repository.updateSubscriber(boxId, subscriber).map {
-      case Some(_) => CallbackUrlUpdated() 
+      case Some(_) => CallbackUrlUpdated()
       case _ => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
     }
-  
+
 
   private def extractCallBackUrl(subscriber: Subscriber): String = {
-   subscriber match {case x: PushSubscriber => x.callBackUrl
-                     case _ => ""
-                     }
+    subscriber match {
+      case x: PushSubscriber => x.callBackUrl
+      case _ => ""
+    }
   }
 
   private def updateBoxWithApplicationId(box: Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[ApplicationId] = {

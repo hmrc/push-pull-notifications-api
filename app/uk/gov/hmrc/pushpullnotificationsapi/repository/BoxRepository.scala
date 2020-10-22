@@ -21,7 +21,6 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -55,10 +54,10 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
-  def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] = 
-  collection.insert.one(box).map(_ => BoxCreatedResult(box)) recoverWith {
-    case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage()))
-  }
+  def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
+    collection.insert.one(box).map(_ => BoxCreatedResult(box)) recoverWith {
+      case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
+    }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     Logger.info(s"Getting box by boxName:$boxName & clientId")
@@ -71,10 +70,10 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
 
   def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
     updateBox(boxId, Json.obj("$set" -> Json.obj("applicationId" -> applicationId)))
-    .flatMap(_ match {
-      case Some(box) => Future.successful(box)
-      case None => Future.failed(new RuntimeException(s"Unable to update box $boxId with applicationId"))
-    })
+      .flatMap {
+        case Some(box) => Future.successful(box)
+        case None => Future.failed(new RuntimeException(s"Unable to update box $boxId with applicationId"))
+      }
   }
 
   private def updateBox(boxId: BoxId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Box]] =
