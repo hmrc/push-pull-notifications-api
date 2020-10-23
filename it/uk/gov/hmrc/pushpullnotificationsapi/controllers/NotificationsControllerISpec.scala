@@ -153,15 +153,6 @@ class NotificationsControllerISpec
         validateStringIsUUID(result.body)
       }
 
-      //TODO - need to maybe change this to include new callback url validated subscriber
-//      "respond with 201 when notification created for valid xml and xml content type with push subscriber" in {
-//        primeGatewayServiceWithBody(Status.OK)
-//        val box = createBoxAndReturn()
-//        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
-//        result.status shouldBe CREATED
-//        validateStringIsUUID(result.body)
-//      }
-
       "respond with 201 when notification created for valid xml and xml content type with no subscribers" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
