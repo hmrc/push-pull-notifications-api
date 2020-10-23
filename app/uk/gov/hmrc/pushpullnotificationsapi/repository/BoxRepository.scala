@@ -21,7 +21,6 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -30,6 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoForma
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.{createAscendingIndex, createSingleFieldAscendingIndex}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
@@ -54,11 +54,9 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
-  def createBox(box: Box)(implicit ec: ExecutionContext): Future[Option[BoxId]] =
-    collection.insert.one(box).map(_ => Some(box.boxId)).recoverWith {
-      case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
-        Logger.info("box already exists")
-      Future.successful(None)
+  def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
+    collection.insert.one(box).map(_ => BoxCreatedResult(box)) recoverWith {
+      case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
     }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
@@ -70,8 +68,20 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     updateBox(boxId, Json.obj("$set" -> Json.obj("subscriber" -> subscriber.elem)))
   }
 
+  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
+    updateBox(boxId, Json.obj("$set" -> Json.obj("applicationId" -> applicationId)))
+      .flatMap {
+        case Some(box) => Future.successful(box)
+        case None => Future.failed(new RuntimeException(s"Unable to update box $boxId with applicationId"))
+      }
+  }
+
   private def updateBox(boxId: BoxId, updateStatement: JsObject)(implicit ec: ExecutionContext): Future[Option[Box]] =
     findAndUpdate(Json.obj("boxId" -> boxId.value), updateStatement, fetchNewObject = true) map {
       _.result[Box]
     }
 }
+
+
+
+

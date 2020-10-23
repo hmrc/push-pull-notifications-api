@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
-
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
@@ -30,7 +28,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 @Singleton()
 class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
@@ -48,10 +45,9 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
             if (box.boxName.isEmpty || box.clientId.isEmpty) {
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
             } else {
-              val boxId = BoxId(UUID.randomUUID())
-              boxService.createBox(boxId, ClientId(box.clientId), box.boxName).map {
-                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.boxId.raw)))
-                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.boxId.raw)))
+              boxService.createBox(ClientId(box.clientId), box.boxName).map {
+                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxCreateFailedResult =>
                   Logger.info(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
@@ -65,17 +61,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       case Some(box) => Ok(Json.toJson(box))
       case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
     } recover recovery
-  }
-
- @deprecated("this should not be called use updateCallbackUrl instead", since="0.88.x")
-  def updateSubscriber(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[UpdateSubscriberRequest] { updateSubscriberRequest =>
-      boxService.updateSubscriber(boxId, updateSubscriberRequest) map {
-        case Some(box) => Ok(Json.toJson(box))
-        case _ => Logger.info("box not found or update failed")
-          NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-      } recover recovery
-    }
   }
 
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] =

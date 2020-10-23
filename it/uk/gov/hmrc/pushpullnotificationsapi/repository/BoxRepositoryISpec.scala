@@ -56,12 +56,13 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
 
     }
 
-    "create a Box should allow boxs for same clientId but different BoxNames" in {
-      val result: Option[BoxId] = await(repo.createBox(box))
-      result shouldBe Some(boxId)
+    "create a Box should allow boxes for same clientId but different BoxNames" in {
+      val result = await(repo.createBox(box)).asInstanceOf[BoxCreatedResult]
+      result.box.boxId shouldBe boxId
       val newBoxId = BoxId(UUID.randomUUID())
-      val result2 = await(repo.createBox(box.copy(newBoxId, boxName = "someNewName")))
-      result2 shouldBe Some(newBoxId)
+      val newbox = box.copy(newBoxId, boxName = "someNewName")
+      val result2 = await(repo.createBox(newbox)).asInstanceOf[BoxCreatedResult]
+      result2.box shouldBe newbox
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
@@ -70,17 +71,19 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
       val newBoxId = BoxId(UUID.randomUUID())
-      val result2: Unit = await(repo.createBox(box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))))
+      val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))
+      val result2: Unit = await(repo.createBox(newBox))
       result2 shouldBe ((): Unit)
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 2
     }
 
-    "create a Box throw no errors and only create box once when box with same name and client id called twice" in {
-      val result: Unit = await(repo.createBox(box))
-      result shouldBe ((): Unit)
+    "create a Box should throw and exception and only create box once when box with same name and client id called twice" in {
+      await(repo.createBox(box))
+      
 
-      await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
+      val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
+      result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
@@ -90,7 +93,9 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
 
-      await(repo.createBox(box))
+      
+      val result2 =  await(repo.createBox(box))
+      result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
       val fetchedRecords = await(repo.find())
       fetchedRecords.size shouldBe 1
@@ -151,6 +156,31 @@ class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite
     "return None when the box doesn't exist" in {
       val updated = await(repo.updateSubscriber(BoxId(UUID.randomUUID()), new SubscriberContainer(PushSubscriber(callBackEndpoint))))
       updated shouldBe None
+
+    }
+  }
+
+  "updateApplicationId" should {
+
+    "update applicationId for box if it is not present" in {
+      await(repo.createBox(box))
+      val fetchedRecords = await(repo.find())
+      fetchedRecords.size shouldBe 1
+
+      val createdBox = fetchedRecords.head
+      createdBox.applicationId.isDefined shouldBe false
+
+      val appId = ApplicationId("12345")
+
+      val updatedBox = await(repo.updateApplicationId(createdBox.boxId, appId))
+      updatedBox.applicationId shouldBe Some(appId)
+      
+    }
+
+    "return None when the box doesn't exist" in {
+      intercept[RuntimeException]{
+        await(repo.updateApplicationId(BoxId(UUID.randomUUID()), ApplicationId("123")))
+      }
 
     }
   }

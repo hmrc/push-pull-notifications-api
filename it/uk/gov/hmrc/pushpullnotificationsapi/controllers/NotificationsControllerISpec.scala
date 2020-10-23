@@ -21,7 +21,15 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with AuthService with AuditService with PushGatewayService {
+class NotificationsControllerISpec
+  extends ServerBaseISpec
+    with BeforeAndAfterEach
+    with MongoApp
+    with AuthService
+    with AuditService
+    with PushGatewayService
+    with ThirdPartyApplicationService {
+
   this: Suite with ServerProvider =>
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
 
@@ -29,10 +37,18 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
 
+  val boxName = "myboxName"
+  val clientId = "someClientId"
+  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
+  val expectedApplicationId: UUID = UUID.randomUUID()
+  val tpaResponse: String = raw"""{"id":  "${expectedApplicationId.toString}", "clientId": "$clientId"}"""
+
   override def beforeEach(): Unit = {
     super.beforeEach()
     dropMongoDb()
     primeAuditService()
+    primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
     await(boxRepository.ensureIndexes)
     await(notificationRepo.ensureIndexes)
   }
@@ -43,6 +59,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
         "microservice.services.auth.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
+        "microservice.services.third-party-application.port" -> wireMockPort,
         "metrics.enabled" -> true,
         "auditing.enabled" -> true,
         "auditing.consumer.baseUri.host" -> wireMockHost,
@@ -51,11 +68,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       )
 
   val url = s"http://localhost:$port"
-
-  val boxName = "myboxName"
-  val clientId = "someClientId"
-  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
-  val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
 
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
@@ -112,17 +124,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     await(boxRepository.findAll().head)
   }
 
-  def createBoxWithSubscribersAndReturn(): Box = {
-    val result: WSResponse = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
-    result.status shouldBe CREATED
-    val boxId = (Json.parse(result.body) \ "boxId").as[String]
-
-    val updateResult = doPut(s"$url/box/$boxId/subscriber", updateSubscriberJsonBodyWithIds, validHeadersJson)
-    updateResult.status shouldBe OK
-
-    await(boxRepository.findAll().head)
-  }
-
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
     val notifications: mutable.MutableList[String] = mutable.MutableList[String]()
     for (_ <- 0 until numberToCreate) {
@@ -139,7 +140,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
         primeGatewayServiceWithBody(Status.OK)
-        val box = createBoxWithSubscribersAndReturn()
+        val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
@@ -148,14 +149,6 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
-        result.status shouldBe CREATED
-        validateStringIsUUID(result.body)
-      }
-
-      "respond with 201 when notification created for valid xml and xml content type with push subscriber" in {
-        primeGatewayServiceWithBody(Status.OK)
-        val box = createBoxWithSubscribersAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
@@ -169,7 +162,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
         primeGatewayServiceWithBody(Status.BAD_REQUEST)
-        val box = createBoxWithSubscribersAndReturn()
+        val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
@@ -177,7 +170,7 @@ class NotificationsControllerISpec extends ServerBaseISpec with BeforeAndAfterEa
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
         primeGatewayServiceWithBody(Status.INTERNAL_SERVER_ERROR)
-        val box = createBoxWithSubscribersAndReturn()
+        val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)

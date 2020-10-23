@@ -40,6 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import uk.gov.hmrc.http.HeaderCarrier
 
 class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
@@ -70,6 +71,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   val boxIdstr: String = UUID.randomUUID().toString
   val boxId: BoxId = BoxId(UUID.fromString(boxIdstr))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId))
   val jsonBody: String =
     raw"""{"boxName": "$boxName",
          |"clientId": "$clientIdStr" }""".stripMargin
@@ -91,32 +93,32 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
     "createBox" should {
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         jsonBodyOf(result) should be (Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(any[BoxId], eqTo(clientId), eqTo(boxName))(any[ExecutionContext])
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 200 and boxId when box already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxRetrievedResult(boxId)))
+        when(mockBoxService.createBox( any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxRetrievedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(OK)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         jsonBodyOf(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(any[BoxId], eqTo(clientId), eqTo(boxName))(any[ExecutionContext])
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 400 when payload is completely invalid against expected format" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}"))
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
@@ -127,8 +129,8 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
      "return 400 when request payload is missing boxName" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, emptyJsonBody(boxNameVal = "")))
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
@@ -139,8 +141,8 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 415 when content type header is invalid" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = await(doPut("/box",  validHeadersWithInValidContentType, jsonBody))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
@@ -151,8 +153,8 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 415 when content type header is empty" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
-          .thenReturn(Future.successful(BoxCreatedResult(boxId)))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = await(doPut("/box",  validHeadersWithEmptyContentType, jsonBody))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
@@ -164,12 +166,12 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 422 when Left returned from Box Service" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(BoxCreateFailedResult(s"Box with name :$boxName already exists for cleintId: $clientId but unable to retrieve")))
         val result = await(doPut("/box", validHeadersWithValidUserAgent, jsonBody))
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(any[BoxId], eqTo(clientId), eqTo(boxName))(any[ExecutionContext])
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 400 when useragent config is empty" in {
@@ -200,12 +202,12 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 500 when service fails with any runtime exception" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(any[BoxId], any[ClientId], any[String])(any[ExecutionContext]))
+        when(mockBoxService.createBox(any[ClientId], any[String])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(any[BoxId], eqTo(clientId), eqTo(boxName))(any[ExecutionContext])
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(any[ExecutionContext], any[HeaderCarrier])
       }
 
       "return 400 when non JSon payload sent" in {
@@ -283,111 +285,6 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       }
     }
 
-    "updateSubscribers" should {
-
-      val validUpdateSubscriberRequestJson =
-        """
-          |{
-          | "subscriber":
-          |   {
-          |   "subscriberType": "API_PUSH_SUBSCRIBER",
-          |   "callBackUrl":"someURL"
-          |   }
-          |}
-          |""".stripMargin
-
-      val invalidUpdateSubscriberRequestWithUnknownTypeJson =
-        """
-          |{
-          | "subscriber":
-          |   {
-          |   "subscriberId": "09a654ee-e727-48d8-8858-d32d70321ad1",
-          |   "subscriberType": "SOME_UNKNOWN_TYPE",
-          |   "callBackUrl":"someURL"
-          |   }
-          |}
-          |""".stripMargin
-
-      "return 200 when valid request and box update is successful" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result: Result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, validUpdateSubscriberRequestJson))
-        status(result) should be(OK)
-
-        verify(mockBoxService).updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext])
-
-      }
-
-       "return 400 when request contains invalid subscriber type" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result: Result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, invalidUpdateSubscriberRequestWithUnknownTypeJson))
-        
-        status(result) should be(BAD_REQUEST)
-
-        Helpers.contentAsString(result) shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-        verifyNoInteractions(mockBoxService)
-
-      }
-
-      "return 404 when valid request and box update is successful" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(None))
-
-        val result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, validUpdateSubscriberRequestJson))
-        status(result) should be(NOT_FOUND)
-
-        verify(mockBoxService).updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext])
-
-      }
-
-
-      "return 500 when valid request and box service returns failed future" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.failed(new RuntimeException("someError")))
-
-        val result = await(doPut(s"/box/${boxId.raw}/subscriber", validHeaders, validUpdateSubscriberRequestJson))
-        status(result) should be(INTERNAL_SERVER_ERROR)
-
-        verify(mockBoxService).updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext])
-
-      }
-
-
-      "return 400 when JSON is sent not valid against the requestObject" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result = doPut(s"/box/${boxId.raw}/subscriber", validHeaders, "{}")
-
-        status(result) should be(BAD_REQUEST)
-        Helpers.contentAsString(result) shouldBe  "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-      }
-
-      "return 400 when Non JSON payload is sent" in {
-        when(mockBoxService.updateSubscriber(eqTo(boxId), any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result = doPut(s"/box/$boxId/subscriber", validHeaders, "IamNotJson")
-
-        status(result) should be(BAD_REQUEST)
-      }
-
-      "return 400 when boxId is not UUid" in {
-        when(mockBoxService.updateSubscriber(any[BoxId], any[UpdateSubscriberRequest])(any[ExecutionContext]))
-          .thenReturn(Future.successful(Some(Box(boxId = boxId, boxName = boxName, BoxCreator(clientId)))))
-
-        val result: Result = await(doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/subscriber", validHeaders, validUpdateSubscriberRequestJson))
-        status(result) should be(OK)
-
-        verify(mockBoxService).updateSubscriber(any[BoxId], any[UpdateSubscriberRequest])(any[ExecutionContext])
-
-      }
-
-    }
-
      "addCallbackUrl" should {
 
       def createRequest(clientId: String, callBackUrl:String)= {
@@ -401,7 +298,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
       "return 200 when request is successful" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result: Result =
@@ -417,7 +314,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 200 when request contains " in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
 
          val result: Result =
@@ -433,7 +330,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 401 if User-Agent is not whitelisted" in {
           setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result: Result =
@@ -449,7 +346,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 404 if Box does not exist" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(BoxIdNotFound()))
 
          val result: Result =
@@ -465,7 +362,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
        "return 200, successful false and errormessage when mongo update fails" in {
          setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
          val result: Result =
@@ -482,7 +379,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
       "return 200, successful false and errormessage when callback validation fails" in {
         setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
          val result: Result =
@@ -500,7 +397,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 401 if client id does not match that on the box" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
          val result: Result =
@@ -532,13 +429,13 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
        "return 200 when payload is missing the callbackUrl value" in {
           setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext]))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier]))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
           val result: Result = await(doPut(s"/box/$boxIdstr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, "")))
 
           status(result) should be(OK)
           Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-          verify(mockBoxService).updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext])
+          verify(mockBoxService).updateCallbackUrl(eqTo(boxId), any[UpdateCallbackUrlRequest])(any[ExecutionContext], any[HeaderCarrier])
       }
      }
   }

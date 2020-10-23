@@ -26,6 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 private[repository] object ReactiveMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
+  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]

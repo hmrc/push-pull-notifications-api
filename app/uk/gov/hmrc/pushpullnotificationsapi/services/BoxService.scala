@@ -18,88 +18,114 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType._
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
+import java.{util => ju}
+import scala.util.control.NonFatal
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
+
 
 @Singleton
 class BoxService @Inject()(repository: BoxRepository,
                            pushConnector: PushConnector,
+                           applicationConnector: ThirdPartyApplicationConnector,
+                           eventsConnector: ApiPlatformEventsConnector,
                            clientService: ClientService) {
 
-  def createBox(boxId: BoxId, clientId: ClientId, boxName: String)
-               (implicit ec: ExecutionContext): Future[BoxCreateResult] = {
+  def createBox(clientId: ClientId, boxName: String)
+               (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[CreateBoxResult] = {
 
-    for {
-      _ <- clientService.findOrCreateClient(clientId)
-      boxId: Option[BoxId] <- repository.createBox(Box(boxId, boxName, BoxCreator(clientId)))
-      boxCreateResult: BoxCreateResult <- boxId match {
-        case Some(id) => successful(BoxCreatedResult(id))
-        case None => repository.getBoxByNameAndClientId(boxName, clientId) map {
-          case Some(x) => BoxRetrievedResult(x.boxId)
-          case _ =>
-            Logger.info(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")
-            BoxCreateFailedResult(s"Box with name :$boxName already exists for this clientId but unable to retrieve it")
-        }
-      }
-    } yield boxCreateResult
+    repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
+      case Some(x) => successful(BoxRetrievedResult(x))
+      case _ =>
+        for {
+          _ <- clientService.findOrCreateClient(clientId)
+          appDetails <- applicationConnector.getApplicationDetails(clientId)
+          createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id)))
+        } yield createdBox
+    } recoverWith {
+      case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))
+    }
   }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
 
-  @deprecated("No longer supported use updateCallbackUrl", since = "0.88.x")
-  def updateSubscriber(boxId: BoxId, request: UpdateSubscriberRequest)
-                      (implicit ec: ExecutionContext): Future[Option[Box]] = {
-    val subscriber = request.subscriber
-
-    val subscriberObject = subscriber.subscriberType match {
-      case API_PULL_SUBSCRIBER => PullSubscriber(callBackUrl = subscriber.callBackUrl)
-      case API_PUSH_SUBSCRIBER => PushSubscriber(callBackUrl = subscriber.callBackUrl)
-    }
-
-    repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))
-  }
-
-  def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+  def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
+                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) validateCallBack(boxId, request)
+      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) {
+        val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
+
+        for {
+          appId <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(box.applicationId.get)
+          result <- validateCallBack(box, request)
+          _ = result match {
+            case successfulUpdate: CallbackUrlUpdated => {
+              eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl) recoverWith {
+                case NonFatal(e) => Logger.warn(s"Unable to send CallbackUrlUpdated event", e)
+                successful(successfulUpdate)
+              }
+            }
+            case _ => Logger.warn("Updating callback URL failed - not sending event")
+          }
+        } yield result
+      }
       else successful(UpdateCallbackUrlUnauthorisedResult())
       case None => successful(BoxIdNotFound())
+    } recoverWith {
+
+      case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage))
     }
 
   }
 
-  private def validateCallBack(boxId: BoxId, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+  private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)
+                              (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
     if (!request.callbackUrl.isEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult => {
-          Logger.info("Callback Validated for boxId:${boxId.value} updating push callbackUrl")
-          updateBoxWithCallBack(boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
+          Logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
+          updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
         }
         case result: PushConnectorFailedResult => {
-          Logger.info("Callback validation failed for boxId:${boxId.value}")
+          Logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
           successful(CallbackValidationFailed(result.errorMessage))
         }
       }
     } else {
-      Logger.info(s"updating callback for boxId:${boxId.value} with PullSubscriber")
-      updateBoxWithCallBack(boxId, new SubscriberContainer(PullSubscriber("")))
+      Logger.info(s"updating callback for boxId:${box.boxId.value} with PullSubscriber")
+      updateBoxWithCallBack(box.boxId, new SubscriberContainer(PullSubscriber("")))
     }
   }
 
   private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])
-                                   (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+                                   (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] =
     repository.updateSubscriber(boxId, subscriber).map {
       case Some(_) => CallbackUrlUpdated()
-      case _ => {
-        UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
-      }
+      case _ => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
+    }
+
+
+  private def extractCallBackUrl(subscriber: Subscriber): String = {
+    subscriber match {
+      case x: PushSubscriber => x.callBackUrl
+      case _ => ""
     }
   }
+
+  private def updateBoxWithApplicationId(box: Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[ApplicationId] = {
+    applicationConnector.getApplicationDetails(box.boxCreator.clientId)
+      .flatMap(appDetails => {
+        repository.updateApplicationId(box.boxId, appDetails.id)
+        successful(appDetails.id)
+      })
+  }
+
 
 }

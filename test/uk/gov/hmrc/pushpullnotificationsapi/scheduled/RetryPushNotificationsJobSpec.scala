@@ -86,7 +86,7 @@ class RetryPushNotificationsJobSpec extends UnitSpec with MockitoSugar with Mong
     val boxName: String = "boxName"
     val clientId: ClientId = ClientId(UUID.randomUUID.toString)
     val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", now)
-    val box: Box = Box(boxId, boxName, BoxCreator(clientId), Some(subscriber))
+    val box: Box = Box(boxId, boxName, BoxCreator(clientId),  subscriber = Some(subscriber))
 
     "retry pushing the notifications" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
