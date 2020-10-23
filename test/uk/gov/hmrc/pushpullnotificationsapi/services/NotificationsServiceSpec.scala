@@ -105,7 +105,8 @@ class NotificationsServiceSpec extends UnitSpec with MockitoSugar with ArgumentM
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(any[ExecutionContext])
-      verify(mockNotificationsPushService).handlePushNotification(eqTo(BoxObjectWIthNoSubscribers), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
+      verify(mockNotificationsPushService)
+        .handlePushNotification(eqTo(BoxObjectWIthNoSubscribers), any[Notification])(any[HeaderCarrier], any[ExecutionContext])
       validateNotificationSaved(notificationCaptor)
     }
 

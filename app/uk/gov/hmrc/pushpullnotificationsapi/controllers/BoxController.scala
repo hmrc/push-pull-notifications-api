@@ -63,17 +63,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     } recover recovery
   }
 
- @deprecated("this should not be called use updateCallbackUrl instead", since="0.88.x")
-  def updateSubscriber(boxId: BoxId): Action[JsValue] = Action.async(playBodyParsers.json) { implicit request =>
-    withJsonBody[UpdateSubscriberRequest] { updateSubscriberRequest =>
-      boxService.updateSubscriber(boxId, updateSubscriberRequest) map {
-        case Some(box) => Ok(Json.toJson(box))
-        case _ => Logger.info("box not found or update failed")
-          NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-      } recover recovery
-    }
-  }
-
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] =
     (Action andThen
       validateUserAgentHeaderAction)

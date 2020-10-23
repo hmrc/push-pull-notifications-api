@@ -54,34 +54,8 @@ class BoxService @Inject()(repository: BoxRepository,
     }
   }
 
-  // def updateBoxWithApplicationIdIfMissing(boxId: BoxId)
-  //                                    (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Option[Box]] ={
-  //   for {
-  //     maybeBox <- repository.findByBoxId(boxId)
-  //     maybeHasApplicationId: Option[Boolean] = maybeBox.map(_.applicationId.isDefined)
-  //     maybeUpdatedBox <- (maybeBox, maybeHasApplicationId) match {
-  //                       case (Some(box), Some(false)) => updateBoxWithApplicationId(box)
-  //                       case _  =>   successful(maybeBox)
-  //                     }
-  //   } yield maybeUpdatedBox
-  // }
-
-
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
-
-  @deprecated("No longer supported use updateCallbackUrl", since = "0.88.x")
-  def updateSubscriber(boxId: BoxId, request: UpdateSubscriberRequest)
-                      (implicit ec: ExecutionContext): Future[Option[Box]] = {
-    val subscriber = request.subscriber
-
-    val subscriberObject = subscriber.subscriberType match {
-      case API_PULL_SUBSCRIBER => PullSubscriber(callBackUrl = subscriber.callBackUrl)
-      case API_PUSH_SUBSCRIBER => PushSubscriber(callBackUrl = subscriber.callBackUrl)
-    }
-
-    repository.updateSubscriber(boxId, new SubscriberContainer(subscriberObject))
-  }
 
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
@@ -93,7 +67,7 @@ class BoxService @Inject()(repository: BoxRepository,
           appId <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(box.applicationId.get)
           result <- validateCallBack(box, request)
           _ = result match {
-            case _: UpdateCallbackUrlSuccessResult => eventsConnector.sendEvent(appId, oldUrl, request.callbackUrl)
+            case _: UpdateCallbackUrlSuccessResult => eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl)
             case _ => Logger.warn("Updating callback URL failed - not sending event")
           }
         } yield result

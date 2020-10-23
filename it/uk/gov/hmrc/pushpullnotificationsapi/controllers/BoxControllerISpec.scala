@@ -198,51 +198,6 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     }
   }
 
-  "PUT /box/{boxId}/subscriber" should {
-
-    "return 200 and update box successfully when box exists" in {
-
-      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
-
-      val updateResult = callUpdateSubscriberEndpoint(createdBox.boxId.raw, updateSubscriberJsonBodyWithIds, validHeaders)
-      updateResult.status shouldBe OK
-
-      val updatedBox = Json.parse(updateResult.body).as[Box]
-      updatedBox.subscriber.isDefined shouldBe true
-
-    }
-
-    "return 404 when box does not exist" in {
-      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, updateSubscriberJsonBodyWithIds, validHeaders)
-      updateResult.status shouldBe NOT_FOUND
-      updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
-    }
-
-    "return 400 when boxId is not a UUID" in {
-      val updateResult = await(callUpdateSubscriberEndpoint("NotaUUid", updateSubscriberJsonBodyWithIds, validHeaders))
-      updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
-    }
-
-    "return 400 when requestBody is not a valid payload" in {
-      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "{}", validHeaders)
-      updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-    }
-
-    "return 400 when requestBody is not a valid payload against expected format" in {
-      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeaders)
-      updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-    }
-
-    "return 400 when requestBody is missing" in {
-      val updateResult = callUpdateSubscriberEndpoint(UUID.randomUUID().toString, "", validHeaders)
-      updateResult.status shouldBe BAD_REQUEST
-      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
-    }
-  }
-
   "PUT /box/{boxId}/callback" should {
     val callbackUrl = "https://some.callback.url"
 
