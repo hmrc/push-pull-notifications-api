@@ -142,13 +142,13 @@ Attempting to update the Callback URL triggers PPNS to perform a validation of t
 ```
 {
     "clientId": "838e5276-b9d7-4258-a018-ea5cb54f39a1",
-    "callBackUrl": "https://www.example.com/callback"
+    "callbackUrl": "https://www.example.com/callback"
 }
 ```
 | Name | Description |
 | --- | --- |
 | `clientId` | The Developer Hub Client ID that owns the box |
-| `callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `callbackUrl` | The URL of the endpoint where push notifications will be sent |
 
 ### Response
 HTTP Status: `200`
