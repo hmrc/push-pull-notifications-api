@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
+import java.util.UUID
+import java.util.UUID.randomUUID
+
 import com.google.inject.Inject
 import controllers.Assets.CREATED
 import javax.inject.Singleton
@@ -24,7 +27,7 @@ import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.PpnsCallBackUriUpdatedEvent
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 
@@ -37,7 +40,7 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = PpnsCallBackUriUpdatedEvent(applicationId.value, DateTime.now(), oldUrl, newUrl)
+    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, DateTime.now(), oldUrl, newUrl)
     http.POST(url, event)
       .map(_.status == CREATED)
       .recoverWith {
@@ -50,21 +53,23 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
 
 object ApiPlatformEventsConnector {
 
+  case class EventId(value: UUID) extends AnyVal
+  object EventId {
+    def random: EventId = EventId(randomUUID())
+  }
+
   //This is hardcoded at the moment as we dont have the details of the user who initiated the callback change
   case class Actor() {
     val actorId = ""
     val actorType = "UNKNOWN"
   }
 
-  case class PpnsCallBackUriUpdatedEvent(applicationId: String,
+  case class PpnsCallBackUriUpdatedEvent(id: EventId,
+                                         applicationId: String,
                                          eventDateTime: DateTime,
                                          oldCallbackUrl: String,
                                          newCallbackUrl: String) {
     val actor: Actor = Actor()
     val eventType = "PPNS_CALLBACK_URI_UPDATED"
   }
-
-
 }
-
-

@@ -19,9 +19,9 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import org.joda.time.DateTime
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.PpnsCallBackUriUpdatedEvent
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
 object ResponseFormatters{
   val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
@@ -69,6 +69,7 @@ object ConnectorFormatters {
   implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
   implicit val updateCallBAckUrlRequestFormatter =Json.format[UpdateCallbackUrlRequest]
   implicit val applicationResponseformater = Json.format[ApplicationResponse]
+  implicit val eventIdFormat: Format[EventId] = Json.valueFormat[EventId]
   implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
 
 }
