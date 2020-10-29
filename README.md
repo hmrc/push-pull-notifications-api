@@ -136,6 +136,7 @@ Attempting to update the Callback URL triggers PPNS to perform a validation of t
 | Name | Description |
 | --- | --- |
 | `Content-type` | Must be `application/json` 
+| `User-Agent` | User agent that identifies the calling service
 
 ### Request
 ```
