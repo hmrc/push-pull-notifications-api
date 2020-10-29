@@ -125,7 +125,7 @@ HTTP Status: `200` if the box already exists
 
 Set the Callback URL for a box. This defines the endpoint on the third party's system that push notifications will be sent to.
 
-Attempting to update the Callback URL triggers PPNS to perform a validation of the supplied endpoint. The third party's system but respond correctly before the Callback URL is updated.
+Attempting to update the Callback URL triggers PPNS to perform a validation of the supplied endpoint. The third party's system must respond correctly before the Callback URL is updated.
 
 ### Path parameters
 | Name | Description |
