@@ -28,8 +28,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -59,10 +59,7 @@ object ApiPlatformEventsConnector {
   }
 
   //This is hardcoded at the moment as we dont have the details of the user who initiated the callback change
-  case class Actor() {
-    val actorId = ""
-    val actorType = "UNKNOWN"
-  }
+  case class Actor(id: String = "", actorType: String = "UNKNOWN")
 
   case class PpnsCallBackUriUpdatedEvent(id: EventId,
                                          applicationId: String,
@@ -70,8 +67,8 @@ object ApiPlatformEventsConnector {
                                          oldCallbackUrl: String,
                                          newCallbackUrl: String,
                                          boxId: String,
-                                         boxName: String) {
-    val actor: Actor = Actor()
+                                         boxName: String,
+                                         actor: Actor = Actor()) {
     val eventType = "PPNS_CALLBACK_URI_UPDATED"
   }
 }
