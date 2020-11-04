@@ -1,13 +1,15 @@
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import controllers.Assets.{BAD_REQUEST, CREATED, NOT_FOUND}
+import java.util.UUID.randomUUID
+
+import controllers.Assets.{BAD_REQUEST, CREATED}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.{ApiPlatformEventsService, MetricsTestSupport, WireMockSupport}
 
 class ApiPlatformEventsConnectorISpec
@@ -35,18 +37,19 @@ class ApiPlatformEventsConnectorISpec
   }
 
   "sendCallBackUpdatedEvent" should {
+    val box = Box(BoxId(randomUUID), "foo box", BoxCreator(ClientId(randomUUID.toString)))
 
     "return true when call to api platform events returns CREATED" in new SetUp {
       primeCallBackUpdatedEndpoint(CREATED)
 
-      val result = await(objInTest.sendCallBackUpdatedEvent(ApplicationId("12344"), "oldUrl", "newUrl"))
+      val result = await(objInTest.sendCallBackUpdatedEvent(ApplicationId("12344"), "oldUrl", "newUrl", box))
       result shouldBe true
     }
 
     "return false when call to api platform events returns anything other than CREATED" in new SetUp {
       primeCallBackUpdatedEndpoint(BAD_REQUEST)
 
-      val result = await(objInTest.sendCallBackUpdatedEvent(ApplicationId("12344"), "oldUrl", "newUrl"))
+      val result = await(objInTest.sendCallBackUpdatedEvent(ApplicationId("12344"), "oldUrl", "newUrl", box))
       result shouldBe false
     }
 
