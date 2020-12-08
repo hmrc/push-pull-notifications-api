@@ -71,11 +71,7 @@ class NotificationPushService @Inject()(connector: PushConnector,
     subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && (!subscriber.asInstanceOf[PushSubscriber].callBackUrl.isEmpty)
 
   private def calculateForwardedHeaders(client: Client, notificationAsJsonString: String): List[ForwardedHeader] = {
-    if (appConfig.signPushNotifications) {
-      val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)
-      List(ForwardedHeader("X-Hub-Signature", payloadSignature))
-    } else {
-      List.empty
-    }
+    val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)
+    List(ForwardedHeader("X-Hub-Signature", payloadSignature))
   }
 }
