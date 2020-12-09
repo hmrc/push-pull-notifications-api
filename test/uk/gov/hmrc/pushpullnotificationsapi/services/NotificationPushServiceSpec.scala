@@ -95,8 +95,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
     }
 
-    "put the notification signature in the forwarded headers when configured to sign the notifications" in new Setup {
-      when(mockAppConfig.signPushNotifications).thenReturn(true)
+    "put the notification signature in the forwarded headers" in new Setup {
       val expectedSignature = "the signature"
       when(mockHmacService.sign(any, any)).thenReturn(expectedSignature)
       val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
@@ -115,26 +114,6 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
       await(serviceToTest.handlePushNotification(box, notification))
 
       outboundNotificationCaptor.getValue.forwardedHeaders should contain (ForwardedHeader("X-Hub-Signature", expectedSignature))
-    }
-
-    "not put the notification signature in the forwarded headers when configured to not sign the notifications" in new Setup {
-      when(mockAppConfig.signPushNotifications).thenReturn(false)
-      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
-      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
-      val notification: Notification =
-        Notification(
-          NotificationId(UUID.randomUUID()),
-          BoxId(UUID.randomUUID()),
-          MessageContentType.APPLICATION_JSON,
-          """{ "foo": "bar" }""",
-          NotificationStatus.PENDING)
-
-      await(serviceToTest.handlePushNotification(box, notification))
-
-      outboundNotificationCaptor.getValue.forwardedHeaders shouldBe empty
     }
 
     "return false when connector returns failed result due to exception" in new Setup {
