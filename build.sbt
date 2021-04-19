@@ -14,8 +14,6 @@ lazy val scoverageSettings = {
   )
 }
 
-
-
 lazy val compileDeps = Seq(
   ws,
   "uk.gov.hmrc" %% "bootstrap-play-26" % "1.13.0",
@@ -70,12 +68,7 @@ lazy val root = (project in file("."))
     organization := "uk.gov.hmrc",
     scalaVersion := "2.12.10",
     PlayKeys.playDefaultPort := 6701,
-    resolvers := Seq(
-      Resolver.bintrayRepo("hmrc", "releases"),
-      Resolver.bintrayRepo("hmrc", "release-candidates"),
-      Resolver.typesafeRepo("releases"),
-      Resolver.jcenterRepo
-    ),
+    resolvers += Resolver.typesafeRepo("releases"),
     libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
     dependencyOverrides ++= jettyOverrides,
     publishingSettings,
