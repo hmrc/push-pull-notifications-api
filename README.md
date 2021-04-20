@@ -121,10 +121,11 @@ HTTP Status: `200` if the box already exists
 | `boxName` or `clientId` missing from request body | `400` | `INVALID_REQUEST_PAYLOAD`
 | Access denied, service is not whitelisted | `403` | `FORBIDDEN`
 
-## `PUT /box/:boxId/subscriber`
+## `PUT /box/:boxId/callback`
 
-Set the subscriber for a box. The _callbackUrl_ in the subscriber is the endpoint where push notifications will be 
-sent to.
+Set the Callback URL for a box. This defines the endpoint on the third party's system that push notifications will be sent to.
+
+Attempting to update the Callback URL triggers PPNS to perform a validation of the supplied endpoint. The third party's system must respond correctly before the Callback URL is updated.
 
 ### Path parameters
 | Name | Description |
@@ -135,52 +136,52 @@ sent to.
 | Name | Description |
 | --- | --- |
 | `Content-type` | Must be `application/json` 
+| `User-Agent` | User agent that identifies the calling service
 
 ### Request
 ```
 {
-    "subscriber": {
-        "subscriberType": "API_PUSH_SUBSCRIBER",
-        "callBackUrl": "https://www.example.com/callback"
-    }
+    "clientId": "838e5276-b9d7-4258-a018-ea5cb54f39a1",
+    "callbackUrl": "https://www.example.com/callback"
 }
 ```
 | Name | Description |
 | --- | --- |
-| `subscriberType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
-| `callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `clientId` | The Developer Hub Client ID that owns the box |
+| `callbackUrl` | The URL of the endpoint where push notifications will be sent |
 
 ### Response
 HTTP Status: `200`
 ```
 {
-    "boxId": "1c5b9365-18a6-55a5-99c9-83a091ac7f26",
-    "boxName":"BOX 2",
-    "boxCreator":{
-        "clientId": "X5ZasuQLH0xqKooV_IEw6yjQNfEa"
-    },
-    "subscriber": {
-        "subscribedDateTime": "2020-06-01T10:27:33.613+0000",
-        "callBackUrl": "https://www.example.com/callback"
-        "subscriptionType": "API_PUSH_SUBSCRIBER",
-    }
+    "successful": "true"
 }
 ```
 | Name | Description |
 | --- | --- |
-| `boxId` | Identifier for a box
-| `boxName` | Box name 
-| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box.
-| `subscriber` | Details of the subscriber to this box |
-| `subscriber.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created. |
-| `subscriber.callBackUrl` | The URL of the endpoint where push notifications will be sent |
-| `subscriber.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `successful` | Whether the Callback URL was updated successfully or not
+
+### Other `200` responses
+
+In addition to the successful response above, it is also currently possible to receive a `200` response in other 
+scenarios where the Callback URL has not been updated. In these cases the response will look like the following:
+
+```
+    "successful": "false",
+    "errorMessage": "Reason for failure"
+```
+
+The scenarios where this can occur are as follows:
+
+* PPNS has been unable to validate the Callback URL on the client's system
+* PPNS has been unable to update the Callback URL internally
 
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
 | Box ID is not a UUID | `400` | `BAD_REQUEST`
-| `subscriberType` or `callBackUrl` is missing or invalid in request body | `400` | `INVALID_REQUEST_PAYLOAD`
+| `clientId` or `callBackUrl` is missing or invalid in request body | `400` | `INVALID_REQUEST_PAYLOAD`
+| Supplied `clientId` does not match that associated with box | `401` | `UNAUTHORIZED`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 
 ## `POST /box/:boxId/notifications`

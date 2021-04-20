@@ -67,7 +67,7 @@ class BoxService @Inject()(repository: BoxRepository,
           result <- validateCallBack(box, request)
           _ = result match {
             case successfulUpdate: CallbackUrlUpdated => {
-              eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl) recoverWith {
+              eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box) recoverWith {
                 case NonFatal(e) => Logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                 successful(successfulUpdate)
               }
