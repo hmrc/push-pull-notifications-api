@@ -42,4 +42,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val apiStatus = config.get[String]("apiStatus")
   val authorizationToken: String = config.get[String]("authorizationKey")
   val mongoEncryptionKey: String = config.get[String]("mongodb.encryption.key")
+
+  val maxNotificationSize = config.underlying.getBytes("notifications.maxSize")
 }

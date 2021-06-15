@@ -56,6 +56,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   override lazy val app: Application = GuiceApplicationBuilder()
+    .configure(Map("notifications.maxSize" -> "50B"))
     .overrides(bind[NotificationsService].to(mockNotificationService))
     .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
@@ -109,6 +110,13 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
         verify(mockNotificationService)
           .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext], any[HeaderCarrier])
+      }
+
+      "fail when payload is too large" in {
+        val overlyLargeJsonBody: String = """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
+
+        val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, overlyLargeJsonBody)
+        status(result) should be(REQUEST_ENTITY_TOO_LARGE)
       }
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {

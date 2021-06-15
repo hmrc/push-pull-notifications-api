@@ -51,7 +51,7 @@ class NotificationsController @Inject()(appConfig: AppConfig,
   def saveNotification(boxId: BoxId): Action[String] =
     (Action andThen
       validateUserAgentHeaderAction)
-      .async(playBodyParsers.tolerantText) { implicit request =>
+      .async(playBodyParsers.tolerantText(appConfig.maxNotificationSize)) { implicit request =>
         val maybeConvertedType = contentTypeHeaderToNotificationType
         maybeConvertedType.fold(
           Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
