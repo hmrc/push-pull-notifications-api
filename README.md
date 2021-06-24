@@ -190,6 +190,8 @@ Create a notification
 
 This endpoint is restricted, only a whitelist of services can access it.
 
+N.B. Maximum payload (request body) size currently supported is 100K.
+
 ### Path parameters
 | Name | Description |
 | --- | --- |
@@ -232,6 +234,7 @@ HTTP Status: `201`
 | Request body does not match the Content-Type header | `400` | `INVALID_REQUEST_PAYLOAD` |
 | Access denied, service is not whitelisted | `403` | `FORBIDDEN`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
+| Request is too large | `413` |
 
 ## `GET /box/:boxId/notifications`
 
