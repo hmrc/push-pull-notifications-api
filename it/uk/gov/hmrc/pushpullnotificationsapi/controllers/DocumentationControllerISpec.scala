@@ -2,19 +2,18 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.{status => _, _}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import org.scalatest.{BeforeAndAfterEach, TestData}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.{Application, Mode}
 import play.api.http.Status.{NO_CONTENT, OK}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
-import uk.gov.hmrc.play.test.UnitSpec
+import play.api.test.Helpers._
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-class DocumentationControllerISpec extends UnitSpec with GuiceOneAppPerTest with MockitoSugar with ScalaFutures with BeforeAndAfterEach {
+class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest with BeforeAndAfterEach {
 
     val stubHost = "localhost"
     val stubPort = sys.env.getOrElse("WIREMOCK_SERVICE_LOCATOR_PORT", "11112").toInt
@@ -44,14 +43,11 @@ class DocumentationControllerISpec extends UnitSpec with GuiceOneAppPerTest with
     }
 
     "microservice" should {
-
-
       "provide definition endpoint and documentation endpoint for each api" in new Setup {
-
         val result = documentationController.definition()(request)
         status(result) shouldBe OK
 
-        val jsonResponse = jsonBodyOf(result).futureValue
+        val jsonResponse = contentAsJson(result)
 
         // None of these lines below should throw if successful.
         (jsonResponse \\ "version") map (_.as[String])
@@ -67,7 +63,7 @@ class DocumentationControllerISpec extends UnitSpec with GuiceOneAppPerTest with
         val result = documentationController.raml("1.0", "application.raml")(request)
 
         status(result) shouldBe OK
-        bodyOf(result).futureValue should startWith("#%RAML 1.0")
+        contentAsString(result) should startWith("#%RAML 1.0")
       }
     }
 

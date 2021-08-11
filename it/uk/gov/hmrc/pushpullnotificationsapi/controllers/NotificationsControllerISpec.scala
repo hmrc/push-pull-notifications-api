@@ -121,7 +121,7 @@ class NotificationsControllerISpec
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
     result.status shouldBe CREATED
-    await(boxRepository.findAll().head)
+    await(boxRepository.findAll()).head
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {

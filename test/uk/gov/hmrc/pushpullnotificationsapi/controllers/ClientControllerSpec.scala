@@ -18,10 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID.randomUUID
 
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
@@ -30,16 +27,16 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
-class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
+class ClientControllerSpec extends AsyncHmrcSpec
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
@@ -57,7 +54,7 @@ class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
   }
 
   val authToken = randomUUID.toString
-  private def setUpAppConfig(authHeaderValue: Option[String] = None): Unit = {
+  private def setUpAppConfig(authHeaderValue: Option[String]): Unit = {
     authHeaderValue match {
       case Some(value) =>
         when(mockAppConfig.authorizationToken).thenReturn(value)
@@ -80,32 +77,33 @@ class ClientControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatch
         setUpAppConfig(Some(authToken))
         when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(Some(Seq(clientSecret))))
 
-        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken)))
+        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
 
         status(result) shouldBe OK
-        jsonBodyOf(result) shouldBe toJson(Seq(clientSecret))
+        contentAsJson(result) shouldBe toJson(Seq(clientSecret))
       }
 
       "return 404 when there is no matching client for the given client ID" in {
         setUpAppConfig(Some(authToken))
         when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
 
-        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken)))
+        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
+
 
         status(result) shouldBe NOT_FOUND
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "CLIENT_NOT_FOUND"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "Client not found"
+        (contentAsJson(result) \ "code").as[String] shouldBe "CLIENT_NOT_FOUND"
+        (contentAsJson(result) \ "message").as[String] shouldBe "Client not found"
       }
 
       "return 403 when the authorization header does not match the token from the app config" in {
         setUpAppConfig(Some(authToken))
         when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
 
-        val result: Result = await(doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken")))
+        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken"))
 
         status(result) shouldBe FORBIDDEN
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "FORBIDDEN"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "Authorisation failed"
+        (contentAsJson(result) \ "code").as[String] shouldBe "FORBIDDEN"
+        (contentAsJson(result) \ "message").as[String] shouldBe "Authorisation failed"
       }
     }
 }

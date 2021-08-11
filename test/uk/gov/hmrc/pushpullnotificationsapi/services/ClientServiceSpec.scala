@@ -18,17 +18,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
 
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
-import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ClientServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
+class ClientServiceSpec extends AsyncHmrcSpec {
 
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)

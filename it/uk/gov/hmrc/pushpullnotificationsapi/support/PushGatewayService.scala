@@ -36,7 +36,7 @@ trait PushGatewayService {
     )
   }
 
-   private def primeGatewayWithBody(url: String, status : Int, successfulResult: Boolean = true, body: String)= {
+   private def primeGatewayWithBody(url: String, status : Int, successfulResult: Boolean, body: String)= {
    
     stubFor(post(urlEqualTo(url))
       .withHeader("Authorization", equalTo("iampushpullapi"))

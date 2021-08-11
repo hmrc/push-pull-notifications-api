@@ -6,14 +6,14 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.core.errors.DatabaseException
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ClientRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
+class ClientRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

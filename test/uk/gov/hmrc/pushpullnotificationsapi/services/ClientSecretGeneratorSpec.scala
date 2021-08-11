@@ -16,14 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import org.mockito.ArgumentMatchersSugar
-import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.util.matching.Regex
 
-class ClientSecretGeneratorSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar {
+class ClientSecretGeneratorSpec extends AsyncHmrcSpec {
 
   trait Setup {
     val underTest = new ClientSecretGenerator

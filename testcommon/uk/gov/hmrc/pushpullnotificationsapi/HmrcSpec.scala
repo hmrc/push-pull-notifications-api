@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.services
+package uk.gov.hmrc.pushpullnotificationsapi
 
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatestplus.play.WsScalaTestClient
 
-class HmacServiceSpec extends AsyncHmrcSpec {
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 
-  trait Setup {
-    val validKey = "the signing key"
-    val message = "the message to sign"
-    val objInTest = new HmacService()
-  }
+abstract class HmrcSpec extends WordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
 
-  "sign" should {
-    "return the hmac signature in hexadecimal format" in new Setup {
-      val result: String = objInTest.sign(validKey, message)
-
-      result shouldBe "2c20cd60c8d112cceb1ed7314d8e575314c49c16"
-    }
-  }
+abstract class AsyncHmrcSpec
+  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
 }
