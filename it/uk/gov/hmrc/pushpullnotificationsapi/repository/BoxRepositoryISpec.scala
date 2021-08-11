@@ -6,13 +6,13 @@ import org.joda.time.DateTime
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BoxRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
+class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

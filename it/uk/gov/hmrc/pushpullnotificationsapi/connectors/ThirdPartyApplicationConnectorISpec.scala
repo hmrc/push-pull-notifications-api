@@ -2,19 +2,18 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import java.util.UUID
 
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.test.Helpers._
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class ThirdPartyApplicationConnectorISpec
-  extends UnitSpec with WireMockSupport with GuiceOneAppPerSuite with ScalaFutures with MetricsTestSupport with ThirdPartyApplicationService {
+  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 

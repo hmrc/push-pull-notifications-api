@@ -16,10 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
@@ -27,12 +24,12 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.Result
 import play.api.test.Helpers.{route, _}
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.Future
 
-class DocumentationControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
+class DocumentationControllerSpec extends AsyncHmrcSpec
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
@@ -68,7 +65,6 @@ class DocumentationControllerSpec extends UnitSpec with MockitoSugar with Argume
         val jsonResult = Helpers.contentAsJson(result) 
         (jsonResult \ "api" \ "versions" \ 0 \ "status").as[String] shouldBe "BETA"
         (jsonResult \ "api" \ "versions" \ 0 \ "endpointsEnabled").as[Boolean] shouldBe true
-        // jsonResult.as[Boolean] shouldBe true
       }
     }
   }

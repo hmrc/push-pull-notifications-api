@@ -12,10 +12,11 @@ import play.api.test.Helpers._
 import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.HeaderCarrierConverter
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import scala.concurrent.Future
 
 abstract class BaseISpec
-  extends UnitSpec with WireMockSupport  with MetricsTestSupport {
+  extends AsyncHmrcSpec with WireMockSupport  with MetricsTestSupport {
 
   def app: Application
   protected def appBuilder: GuiceApplicationBuilder
@@ -26,11 +27,11 @@ abstract class BaseISpec
 
   protected implicit def materializer: Materializer = app.materializer
 
-  protected def checkHtmlResultWithBodyText(result: Result, expectedSubstring: String): Unit = {
+  protected def checkHtmlResultWithBodyText(result: Future[Result], expectedSubstring: String): Unit = {
     status(result) shouldBe 200
     contentType(result) shouldBe Some("text/html")
     charset(result) shouldBe Some("utf-8")
-    bodyOf(result) should include(expectedSubstring)
+    contentAsString(result) should include(expectedSubstring)
   }
 
   private lazy val messagesApi = app.injector.instanceOf[MessagesApi]

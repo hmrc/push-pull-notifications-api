@@ -11,17 +11,17 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONLong
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationRepositoryISpec extends UnitSpec with MongoApp with GuiceOneAppPerSuite {
+class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150

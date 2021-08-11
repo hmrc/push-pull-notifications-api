@@ -19,24 +19,24 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import java.util.UUID
 
 import org.joda.time.DateTime
-import org.mockito.{ArgumentCaptor, ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{notifications, _}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import org.mockito.captor.ArgCaptor
 
 
-class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar with  BeforeAndAfterEach {
+class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
   private val mockConnector = mock[PushConnector]
   private val mockNotificationsRepo = mock[NotificationsRepository]
@@ -74,8 +74,8 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     }
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
-      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
+      val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+      when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
@@ -90,7 +90,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
-      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
+      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.value)
       result shouldBe true
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
     }
@@ -98,8 +98,8 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
     "put the notification signature in the forwarded headers" in new Setup {
       val expectedSignature = "the signature"
       when(mockHmacService.sign(any, any)).thenReturn(expectedSignature)
-      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any)).thenReturn(successful(PushConnectorSuccessResult()))
+      val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+      when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
@@ -113,12 +113,12 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
       await(serviceToTest.handlePushNotification(box, notification))
 
-      outboundNotificationCaptor.getValue.forwardedHeaders should contain (ForwardedHeader("X-Hub-Signature", expectedSignature))
+      outboundNotificationCaptor.value.forwardedHeaders should contain (ForwardedHeader("X-Hub-Signature", expectedSignature))
     }
 
     "return false when connector returns failed result due to exception" in new Setup {
-      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
+      val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+      when(mockConnector.send(outboundNotificationCaptor)(*))
         .thenReturn(successful(PushConnectorFailedResult("some error")))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
@@ -130,13 +130,13 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
-      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
+      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.value)
       result shouldBe false
     }
 
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
-      val outboundNotificationCaptor: ArgumentCaptor[OutboundNotification] = ArgumentCaptor.forClass(classOf[OutboundNotification])
-      when(mockConnector.send(outboundNotificationCaptor.capture())(any[HeaderCarrier]))
+      val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+      when(mockConnector.send(outboundNotificationCaptor)(*))
         .thenReturn(successful(PushConnectorFailedResult("Some Error")))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
@@ -148,7 +148,7 @@ class NotificationPushServiceSpec extends UnitSpec with MockitoSugar with Argume
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
-      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.getValue)
+      checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.value)
       result shouldBe false
       verifyZeroInteractions(mockNotificationsRepo)
     }

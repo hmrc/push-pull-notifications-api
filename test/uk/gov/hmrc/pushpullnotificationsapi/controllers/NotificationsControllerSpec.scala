@@ -20,10 +20,8 @@ import java.util.UUID
 
 import akka.stream.Materializer
 import org.joda.time.DateTime
-import org.mockito.ArgumentMatchersSugar
-import org.mockito.Mockito.{reset, verify, verifyNoInteractions, when}
+import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
@@ -31,25 +29,22 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
-import play.api.test.Helpers.{BAD_REQUEST, POST, route, _}
-import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.Retrieval
+import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.format.DateTimeFormat
+import play.api.test.FakeRequest
 
-class NotificationsControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchersSugar
+class NotificationsControllerSpec extends AsyncHmrcSpec
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   val mockNotificationService: NotificationsService = mock[NotificationsService]
@@ -101,15 +96,15 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     "saveNotification" should {
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
         when(mockNotificationService.saveNotification(eqTo(boxId),
-          any[NotificationId],
+          *[NotificationId],
           eqTo(MessageContentType.APPLICATION_JSON),
-          eqTo(jsonBody))(any[ExecutionContext], any[HeaderCarrier])).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+          eqTo(jsonBody))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(any[ExecutionContext], any[HeaderCarrier])
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)
       }
 
       "fail when payload is too large" in {
@@ -121,18 +116,17 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
       }
 
       "return 400 when json content type header is sent but invalid json" in {
-
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, xmlBody)
         status(result) should be(BAD_REQUEST)
 
@@ -140,7 +134,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 400 when xml content type header is sent but invalid xml" in {
-
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, jsonBody)
         status(result) should be(BAD_REQUEST)
 
@@ -148,7 +141,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 403 when useragent header is not whitelisted" in {
-
         val result = doPost(s"/box/${boxId.raw}/notifications", headersWithInValidUserAgent, jsonBody)
         status(result) should be(FORBIDDEN)
 
@@ -156,7 +148,6 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 415 when bad contentType header is sent" in {
-
         val result = doPost(s"/box/${boxId.raw}/notifications",  Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
@@ -164,51 +155,46 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
       }
 
       "return 500 when save notification throws Duplicate Notification Exception" in {
-
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
 
-
-        val result = await(doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody))
+        val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
-        val bodyVal = Helpers.contentAsString(result)
+        val bodyVal = contentAsString(result)
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
 
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
       }
 
       "return 404 when save notification throws Box not found Exception" in {
-
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(NOT_FOUND)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {
-
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier]))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), any[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(any[ExecutionContext], any[HeaderCarrier])
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
       }
     }
 
     "getNotificationsByBoxIdAndFilters" should {
-
       "return 200 and list of matching notifications when status filter provided" in {
         testAndValidateGetByQueryParams(boxId, OK, Some("ACKNOWLEDGED"))
       }
@@ -220,12 +206,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(any[ExecutionContext]))
+          eqTo(None))(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(now(UTC)))))))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
-        Helpers.contentAsString(result).contains("retryAfterDateTime") shouldBe false
+        contentAsString(result).contains("retryAfterDateTime") shouldBe false
       }
 
       "not expand value classes" in {
@@ -235,13 +221,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(any[ExecutionContext]))
+          eqTo(None))(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification))))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
-        val resultStr =  Helpers.contentAsString(result)
-        println(resultStr)
+        val resultStr =  contentAsString(result)
         val expectedCreatedDateTime = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ").print(notification.createdDateTime)
         resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
         resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
@@ -256,12 +241,12 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(any[ExecutionContext]))
+          eqTo(None))(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
         status(result) shouldBe OK
-        val resultStr =  Helpers.contentAsString(result)
+        val resultStr =  contentAsString(result)
         resultStr.contains("\"messageContentType\":\"application/json\"") shouldBe true
         resultStr.contains("\"messageContentType\":\"application/xml\"") shouldBe true
       }
@@ -303,17 +288,17 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       "return 400 when invalid status query parameter is provided" in {
         primeAuthAction(clientIdStr)
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=SOMEVALUE", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications?status=SOMEVALUE", validHeadersJson)
         status(result) shouldBe BAD_REQUEST
-        val resultStr = Helpers.contentAsString(result)
+        val resultStr = contentAsString(result)
         resultStr shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"Invalid Status parameter provided\"}"
       }
 
       "return 400 when unknown query parameter is provided" in {
         primeAuthAction(clientIdStr)
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?IamUnknown=whatever", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications?IamUnknown=whatever", validHeadersJson)
         status(result) shouldBe BAD_REQUEST
-        val resultStr = Helpers.contentAsString(result)
+        val resultStr = contentAsString(result)
         resultStr shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"Invalid / Unknown query parameter provided\"}"
       }
 
@@ -323,15 +308,15 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         primeAuthAction(UUID.randomUUID().toString)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
-          any[ClientId],
+          *[ClientId],
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
+          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
           .thenReturn(Future.successful(GetNotificationsServiceBoxNotFoundResult("")))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe NOT_FOUND
-        Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+        contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
 
       "return 401 when clientId does not match" in {
@@ -340,13 +325,13 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         primeAuthAction(UUID.randomUUID().toString)
         when(mockNotificationService.getNotifications(
           eqTo(boxId),
-          any[ClientId],
+          *[ClientId],
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
+          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
           .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe FORBIDDEN
       }
 
@@ -359,43 +344,43 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
           eqTo(clientId),
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(any[ExecutionContext]))
+          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List.empty)))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe OK
       }
 
       "return 401 when no clientId is returned from auth" in {
-        when(mockAuthConnector.authorise[Option[String]](any[Predicate], any[Retrieval[Option[String]]])(any[HeaderCarrier], any[concurrent.ExecutionContext]))
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *))
           .thenReturn(Future.successful(None))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
         status(result) shouldBe UNAUTHORIZED
       }
 
       "return 401 when authorisation fails" in {
-        when(mockAuthConnector.authorise[Option[String]](any[Predicate], any[Retrieval[Option[String]]])(any[HeaderCarrier], any[concurrent.ExecutionContext]))
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *))
           .thenReturn(Future.failed(SessionRecordNotFound()))
 
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
         status(result) shouldBe UNAUTHORIZED
       }
 
       "return 406 when accept header is missing" in {
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT)
 
         status(result) shouldBe NOT_ACCEPTABLE
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
 
       "return 406 when accept header is invalid" in {
-        val result = await(doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader))
+        val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson - ACCEPT + invalidAcceptHeader)
 
         status(result) shouldBe NOT_ACCEPTABLE
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
     }
 
@@ -403,103 +388,102 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
 
       "return 200 when acknowledge request is valid " in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
         status(result) shouldBe NO_CONTENT
       }
 
       "return 403 when service returns unauthorised result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
         status(result) shouldBe FORBIDDEN
       }
 
       "return 404 when service returns box not found result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
         status(result) shouldBe NOT_FOUND
       }
 
 
       "return 403 when acknowledge request is valid but service return unauthorised" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
         status(result) shouldBe FORBIDDEN
       }
 
       "return 406 when invalid accept header is provided" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(any[BoxId], any[ClientId], any[AcknowledgeNotificationsRequest])(any[ExecutionContext]))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest)
         status(result) shouldBe NOT_ACCEPTABLE
       }
 
       "return 400 when acknowledge request is not valid against the model" in {
         primeAuthAction(clientIdStr)
         val request = "{\"somINvalidKey\": [\"222222\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request)
         status(result) shouldBe BAD_REQUEST
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when request contains and invalid(nonUUID) notificationID" in {
         primeAuthAction(clientIdStr)
         val request = "{\"notificationIds\": [\"22222222\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request)
         status(result) shouldBe BAD_REQUEST
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
       }
 
       "return 400 when request contains no ids" in {
         primeAuthAction(clientIdStr)
         val request = "{\"notificationIds\": []}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, request)
         status(result) shouldBe BAD_REQUEST
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when acknowledge request contains duplicates" in {
         primeAuthAction(clientIdStr)
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"de396b71-55c7-4a24-954a-df6bd4a85795\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
         status(result) shouldBe BAD_REQUEST
-        (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-        (jsonBodyOf(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 415 if Content-Type header is invalid" in {
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
-        val result = await(doPut(s"/box/${boxId.raw}/notifications/acknowledge", headersWithInvalidContentType, validatedAcknowledgeRequest))
+        val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", headersWithInvalidContentType, validatedAcknowledgeRequest)
         status(result) should be (UNSUPPORTED_MEDIA_TYPE)
 
-        val jsonBody = Helpers.contentAsJson(result)
+        val jsonBody = contentAsJson(result)
         (jsonBody \ "code").as[String] shouldBe "BAD_REQUEST"
       }
     }
   }
 
   private def primeAuthAction(clientId: String): Unit = {
-    when(mockAuthConnector.authorise[Option[String]](any[Predicate], any[Retrieval[Option[String]]])(any[HeaderCarrier],
-      any[concurrent.ExecutionContext])).thenReturn(Future.successful(Some(clientId)))
+    when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(Some(clientId)))
 
   }
 
@@ -509,8 +493,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
                                               maybeFromDateStr: Option[String] = None,
                                               maybeToDateStr: Option[String] = None): Unit = {
     if (expectedStatusCode.equals(UNAUTHORIZED)) {
-      when(mockAuthConnector.authorise[Option[String]](any[Predicate], any[Retrieval[Option[String]]])
-        (any[HeaderCarrier], any[concurrent.ExecutionContext])).thenReturn(Future.successful(None))
+      when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
     } else {
       primeAuthAction(clientIdStr)
     }
@@ -525,7 +508,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         eqTo(clientId),
         eqTo( maybeNotificationStatus.map(NotificationStatus.withName)),
         eqTo(maybeFromDate),
-        eqTo(maybeToDate))(any[ExecutionContext]))
+        eqTo(maybeToDate))(*))
         .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
       case NOT_FOUND => ()
       case BAD_REQUEST => ()
@@ -535,7 +518,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
     val toDateQueryString = maybeToDateStr.fold("")(x => s"toDate=$x&")
     val fromDateQueryString = maybeFromDateStr.fold("")(x => s"fromDate=$x&")
 
-    val result = await(doGet(s"/box/${boxId.raw}/notifications?" ++ statusQueryString ++ fromDateQueryString ++ toDateQueryString, validHeadersJson))
+    val result = doGet(s"/box/${boxId.raw}/notifications?" ++ statusQueryString ++ fromDateQueryString ++ toDateQueryString, validHeadersJson)
     status(result) shouldBe expectedStatusCode
 
     expectedStatusCode match {
@@ -546,7 +529,7 @@ class NotificationsControllerSpec extends UnitSpec with MockitoSugar with Argume
         eqTo(clientId),
         eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
         eqTo(maybeFromDate),
-        eqTo(maybeToDate))(any[ExecutionContext])
+        eqTo(maybeToDate))(*)
     }
   }
 

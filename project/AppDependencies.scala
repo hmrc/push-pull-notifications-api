@@ -24,7 +24,6 @@ object AppDependencies {
   )
 
   lazy val testDependencies = Seq(
-    "uk.gov.hmrc"             %% "hmrctest"                   % "3.9.0-play-26",
     "org.mockito"             %% "mockito-scala-scalatest"    % "1.14.8",
     "org.scalatestplus.play"  %% "scalatestplus-play"         % "3.1.3",
     "uk.gov.hmrc"             %% "reactivemongo-test"         % "4.21.0-play-26",
