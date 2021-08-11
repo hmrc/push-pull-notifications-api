@@ -71,7 +71,7 @@ class BoxControllerSpec extends UnitSpec with MockitoSugar with ArgumentMatchers
 
   val boxIdstr: String = UUID.randomUUID().toString
   val boxId: BoxId = BoxId(UUID.fromString(boxIdstr))
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId))
+  val box: Box = Box(boxId, boxName, BoxCreator(clientId))
   val jsonBody: String =
     raw"""{"boxName": "$boxName",
          |"clientId": "$clientIdStr" }""".stripMargin

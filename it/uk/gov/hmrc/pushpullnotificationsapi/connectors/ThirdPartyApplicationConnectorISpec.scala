@@ -5,12 +5,13 @@ import java.util.UUID
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.Status
+import play.api.test.Helpers._
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
+import uk.gov.hmrc.http.UpstreamErrorResponse
 
 class ThirdPartyApplicationConnectorISpec
   extends UnitSpec with WireMockSupport with GuiceOneAppPerSuite with ScalaFutures with MetricsTestSupport with ThirdPartyApplicationService {
@@ -43,22 +44,20 @@ class ThirdPartyApplicationConnectorISpec
       val expectedApplicationId = ApplicationId(UUID.randomUUID().toString)
       val jsonResponse: String = raw"""{"id":  "${expectedApplicationId.value}", "clientId": "$clientId"}"""
 
-      primeApplicationQueryEndpoint(Status.OK, jsonResponse, clientId)
+      primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 
       val result: ApplicationResponse = await(objInTest.getApplicationDetails(ClientId(clientId)))
 
       result.id shouldBe expectedApplicationId
     }
 
+
     "return failed Future if TPA returns a 404" in new SetUp {
-      primeApplicationQueryEndpoint(Status.NOT_FOUND, "", clientId)
+      primeApplicationQueryEndpoint(NOT_FOUND, "", clientId)
 
-      intercept[NotFoundException] {
+      intercept[UpstreamErrorResponse] {
         await(objInTest.getApplicationDetails(ClientId(clientId)))
-      }
-
+      }.statusCode shouldBe NOT_FOUND
     }
-
   }
-
 }

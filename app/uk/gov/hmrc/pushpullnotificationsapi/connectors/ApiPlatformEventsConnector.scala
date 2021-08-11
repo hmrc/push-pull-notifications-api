@@ -30,9 +30,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 @Singleton
 class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
@@ -41,7 +42,7 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
     val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, DateTime.now(), oldUrl, newUrl, box.boxId.raw, box.boxName)
-    http.POST(url, event)
+    http.POST[PpnsCallBackUriUpdatedEvent,HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {
         case NonFatal(e) =>
