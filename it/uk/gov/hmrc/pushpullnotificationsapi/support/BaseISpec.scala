@@ -11,9 +11,9 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import scala.concurrent.Future
+import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
 abstract class BaseISpec
   extends AsyncHmrcSpec with WireMockSupport  with MetricsTestSupport {
@@ -40,7 +40,7 @@ abstract class BaseISpec
   protected def htmlEscapedMessage(key: String): String = HtmlFormat.escape(Messages(key)).toString
 
   implicit def hc(implicit request: FakeRequest[_]): HeaderCarrier =
-    HeaderCarrierConverter.fromHeadersAndSession(request.headers, Some(request.session))
+    HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
   val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
   def validateStringIsUUID(toTest: String): Unit ={
