@@ -37,7 +37,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 
-  val whitelistedUserAgentList: List[String] = config.underlying.getStringList("allowlisted.useragents").asScala.toList
+  val allowlistedUserAgentList: List[String] = config.underlying.getStringList("allowlisted.useragents").asScala.toList
 
   val apiStatus = config.get[String]("apiStatus")
   val authorizationToken: String = config.get[String]("authorizationKey")
