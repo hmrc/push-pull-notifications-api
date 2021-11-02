@@ -58,7 +58,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   }
 
   private def setUpAppConfig(userAgents: List[String]): Unit = {
-    when(mockAppConfig.whitelistedUserAgentList).thenReturn(userAgents)
+    when(mockAppConfig.allowlistedUserAgentList).thenReturn(userAgents)
   }
 
   val clientIdStr: String = UUID.randomUUID().toString
