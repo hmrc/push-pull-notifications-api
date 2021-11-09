@@ -16,27 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import java.util.UUID
-import java.util.UUID.randomUUID
-
 import com.google.inject.Inject
-import controllers.Assets.CREATED
-import javax.inject.Singleton
 import org.joda.time.DateTime
-import play.api.Logger
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
+import play.api.http.Status.CREATED
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+
+import java.util.UUID
+import java.util.UUID.randomUUID
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import uk.gov.hmrc.http.HttpResponse
-import uk.gov.hmrc.http.HttpReads.Implicits._
 
 @Singleton
-class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {
 
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
@@ -46,7 +44,7 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
       .map(_.status == CREATED)
       .recoverWith {
         case NonFatal(e) =>
-          Logger.info("exception calling api platform events", e)
+          logger.info("exception calling api platform events", e)
           Future.successful(false)
       }
   }

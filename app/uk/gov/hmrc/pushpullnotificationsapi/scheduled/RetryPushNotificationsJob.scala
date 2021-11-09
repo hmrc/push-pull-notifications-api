@@ -23,7 +23,6 @@ import javax.inject.Inject
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.{DateTime, Duration}
-import play.api.Logger
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
@@ -59,7 +58,7 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
       .map(_ => RunningOfJobSuccessful)
       .recoverWith {
         case NonFatal(e) =>
-          Logger.error("Failed to retry failed push pull notifications", e)
+          logger.error("Failed to retry failed push pull notifications", e)
           Future.failed(RunningOfJobFailed(name, e))
     }
   }
@@ -70,7 +69,7 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
       .flatMap(success => if (success) successful(()) else updateFailedNotification(retryableNotification.notification, retryAfterDateTime))
       .recover {
         case NonFatal(e) =>
-          Logger.error(s"Unexpected error retrying notification ${retryableNotification.notification.notificationId} with exception: $e")
+          logger.error(s"Unexpected error retrying notification ${retryableNotification.notification.notificationId} with exception: $e")
           throw e
       }
   }

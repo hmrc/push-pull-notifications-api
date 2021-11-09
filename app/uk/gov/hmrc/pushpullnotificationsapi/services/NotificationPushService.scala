@@ -16,11 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
@@ -28,15 +25,16 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class NotificationPushService @Inject()(connector: PushConnector,
                                         notificationsRepository: NotificationsRepository,
                                         clientService: ClientService,
-                                        hmacService: HmacService,
-                                        appConfig: AppConfig){
+                                        hmacService: HmacService) extends ApplicationLogger {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
@@ -61,14 +59,14 @@ class NotificationPushService @Inject()(connector: PushConnector,
       connector.send(outboundNotification).map {
         case _ : PushConnectorSuccessResult => true
         case error: PushConnectorFailedResult =>
-          Logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
+          logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false
       }
     }
   }
 
   private def isValidPushSubscriber(subscriber: Subscriber): Boolean =
-    subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && (!subscriber.asInstanceOf[PushSubscriber].callBackUrl.isEmpty)
+    subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && subscriber.asInstanceOf[PushSubscriber].callBackUrl.nonEmpty
 
   private def calculateForwardedHeaders(client: Client, notificationAsJsonString: String): List[ForwardedHeader] = {
     val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)

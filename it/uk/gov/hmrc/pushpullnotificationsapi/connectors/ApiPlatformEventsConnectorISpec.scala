@@ -2,21 +2,21 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import java.util.UUID.randomUUID
 
-import controllers.Assets.{BAD_REQUEST, CREATED}
+
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.http.Status.{BAD_REQUEST, CREATED}
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.support.{ApiPlatformEventsService, MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{ApiPlatformEventsService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class ApiPlatformEventsConnectorISpec
-  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ApiPlatformEventsService {
+  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with ApiPlatformEventsService {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  override def commonStubs(): Unit = givenCleanMetricRegistry()
 
   override implicit lazy val app: Application = appBuilder.build()
 

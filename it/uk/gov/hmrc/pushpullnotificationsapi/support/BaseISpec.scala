@@ -1,8 +1,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
-import java.util.regex.Pattern
-
 import akka.stream.Materializer
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.play.guice.GuiceOneServerPerTest
 import play.api.Application
 import play.api.i18n.{Lang, Messages, MessagesApi}
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -11,27 +12,24 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import scala.concurrent.Future
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
-abstract class BaseISpec
-  extends AsyncHmrcSpec with WireMockSupport  with MetricsTestSupport {
+import java.util.regex.Pattern
+import scala.concurrent.Future
 
-  def app: Application
+abstract class BaseISpec
+  extends AnyWordSpec with Matchers with GuiceOneServerPerTest with WireMockSupport  {
+
   protected def appBuilder: GuiceApplicationBuilder
 
-  override def commonStubs(): Unit = {
-    givenCleanMetricRegistry()
-  }
 
   protected implicit def materializer: Materializer = app.materializer
 
   protected def checkHtmlResultWithBodyText(result: Future[Result], expectedSubstring: String): Unit = {
-    status(result) shouldBe 200
-    contentType(result) shouldBe Some("text/html")
-    charset(result) shouldBe Some("utf-8")
-    contentAsString(result) should include(expectedSubstring)
+    status(result) mustBe 200
+    contentType(result) mustBe Some("text/html")
+    charset(result) mustBe Some("utf-8")
+    contentAsString(result) must include(expectedSubstring)
   }
 
   private lazy val messagesApi = app.injector.instanceOf[MessagesApi]
@@ -44,6 +42,6 @@ abstract class BaseISpec
 
   val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
   def validateStringIsUUID(toTest: String): Unit ={
-    uuidPattern.matcher(toTest).find() shouldBe true
+    uuidPattern.matcher(toTest).find() mustBe true
   }
 }

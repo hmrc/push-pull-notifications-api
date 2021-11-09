@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import play.api.Logger
 import play.api.mvc.{PathBindable, QueryStringBindable}
-import java.util.UUID
-
-import play.api.{Logger, mvc}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, ClientId}
-object Binders {
 
+import java.util.UUID
+object Binders {
+ val logger = Logger("binders")
   implicit object clientIdQueryStringBindable extends QueryStringBindable.Parsing[ClientId](
     s => ClientId(s),
     _.value,
@@ -33,12 +33,12 @@ object Binders {
     s => BoxId(UUID.fromString(s)),
     _.value.toString,
     (key: String, e: Exception) => {
-      Logger.info("Cannot parse parameter %s as BoxId: %s".format(key, e.getMessage))
+      logger.info("Cannot parse parameter %s as BoxId: %s".format(key, e.getMessage))
       "Box ID is not a UUID"
     }
   )
 
-  implicit object clientIdPathBindable extends mvc.PathBindable.Parsing[ClientId](
+  implicit object clientIdPathBindable extends PathBindable.Parsing[ClientId](
     s => ClientId(s),
     _.value,
     (key: String, e: Exception) => "Cannot parse parameter %s as ClientId: %s".format(key, e.getMessage)

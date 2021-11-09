@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi
+package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import _root_.play.api.Logger
-import _root_.play.api.mvc.Result
-import _root_.play.api.mvc.Results._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
-import scala.util.control.NonFatal
+trait ScheduledJob {
+  def name: String
+  def execute(implicit ec: ExecutionContext): Future[Result]
+  def isRunning: Future[Boolean]
 
-package object controllers {
-  val logger = Logger("controllers")
+  case class Result(message: String)
 
-  def recovery: PartialFunction[Throwable, Result] = {
-    case NonFatal(e) =>
-      logger.error("An unexpected error occurred:", e)
-      InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
-  }
+  def configKey: String = name
+
+  def initialDelay: FiniteDuration
+
+  def interval: FiniteDuration
+
+  override def toString() = s"$name after $initialDelay every $interval"
 }

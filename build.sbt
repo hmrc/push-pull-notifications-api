@@ -9,7 +9,7 @@ lazy val scoverageSettings = {
   Seq(
     // Semicolon-separated list of regexs matching classes to exclude
     ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimum := 95.0,
+    ScoverageKeys.coverageMinimum := 97.5,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false
@@ -23,6 +23,7 @@ lazy val root = (project in file("."))
     name := "push-pull-notifications-api",
     organization := "uk.gov.hmrc",
     scalaVersion := "2.12.12",
+    scalacOptions += "-Ypartial-unification",
     majorVersion := 0,
     PlayKeys.playDefaultPort := 6701,
     resolvers += Resolver.typesafeRepo("releases"),

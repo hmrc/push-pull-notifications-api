@@ -18,9 +18,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
-
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source.{fromFutureSource, fromIterator}
+import akka.stream.scaladsl.Source.{fromIterator, futureSource}
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.Duration
@@ -38,6 +37,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, Clie
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -89,7 +89,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with MongoSpecSupport 
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
-        .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
+        .thenReturn(futureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
 
       val result: underTest.Result = await(underTest.execute)
@@ -103,7 +103,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with MongoSpecSupport 
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(5))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
-        .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
+        .thenReturn(futureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateRetryAfterDateTime(NotificationId(*), *)).thenReturn(successful(notification))
       when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
 
@@ -118,7 +118,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with MongoSpecSupport 
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
-        .thenReturn(fromFutureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
+        .thenReturn(futureSource(successful(fromIterator(() => Seq(retryableNotification).toIterator))))
       when(mockNotificationsRepository.updateStatus(notification.notificationId, FAILED)).thenReturn(successful(notification))
       when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
 
@@ -141,7 +141,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with MongoSpecSupport 
 
     "handle error when something fails" in new Setup {
       when(mockNotificationsRepository.fetchRetryableNotifications)
-        .thenReturn(fromFutureSource[RetryableNotification, State](failed(new RuntimeException("Failed"))))
+        .thenReturn(futureSource[RetryableNotification, State](failed(new RuntimeException("Failed"))))
 
       val result: underTest.Result = await(underTest.execute)
 

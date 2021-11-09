@@ -40,7 +40,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         "authorizationKey"  -> authToken
       )
 
-  val url = s"http://localhost:$port"
+  val url = s"http://localhost:8080"
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def doGet(path: String, headers: List[(String, String)]): WSResponse =
@@ -56,8 +56,8 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
       val result = doGet(s"/client/${clientId.value}/secrets", List("Authorization" -> authToken))
 
-      result.status shouldBe OK
-      result.body shouldBe """[{"value":"someRandomSecret"}]"""
+      result.status mustBe OK
+      result.body mustBe """[{"value":"someRandomSecret"}]"""
     }
 
     "respond with 404 when there is no matching client for the given client ID" in {
@@ -65,8 +65,8 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
       val result = doGet(s"/client/wrongClientId/secrets", List("Authorization" -> authToken))
 
-      result.status shouldBe NOT_FOUND
-      result.body shouldBe """{"code":"CLIENT_NOT_FOUND","message":"Client not found"}"""
+      result.status mustBe NOT_FOUND
+      result.body mustBe """{"code":"CLIENT_NOT_FOUND","message":"Client not found"}"""
     }
 
     "respond with 403 when the authorization header does not match the token from the app config" in {
@@ -74,8 +74,8 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
       val result = doGet(s"/client/${clientId.value}/secrets", List("Authorization" -> "wrongToken"))
 
-      result.status shouldBe FORBIDDEN
-      result.body shouldBe """{"code":"FORBIDDEN","message":"Authorisation failed"}"""
+      result.status mustBe FORBIDDEN
+      result.body mustBe """{"code":"FORBIDDEN","message":"Authorisation failed"}"""
     }
   }
 }

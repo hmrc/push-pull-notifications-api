@@ -22,7 +22,6 @@ import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -42,7 +41,6 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   private val mockNotificationsRepo = mock[NotificationsRepository]
   private val mockClientService = mock[ClientService]
   private val mockHmacService = mock[HmacService]
-  private val mockAppConfig = mock[AppConfig]
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def beforeEach(): Unit = {
@@ -51,7 +49,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   }
 
   trait Setup {
-     val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService, mockAppConfig)
+     val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService)
     }
 
   "handlePushNotification" should {
