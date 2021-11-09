@@ -8,15 +8,16 @@ import play.api.test.Helpers._
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.support.{ThirdPartyApplicationService, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class ThirdPartyApplicationConnectorISpec
-  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with ThirdPartyApplicationService {
+  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
+  override def commonStubs(): Unit = givenCleanMetricRegistry()
 
   override implicit lazy val app: Application = appBuilder.build()
 

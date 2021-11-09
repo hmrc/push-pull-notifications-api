@@ -67,7 +67,7 @@ class NotificationsControllerISpec
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
       )
 
-  val url = s"http://localhost:8080"
+  val url = s"http://localhost:$port"
 
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
@@ -120,7 +120,7 @@ class NotificationsControllerISpec
 
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
-    result.status mustBe CREATED
+    result.status shouldBe CREATED
     await(boxRepository.findAll()).head
   }
 
@@ -128,7 +128,7 @@ class NotificationsControllerISpec
     val notifications: mutable.MutableList[String] = mutable.MutableList[String]()
     for (_ <- 0 until numberToCreate) {
       val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
-      result.status mustBe CREATED
+      result.status shouldBe CREATED
       notifications += result.body
     }
     List() ++ notifications
@@ -142,21 +142,21 @@ class NotificationsControllerISpec
         primeGatewayServiceWithBody(Status.OK)
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
-        result.status mustBe CREATED
+        result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
-        result.status mustBe CREATED
+        result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 201 when notification created for valid xml and xml content type with no subscribers" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
-        result.status mustBe CREATED
+        result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
@@ -164,7 +164,7 @@ class NotificationsControllerISpec
         primeGatewayServiceWithBody(Status.BAD_REQUEST)
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
-        result.status mustBe CREATED
+        result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
@@ -172,53 +172,53 @@ class NotificationsControllerISpec
         primeGatewayServiceWithBody(Status.INTERNAL_SERVER_ERROR)
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
-        result.status mustBe CREATED
+        result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
 
       "respond with 400 when boxId is not a UUID" in {
         val result = doPost(s"$url/box/ImNotaUUid/notifications", "{}", validHeadersJson)
-        result.status mustBe BAD_REQUEST
-        result.body mustBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+        result.status shouldBe BAD_REQUEST
+        result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
       }
 
       "respond with 403 when no useragent sent in request" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain"))
-        result.status mustBe FORBIDDEN
+        result.status shouldBe FORBIDDEN
       }
 
       "respond with 403 when non whitelisted user agent sent in request" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-whitelisted-agent"))
-        result.status mustBe FORBIDDEN
+        result.status shouldBe FORBIDDEN
       }
 
 
       "respond with 400 when for valid xml and but json content type" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersJson)
-        result.status mustBe BAD_REQUEST
+        result.status shouldBe BAD_REQUEST
       }
 
       "respond with 400 when for valid json and but xml content type" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersXml)
-        result.status mustBe BAD_REQUEST
+        result.status shouldBe BAD_REQUEST
       }
 
       "respond with 415 when unknown content type sent in request" in {
         val box = createBoxAndReturn()
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "api-subscription-fields"))
-        result.status mustBe UNSUPPORTED_MEDIA_TYPE
+        result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
       "respond with 404 when unknown / non existent box id sent" in {
         createBoxAndReturn()
         val result = doPost(s"$url/box/${UUID.randomUUID().toString}/notifications/", "{}", validHeadersJson)
-        result.status mustBe NOT_FOUND
-        result.body mustBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+        result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
     }
 
@@ -228,7 +228,7 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
-        result.status mustBe OK
+        result.status shouldBe OK
       }
 
       "respond with 400 when box Id is not a UUID" in {
@@ -236,8 +236,8 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/NotAUUid/notifications?status=PENDING", validHeadersJson)
-        result.status mustBe BAD_REQUEST
-        result.body mustBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+        result.status shouldBe BAD_REQUEST
+        result.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
       }
 
       "respond with 404 when box Id is not found" in {
@@ -245,8 +245,8 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 1)
         val result: WSResponse = doGet(s"$url/box/${UUID.randomUUID().toString}/notifications?status=PENDING", validHeadersJson)
-        result.status mustBe NOT_FOUND
-        result.body mustBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+        result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
       }
 
       "respond with 401 on create when clientId returned from auth does not match" in {
@@ -254,7 +254,7 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
-        result.status mustBe FORBIDDEN
+        result.status shouldBe FORBIDDEN
       }
 
       "respond with 401 on create when no clientID in response from auth" in {
@@ -262,7 +262,7 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
-        result.status mustBe UNAUTHORIZED
+        result.status shouldBe UNAUTHORIZED
       }
 
       "respond with 401 when authorisation fails" in {
@@ -270,7 +270,7 @@ class NotificationsControllerISpec
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
-        result.status mustBe UNAUTHORIZED
+        result.status shouldBe UNAUTHORIZED
       }
     }
 
@@ -283,7 +283,7 @@ class NotificationsControllerISpec
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status mustBe NO_CONTENT
+        result.status shouldBe NO_CONTENT
       }
 
       "return 204 when unknown UUID is included" in {
@@ -293,7 +293,7 @@ class NotificationsControllerISpec
         val notificationIdList: List[String] = UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status mustBe NO_CONTENT
+        result.status shouldBe NO_CONTENT
       }
 
       "return 400 when invalid UUID is included" in {
@@ -303,7 +303,7 @@ class NotificationsControllerISpec
         val notificationIdList: List[String] = "fooBar" :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status mustBe BAD_REQUEST
+        result.status shouldBe BAD_REQUEST
       }
 
       "return 401 when no client id in auth response" in {
@@ -313,8 +313,8 @@ class NotificationsControllerISpec
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status mustBe UNAUTHORIZED
-        result.body mustBe "{\"code\":\"UNAUTHORISED\",\"message\":\"Unable to retrieve ClientId\"}"
+        result.status shouldBe UNAUTHORIZED
+        result.body shouldBe "{\"code\":\"UNAUTHORISED\",\"message\":\"Unable to retrieve ClientId\"}"
       }
 
       "return NOT_FOUND when box doesn't exist" in {
@@ -324,7 +324,7 @@ class NotificationsControllerISpec
         val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${UUID.randomUUID().toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status mustBe NOT_FOUND
+        result.status shouldBe NOT_FOUND
       }
     }
 

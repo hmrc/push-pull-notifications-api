@@ -11,12 +11,13 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.support.{PushGatewayService, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceOneAppPerSuite with PushGatewayService  {
+class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport  {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
+  override def commonStubs(): Unit = givenCleanMetricRegistry()
 
   override implicit lazy val app: Application = appBuilder.build()
 

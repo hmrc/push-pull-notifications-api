@@ -23,6 +23,7 @@ object AppDependencies {
   lazy val testDependencies = Seq(
     "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % bootstrapVersion,
     "org.mockito"             %% "mockito-scala-scalatest"    % "1.14.8",
+    "com.typesafe.play"        %% "play-akka-http-server" % "2.8.7",
     "uk.gov.hmrc"             %% "reactivemongo-test"         % "5.0.0-play-28",
     "com.github.tomakehurst"  %  "wiremock-jre8-standalone"   % "2.27.2"
   ).map(_ % "test, it")
