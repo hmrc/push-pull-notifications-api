@@ -323,4 +323,5 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
     box.subscriber.isDefined shouldBe false
     box
   }
+
 }

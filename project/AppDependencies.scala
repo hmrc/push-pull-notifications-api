@@ -4,17 +4,15 @@ import play.sbt.PlayImport._
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-
+  lazy val bootstrapVersion = "5.14.0"
   lazy val dependencies = Seq(
     ws,
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-26"  % "5.10.0",
+    "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  %  bootstrapVersion,
     "uk.gov.hmrc"             %% "crypto"                     % "5.6.0",
-    "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.14.0-play-26",
-    "uk.gov.hmrc"             %% "domain"                     % "5.10.0-play-26",
-    "uk.gov.hmrc"             %% "agent-kenshoo-monitoring"   % "4.7.0-play-26",
-    "uk.gov.hmrc"             %% "simple-reactivemongo"       % "7.30.0-play-26",
-    "uk.gov.hmrc"             %% "play-scheduling"            % "7.4.0-play-26",
-    "com.kenshoo"             %% "metrics-play"               % "2.6.19_0.7.0",
+    "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.15.0-play-28",
+    "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
+    "uk.gov.hmrc"             %% "mongo-lock"                 % "7.0.0-play-28",
+    "uk.gov.hmrc"             %% "simple-reactivemongo"       % "8.0.0-play-28",
     "org.reactivemongo"       %% "reactivemongo-akkastream"   % "0.20.13",
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",
@@ -23,9 +21,10 @@ object AppDependencies {
   )
 
   lazy val testDependencies = Seq(
+    "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % bootstrapVersion,
     "org.mockito"             %% "mockito-scala-scalatest"    % "1.14.8",
-    "org.scalatestplus.play"  %% "scalatestplus-play"         % "3.1.3",
-    "uk.gov.hmrc"             %% "reactivemongo-test"         % "4.21.0-play-26",
+    "com.typesafe.play"        %% "play-akka-http-server" % "2.8.7",
+    "uk.gov.hmrc"             %% "reactivemongo-test"         % "5.0.0-play-28",
     "com.github.tomakehurst"  %  "wiremock-jre8-standalone"   % "2.27.2"
   ).map(_ % "test, it")
 }

@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -26,7 +24,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
@@ -34,7 +34,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
                               boxService: BoxService,
                               cc: ControllerComponents,
                               playBodyParsers: PlayBodyParsers)
-                             (implicit val ec: ExecutionContext) extends BackendController(cc) {
+                             (implicit val ec: ExecutionContext) extends BackendController(cc) with ApplicationLogger{
 
   def createBox(): Action[JsValue] =
     (Action andThen
@@ -49,7 +49,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
                 case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxCreateFailedResult =>
-                  Logger.info(s"Unable to create Box: ${r.message}")
+                  logger.info(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
               }
             }

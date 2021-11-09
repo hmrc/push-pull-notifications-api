@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
@@ -60,7 +59,7 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
-    Logger.info(s"Getting box by boxName:$boxName & clientId")
+    logger.info(s"Getting box by boxName:$boxName & clientId")
     find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value).map(_.headOption)
   }
 

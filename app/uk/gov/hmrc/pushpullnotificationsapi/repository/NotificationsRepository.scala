@@ -18,11 +18,9 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.akkastream.cursorProducer
@@ -46,6 +44,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoForma
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -97,7 +96,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   private def ensureLocalIndexes()(implicit ec: ExecutionContext) = {
     Future.sequence(indexes.map(index => {
-      Logger.info(s"ensuring index ${index.eventualName}")
+      logger.info(s"ensuring index ${index.eventualName}")
       collection.indexesManager.ensure(index)
     }))
   }
@@ -124,7 +123,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
     indexes.map(_.exists(checkIfTTLChanged))
       .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
-        Logger.info(s"Dropping time to live index for entries in ${collection.name}")
+        logger.info(s"Dropping time to live index for entries in ${collection.name}")
         Future.sequence(Seq(collection.indexesManager.drop(create_datetime_ttlIndexName).map(_ > 0),
           ensureLocalIndexes))
       })
@@ -200,7 +199,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
       .map((result: UpdateWriteResult) => {
 
         if(result.nModified!=notificationIds.size){
-          Logger.warn(s"for boxId: ${boxId.raw} ${notificationIds.size} requested to be Acknowledged but only ${result.nModified} were modified")
+          logger.warn(s"for boxId: ${boxId.raw} ${notificationIds.size} requested to be Acknowledged but only ${result.nModified} were modified")
         }
         result.ok
       })

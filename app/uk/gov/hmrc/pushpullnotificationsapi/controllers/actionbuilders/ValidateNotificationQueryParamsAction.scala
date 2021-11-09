@@ -19,12 +19,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 import javax.inject.{Inject, Singleton}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.Logger
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.{ActionRefiner, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -32,7 +32,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionContext)
-  extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest] with HttpErrorFunctions {
+  extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest] with HttpErrorFunctions with ApplicationLogger {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
@@ -76,7 +76,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
         NotificationStatus.withName(statusVal)
       } match {
         case Success(x) => Right(Some(x))
-        case Failure(_) => Logger.info(s"Invalid Status Param provided: $statusVal")
+        case Failure(_) => logger.info(s"Invalid Status Param provided: $statusVal")
           Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
       }
       case None => Right(None)
@@ -91,7 +91,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
           DateTime.parse(stringVal, ISODateTimeFormat.dateTimeParser())
         } match {
           case Success(parseDate) => Right(Some(parseDate.withZone(DateTimeZone.UTC)))
-          case Failure(_) => Logger.info(s"Unparsable DateValue Param provided: $stringVal")
+          case Failure(_) => logger.info(s"Unparsable DateValue Param provided: $stringVal")
             Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Unparsable DateValue Param provided")))
         }
       case None => Right(None)

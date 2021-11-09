@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi
+package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.OptionValues
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.WsScalaTestClient
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
-abstract class HmrcSpec extends AnyWordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
+trait ScheduledJob {
+  def name: String
+  def execute(implicit ec: ExecutionContext): Future[Result]
+  def isRunning: Future[Boolean]
 
-abstract class AsyncHmrcSpec
-  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
+  case class Result(message: String)
+
+  def configKey: String = name
+
+  def initialDelay: FiniteDuration
+
+  def interval: FiniteDuration
+
+  override def toString() = s"$name after $initialDelay every $interval"
 }

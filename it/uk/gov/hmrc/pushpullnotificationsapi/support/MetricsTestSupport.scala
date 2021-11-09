@@ -2,7 +2,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import org.scalatest.{Matchers, Suite}
+import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
 import play.api.Application
 
 import scala.collection.JavaConverters
@@ -17,7 +18,7 @@ trait MetricsTestSupport {
   def givenCleanMetricRegistry(): Unit = {
     val registry = app.injector.instanceOf[Metrics].defaultRegistry
     for (metric <- JavaConverters
-                    .asScalaIterator[String](registry.getMetrics.keySet().iterator())) {
+      .asScalaIterator[String](registry.getMetrics.keySet().iterator())) {
       registry.remove(metric)
     }
     metricsRegistry = registry

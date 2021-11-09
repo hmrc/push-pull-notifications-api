@@ -24,10 +24,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 import scala.util.control.NonFatal
 
 package object controllers {
+  val logger = Logger("controllers")
 
   def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
-      Logger.error("An unexpected error occurred:", e)
+      logger.error("An unexpected error occurred:", e)
       InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
   }
 }
