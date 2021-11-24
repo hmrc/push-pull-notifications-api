@@ -43,7 +43,7 @@ object Binders {
       } yield {
         text match {
           case Right(clientId) => Right(ClientId(clientId))
-          case _              =>  Left("Unable to bind an clientId")
+          case _              =>  Left("Unable to bind a clientId")
         }
       }
     }
