@@ -191,6 +191,20 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
 
     }
 
+
+    "respond with 404 when empty client id provided" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
+      result.status shouldBe CREATED
+      validateStringIsUUID(result.body)
+
+      val result2 = callGetBoxByNameAndClientIdEndpoint(boxName, "", validHeaders)
+      result2.status shouldBe NOT_FOUND
+      result2.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+
+    }
+
     "respond with 404 when box does not exists" in {
       val result = callGetBoxByNameAndClientIdEndpoint(boxName, clientId, validHeaders)
       result.status shouldBe NOT_FOUND
