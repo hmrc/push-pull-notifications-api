@@ -73,8 +73,6 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
-      when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
-      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
@@ -85,6 +83,10 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
           MessageContentType.APPLICATION_JSON,
           """{ "foo": "bar" }""",
           NotificationStatus.PENDING)
+
+      when(mockNotificationsRepo.updateStatus(*[NotificationId],*)).thenReturn(successful(mock[Notification]))
+      when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
+      when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
@@ -99,6 +101,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
       when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
+      when(mockNotificationsRepo.updateStatus(*[NotificationId],*)).thenReturn(successful(mock[Notification]))
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
