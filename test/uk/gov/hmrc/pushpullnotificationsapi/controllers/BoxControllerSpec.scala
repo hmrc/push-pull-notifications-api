@@ -324,7 +324,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
          Helpers.contentAsString(result) shouldBe """{"successful":true}"""
        }
 
-       "return 401 if User-Agent is not whitelisted" in {
+       "return 401 if User-Agent is not allowlisted" in {
           setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))

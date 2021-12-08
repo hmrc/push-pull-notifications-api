@@ -189,9 +189,9 @@ class NotificationsControllerISpec
         result.status shouldBe FORBIDDEN
       }
 
-      "respond with 403 when non whitelisted user agent sent in request" in {
+      "respond with 403 when non allowlisted user agent sent in request" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-whitelisted-agent"))
+        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-allowlisted-agent"))
         result.status shouldBe FORBIDDEN
       }
 

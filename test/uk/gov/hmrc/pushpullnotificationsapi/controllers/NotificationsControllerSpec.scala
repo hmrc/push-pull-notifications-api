@@ -140,7 +140,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         verifyNoInteractions(mockNotificationService)
       }
 
-      "return 403 when useragent header is not whitelisted" in {
+      "return 403 when useragent header is not allowlisted" in {
         val result = doPost(s"/box/${boxId.raw}/notifications", headersWithInValidUserAgent, jsonBody)
         status(result) should be(FORBIDDEN)
 
