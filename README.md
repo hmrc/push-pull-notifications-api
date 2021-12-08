@@ -80,7 +80,7 @@ HTTP Status: `200`
 ## `PUT /box`
 Create a new box
 
-This endpoint is restricted, only a whitelist of services can access it.
+This endpoint is restricted, only a allowlist of services can access it.
 
 ### Request headers
 | Name | Description |
@@ -119,7 +119,7 @@ HTTP Status: `200` if the box already exists
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
 | `boxName` or `clientId` missing from request body | `400` | `INVALID_REQUEST_PAYLOAD`
-| Access denied, service is not whitelisted | `403` | `FORBIDDEN`
+| Access denied, service is not allowlisted | `403` | `FORBIDDEN`
 
 ## `PUT /box/:boxId/callback`
 
@@ -188,7 +188,7 @@ The scenarios where this can occur are as follows:
 
 Create a notification
 
-This endpoint is restricted, only a whitelist of services can access it.
+This endpoint is restricted, only a allowlist of services can access it.
 
 N.B. Maximum payload (request body) size currently supported is 100K.
 
@@ -232,7 +232,7 @@ HTTP Status: `201`
 | --- | --- | --- |
 | Box ID is not a UUID | `400` | `BAD_REQUEST`
 | Request body does not match the Content-Type header | `400` | `INVALID_REQUEST_PAYLOAD` |
-| Access denied, service is not whitelisted | `403` | `FORBIDDEN`
+| Access denied, service is not allowlisted | `403` | `FORBIDDEN`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 | Request is too large | `413` |
 

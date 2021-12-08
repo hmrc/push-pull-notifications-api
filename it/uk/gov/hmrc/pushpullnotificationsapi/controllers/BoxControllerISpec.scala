@@ -156,7 +156,7 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
         result.status shouldBe FORBIDDEN
       }
 
-      "respond with 403 when UserAgent is not in whitelist" in {
+      "respond with 403 when UserAgent is not in allowlist" in {
         val result = callCreateBoxEndpoint("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
         result.status shouldBe FORBIDDEN
       }
