@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "List of boxes",
+  "type": "object",
+  "properties": {
+    "boxId": {
+      "description": "Unique identifier for a box the notification was sent to.",
+      "type": "string",
+      "example": "50dca3fc-c37c-4f03-b719-63571333624c"
+    },
+    "boxName" :{
+      "description": "Name of the box",
+      "type": "string",
+      "example": "test box name"
+    },
+    "subscriber" : {
+      "type" : "object",
+      "properties": {
+        "callbackUrl" : {
+          "description": "The callback URL of the box",
+          "type": "string",
+          "example" : "https://www.example.com/callbackUrl"
+        }
+      }
+    }
+  },
+  "required": [
+    "boxId",
+    "boxName"
+  ],
+  "additionalProperties": false
+}
+

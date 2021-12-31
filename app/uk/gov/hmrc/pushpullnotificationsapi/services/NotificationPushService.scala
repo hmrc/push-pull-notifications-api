@@ -41,11 +41,11 @@ class NotificationPushService @Inject()(connector: PushConnector,
       sendNotificationToPush(box, notification) map {
         case true =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => 
-            logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId}")
+            logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId.value}")
           )
           true
         case false => {
-          logger.info(s"Notification not sent successfully for clientId : ${box.boxCreator.clientId}")
+          logger.info(s"Notification not sent successfully for clientId : ${box.boxCreator.clientId.value}")
           false
         }
       }

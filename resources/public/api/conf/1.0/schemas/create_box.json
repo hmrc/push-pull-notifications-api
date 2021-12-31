@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "List of boxes",
+  "type": "object",
+  "properties": {
+    "boxName" :{
+      "description": "Name of the box",
+      "type": "string",
+      "example": "test box name"
+    },
+    "subscriber" : {
+      "type" : "object",
+      "properties": {
+        "callbackUrl" : {
+          "description": "The callback URL of the box. This callback will be validated. See *Validating the callback URL* above",
+          "type": "string",
+          "example" : "https://www.example.com/callbackUrl"
+        }
+      }
+    }
+  },
+  "required": [
+    "boxName"
+  ],
+  "additionalProperties": false
+}
+

@@ -26,6 +26,106 @@ uses:
   types: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/types.raml
 
 /misc/push-pull-notification:
+  /box:
+    get:
+      displayName: Get a list of boxes - NEW!
+      description: Get a list of all the boxes associated with your applicaiton.
+      is: [headers.acceptHeader]
+      # Need new scope(s)
+      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
+      (annotations.scope): "read:pull-notifications"
+      responses:
+        200:
+          body:
+            application/json:
+              type: !include schemas/get_boxes.json
+              example: |
+                [
+                  {
+                      "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
+                      "boxName" : "test box name 1",
+                      "subscriber" : {
+                        "callbackUrl" : "https://www.example.com/callbackUrl-1"
+                      }
+                  },
+                  {
+                      "boxId": "9d5e611e-28f9-44e3-9de6-ea17788d34e5",
+                      "boxName" : "test box name 2",
+                      "subscriber" : {
+                        "callbackUrl" : "https://www.example.com/callbackUrl-2"
+                      }
+                  }
+                ]
+    post:
+      displayName: Create a new box - NEW!
+      is: [headers.acceptHeader]
+      # Need new scope(s)
+      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
+      (annotations.scope): "read:pull-notifications"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      body:
+        application/json:
+          type: !include schemas/create_box.json
+          example: |
+            {
+              "boxName" : "test box name 1",
+              "subscriber" : {
+                "callbackUrl" : "https://www.example.com/callbackUrl-1"
+              }
+            }
+      responses:
+        200:
+          body:
+            example: |
+              {
+                "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
+                "boxName" : "test box name 1",
+                "subscriber" : {
+                  "callbackUrl" : "https://www.example.com/callbackUrl-1"
+                }
+              }
+  /box/{boxId}:
+    uriParameters:
+      boxId:
+        description: Unique identifier for a box
+        type: string
+        required: true
+        example: 50dca3fc-c37c-4f03-b719-63571333624c
+    get:
+      displayName: Get box details - NEW!
+      description: Get the information associated with a box
+      is: [headers.acceptHeader]
+      # Need new scope(s)
+      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
+      (annotations.scope): "read:pull-notifications"
+      responses:
+        200:
+          body:
+            application/json:
+              type: !include schemas/get_box.json
+              example: |
+                {
+                    "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
+                    "boxName" : "test box name 1",
+                    "subscriber" : {
+                      "callbackUrl" : "https://www.example.com/callbackUrl-1"
+                    }
+                }
+    delete:
+      displayName: Delete box - NEW!
+      # TODO: Prevent deleting the 'default' box. Do we want to return these (I think so, people want to know the box-id)
+      description: This deletes a box and it's associated notifications. You can't delete the default box for an API version. These are named like `<api-context>##<version>##callbackUrl`
+      is: [headers.acceptHeader]
+      # Need new scope(s)
+      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
+      (annotations.scope): "read:pull-notifications"
+      responses:
+        204:
   /box/{boxId}/notifications:
     uriParameters:
       boxId:

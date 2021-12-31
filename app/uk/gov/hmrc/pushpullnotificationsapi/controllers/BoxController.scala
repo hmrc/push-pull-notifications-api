@@ -36,6 +36,11 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
                               playBodyParsers: PlayBodyParsers)
                              (implicit val ec: ExecutionContext) extends BackendController(cc) with ApplicationLogger{
 
+  //TODO : Allow creating a box via external call via API Platform. 
+  // Specify boxName, optional callbackUrl.
+  // get client-id from auth
+  // Validate callbackUrl before creating box
+
   def createBox(): Action[JsValue] =
     (Action andThen
       validateUserAgentHeaderAction)
@@ -56,11 +61,22 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         } recover recovery
       }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
+  def getBoxByNameAndClientId(boxName: Option[String], clientId: ClientId): Action[AnyContent] = {
+    boxName match {
+      case Some(boxName) => getBoxByNameAndClientIdInternal(boxName, clientId)
+      case None => getBoxesByClientIdInternal(clientId)
+    }
+  }
+
+  private def getBoxByNameAndClientIdInternal(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
       case Some(box) => Ok(Json.toJson(box))
       case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
     } recover recovery
+  }
+
+  private def getBoxesByClientIdInternal(clientId: ClientId): Action[AnyContent] = Action.async {
+    boxService.getBoxesByClientId(clientId) map(boxes => Ok(Json.toJson(boxes)))
   }
 
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] =
