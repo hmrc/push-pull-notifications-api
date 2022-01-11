@@ -13,6 +13,11 @@
       "type": "string",
       "example": "test box name"
     },
+    "systemBox" : {
+      "description": "A system box that cannot be deleted",
+      "type": "boolean",
+      "example": "false"
+    },
     "subscriber" : {
       "type" : "object",
       "properties": {
