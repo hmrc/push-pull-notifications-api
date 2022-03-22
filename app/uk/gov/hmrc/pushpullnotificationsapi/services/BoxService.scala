@@ -56,7 +56,10 @@ class BoxService @Inject()(repository: BoxRepository,
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
-
+  
+  def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
+    repository.getBoxesByClientId(clientId)
+  
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
