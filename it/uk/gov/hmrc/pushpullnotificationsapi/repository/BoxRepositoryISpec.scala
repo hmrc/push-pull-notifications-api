@@ -52,8 +52,6 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       fetchedBox.boxCreator.clientId shouldBe clientId
       fetchedBox.boxId shouldBe box.boxId
       fetchedBox.subscriber.isDefined shouldBe false
-
-
     }
 
     "create a Box should allow boxes for same clientId but different BoxNames" in {
@@ -80,7 +78,6 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
 
     "create a Box should throw and exception and only create box once when box with same name and client id called twice" in {
       await(repo.createBox(box))
-      
 
       val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
@@ -92,7 +89,6 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
     "create a Box should not allow creation of a duplicate box with same box details" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-
       
       val result2 =  await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
@@ -124,7 +120,6 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
     }
 
     "should return None when box does not exist (clientId)" in {
-
       await(repo.createBox(box))
 
       val result = await(repo.getBoxByNameAndClientId(boxName, ClientId(UUID.randomUUID().toString)))
@@ -132,6 +127,35 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       result shouldBe None
     }
   }
+
+  "getBoxesByClientId" should {
+
+    val aBoxWithADifferentClientId = Box(boxName = "Another box",
+      boxId = BoxId(UUID.randomUUID()),
+      boxCreator = BoxCreator(ClientId("Another client")))
+
+    "return an empty list when no boxes match" in {
+      await(repo.createBox(aBoxWithADifferentClientId))
+
+      val fetchedRecords = await(repo.getBoxesByClientId(clientId))
+
+      fetchedRecords shouldBe empty
+    }
+
+    "return only the boxes that match the clientID" in {
+      val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
+      await(repo.createBox(box))
+      await(repo.createBox(anotherBox))
+      await(repo.createBox(aBoxWithADifferentClientId))
+
+      val matchedBoxes = await(repo.getBoxesByClientId(clientId))
+      val totalBoxes = await(repo.find())
+
+      totalBoxes should have length (3)
+      matchedBoxes should have length (2)
+    }
+  }
+
   "updateSubscribers" should {
 
     "update the subscriber list" in {
@@ -149,14 +173,11 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       val subscriber = updatedBox.subscriber.get.asInstanceOf[PushSubscriber]
       subscriber.callBackUrl shouldBe callBackEndpoint
       subscriber.subscribedDateTime.isBefore(DateTime.now())
-
-
     }
 
     "return None when the box doesn't exist" in {
       val updated = await(repo.updateSubscriber(BoxId(UUID.randomUUID()), new SubscriberContainer(PushSubscriber(callBackEndpoint))))
       updated shouldBe None
-
     }
   }
 
@@ -174,14 +195,12 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
 
       val updatedBox = await(repo.updateApplicationId(createdBox.boxId, appId))
       updatedBox.applicationId shouldBe Some(appId)
-      
     }
 
     "return None when the box doesn't exist" in {
       intercept[RuntimeException]{
         await(repo.updateApplicationId(BoxId(UUID.randomUUID()), ApplicationId("123")))
       }
-
     }
   }
   "getBoxByBoxId" should {
