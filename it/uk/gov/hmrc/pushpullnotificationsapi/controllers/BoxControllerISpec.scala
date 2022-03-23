@@ -4,7 +4,7 @@ import java.util.UUID
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
-import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
+import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
@@ -13,11 +13,16 @@ import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UN
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp with PushGatewayService with ThirdPartyApplicationService {
+class BoxControllerISpec extends ServerBaseISpec
+  with AuthService
+  with BeforeAndAfterEach
+  with MongoApp
+  with PushGatewayService
+  with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>
 
   def repo: BoxRepository =
@@ -93,10 +98,39 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       .get
       .futureValue
 
+  def callGetBoxesByClientIdEndpoint(headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/cmb/box")
+      .withHttpHeaders(headers: _*)
+      .get
+      .futureValue
   // need to clean down mongo then run two
 
 
   "BoxController" when {
+
+    "GET /cmb/box" should {
+      val additionalHeader = (ACCEPT -> "application/vnd.hmrc.1.0+json")
+      "respond with empty list" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+        val result = callGetBoxesByClientIdEndpoint(validHeaders :+ additionalHeader)
+
+        result.status shouldBe OK
+        result.body shouldBe "[]"
+      }
+
+      "respond with box when one created" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+        callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
+        val result = callGetBoxesByClientIdEndpoint(validHeaders :+ additionalHeader)
+  
+        result.status shouldBe OK
+        result.body should include(s""""boxName":"$boxName"""")
+      }
+    }
 
     "POST /box" should {
       "respond with 201 when box created" in {
@@ -190,7 +224,6 @@ class BoxControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with Mo
       box.boxCreator.clientId.value shouldBe clientId
 
     }
-
 
     "respond with 404 when empty client id provided" in {
 
