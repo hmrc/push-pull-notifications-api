@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,19 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         val result: Option[Box] = await(objInTest.getBoxByNameAndClientId(boxName, clientId))
 
         result shouldBe None
+      }
+    }
+
+    "getBoxesByClientId" should {
+      "delegate to repo and return same list" in new Setup {
+        val boxes : List[Box] = List()
+        when(mockRepository.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(boxes))
+
+        val result = await(objInTest.getBoxesByClientId(clientId))
+
+        result should be theSameInstanceAs boxes
+
+        verify(mockRepository, times(1)).getBoxesByClientId(eqTo(clientId))(*)
       }
     }
 

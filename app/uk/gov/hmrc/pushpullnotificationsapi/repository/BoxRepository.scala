@@ -63,6 +63,11 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxName" -> boxName, "boxCreator.clientId" -> clientId.value).map(_.headOption)
   }
 
+  def getBoxesByClientId(clientId: ClientId)(implicit executionContext: ExecutionContext): Future[List[Box]] = {
+    logger.info(s"Getting boxes by clientId: $clientId")
+    find("boxCreator.clientId" -> clientId.value)
+  }
+
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
     updateBox(boxId, Json.obj("$set" -> Json.obj("subscriber" -> subscriber.elem)))
   }

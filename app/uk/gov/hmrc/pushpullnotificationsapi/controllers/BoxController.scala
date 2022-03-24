@@ -19,6 +19,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAcceptHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -33,7 +35,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
                               boxService: BoxService,
                               cc: ControllerComponents,
-                              playBodyParsers: PlayBodyParsers)
+                              playBodyParsers: PlayBodyParsers,
+                              authAction: AuthAction,
+                              validateAcceptHeaderAction: ValidateAcceptHeaderAction)
                              (implicit val ec: ExecutionContext) extends BackendController(cc) with ApplicationLogger{
 
   def createBox(): Action[JsValue] =
@@ -60,6 +64,13 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
       case Some(box) => Ok(Json.toJson(box))
       case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+    } recover recovery
+  }
+
+  def getBoxesByClientId(): Action[AnyContent] = (Action andThen validateAcceptHeaderAction andThen authAction).async {
+    implicit request =>
+    boxService.getBoxesByClientId(request.clientId).map { boxes =>
+      Ok(Json.toJson(boxes))
     } recover recovery
   }
 

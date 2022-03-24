@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers.{BAD_REQUEST, route, _}
 import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
@@ -43,18 +43,18 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
 
-  val mockBoxService: BoxService = mock[BoxService]
   val mockAppConfig: AppConfig = mock[AppConfig]
-  val mockAuthAction: AuthAction = mock[AuthAction]
+  val mockAuthConnector: AuthConnector = mock[AuthConnector]
+  val mockBoxService: BoxService = mock[BoxService]
 
   override lazy val app: Application = GuiceApplicationBuilder()
-    .overrides(bind[BoxService].to(mockBoxService))
-    .overrides(bind[AuthAction].to(mockAuthAction))
-    .overrides(bind[AppConfig].to(mockAppConfig))
-    .build()
+  .overrides(bind[BoxService].to(mockBoxService))
+  .overrides(bind[AppConfig].to(mockAppConfig))
+  .overrides(bind[AuthConnector].to(mockAuthConnector))
+  .build()
 
   override def beforeEach(): Unit = {
-    reset(mockBoxService, mockAppConfig)
+    reset(mockBoxService, mockAppConfig, mockAuthConnector)
   }
 
   private def setUpAppConfig(userAgents: List[String]): Unit = {
@@ -65,8 +65,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   val clientId: ClientId = ClientId(clientIdStr)
   val boxName: String = "boxName"
 
-  val boxIdstr: String = UUID.randomUUID().toString
-  val boxId: BoxId = BoxId(UUID.fromString(boxIdstr))
+  val boxIdStr: String = UUID.randomUUID().toString
+  val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
   val box: Box = Box(boxId, boxName, BoxCreator(clientId))
   val jsonBody: String =
     raw"""{"boxName": "$boxName",
@@ -78,12 +78,9 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
   private val validHeadersWithValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
   private val validHeadersWithInValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "some-other-service")
-
   private val validHeadersWithInValidContentType: Map[String, String] = Map(CONTENT_TYPE -> "text/plain", USER_AGENT -> "api-subscription-fields")
   private val validHeadersWithEmptyContentType: Map[String, String] = Map(CONTENT_TYPE -> "", USER_AGENT -> "api-subscription-fields")
-
-  private val validHeaders: Map[String, String] = Map(CONTENT_TYPE -> "application/json")
-
+  private val validHeaders: Map[String, String] = Map(CONTENT_TYPE -> "application/json", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   "BoxController" when {
     "createBox" should {
@@ -146,7 +143,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         verifyNoInteractions(mockBoxService)
       }
 
-
       "return 415 when content type header is empty" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(*[ClientId], *)(*, *))
@@ -157,8 +153,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         verifyNoInteractions(mockBoxService)
       }
-
-
 
       "return 422 when Left returned from Box Service" in {
         setUpAppConfig(List("api-subscription-fields"))
@@ -178,7 +172,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         verifyNoInteractions(mockBoxService)
       }
 
-
       "return 403 when invalid useragent provided" in {
         setUpAppConfig(List("api-subscription-fields"))
         val result = doPut("/box", validHeadersWithInValidUserAgent, jsonBody)
@@ -194,7 +187,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         verifyNoInteractions(mockBoxService)
       }
-
 
       "return 500 when service fails with any runtime exception" in {
         setUpAppConfig(List("api-subscription-fields"))
@@ -212,7 +204,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         status(result) should be(BAD_REQUEST)
         verifyNoInteractions(mockBoxService)
       }
-
 
       "return 400 when invalid JSon payload sent" in {
         setUpAppConfig(List("api-subscription-fields"))
@@ -278,6 +269,75 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
 
         verify(mockBoxService).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)
+      }
+    }
+
+    "getBoxesByClientId" should {
+
+      "return empty list when client has no boxes" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(List()))
+        val result = doGet(s"/cmb/box", validHeaders)
+
+        contentAsString(result) shouldBe "[]"
+
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+      }
+
+      "return boxes for client specified in auth token in json format" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(List(box)))
+        val result = doGet("/cmb/box", validHeaders)
+        val expected =
+          s"""[{"boxId":"$boxIdStr","boxName":"boxName","boxCreator":{"clientId":"$clientIdStr"}}]"""
+
+        contentAsString(result) shouldBe expected 
+
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+      }
+      
+      "return a 500 response code if service fails with an exception" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.failed(new RuntimeException("some error")))
+
+        val result = doGet("/cmb/box", validHeaders)
+
+        status(result) should be(INTERNAL_SERVER_ERROR)
+
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+      }
+
+      // All these test cases below should probably be replaced by an assertion that the correct ActionFilters have
+      // been called.
+      "return unauthorised if bearer token doesn't contain client ID" in {
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+
+        val result = doGet("/cmb/box", validHeaders)
+
+        status(result) should be(UNAUTHORIZED)
+      }
+
+      "return 406 when accept header is missing" in {
+        primeAuthAction(clientIdStr)
+
+        val result = doGet("/cmb/box", validHeaders - ACCEPT)
+
+        status(result) shouldBe NOT_ACCEPTABLE
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+      }
+
+      "return 406 when accept header is invalid" in {
+        primeAuthAction(clientIdStr)
+
+        val result = doGet("/cmb/box", validHeaders + (ACCEPT -> "XYZAccept"))
+
+        status(result) shouldBe NOT_ACCEPTABLE
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
     }
 
@@ -427,7 +487,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           setUpAppConfig(List("api-subscription-fields"))
          when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
-          val result = doPut(s"/box/$boxIdstr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
+          val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
 
           status(result) should be(OK)
           Helpers.contentAsString(result) shouldBe """{"successful":true}"""
@@ -436,11 +496,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
      }
   }
 
+  private def primeAuthAction(clientId: String): Unit = {
+    when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(Some(clientId)))
+  }
+
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
     val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
     route(app, fakeRequest).get
   }
-
 
   def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
     doPUT(uri, headers, bodyValue)
