@@ -53,7 +53,6 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
-  // TODO: Test me
   def getAllBoxes()(implicit ec: ExecutionContext) : Future[List[Box]] = {
     findAll()
   }

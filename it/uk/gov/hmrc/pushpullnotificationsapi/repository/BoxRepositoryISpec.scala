@@ -156,6 +156,18 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
     }
   }
 
+  "get all boxes" in {
+    val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
+    
+    await(repo.createBox(box))
+    await(repo.createBox(anotherBox))
+
+    val allBoxes = await(repo.getAllBoxes())
+    
+    allBoxes should have length (2)
+    allBoxes shouldBe List(box, anotherBox)
+  }
+
   "updateSubscribers" should {
 
     "update the subscriber list" in {
