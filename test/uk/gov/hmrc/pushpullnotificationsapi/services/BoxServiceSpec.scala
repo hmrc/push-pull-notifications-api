@@ -156,6 +156,17 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
     }
 
+    "getAllBoxes" in new Setup {
+        val boxes : List[Box] = List()
+        when(mockRepository.getAllBoxes()(*)).thenReturn(Future.successful(boxes))
+
+        val result = await(objInTest.getAllBoxes())
+
+        result should be theSameInstanceAs boxes
+
+        verify(mockRepository, times(1)).getAllBoxes()(*)
+    }
+
     "updateCallbackUrl" should {
       val applicationId = ApplicationId("123124")
 

@@ -54,7 +54,6 @@ class BoxService @Inject()(repository: BoxRepository,
     }
   }
 
-  // TODO: Test me
   def getAllBoxes()(implicit ec: ExecutionContext): Future[List[Box]]  = {
     repository.getAllBoxes()
   }
