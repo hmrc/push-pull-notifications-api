@@ -3,7 +3,7 @@
 # Box
 PUT       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
 
-GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxByNameAndClientId(boxName: String, clientId: ClientId)
+GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[ClientId])
 
 PUT       /box/:boxId/callback          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
 
