@@ -230,16 +230,22 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         box.subscriber.isDefined shouldBe false
       }
 
-      // TODO : Change & fix me
-      // "return 400 when no parameters provided" in {
-      //   when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*))
-      //     .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
+      "return 200 and all boxes when no parameters provided" in {
+        val expectedBoxes = List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))
+        when(mockBoxService.getAllBoxes()(*))
+           .thenReturn(Future.successful(expectedBoxes))
 
-      //   val result = doGet(s"/box", validHeaders)
-      //   status(result) should be(BAD_REQUEST)
-      //   Helpers.contentAsString(result) shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Missing parameter: boxName\"}"
-      //   verifyNoInteractions(mockBoxService)
-      // }
+        val result = doGet(s"/box", validHeaders)
+        
+        status(result) should be(OK)
+        
+        val bodyVal = Helpers.contentAsString(result)
+        val actualBoxes = Json.parse(bodyVal).as[List[Box]]
+
+        actualBoxes shouldBe expectedBoxes
+        
+        verify(mockBoxService).getAllBoxes()(*)
+      }
 
       "return 400 when boxName is missing" in {
         when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*))

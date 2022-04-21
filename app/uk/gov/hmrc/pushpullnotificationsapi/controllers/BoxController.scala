@@ -60,7 +60,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         } recover recovery
       }
 
-  // TODO: Test with no box and no clientId
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
     (boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
