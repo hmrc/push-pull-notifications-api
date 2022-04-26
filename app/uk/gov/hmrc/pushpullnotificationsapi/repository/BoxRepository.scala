@@ -53,6 +53,10 @@ class BoxRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     find("boxId" -> boxId.value).map(_.headOption)
   }
 
+  def getAllBoxes()(implicit ec: ExecutionContext) : Future[List[Box]] = {
+    findAll()
+  }
+
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
     collection.insert.one(box).map(_ => BoxCreatedResult(box)) recoverWith {
       case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))

@@ -60,18 +60,26 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         } recover recovery
       }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Action[AnyContent] = Action.async {
+  def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
+    (boxName, clientId) match {
+      case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
+      case (None, None) => boxService.getAllBoxes().map(boxes => Ok(Json.toJson(boxes)))
+      case _ => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, s"Must specify both boxName and clientId query parameters or neither")))
+    }
+  }
+
+  private def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Result] = {
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
       case Some(box) => Ok(Json.toJson(box))
       case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-    } recover recovery
+    } 
   }
 
   def getBoxesByClientId(): Action[AnyContent] = (Action andThen validateAcceptHeaderAction andThen authAction).async {
     implicit request =>
-    boxService.getBoxesByClientId(request.clientId).map { boxes =>
-      Ok(Json.toJson(boxes))
-    } recover recovery
+        boxService.getBoxesByClientId(request.clientId).map { boxes =>
+        Ok(Json.toJson(boxes))
+      } recover recovery
   }
 
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] =
