@@ -16,23 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
+import com.mongodb.client.model.Aggregates.project
+import org.bson.conversions.Bson
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import play.api.libs.json._
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.akkastream.cursorProducer
-import reactivemongo.api.Cursor.FailOnError
-import reactivemongo.api.ReadPreference
-import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
+import org.mongodb.scala.bson.BsonDocument
+import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.{MongoWriteException, ReadPreference, bson}
+import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Updates}
+import play.api.Logger
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -42,20 +44,38 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fr
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbNotificationFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper._
 
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: ReactiveMongoComponent, crypto: CompositeSymmetricCrypto)
+class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)
                                        (implicit ec: ExecutionContext, mat: Materializer)
-  extends ReactiveRepository[DbNotification, BSONObjectID](
-    "notifications",
-    mongoComponent.mongoConnector.db,
-    dbNotificationFormatter,
-    ReactiveMongoFormats.objectIdFormats) with ReactiveMongoFormats {
+  extends PlayMongoRepository[DbNotification](
+    collectionName = "notifications",
+    mongoComponent = mongoComponent,
+    domainFormat = dbNotificationFormatter,
+    indexes = Seq(
+      IndexModel(ascending(List("notificationId", "boxId", "status"): _*),
+        IndexOptions()
+          .name("notifications_idx")
+          .background(true)
+          .unique(true)),
+      IndexModel(ascending(List("boxId, createdDateTime"): _*),
+        IndexOptions()
+          .name("notifications_created_datetime_idx")
+          .background(true)
+          .unique(true)),
+      IndexModel(ascending(List("createdDateTime"): _*),
+        IndexOptions()
+          .name("create_datetime_ttl_idx")
+          .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
+          .background(true)
+          .unique(true))
+    )) {
 
+  private val logger = Logger(this.getClass)
   private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
   private lazy val notifications_index_name = "notifications_idx"
   private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
@@ -66,28 +86,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
   //API-4370 need to delete old indexes this code can be removed once this has been run
   private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
 
-  override def indexes = Seq(
-    createAscendingIndex(
-      Some(notifications_index_name),
-      isUnique = true,
-      isBackground = true,
-      List("notificationId", "boxId", "status"): _*
-    ),
-    createAscendingIndex(
-      Some(created_datetime_index_name),
-      isUnique = false,
-      isBackground = true,
-      List("boxId, createdDateTime"): _*
-    ),
-    Index(
-      key = Seq("createdDateTime" -> IndexType.Ascending),
-      name = Some(create_datetime_ttlIndexName),
-      background = true,
-      options = BSONDocument(OptExpireAfterSeconds -> BSONLong(appConfig.notificationTTLinSeconds))
-    )
-  )
-
-  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+  override def ensureIndexes(): Future[Seq[String]] = {
     super.ensureIndexes
     dropOldIndexes
     dropTTLIndexIfChanged
@@ -96,38 +95,39 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
 
   private def ensureLocalIndexes()(implicit ec: ExecutionContext) = {
     Future.sequence(indexes.map(index => {
-      logger.info(s"ensuring index ${index.eventualName}")
-      collection.indexesManager.ensure(index)
+      logger.info(s"ensuring index ${index.toString}")
+      collection.createIndex(index.getKeys, index.getOptions).head()
     }))
   }
 
-  private def dropOldIndexes()(implicit ec: ExecutionContext): List[Future[Int]] = {
+  private def dropOldIndexes()(implicit ec: ExecutionContext) = {
     //API-4370 need to delete old indexes this code can be removed once this has been run
-    oldIndexes.map(idxName => collection.indexesManager.drop(idxName))
+    oldIndexes.map(idxName => collection.dropIndex(idxName))
   }
 
   private def dropTTLIndexIfChanged(implicit ec: ExecutionContext) = {
-    val indexes = collection.indexesManager.list()
+    val indexes = collection.listIndexes()
 
-    def matchIndexName(index: Index) = {
-      index.eventualName == create_datetime_ttlIndexName
+    def matchIndexName(indexName: String) = {
+      indexName == create_datetime_ttlIndexName
     }
 
-    def compareTTLValueWithConfig(index: Index) = {
-      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != appConfig.notificationTTLinSeconds)
+    def compareTTLValueWithConfig(index: bson.BsonValue) = {
+      val ttlIndex = index.asDocument().get(OptExpireAfterSeconds)
+      ttlIndex.asNumber().intValue() != appConfig.notificationTTLinSeconds
+      //      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != appConfig.notificationTTLinSeconds)
     }
 
-    def checkIfTTLChanged(index: Index): Boolean = {
-      matchIndexName(index) && compareTTLValueWithConfig(index)
+    def checkIfTTLChanged(index: (String, bson.BsonValue)): Boolean = {
+      matchIndexName(index._1) && compareTTLValueWithConfig(index._2)
     }
 
-    indexes.map(_.exists(checkIfTTLChanged))
+    indexes.map(_.exists(index => checkIfTTLChanged(index)))
       .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
-        logger.info(s"Dropping time to live index for entries in ${collection.name}")
-        Future.sequence(Seq(collection.indexesManager.drop(create_datetime_ttlIndexName).map(_ > 0),
-          ensureLocalIndexes))
+        logger.info(s"Dropping time to live index for entries in ${collection}")
+        collection.dropIndex(create_datetime_ttlIndexName)
+        ensureLocalIndexes
       })
-
   }
 
   def getByBoxIdAndFilters(boxId: BoxId,
@@ -137,109 +137,125 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Re
                            numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
-    val query: JsObject =
-      Json.obj(f"$$and" -> (
-        boxIdQuery(boxId) ++
-          statusQuery(status) ++
-          Json.arr(dateRange("createdDateTime", fromDateTime, toDateTime))))
+    val query: Bson =
+      Filters.and(boxIdQuery(boxId),
+          statusQuery(status),
+          dateRange("createdDateTime", fromDateTime, toDateTime))
+
 
     collection
-      .find(query, Option.empty[DbNotification])
-      .sort(Json.obj("createdDateTime" -> 1))
-      .cursor[DbNotification](ReadPreference.primaryPreferred)
-      .collect(maxDocs = numberOfNotificationsToReturn, FailOnError[List[DbNotification]]())
-      .map(_.map(toNotification(_, crypto)))
+      .withReadPreference(ReadPreference.secondaryPreferred)
+      .find(query)
+      .sort(equal("createdDateTime", 1))
+      .limit(numberOfNotificationsToReturn)
+      .map(toNotification(_, crypto))
+      .toFuture().map(_.toList)
   }
 
-  val empty: JsObject = Json.obj()
-
-  private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): JsObject = {
+  private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): Bson = {
     if (start.isDefined || end.isDefined) {
-      val startCompare = if (start.isDefined) Json.obj("$gte" -> Json.obj("$date" -> start.get.getMillis)) else empty
-      val endCompare = if (end.isDefined) Json.obj("$lte" -> Json.obj("$date" -> end.get.getMillis)) else empty
-      Json.obj(fieldName -> (startCompare ++ endCompare))
+      val startCompare = if (start.isDefined) gte(fieldName, start.get.getMillis) else Filters.empty()
+      val endCompare = if (end.isDefined) lte(fieldName, end.get.getMillis) else Filters.empty()
+      Filters.and(startCompare, endCompare)
     }
-    else empty
+    else Filters.empty()
   }
 
-  private def boxIdQuery(boxId: BoxId): JsArray = {
-    Json.arr(Json.obj("boxId" -> boxId.value))
+  private def boxIdQuery(boxId: BoxId): Bson = {
+    equal("boxId", boxId.value)
   }
 
-  private def notificationIdsQuery(notificationIds: List[String]): JsArray = {
-    Json.arr(Json.obj("notificationId" -> Json.obj("$in" -> notificationIds)))
+  private def notificationIdsQuery(notificationIds: List[String]): Bson = {
+    in("notificationId", notificationIds)
   }
 
-  private def statusQuery(maybeStatus: Option[NotificationStatus]): JsArray = {
-    maybeStatus.fold(Json.arr()) { status => Json.arr(Json.obj("status" -> status)) }
+  private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
+    if(maybeStatus.isDefined) equal("status", maybeStatus.get) else Filters.empty()
   }
 
   def getAllByBoxId(boxId: BoxId)
                    (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
-  def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] =
-
-    insert(fromNotification(notification, crypto)).map(_ => Some(notification.notificationId)).recoverWith {
-      case e: WriteResult if e.code.contains(MongoErrorCodes.DuplicateKey) =>
+  def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
+    collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
+      case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
         Future.successful(None)
     }
+  }
 
   def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
 
-    val query = Json.obj(f"$$and" -> (
-      boxIdQuery(boxId) ++
-        notificationIdsQuery(notificationIds)))
+    val query = and(boxIdQuery(boxId),
+        notificationIdsQuery(notificationIds))
 
     collection
-      .update(false)
-      .one(query,
-        Json.obj("$set" -> Json.obj("status" -> ACKNOWLEDGED)),
-        upsert = false,
-        multi = true)
-      .map((result: UpdateWriteResult) => {
-
-        if(result.nModified!=notificationIds.size){
-          logger.warn(s"for boxId: ${boxId.raw} ${notificationIds.size} requested to be Acknowledged but only ${result.nModified} were modified")
-        }
-        result.ok
-      })
-
+      .updateMany(query,
+        set("status", ACKNOWLEDGED)
+      ).toFuture().map(_.wasAcknowledged())
   }
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
-    updateNotification(notificationId, Json.obj("$set" -> Json.obj("status" -> newStatus)))
+    collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
+      update = set("status", newStatus),
+      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+    ).map(toNotification(_, crypto)).head()
   }
 
   def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
-    updateNotification(notificationId, Json.obj("$set" -> Json.obj("retryAfterDateTime" -> newRetryAfterDateTime)))
+    collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
+      update = set("retryAfterDateTime", newRetryAfterDateTime),
+      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+    ).map(toNotification(_, crypto)).head()
   }
 
-  private def updateNotification(notificationId: NotificationId, updateStatement: JsObject): Future[Notification] =
-    findAndUpdate(Json.obj("notificationId" -> notificationId.value), updateStatement, fetchNewObject = true) map { updated =>
-      toNotification(updated.result[DbNotification].head, crypto)
-    }
+  def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
 
-  def fetchRetryableNotifications: Source[RetryableNotification, Future[Any]] = {
-    import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbRetryableNotificationFormatter
-
-    val builder = collection.BatchCommands.AggregationFramework
+//    val builder = collection.BatchCommands.AggregationFramework
     val pipeline = List(
-      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> PENDING),
-        Json.obj("$or" -> Json.arr(Json.obj("retryAfterDateTime" -> Json.obj("$lte" -> now(UTC))),
-          Json.obj("retryAfterDateTime" -> Json.obj("$exists" -> false))))))),
-      builder.Lookup(from = "box", localField = "boxId", foreignField = "boxId", as = "boxes"),
-      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("boxes.subscriber.subscriptionType" -> API_PUSH_SUBSCRIBER),
-        Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
-      builder.Project(
-        Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-          "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
-          "retryAfterDateTime" -> "$retryAfterDateTime"),
-        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
-      ))
+//      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> PENDING),
+//        Json.obj("$or" -> Json.arr(Json.obj("retryAfterDateTime" -> Json.obj("$lte" -> now(UTC))),
+//          Json.obj("retryAfterDateTime" -> Json.obj("$exists" -> false))))))),
+
+      and(equal("status", PENDING),
+        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", now(UTC)))),
+
+      Aggregates.lookup("box", "boxId", "boxId", "boxes"),
+
+//      builder.Lookup(from = "box", localField = "boxId", foreignField = "boxId", as = "boxes"),
+
+
+//      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("boxes.subscriber.subscriptionType" -> API_PUSH_SUBSCRIBER),
+//        Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
+
+        and(equal("boxes.subscriber.subscriptionType", API_PUSH_SUBSCRIBER),
+          Filters.exists("boxes.subscriber.callBackUrl"),
+          Filters.ne("boxes.subscriber.callBackUrl", "")))
+
+//      builder.Project(
+//        Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
+//          "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
+//          "retryAfterDateTime" -> "$retryAfterDateTime"),
+//        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
+//      ))
+
+//    val project = Document(Json.obj("$project" ->
+//        Json.obj("notification" ->
+//          Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
+//                  "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status",
+//            "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime")).toString))
+    val projection = Aggregates.project(
+      Projections.fields(
+        Projections.include("data"),
+        Projections.exclude("_id")
+      )
     )
 
-    collection.aggregateWith[DbRetryableNotification]()(_ => (pipeline.head, pipeline.tail))
-      .documentSource()
-      .map(toRetryableNotification(_, crypto))
+    Source.fromPublisher(
+      collection.aggregate[DbRetryableNotification](pipeline)
+        //[DbRetryableNotification]()(_ => (pipeline.head, pipeline.tail))
+  //      .documentSource()
+        .map(toRetryableNotification(_, crypto))
+    )
+
   }
 }

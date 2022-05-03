@@ -146,13 +146,13 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     "getBoxesByClientId" should {
       "delegate to repo and return same list" in new Setup {
         val boxes : List[Box] = List()
-        when(mockRepository.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(boxes))
+        when(mockRepository.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(boxes))
 
         val result = await(objInTest.getBoxesByClientId(clientId))
 
         result should be theSameInstanceAs boxes
 
-        verify(mockRepository, times(1)).getBoxesByClientId(eqTo(clientId))(*)
+        verify(mockRepository, times(1)).getBoxesByClientId(eqTo(clientId))
       }
     }
 

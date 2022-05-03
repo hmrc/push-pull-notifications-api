@@ -47,7 +47,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
         override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
         override lazy val application: Application = testApp
-        override lazy val scheduler: Scheduler = new StubbedScheduler {
+        new StubbedScheduler {
           override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)
                                (implicit executor: ExecutionContext): Cancellable = {
             Captured.initialDelay = initialDelay

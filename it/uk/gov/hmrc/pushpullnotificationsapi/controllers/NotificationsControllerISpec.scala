@@ -1,7 +1,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
-
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
@@ -12,6 +11,7 @@ import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
@@ -36,6 +36,7 @@ class NotificationsControllerISpec
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
+  override protected def repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
 
   val boxName = "myboxName"
   val clientId = "someClientId"
@@ -121,7 +122,7 @@ class NotificationsControllerISpec
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
     result.status shouldBe CREATED
-    await(boxRepository.findAll()).head
+    await(boxRepository.collection.find().toFuture()).head
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {

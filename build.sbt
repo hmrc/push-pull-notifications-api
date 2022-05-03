@@ -22,7 +22,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "push-pull-notifications-api",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.12",
+    scalaVersion := "2.12.14",
     scalacOptions += "-Ypartial-unification",
     majorVersion := 0,
     PlayKeys.playDefaultPort := 6701,

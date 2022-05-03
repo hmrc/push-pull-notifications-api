@@ -1,12 +1,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import org.scalatest.{BeforeAndAfterEach, Suite, TestSuite}
-import uk.gov.hmrc.mongo.{MongoSpecSupport, Awaiting => MongoAwaiting}
+import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
+import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.ExecutionContext.global
-
-trait MongoApp extends MongoSpecSupport with BeforeAndAfterEach  {
+trait MongoApp extends DefaultPlayMongoRepositorySupport[Box] with BeforeAndAfterEach  {
   me: Suite with TestSuite =>
 
   override def beforeEach(): Unit = {
@@ -14,10 +12,7 @@ trait MongoApp extends MongoSpecSupport with BeforeAndAfterEach  {
     dropMongoDb()
   }
 
-  def dropMongoDb()(implicit ec: ExecutionContext = global): Unit =
-    Awaiting.await(mongo().drop())
+  def dropMongoDb(): Unit =
+    mongoDatabase.drop()
 
 }
-
-object Awaiting extends MongoAwaiting
-

@@ -19,16 +19,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.joda.time.Duration
+import org.mockito.MockitoSugar.mock
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.lock.LockMongoRepository
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits._
@@ -40,7 +40,6 @@ class LockedScheduledJobSpec
     with Matchers
     with ScalaFutures
     with GuiceOneAppPerTest
-    with MongoSpecSupport
     with BeforeAndAfterEach {
 
   override def fakeApplication(): Application =
@@ -55,8 +54,6 @@ class LockedScheduledJobSpec
     override val releaseLockAfter = new Duration(5000)
 
     val start = new CountDownLatch(1)
-
-    val lockRepository = LockMongoRepository(mongo)
 
     def continueExecution(): Unit = start.countDown()
 
@@ -73,7 +70,7 @@ class LockedScheduledJobSpec
     override def initialDelay = FiniteDuration(1, TimeUnit.SECONDS)
 
     override def interval = FiniteDuration(1, TimeUnit.SECONDS)
-
+    override val lockRepository: MongoLockRepository = mock[MongoLockRepository]
   }
 
   "ExclusiveScheduledJob" should {

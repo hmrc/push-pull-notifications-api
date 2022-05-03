@@ -18,7 +18,9 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 import org.joda.time.Duration
 import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LockedScheduledJob extends ScheduledJob {
@@ -27,18 +29,19 @@ trait LockedScheduledJob extends ScheduledJob {
 
   val releaseLockAfter: Duration
 
-  val lockRepository: LockRepository
+  val lockRepository: MongoLockRepository
+  lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = 1.hour)
 
-  lazy val lockKeeper = new LockKeeper {
-    override def repo: LockRepository = lockRepository
-    override def lockId: String  = s"$name-scheduled-job-lock"
-    override val forceLockReleaseAfter: Duration = releaseLockAfter
-  }
+//  lazy val lockKeeper = new LockKeeper {
+//    override def repo: MongoLockRepository = lockRepository
+//    override def lockId: String  = s"$name-scheduled-job-lock"
+//    override val forceLockReleaseAfter: Duration = releaseLockAfter
+//  }
 
-  def isRunning: Future[Boolean] = lockKeeper.isLocked
+  def isRunning: Future[Boolean] = lockRepository.isLocked(lockKeeper.lockId, "owner")
 
   final def execute(implicit ec: ExecutionContext): Future[Result] =
-    lockKeeper.tryLock {
+    lockKeeper.withLock {
       executeInLock
     } map {
       case Some(Result(msg)) => Result(s"Job with $name run and completed with result $msg")

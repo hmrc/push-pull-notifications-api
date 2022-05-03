@@ -19,25 +19,25 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.google.inject.Singleton
+
 import javax.inject.Inject
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.joda.time.{DateTime, Duration}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 import scala.concurrent.Future.successful
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNotificationsJobLockKeeper,
+class RetryPushNotificationsJob @Inject()(mongoLockRepository: MongoLockRepository,
                                           jobConfig: RetryPushNotificationsJobConfig,
                                           notificationsRepository: NotificationsRepository,
                                           notificationPushService: NotificationPushService)
@@ -48,6 +48,7 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
   override def initialDelay: FiniteDuration = jobConfig.initialDelay
   override val isEnabled: Boolean = jobConfig.enabled
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryPushNotificationsJob", ttl = 1.hour)
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
     val retryAfterDateTime: DateTime = now(UTC).plus(jobConfig.interval.toMillis)
@@ -83,12 +84,13 @@ class RetryPushNotificationsJob @Inject()(override val lockKeeper: RetryPushNoti
   }
 }
 
-class RetryPushNotificationsJobLockKeeper @Inject()(mongo: ReactiveMongoComponent) extends LockKeeper {
-  override def repo: LockRepository = new LockRepository()(mongo.mongoConnector.db)
+class RetryPushNotificationsJobLockKeeper @Inject()() {
+//  override def repo: LockRepository = new LockRepository()(mongo.mongoConnector.db)
+//
+//  override def lockId: String = "RetryPushNotificationsJob"
+//
+//  override val forceLockReleaseAfter: Duration = Duration.standardMinutes(60) // scalastyle:off magic.number
 
-  override def lockId: String = "RetryPushNotificationsJob"
-
-  override val forceLockReleaseAfter: Duration = Duration.standardMinutes(60) // scalastyle:off magic.number
 }
 
 case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration,
