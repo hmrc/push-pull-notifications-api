@@ -20,21 +20,24 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import com.mongodb.client.model.Aggregates.project
+import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.mongodb.scala.bson.BsonDocument
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{MongoWriteException, ReadPreference, bson}
+import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, bson}
 import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Updates}
 import play.api.Logger
+import play.api.libs.json.Format
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -66,14 +69,18 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
         IndexOptions()
           .name("notifications_created_datetime_idx")
           .background(true)
-          .unique(true)),
+          .unique(false)
+      ),
       IndexModel(ascending(List("createdDateTime"): _*),
         IndexOptions()
           .name("create_datetime_ttl_idx")
           .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
           .background(true)
-          .unique(true))
-    )) {
+//          .unique(true)
+      )
+    ),
+    replaceIndexes = false
+  ) {
 
   private val logger = Logger(this.getClass)
   private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
@@ -82,27 +89,50 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
+  implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
 
-  //API-4370 need to delete old indexes this code can be removed once this has been run
-  private lazy val oldIndexes: List[String] = List("notifications_index", "notificationsDateRange_index", "notifications_created_datetime_index")
+  override lazy val collection: MongoCollection[DbNotification] =
+    CollectionFactory
+      .collection(mongoComponent.database, collectionName, domainFormat)
+      .withCodecRegistry(
+        fromRegistries(
+          fromCodecs(
+            Codecs.playFormatCodec(dateFormation)
+          ),
+          MongoClient.DEFAULT_CODEC_REGISTRY
+        )
+      )
 
-  override def ensureIndexes(): Future[Seq[String]] = {
+  override def ensureIndexes: Future[Seq[String]] = {
+    ensureLocalIndexes
     super.ensureIndexes
-    dropOldIndexes
-    dropTTLIndexIfChanged
-    ensureLocalIndexes()
   }
 
   private def ensureLocalIndexes()(implicit ec: ExecutionContext) = {
-    Future.sequence(indexes.map(index => {
-      logger.info(s"ensuring index ${index.toString}")
-      collection.createIndex(index.getKeys, index.getOptions).head()
-    }))
-  }
+    val indexList = List()
+    val currentIndexes = collection.listIndexes()
+    indexes.filter(index => {
+      val indexFound = currentIndexes.map(curr => curr.contains(index.getOptions.getName)).headOption()
+      indexFound.map(indexOpt => indexOpt.getOrElse(false)).value.isDefined
+    }).foreach(index => {
+      logger.info(s"creating index: $index")
+      Future.successful(collection.createIndex(index.getKeys, index.getOptions).head())
+    })
 
-  private def dropOldIndexes()(implicit ec: ExecutionContext) = {
-    //API-4370 need to delete old indexes this code can be removed once this has been run
-    oldIndexes.map(idxName => collection.dropIndex(idxName))
+/*
+    Future.sequence(
+      List(
+      collection.createIndexes(models = indexes)
+        .toFuture().map(results => results.map(i => logger.info(s"created Index $i")))
+*/
+//      collection.createIndex(index.getKeys, index.getOptions).head()
+//
+//        indexes.map(index => {
+//      logger.info(s"ensuring index before $index")
+//      logger.info(s"ensuring index ${index.toString}")
+//      collection.createIndex(index.getKeys, index.getOptions).head()
+//    })
+//  ))
   }
 
   private def dropTTLIndexIfChanged(implicit ec: ExecutionContext) = {
