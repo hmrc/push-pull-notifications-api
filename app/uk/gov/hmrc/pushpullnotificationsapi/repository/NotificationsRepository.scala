@@ -71,15 +71,15 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
           .background(true)
           .unique(false)
       ),
-      IndexModel(ascending(List("createdDateTime"): _*),
+      IndexModel(ascending(Seq("createdDateTime"): _*),
         IndexOptions()
           .name("create_datetime_ttl_idx")
           .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
           .background(true)
-//          .unique(true)
+          .unique(false)
       )
     ),
-    replaceIndexes = false
+    replaceIndexes = true
   ) {
 
   private val logger = Logger(this.getClass)
@@ -273,7 +273,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 //          Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
 //                  "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status",
 //            "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime")).toString))
-    val projection = Aggregates.project(
+    Aggregates.project(
       Projections.fields(
         Projections.include("data"),
         Projections.exclude("_id")
@@ -284,6 +284,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       collection.aggregate[DbRetryableNotification](pipeline)
         //[DbRetryableNotification]()(_ => (pipeline.head, pipeline.tail))
   //      .documentSource()
+
         .map(toRetryableNotification(_, crypto))
     )
 

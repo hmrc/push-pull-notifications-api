@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 import org.joda.time.Duration
-import uk.gov.hmrc.lock.{LockKeeper, LockRepository}
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import scala.concurrent.duration.DurationInt
