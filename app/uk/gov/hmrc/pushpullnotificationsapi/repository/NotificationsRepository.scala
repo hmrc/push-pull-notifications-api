@@ -19,19 +19,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import com.mongodb.client.model.Aggregates.project
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import org.mongodb.scala.bson.BsonDocument
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, bson}
+import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, SingleObservable, bson}
 import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Updates}
+import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Indexes, Projections, ReturnDocument, Updates}
 import play.api.Logger
 import play.api.libs.json.Format
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
@@ -51,6 +48,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, D
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)
@@ -84,9 +82,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   private val logger = Logger(this.getClass)
   private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
-  private lazy val notifications_index_name = "notifications_idx"
-  private lazy val created_datetime_index_name = "notifications_created_datetime_idx"
-  private lazy val OptExpireAfterSeconds = "expireAfterSeconds"
+  private lazy val oldIndexes: List[String] = List(create_datetime_ttlIndexName)
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
   implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
@@ -108,56 +104,22 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
     super.ensureIndexes
   }
 
-  private def ensureLocalIndexes()(implicit ec: ExecutionContext) = {
-    val indexList = List()
-    val currentIndexes = collection.listIndexes()
-    indexes.filter(index => {
-      val indexFound = currentIndexes.map(curr => curr.contains(index.getOptions.getName)).headOption()
-      indexFound.map(indexOpt => indexOpt.getOrElse(false)).value.isDefined
-    }).foreach(index => {
-      logger.info(s"creating index: $index")
-      Future.successful(collection.createIndex(index.getKeys, index.getOptions).head())
-    })
-
-/*
+  private def ensureLocalIndexes() = {
     Future.sequence(
       List(
-      collection.createIndexes(models = indexes)
-        .toFuture().map(results => results.map(i => logger.info(s"created Index $i")))
-*/
-//      collection.createIndex(index.getKeys, index.getOptions).head()
-//
-//        indexes.map(index => {
-//      logger.info(s"ensuring index before $index")
-//      logger.info(s"ensuring index ${index.toString}")
-//      collection.createIndex(index.getKeys, index.getOptions).head()
-//    })
-//  ))
-  }
-
-  private def dropTTLIndexIfChanged(implicit ec: ExecutionContext) = {
-    val indexes = collection.listIndexes()
-
-    def matchIndexName(indexName: String) = {
-      indexName == create_datetime_ttlIndexName
-    }
-
-    def compareTTLValueWithConfig(index: bson.BsonValue) = {
-      val ttlIndex = index.asDocument().get(OptExpireAfterSeconds)
-      ttlIndex.asNumber().intValue() != appConfig.notificationTTLinSeconds
-      //      index.options.getAs[BSONLong](OptExpireAfterSeconds).fold(false)(_.as[Long] != appConfig.notificationTTLinSeconds)
-    }
-
-    def checkIfTTLChanged(index: (String, bson.BsonValue)): Boolean = {
-      matchIndexName(index._1) && compareTTLValueWithConfig(index._2)
-    }
-
-    indexes.map(_.exists(index => checkIfTTLChanged(index)))
-      .map(hasTTLIndexChanged => if (hasTTLIndexChanged) {
-        logger.info(s"Dropping time to live index for entries in ${collection}")
-        collection.dropIndex(create_datetime_ttlIndexName)
-        ensureLocalIndexes
-      })
+        Future.successful(oldIndexes.map(indexToDrop => {
+          collection.dropIndex(indexToDrop)
+            .toFuture
+            .map(_ => logger.info(s"dropping index $indexToDrop succeeded"))
+            .recover {
+              case NonFatal(e) => logger.info(s"dropping index $indexToDrop failed ${e.getMessage}")
+              case _ => logger.info(s"dropping index $indexToDrop failed")
+            }
+        })),
+        collection.createIndexes(models = indexes)
+          .toFuture().map(results => results.map(i => logger.info(s"created Index $i")))
+      )
+    )
   }
 
   def getByBoxIdAndFilters(boxId: BoxId,
@@ -240,39 +202,16 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
 
-//    val builder = collection.BatchCommands.AggregationFramework
     val pipeline = List(
-//      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("status" -> PENDING),
-//        Json.obj("$or" -> Json.arr(Json.obj("retryAfterDateTime" -> Json.obj("$lte" -> now(UTC))),
-//          Json.obj("retryAfterDateTime" -> Json.obj("$exists" -> false))))))),
-
       and(equal("status", PENDING),
         or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", now(UTC)))),
 
       Aggregates.lookup("box", "boxId", "boxId", "boxes"),
 
-//      builder.Lookup(from = "box", localField = "boxId", foreignField = "boxId", as = "boxes"),
-
-
-//      builder.Match(Json.obj("$and" -> Json.arr(Json.obj("boxes.subscriber.subscriptionType" -> API_PUSH_SUBSCRIBER),
-//        Json.obj("boxes.subscriber.callBackUrl" -> Json.obj("$exists" -> true, "$ne" -> ""))))),
-
         and(equal("boxes.subscriber.subscriptionType", API_PUSH_SUBSCRIBER),
           Filters.exists("boxes.subscriber.callBackUrl"),
           Filters.ne("boxes.subscriber.callBackUrl", "")))
 
-//      builder.Project(
-//        Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-//          "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
-//          "retryAfterDateTime" -> "$retryAfterDateTime"),
-//        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
-//      ))
-
-//    val project = Document(Json.obj("$project" ->
-//        Json.obj("notification" ->
-//          Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-//                  "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status",
-//            "createdDateTime" -> "$createdDateTime", "retryAfterDateTime" -> "$retryAfterDateTime")).toString))
     Aggregates.project(
       Projections.fields(
         Projections.include("data"),
@@ -282,9 +221,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
     Source.fromPublisher(
       collection.aggregate[DbRetryableNotification](pipeline)
-        //[DbRetryableNotification]()(_ => (pipeline.head, pipeline.tail))
-  //      .documentSource()
-
         .map(toRetryableNotification(_, crypto))
     )
 
