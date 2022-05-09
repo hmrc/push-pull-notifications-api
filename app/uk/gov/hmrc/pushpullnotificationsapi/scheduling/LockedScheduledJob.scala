@@ -31,12 +31,6 @@ trait LockedScheduledJob extends ScheduledJob {
   val lockRepository: MongoLockRepository
   lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = 1.hour)
 
-//  lazy val lockKeeper = new LockKeeper {
-//    override def repo: MongoLockRepository = lockRepository
-//    override def lockId: String  = s"$name-scheduled-job-lock"
-//    override val forceLockReleaseAfter: Duration = releaseLockAfter
-//  }
-
   def isRunning: Future[Boolean] = lockRepository.isLocked(lockKeeper.lockId, "owner")
 
   final def execute(implicit ec: ExecutionContext): Future[Result] =

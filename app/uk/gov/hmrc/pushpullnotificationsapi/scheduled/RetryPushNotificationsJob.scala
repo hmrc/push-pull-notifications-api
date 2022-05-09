@@ -84,15 +84,6 @@ class RetryPushNotificationsJob @Inject()(mongoLockRepository: MongoLockReposito
   }
 }
 
-class RetryPushNotificationsJobLockKeeper @Inject()() {
-//  override def repo: LockRepository = new LockRepository()(mongo.mongoConnector.db)
-//
-//  override def lockId: String = "RetryPushNotificationsJob"
-//
-//  override val forceLockReleaseAfter: Duration = Duration.standardMinutes(60) // scalastyle:off magic.number
-
-}
-
 case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration,
                                            interval: FiniteDuration,
                                            enabled: Boolean,

@@ -42,7 +42,6 @@ class LockedScheduledJobSpec
     with GuiceOneAppPerTest
     with BeforeAndAfterEach {
 
-//  val lockRepository = mock[MongoLockRepository]
   override def fakeApplication(): Application =
       GuiceApplicationBuilder()
 //      .overrides(bind[MongoLockRepository].to(lockRepository))
@@ -89,22 +88,22 @@ class LockedScheduledJobSpec
       Await.result(job.execute, 1.minute).message shouldBe "Job with job1 run and completed with result 2"
     }
 
-//    "not allow job to run in parallel" in {
-//      val job = new SimpleJob("job2")
-//      when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true)).andThenCallRealMethod()
-//      when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true)).andThenCallRealMethod()
-//      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(false)).andThenCallRealMethod()
-//
-//      val pausedExecution = job.execute
-//      pausedExecution.isCompleted     shouldBe false
-//      job.isRunning.futureValue       shouldBe true
-//      job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-//      job.isRunning.futureValue       shouldBe true
-//
-//      job.continueExecution()
-//      pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-//      job.isRunning.futureValue           shouldBe false
-//    }
+    "not allow job to run in parallel" in {
+      val job = new SimpleJob("job2")
+      when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true))//.andThenCallRealMethod()
+      when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true))//.andThenCallRealMethod()
+      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))//.andThenCallRealMethod()
+
+      val pausedExecution = job.execute
+      pausedExecution.isCompleted     shouldBe false
+      job.isRunning.futureValue       shouldBe true
+      job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
+      job.isRunning.futureValue       shouldBe true
+
+      job.continueExecution()
+      pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
+      job.isRunning.futureValue           shouldBe false
+    }
 
     "should tolerate exceptions in execution" in {
       val job = new SimpleJob("job3") {

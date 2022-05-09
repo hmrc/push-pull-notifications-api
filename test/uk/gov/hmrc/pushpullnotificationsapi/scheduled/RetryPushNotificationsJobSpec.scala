@@ -32,13 +32,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import akka.NotUsed
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Source.{fromFuture, fromIterator, fromPublisher, future, futureSource}
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
