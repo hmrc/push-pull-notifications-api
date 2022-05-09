@@ -59,7 +59,9 @@ class NotificationsController @Inject()(appConfig: AppConfig,
           if (validateBodyAgainstContentType(contentType)) {
             val notificationId = NotificationId(UUID.randomUUID())
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
-              case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+              case _: NotificationCreateSuccessResult =>
+                logger.info("Notification Create result success")
+                Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
               case _: NotificationCreateFailedBoxIdNotFoundResult =>
                 NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: NotificationCreateFailedDuplicateResult =>

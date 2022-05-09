@@ -18,17 +18,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
-private[repository] object ReactiveMongoFormatters {
+private[repository] object PlayHmrcMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
-
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
@@ -38,7 +37,15 @@ private[repository] object ReactiveMongoFormatters {
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
+  implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
+  implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]
+  implicit val notificationAckStatusFormatter: OFormat[NotificationStatus.ACKNOWLEDGED.type] = Json.format[NotificationStatus.ACKNOWLEDGED.type]
 
+//    Union.from[NotificationStatus]("notificationStatus")
+//    .and[NotificationStatus](NotificationStatus.ACKNOWLEDGED.toString)
+//    .and[NotificationStatus](NotificationStatus.FAILED.toString)
+//    .and[NotificationStatus](NotificationStatus.PENDING.toString)
+//    .format
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]

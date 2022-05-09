@@ -28,7 +28,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient.{fromClient, toClient}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbClientFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbClientFormatter
 
 import scala.concurrent.{ExecutionContext, Future}
 

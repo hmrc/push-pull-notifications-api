@@ -64,7 +64,9 @@ case class Box(boxId: BoxId,
                boxName: String,
                boxCreator: BoxCreator,
                applicationId: Option[ApplicationId] = None,
-               subscriber: Option[Subscriber] = None) // Default to PullSubscriber?
+               subscriber: Option[Subscriber] = None)
+//,
+//               clientManaged: Boolean = false) // Default to PullSubscriber?
 
 case class Client(id: ClientId, secrets: Seq[ClientSecret])
 case class ClientSecret(value: String)

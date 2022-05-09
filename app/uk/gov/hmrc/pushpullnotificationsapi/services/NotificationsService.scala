@@ -22,12 +22,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService) {
+class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService)
+  extends ApplicationLogger {
 
 
   def acknowledgeNotifications(boxId: BoxId,
@@ -68,6 +70,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
 
   def saveNotification(boxId: BoxId, notificationId: NotificationId, contentType: MessageContentType, message: String)
                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[NotificationCreateServiceResult] = {
+    logger.info(s"Save Notification for box ${boxId.value}")
     boxRepository.findByBoxId(boxId)
       .flatMap {
         case None => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
@@ -75,6 +78,7 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
           val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
             case Some(_) =>
+              logger.info(s"Save Notification for notification $notification")
               pushService.handlePushNotification(box, notification)
               NotificationCreateSuccessResult()
             case None => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")

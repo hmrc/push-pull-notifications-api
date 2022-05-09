@@ -23,7 +23,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 
-private[repository] case class DbNotification(notificationId: NotificationId,
+case class DbNotification(notificationId: NotificationId,
                                               boxId: BoxId,
                                               messageContentType: MessageContentType,
                                               encryptedMessage: String,

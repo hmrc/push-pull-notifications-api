@@ -4,7 +4,7 @@ import org.scalatest.{BeforeAndAfterEach, Suite, TestSuite}
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 
-trait MongoApp extends DefaultPlayMongoRepositorySupport[Box] with BeforeAndAfterEach  {
+trait MongoApp[A] extends DefaultPlayMongoRepositorySupport[A] with BeforeAndAfterEach {
   me: Suite with TestSuite =>
 
   override def beforeEach(): Unit = {

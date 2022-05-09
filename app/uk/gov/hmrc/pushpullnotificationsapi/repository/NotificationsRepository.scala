@@ -30,7 +30,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Indexes, Projections, ReturnDocument, Updates}
 import play.api.Logger
-import play.api.libs.json.Format
+import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
@@ -42,8 +42,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbNotificationFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -86,6 +86,10 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
   implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+//  implicit val boxIdFormatter: OFormat[BoxId] = Json.format[BoxId]
+//  implicit val notificationIdFormatter: OFormat[NotificationId] = Json.format[NotificationId]
+//  implicit val boxIdFormatter: OFormat[Box] = Json.format[Box]
+//  implicit val notificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
 
   override lazy val collection: MongoCollection[DbNotification] =
     CollectionFactory
@@ -93,7 +97,15 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       .withCodecRegistry(
         fromRegistries(
           fromCodecs(
-            Codecs.playFormatCodec(dateFormation)
+            Codecs.playFormatCodec(domainFormat),
+            Codecs.playFormatCodec(dateFormation),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
@@ -154,21 +166,22 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def boxIdQuery(boxId: BoxId): Bson = {
-    equal("boxId", boxId.value)
+    equal("boxId", Codecs.toBson(boxId.value))
   }
 
   private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", notificationIds)
+    in("notificationId", Codecs.toBson(notificationIds))
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
-    if(maybeStatus.isDefined) equal("status", maybeStatus.get) else Filters.empty()
+    if(maybeStatus.isDefined) equal("status", Codecs.toBson(maybeStatus.get)) else Filters.empty()
   }
 
   def getAllByBoxId(boxId: BoxId)
                    (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
+    logger.info("saveNotification collection insert")
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
       case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
         Future.successful(None)

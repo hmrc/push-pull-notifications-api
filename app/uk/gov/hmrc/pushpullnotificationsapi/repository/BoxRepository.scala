@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 
 import javax.inject.{Inject, Singleton}
-import org.joda.time.DateTime
 import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Indexes.ascending
@@ -31,7 +30,8 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -47,11 +47,10 @@ class BoxRepository @Inject()(mongo: MongoComponent)
         IndexOptions()
           .name("box_index")
           .background(true)
-          .unique(true))
-    )) {
+          .unique(true)))
+    ) {
 
   private val logger = Logger(this.getClass)
-  implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
 
   override lazy val collection: MongoCollection[Box] =
     CollectionFactory
@@ -59,7 +58,10 @@ class BoxRepository @Inject()(mongo: MongoComponent)
       .withCodecRegistry(
         fromRegistries(
           fromCodecs(
-            Codecs.playFormatCodec(dateFormation)
+            Codecs.playFormatCodec(domainFormat),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
@@ -67,20 +69,21 @@ class BoxRepository @Inject()(mongo: MongoComponent)
 
 
   def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
-    collection.find(equal("boxId", boxId.value)).headOption()
+    logger.info(s"findByBoxId here ${boxId.raw}")
+    collection.find(equal("boxId", Codecs.toBson(boxId))).headOption()
   }
 
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
     collection.insertOne(box).map(_ => BoxCreatedResult(box)).head()
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
-    logger.info(s"Getting box by boxName:$boxName & clientId")
-    collection.find(Filters.and(equal("boxName", boxName), equal("boxCreator.clientId", clientId.value))).headOption()
+    logger.info(s"Getting box by boxName:$boxName & clientId: ${clientId.value}")
+    collection.find(Filters.and(equal("boxName", Codecs.toBson(boxName)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
   }
 
   def getBoxesByClientId(clientId: ClientId): Future[List[Box]] = {
     logger.info(s"Getting boxes by clientId: $clientId")
-    collection.find(equal("boxCreator.clientId", clientId.value)).toFuture().map(_.toList)
+    collection.find(equal("boxCreator.clientId", Codecs.toBson(clientId.value))).toFuture().map(_.toList)
   }
 
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
