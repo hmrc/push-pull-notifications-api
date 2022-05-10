@@ -1,5 +1,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import org.mongodb.scala.MongoWriteException
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import java.util.UUID.randomUUID
@@ -8,7 +9,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
@@ -37,12 +38,6 @@ class ClientRepositoryISpec
   override protected def afterAll() {
     prepareDatabase()
   }
-
-//  override def beforeEach(): Unit = {
-//    super.beforeEach()
-//    dropMongoDb()
-//    await(repo.ensureIndexes)
-//  }
 
   val clientId: ClientId = ClientId(randomUUID.toString)
   val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
@@ -73,7 +68,7 @@ class ClientRepositoryISpec
     "fail when a client with the same ID already exists" in {
       await(repo.insertClient(client))
 
-      val exception: DatabaseException = intercept[DatabaseException] {
+      val exception: MongoWriteException = intercept[MongoWriteException] {
         await(repo.insertClient(client))
       }
 

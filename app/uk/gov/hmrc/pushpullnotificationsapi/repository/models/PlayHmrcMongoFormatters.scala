@@ -41,11 +41,6 @@ private[repository] object PlayHmrcMongoFormatters {
   implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]
   implicit val notificationAckStatusFormatter: OFormat[NotificationStatus.ACKNOWLEDGED.type] = Json.format[NotificationStatus.ACKNOWLEDGED.type]
 
-//    Union.from[NotificationStatus]("notificationStatus")
-//    .and[NotificationStatus](NotificationStatus.ACKNOWLEDGED.toString)
-//    .and[NotificationStatus](NotificationStatus.FAILED.toString)
-//    .and[NotificationStatus](NotificationStatus.PENDING.toString)
-//    .format
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]

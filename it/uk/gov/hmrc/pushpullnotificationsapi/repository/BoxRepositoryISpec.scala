@@ -8,7 +8,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
@@ -16,8 +16,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class BoxRepositoryISpec
   extends AsyncHmrcSpec with BeforeAndAfterEach with BeforeAndAfterAll
-    with PlayMongoRepositorySupport[Box] with
-    Matchers with GuiceOneAppPerSuite {
+    with PlayMongoRepositorySupport[Box]
+    with CleanMongoCollectionSupport
+    with Matchers with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -34,7 +35,6 @@ class BoxRepositoryISpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-//    dropMongoDb()
     await(repo.ensureIndexes)
   }
 

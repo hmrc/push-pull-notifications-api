@@ -61,7 +61,10 @@ class BoxRepository @Inject()(mongo: MongoComponent)
             Codecs.playFormatCodec(domainFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
@@ -88,14 +91,14 @@ class BoxRepository @Inject()(mongo: MongoComponent)
 
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
     collection.findOneAndUpdate(equal("boxId", Codecs.toBson(boxId.value)),
-      update = set("subscriber", subscriber.elem),
+      update = set("subscriber", Codecs.toBson(subscriber.elem)),
       options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
     ).map(_.asInstanceOf[Box]).headOption()
   }
 
   def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
     collection.findOneAndUpdate(equal("boxId", Codecs.toBson(boxId.value)),
-      update = set("applicationId", applicationId),
+      update = set("applicationId", Codecs.toBson(applicationId)),
       options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
     ).map(_.asInstanceOf[Box]).headOption()
       .flatMap {
