@@ -23,7 +23,7 @@ import org.mongodb.scala.{MongoClient, MongoCollection}
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
+import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument, Updates}
 import play.api.Logger
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.MongoComponent
@@ -32,8 +32,10 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoReposito
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createSingleFieldAscendingIndex
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 @Singleton
 class BoxRepository @Inject()(mongo: MongoComponent)
@@ -47,7 +49,11 @@ class BoxRepository @Inject()(mongo: MongoComponent)
         IndexOptions()
           .name("box_index")
           .background(true)
-          .unique(true)))
+          .unique(true)),
+      IndexModel(ascending("boxId"),
+      IndexOptions()
+        .name("boxid_index")
+        .unique(true)))
     ) {
 
   private val logger = Logger(this.getClass)
@@ -60,11 +66,16 @@ class BoxRepository @Inject()(mongo: MongoComponent)
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
@@ -77,7 +88,9 @@ class BoxRepository @Inject()(mongo: MongoComponent)
   }
 
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
-    collection.insertOne(box).map(_ => BoxCreatedResult(box)).head()
+    collection.insertOne(box).map(_ => BoxCreatedResult(box)).head() recoverWith {
+      case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
+    }
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     logger.info(s"Getting box by boxName:$boxName & clientId: ${clientId.value}")

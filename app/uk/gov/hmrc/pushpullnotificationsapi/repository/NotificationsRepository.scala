@@ -86,11 +86,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
   implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
-//  implicit val boxIdFormatter: OFormat[BoxId] = Json.format[BoxId]
-//  implicit val notificationIdFormatter: OFormat[NotificationId] = Json.format[NotificationId]
-//  implicit val boxIdFormatter: OFormat[Box] = Json.format[Box]
-//  implicit val notificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
-
   override lazy val collection: MongoCollection[DbNotification] =
     CollectionFactory
       .collection(mongoComponent.database, collectionName, domainFormat)
@@ -105,7 +100,10 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
