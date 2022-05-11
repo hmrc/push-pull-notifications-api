@@ -176,7 +176,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", Codecs.toBson(notificationIds))
+    in("notificationId", notificationIds:_ *)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
@@ -187,7 +187,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
                    (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
-    logger.info(s"saveNotification collection insert - $notification")
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
       case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
         Future.successful(None)
@@ -195,13 +194,12 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
-
     val query = and(boxIdQuery(boxId),
         notificationIdsQuery(notificationIds))
 
     collection
       .updateMany(query,
-        set("status", Codecs.toBson(ACKNOWLEDGED.toString))
+        set("status", Codecs.toBson(ACKNOWLEDGED))
       ).toFuture().map(_.wasAcknowledged())
   }
 

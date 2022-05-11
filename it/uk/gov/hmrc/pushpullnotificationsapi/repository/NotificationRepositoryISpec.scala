@@ -399,21 +399,12 @@ class NotificationRepositoryISpec
       val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
       returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
       returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
-
-      val result = await(repo.acknowledgeNotifications(boxId,notificationIdsToUpdate.map(_.value.toString)))
+      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate.map(_.value.toString)))
       result shouldBe true
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING)))
-      filteredList.isEmpty shouldBe false
-      filteredList.size shouldBe 3
-
-      val filteredList2 = await(repo.getByBoxIdAndFilters(boxId, Some(ACKNOWLEDGED)))
-      filteredList2.isEmpty shouldBe false
-      filteredList2.size shouldBe 3
-
-//      val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
-//      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
-//      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
+      val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
+      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
+      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
     }
 
   }
