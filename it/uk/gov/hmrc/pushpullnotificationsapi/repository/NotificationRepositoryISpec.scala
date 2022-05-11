@@ -12,7 +12,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.bson.BSONLong
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
@@ -26,6 +26,7 @@ class NotificationRepositoryISpec
     extends AsyncHmrcSpec
     with BeforeAndAfterEach with BeforeAndAfterAll
     with PlayMongoRepositorySupport[DbNotification]
+    with CleanMongoCollectionSupport
     with GuiceOneAppPerSuite {
 
   private val fourAndHalfHoursInMins = 270
@@ -51,11 +52,9 @@ class NotificationRepositoryISpec
 
   override def beforeEach() {
     prepareDatabase()
+    await(repo.ensureIndexes)
   }
 
-  override protected def afterAll() {
-    prepareDatabase()
-  }
 
   def getIndex(indexName: String): Option[bson.BsonValue] ={
     await(repo.collection.listIndexes()

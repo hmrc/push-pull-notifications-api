@@ -28,7 +28,7 @@ import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, Rea
 import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Indexes, Projections, ReturnDocument, Updates}
+import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Indexes, Projections, ReturnDocument, Sorts, Updates}
 import play.api.Logger
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
@@ -96,12 +96,20 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
             Codecs.playFormatCodec(dateFormation),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
           ),
@@ -146,9 +154,10 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
 
     collection
-      .withReadPreference(ReadPreference.secondaryPreferred)
+      .withReadPreference(ReadPreference.primaryPreferred)
       .find(query)
-      .sort(equal("createdDateTime", 1))
+//      .sort(equal("createdDateTime", 1))
+      .sort(Sorts.ascending("createdDateTime"))
       .limit(numberOfNotificationsToReturn)
       .map(toNotification(_, crypto))
       .toFuture().map(_.toList)
@@ -156,8 +165,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): Bson = {
     if (start.isDefined || end.isDefined) {
-      val startCompare = if (start.isDefined) gte(fieldName, start.get.getMillis) else Filters.empty()
-      val endCompare = if (end.isDefined) lte(fieldName, end.get.getMillis) else Filters.empty()
+      val startCompare = if (start.isDefined) gte(fieldName, Codecs.toBson(start.get)) else Filters.empty()
+      val endCompare = if (end.isDefined) lte(fieldName, Codecs.toBson(end.get)) else Filters.empty()
       Filters.and(startCompare, endCompare)
     }
     else Filters.empty()
@@ -168,7 +177,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", Codecs.toBson(notificationIds))
+    in("notificationId", notificationIds)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
@@ -199,14 +208,14 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
-      update = set("status", newStatus),
+      update = set("status", Codecs.toBson(newStatus.toString)),
       options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }
 
   def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
-      update = set("retryAfterDateTime", newRetryAfterDateTime),
+      update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
       options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }
@@ -214,12 +223,12 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
 
     val pipeline = List(
-      and(equal("status", PENDING),
-        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", now(UTC)))),
+      and(equal("status", Codecs.toBson(PENDING.toString)),
+        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC))))),
 
       Aggregates.lookup("box", "boxId", "boxId", "boxes"),
 
-        and(equal("boxes.subscriber.subscriptionType", API_PUSH_SUBSCRIBER),
+        and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
           Filters.exists("boxes.subscriber.callBackUrl"),
           Filters.ne("boxes.subscriber.callBackUrl", "")))
 
