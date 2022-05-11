@@ -42,7 +42,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, dbNotificationFormatter}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
 
 import java.util.concurrent.TimeUnit
@@ -156,7 +156,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
     collection
       .withReadPreference(ReadPreference.primaryPreferred)
       .find(query)
-//      .sort(equal("createdDateTime", 1))
       .sort(Sorts.ascending("createdDateTime"))
       .limit(numberOfNotificationsToReturn)
       .map(toNotification(_, crypto))
@@ -177,7 +176,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", notificationIds)
+    in("notificationId", Codecs.toBson(notificationIds))
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
@@ -188,7 +187,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
                    (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
-    logger.info("saveNotification collection insert")
+    logger.info(s"saveNotification collection insert - $notification")
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
       case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
         Future.successful(None)
@@ -202,13 +201,13 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
     collection
       .updateMany(query,
-        set("status", ACKNOWLEDGED)
+        set("status", Codecs.toBson(ACKNOWLEDGED.toString))
       ).toFuture().map(_.wasAcknowledged())
   }
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
-      update = set("status", Codecs.toBson(newStatus.toString)),
+      update = set("status", Codecs.toBson(newStatus)),
       options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }

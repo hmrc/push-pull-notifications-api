@@ -5,12 +5,11 @@ import akka.stream.scaladsl.Sink
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import org.mongodb.scala.bson
+import org.mongodb.scala.{Document, bson}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.bson.BSONLong
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -56,10 +55,11 @@ class NotificationRepositoryISpec
   }
 
 
-  def getIndex(indexName: String): Option[bson.BsonValue] ={
+  def getIndex(indexName: String): Option[Document] ={
     await(repo.collection.listIndexes()
-      .map(_.find(_._1.equalsIgnoreCase(indexName)).get._2)
-      .headOption())
+      .filter(_.getString("name").equalsIgnoreCase(indexName))
+      .headOption()
+    )
   }
 
   private val boxIdStr = UUID.randomUUID().toString
@@ -73,9 +73,8 @@ class NotificationRepositoryISpec
     "create ttl index and it should have correct value "in {
       val mayBeIndex = getIndex("create_datetime_ttl_idx")
       mayBeIndex shouldNot be(None)
-      val mayBeTtlValue: Long = mayBeIndex.get.asDocument().get("expireAfterSeconds")
+      val mayBeTtlValue: Long = mayBeIndex.get("expireAfterSeconds")
         .asNumber().longValue()
-//      mayBeTtlValue  shouldNot be(None)
       mayBeTtlValue shouldBe ttlTimeinSeconds
     }
     // to get full coverage we would need to try to get the index created with an expireAfterSeconds as a BSON value that is not a long
@@ -292,6 +291,10 @@ class NotificationRepositoryISpec
       val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING)))
       filteredList.isEmpty shouldBe false
       filteredList.size shouldBe 2
+
+      val filteredList2 = await(repo.getByBoxIdAndFilters(boxId, Some(ACKNOWLEDGED)))
+      filteredList2.isEmpty shouldBe false
+      filteredList2.size shouldBe 1
     }
 
 
@@ -400,9 +403,17 @@ class NotificationRepositoryISpec
       val result = await(repo.acknowledgeNotifications(boxId,notificationIdsToUpdate.map(_.value.toString)))
       result shouldBe true
 
-      val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
-      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
-      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING)))
+      filteredList.isEmpty shouldBe false
+      filteredList.size shouldBe 3
+
+      val filteredList2 = await(repo.getByBoxIdAndFilters(boxId, Some(ACKNOWLEDGED)))
+      filteredList2.isEmpty shouldBe false
+      filteredList2.size shouldBe 3
+
+//      val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
+//      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
+//      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
     }
 
   }
