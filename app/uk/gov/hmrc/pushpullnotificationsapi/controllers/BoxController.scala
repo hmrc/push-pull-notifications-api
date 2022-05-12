@@ -52,7 +52,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
               boxService.createBox(ClientId(box.clientId), box.boxName).map {
                 case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxRetrievedResult =>
-                  logger.info(s" **** Box Retrieved ****")
                   Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxCreateFailedResult =>
                   logger.info(s"Unable to create Box: ${r.message}")

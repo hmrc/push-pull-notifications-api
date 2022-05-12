@@ -81,7 +81,6 @@ class BoxRepository @Inject()(mongo: MongoComponent)
 
 
   def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
-    logger.info(s"findByBoxId here ${boxId.raw}")
     collection.find(equal("boxId", Codecs.toBson(boxId))).headOption()
   }
 

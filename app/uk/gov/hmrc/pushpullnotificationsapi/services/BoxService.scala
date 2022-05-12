@@ -46,11 +46,8 @@ class BoxService @Inject()(repository: BoxRepository,
       case _ =>
         for {
           _ <- clientService.findOrCreateClient(clientId)
-          _ = logger.info("Found client")
           appDetails <- applicationConnector.getApplicationDetails(clientId)
-          _ = logger.info("Obtained app Details")
           createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id)))
-          _ = logger.info("Created box")
         } yield createdBox
     } recoverWith {
       case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))

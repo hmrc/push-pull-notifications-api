@@ -228,26 +228,13 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       `match`(and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
         Filters.exists("boxes.subscriber.callBackUrl"),
         Filters.ne("boxes.subscriber.callBackUrl", ""))),
-//      `project`("notification")
-//      Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
-//        "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
-//        "retryAfterDateTime" -> "$retryAfterDateTime"),
-//        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
-
       project(Document(
-          """{ notification: {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
+          """{ "notification": {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
             | "message" : "$message", "encryptedMessage" : "$encryptedMessage", "status" : "$status", "createdDateTime" : "$createdDateTime",
-            | "retryAfterDateTime" : "$retryAfterDateTime"}
+            | "retryAfterDateTime" : "$retryAfterDateTime"},
+            | "box": {"$arrayElemAt": ["$boxes", 0]}
             | }""".stripMargin))
 
-      //            | "box" : "$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
-      //            |endpointsCount: {$size : "$endpoints.methods"}}""".stripMargin)),
-
-//    Aggregates.project(
-//      Projections.fields(
-//        Projections.include("data"),
-//        Projections.exclude("_id")
-//      )
     )
 
     Source.fromPublisher(

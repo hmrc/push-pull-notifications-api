@@ -70,7 +70,6 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
 
   def saveNotification(boxId: BoxId, notificationId: NotificationId, contentType: MessageContentType, message: String)
                       (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[NotificationCreateServiceResult] = {
-    logger.info(s"Save Notification for box ${boxId.value}")
     boxRepository.findByBoxId(boxId)
       .flatMap {
         case None => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
@@ -78,7 +77,6 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
           val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
             case Some(_) =>
-              logger.info(s"Save Notification for notification $notification")
               pushService.handlePushNotification(box, notification)
               NotificationCreateSuccessResult()
             case None => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")
