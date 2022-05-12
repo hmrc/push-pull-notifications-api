@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 private[repository] object PlayHmrcMongoFormatters {
@@ -31,7 +31,7 @@ private[repository] object PlayHmrcMongoFormatters {
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatBoxCreator: OFormat[BoxCreator] = Json.format[BoxCreator]
-  implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
+  implicit val formatSubscriber: OFormat[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
@@ -46,5 +46,6 @@ private[repository] object PlayHmrcMongoFormatters {
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
+  implicit val retryableNotificationFormatter: OFormat[RetryableNotification] = Json.format[RetryableNotification]
   implicit val dbRetryableNotificationFormatter: OFormat[DbRetryableNotification] = Json.format[DbRetryableNotification]
 }

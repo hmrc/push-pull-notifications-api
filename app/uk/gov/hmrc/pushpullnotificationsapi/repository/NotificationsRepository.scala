@@ -24,13 +24,15 @@ import org.bson.conversions.Bson
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, SingleObservable, bson}
 import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Indexes, Projections, ReturnDocument, Sorts, Updates}
+import org.mongodb.scala.model.Aggregates.{`lookup`, `match`, project}
+import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Sorts}
 import play.api.Logger
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json.{Format, JsArray, JsNumber, JsString, Json, OFormat}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
@@ -93,14 +95,15 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
         fromRegistries(
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(dateFormation),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
@@ -218,22 +221,33 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
-
     val pipeline = List(
-      and(equal("status", Codecs.toBson(PENDING.toString)),
-        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC))))),
+      `match`(and(equal("status", Codecs.toBson(PENDING)),
+        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC)))))),
+      `lookup`("box", "boxId", "boxId", "boxes"),
+      `match`(and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
+        Filters.exists("boxes.subscriber.callBackUrl"),
+        Filters.ne("boxes.subscriber.callBackUrl", ""))),
+//      `project`("notification")
+//      Json.obj("notification" -> Json.obj("notificationId" -> "$notificationId", "boxId" -> "$boxId", "messageContentType" -> "$messageContentType",
+//        "message" -> "$message", "encryptedMessage" -> "$encryptedMessage", "status" -> "$status", "createdDateTime" -> "$createdDateTime",
+//        "retryAfterDateTime" -> "$retryAfterDateTime"),
+//        "box" -> Json.obj("$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
 
-      Aggregates.lookup("box", "boxId", "boxId", "boxes"),
+      project(Document(
+          """{ notification: {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
+            | "message" : "$message", "encryptedMessage" : "$encryptedMessage", "status" : "$status", "createdDateTime" : "$createdDateTime",
+            | "retryAfterDateTime" : "$retryAfterDateTime"}
+            | }""".stripMargin))
 
-        and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
-          Filters.exists("boxes.subscriber.callBackUrl"),
-          Filters.ne("boxes.subscriber.callBackUrl", "")))
+      //            | "box" : "$arrayElemAt" -> JsArray(Seq(JsString("$boxes"), JsNumber(0))))
+      //            |endpointsCount: {$size : "$endpoints.methods"}}""".stripMargin)),
 
-    Aggregates.project(
-      Projections.fields(
-        Projections.include("data"),
-        Projections.exclude("_id")
-      )
+//    Aggregates.project(
+//      Projections.fields(
+//        Projections.include("data"),
+//        Projections.exclude("_id")
+//      )
     )
 
     Source.fromPublisher(

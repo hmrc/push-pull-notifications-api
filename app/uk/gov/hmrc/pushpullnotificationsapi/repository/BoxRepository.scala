@@ -27,12 +27,10 @@ import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, In
 import play.api.Logger
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createSingleFieldAscendingIndex
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -105,7 +103,7 @@ class BoxRepository @Inject()(mongo: MongoComponent)
   def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
     collection.findOneAndUpdate(equal("boxId", Codecs.toBson(boxId.value)),
       update = set("subscriber", Codecs.toBson(subscriber.elem)),
-      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(_.asInstanceOf[Box]).headOption()
   }
 
