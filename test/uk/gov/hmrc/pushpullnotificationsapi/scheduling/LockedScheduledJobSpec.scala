@@ -52,7 +52,7 @@ class LockedScheduledJobSpec
 
   class SimpleJob(val name: String) extends LockedScheduledJob {
 
-    override val releaseLockAfter = new Duration(5000)
+    override val releaseLockAfter = new Duration(400)
 
     val start = new CountDownLatch(1)
 
@@ -90,9 +90,9 @@ class LockedScheduledJobSpec
 
     "not allow job to run in parallel" in {
       val job = new SimpleJob("job2")
-      when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true))//.andThenCallRealMethod()
-      when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true))//.andThenCallRealMethod()
-      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))//.andThenCallRealMethod()
+      when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
+      when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
+      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))
 
       val pausedExecution = job.execute
       pausedExecution.isCompleted     shouldBe false
