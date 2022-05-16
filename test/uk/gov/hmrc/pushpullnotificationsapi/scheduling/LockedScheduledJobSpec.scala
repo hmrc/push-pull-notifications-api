@@ -26,7 +26,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.mongo.lock.{LockRepository, MongoLockRepository}
+import uk.gov.hmrc.mongo.lock.{MongoLockRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -44,7 +44,6 @@ class LockedScheduledJobSpec
 
   override def fakeApplication(): Application =
       GuiceApplicationBuilder()
-//      .overrides(bind[MongoLockRepository].to(lockRepository))
       .configure("mongodb.uri" -> "mongodb://localhost:27017/test-play-schedule")
       .build()
 

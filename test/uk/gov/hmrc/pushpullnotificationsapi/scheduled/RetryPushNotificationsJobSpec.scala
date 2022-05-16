@@ -50,7 +50,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, Clie
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.ExclusiveScheduledJob
 
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.FiniteDuration
 
@@ -132,21 +136,24 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
-//    "not execute if the job is already running" in new Setup {
-//      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-//        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
-//      val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
-//
-//      when(mockNotificationsRepository.fetchRetryableNotifications)
-//        .thenReturn(Source.future(successful(retryableNotification)))
-//
-//      val result: underTest.Result = await(underTest.execute)
-//      val result2: underTest.Result = await(underTest.execute)
-//
-//      verify(mockNotificationsRepository, times(1)).fetchRetryableNotifications
-//      verify(mockNotificationPushService, times(1)).handlePushNotification(*, *)(*, *)
-//      result2.message shouldBe "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
-//    }
+    "not execute if the job is already running2222" in new Setup {
+      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
+        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
+      val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
+      when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
+      when(mockNotificationsRepository.fetchRetryableNotifications)
+        .thenReturn(Source.future(successful(retryableNotification)))
+      when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
+      when(mongoLockRepo.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
+      when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(true))
+
+      val result: underTest.Result = await(underTest.execute)
+      val result2: underTest.Result = await(underTest.execute)
+
+      verify(mockNotificationsRepository, times(1)).fetchRetryableNotifications
+      verify(mockNotificationPushService, times(1)).handlePushNotification(*, *)(*, *)
+      result2.message shouldBe "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
+    }
 
     "handle error when something fails" in new Setup {
       when(mockNotificationsRepository.fetchRetryableNotifications)
