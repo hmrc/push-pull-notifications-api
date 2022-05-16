@@ -209,14 +209,14 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("status", Codecs.toBson(newStatus)),
-      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }
 
   def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
-      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }
 
