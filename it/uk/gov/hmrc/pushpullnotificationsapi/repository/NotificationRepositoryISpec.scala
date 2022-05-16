@@ -108,11 +108,6 @@ class NotificationRepositoryISpec
       await(repo.saveNotification(notification))
 
       val dbNotification: DbNotification = await(repo.collection.find()
-//        .map(dbNotification =>
-//          Notification(NotificationId(dbNotification.notificationId.value),
-//            dbNotification.boxId, dbNotification.messageContentType,
-//            dbNotification.encryptedMessage, dbNotification.status)
-//        )
         .toFuture()).head
         dbNotification.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
     }

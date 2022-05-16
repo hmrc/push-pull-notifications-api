@@ -109,7 +109,7 @@ class BoxRepository @Inject()(mongo: MongoComponent)
   def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
     collection.findOneAndUpdate(equal("boxId", Codecs.toBson(boxId.value)),
       update = set("applicationId", Codecs.toBson(applicationId)),
-      options = FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
+      options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(_.asInstanceOf[Box]).headOption()
       .flatMap {
         case Some(box) => Future.successful(box)

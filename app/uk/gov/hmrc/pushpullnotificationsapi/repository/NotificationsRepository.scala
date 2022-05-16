@@ -183,7 +183,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
-    if(maybeStatus.isDefined) equal("status", Codecs.toBson(maybeStatus.get)) else Filters.empty()
+    maybeStatus.fold(Filters.empty())(status => equal("status", Codecs.toBson(status)))
   }
 
   def getAllByBoxId(boxId: BoxId)
