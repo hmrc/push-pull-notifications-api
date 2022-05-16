@@ -71,7 +71,6 @@ class BoxService @Inject()(repository: BoxRepository,
           result <- validateCallBack(box, request)
           _ = result match {
             case successfulUpdate: CallbackUrlUpdated =>
-              logger.info("callbackurl successfully updated")
               eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box) recoverWith {
                 case NonFatal(e) => logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                 successful(successfulUpdate)
@@ -124,7 +123,6 @@ class BoxService @Inject()(repository: BoxRepository,
   private def updateBoxWithApplicationId(box: Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[ApplicationId] = {
     applicationConnector.getApplicationDetails(box.boxCreator.clientId)
       .flatMap(appDetails => {
-        logger.info(s"appDetails:$appDetails")
         repository.updateApplicationId(box.boxId, appDetails.id)
         successful(appDetails.id)
       })

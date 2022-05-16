@@ -229,7 +229,6 @@ class NotificationsControllerISpec
       "respond with 200 when notification exist and client is authorised" in {
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
-        logger.info(s"Box Created in Test ${box.boxId}")
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe OK
