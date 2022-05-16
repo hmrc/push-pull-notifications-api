@@ -53,7 +53,7 @@ class BoxRepositoryISpec
     "create a Box with one PushSubscriber" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      val fetchedRecords = await(repo.findByBoxId(boxId))
+      val fetchedRecords = await(repo.collection.find().toFuture())
       val fetchedBox = fetchedRecords.head
       fetchedBox.boxName shouldBe boxName
       fetchedBox.boxCreator.clientId shouldBe clientId
@@ -68,8 +68,8 @@ class BoxRepositoryISpec
       val newbox = box.copy(newBoxId, boxName = "someNewName")
       val result2 = await(repo.createBox(newbox)).asInstanceOf[BoxCreatedResult]
       result2.box shouldBe newbox
-      val fetchedRecords = await(repo.collection.countDocuments().head())
-      fetchedRecords shouldBe 2
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 2
     }
 
     "create a Box should allow a box for different clientId but same BoxNames" in {
@@ -79,8 +79,8 @@ class BoxRepositoryISpec
       val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))
       val result2: Unit = await(repo.createBox(newBox))
       result2 shouldBe ((): Unit)
-      val fetchedRecords = await(repo.collection.countDocuments().head())
-      fetchedRecords shouldBe 2
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 2
     }
 
     "create a Box should throw and exception and only create box once when box with same name and client id called twice" in {
@@ -88,8 +88,8 @@ class BoxRepositoryISpec
 
       val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
-      val fetchedRecords = await(repo.collection.countDocuments().head())
-      fetchedRecords shouldBe 1
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 1
     }
 
     "create a Box should not allow creation of a duplicate box with same box details" in {
@@ -99,8 +99,8 @@ class BoxRepositoryISpec
       val result2 =  await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
-      val fetchedRecords = await(repo.collection.countDocuments().head())
-      fetchedRecords shouldBe 1
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 1
     }
   }
 
@@ -155,9 +155,9 @@ class BoxRepositoryISpec
       await(repo.createBox(aBoxWithADifferentClientId))
 
       val matchedBoxes = await(repo.getBoxesByClientId(clientId))
-      val totalBoxes = await(repo.collection.countDocuments().head())
+      val totalBoxes = await(repo.collection.find().toFuture())
 
-      totalBoxes shouldBe (3)
+      totalBoxes.size shouldBe (3)
       matchedBoxes should have length (2)
     }
   }
