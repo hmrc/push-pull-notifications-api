@@ -1,61 +1,93 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import play.api.libs.json.{JsResult, JsValue, Json}
+import play.api.libs.json.{JsResult, JsValue, Json, __}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 
+import java.util.UUID
+
 class BoxFormatFactorySpec extends AsyncHmrcSpec {
 
+  val minimumValidJson: JsValue = Json.parse(
+      """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName":"boxName",
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
+  val clientManagedJson: JsValue = Json.parse(
+    """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName":"boxName",
+     "clientManaged":true,
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
+  val missingNameJson: JsValue = Json.parse(
+    """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
+  val nullNameJson: JsValue = Json.parse(
+    """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName": null,
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
   implicit val format = BoxFormat
+  val validBox: Box = Json.fromJson[Box](minimumValidJson).get
+  val clientManagedBox: Box = Json.fromJson[Box](clientManagedJson).get
+  val missingBoxName: JsResult[Box] = Json.fromJson[Box](missingNameJson)
+  val nullNameBox: JsResult[Box] = Json.fromJson[Box](nullNameJson)
 
   "BoxFormatFactory" when {
     "reads is used by Json.fromJson" should {
-      val jsonString: JsValue = Json.parse("""{
-      "boxId" : "ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-      "boxName" : "boxName",
-      "boxCreator" : {
-          "clientId" : "someClientId"
+
+      "correctly assign the boxId as a UUID" in {
+        validBox.boxId.value shouldBe a[UUID]
       }
-   }""")
+
+      // Not sure how I feel about using toString here. Is there a better way to do this
+      "correctly assign the boxId" in {
+        validBox.boxId.value.toString shouldBe "ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8"
+      }
 
       "correctly assign the boxName" in {
-        val boxFromJson: JsResult[Box] = Json.fromJson[Box](jsonString)
-        val box = boxFromJson.get
-        box.boxName shouldBe ("boxName")
+        validBox.boxName shouldBe ("boxName")
+      }
+
+      "correctly assign the clientId" in {
+        validBox.boxCreator.clientId.value shouldBe ("someClientId")
       }
 
       "result in an error if the boxName is missing" in {
-        val jsonString: JsValue = Json.parse("""{
-      "boxId" : "ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-      "boxCreator" : {
-          "clientId" : "someClientId"
+        missingBoxName.isError shouldBe true
       }
-   }""")
 
-        val result = Json.fromJson[Box](jsonString)
-
-        result.isError shouldBe true
+      "result in none if the boxName is null" in {
+        nullNameBox.isError shouldBe true
       }
 
       "default clientManaged to false when not present" in {
-        val boxFromJson: JsResult[Box] = Json.fromJson[Box](jsonString)
-        val box = boxFromJson.get
-        box.clientManaged shouldBe false
+        validBox.clientManaged shouldBe false
       }
 
       "use clientManaged value when present" in {
-        val jsonString: JsValue = Json.parse("""{
-      "boxId" : "ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-      "boxName" : "boxName",
-      "clientManaged" : true,
-      "boxCreator" : {
-          "clientId" : "someClientId"
-      }
-   }""")
-
-        val boxFromJson: JsResult[Box] = Json.fromJson[Box](jsonString)
-        val box = boxFromJson.get
-        box.clientManaged shouldBe true
+        clientManagedBox.clientManaged shouldBe true
       }
     }
   }
