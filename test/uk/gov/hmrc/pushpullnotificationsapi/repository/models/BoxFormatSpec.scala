@@ -21,11 +21,33 @@ class BoxFormatSpec extends AsyncHmrcSpec {
   }"""
   )
 
-  val clientManagedJson: JsValue = Json.parse(
+  val maximumValidJson: JsValue = Json.parse(
     """{
      "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
      "boxName":"boxName",
      "clientManaged":true,
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
+  val clientManagedTrueJson: JsValue = Json.parse(
+    """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName":"boxName",
+     "clientManaged":true,
+     "boxCreator":{
+        "clientId":"someClientId"
+     }
+  }"""
+  )
+
+  val clientManagedFalseJson: JsValue = Json.parse(
+    """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName":"boxName",
+     "clientManaged":false,
      "boxCreator":{
         "clientId":"someClientId"
      }
@@ -45,6 +67,7 @@ class BoxFormatSpec extends AsyncHmrcSpec {
     """{
      "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
      "boxName": null,
+     "applicationId": "1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8",
      "boxCreator":{
         "clientId":"someClientId"
      }
@@ -53,9 +76,11 @@ class BoxFormatSpec extends AsyncHmrcSpec {
 
   implicit val format = BoxFormat
   val validBox: Box = Json.fromJson[Box](minimumValidJson).get
-  val clientManagedBox: Box = Json.fromJson[Box](clientManagedJson).get
+  val clientManagedBox: Box = Json.fromJson[Box](clientManagedTrueJson).get
   val missingBoxName: JsResult[Box] = Json.fromJson[Box](missingNameJson)
   val nullNameBox: JsResult[Box] = Json.fromJson[Box](nullNameJson)
+
+  val testerValue = BoxFormat.writes(validBox)
 
   "BoxFormatFactory" when {
     "reads is used by Json.fromJson" should {
@@ -75,7 +100,7 @@ class BoxFormatSpec extends AsyncHmrcSpec {
         missingBoxName.isError shouldBe true
       }
 
-      "result in none if the boxName is null" in {
+      "result in an error if the boxName is null" in {
         nullNameBox.isError shouldBe true
       }
 
@@ -85,6 +110,22 @@ class BoxFormatSpec extends AsyncHmrcSpec {
 
       "use clientManaged value when present" in {
         clientManagedBox.clientManaged shouldBe true
+      }
+    }
+  }
+
+  "BoxFormatFactory" when {
+    "writes is used correctly to generate json" should {
+      "create a valid box when the client managed field is provided" in {
+        BoxFormat.writes(clientManagedBox) shouldBe(clientManagedTrueJson)
+      }
+
+      "create a valid box including client managed as false when the client managed field is not provided" in {
+        BoxFormat.writes(validBox) shouldBe(clientManagedFalseJson)
+      }
+
+      "result in an error if the boxName is null" in {
+        nullNameBox.isError shouldBe true
       }
     }
   }
