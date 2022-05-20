@@ -8,11 +8,17 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 
 import java.util.UUID
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
+import uk.gov.hmrc.pushpullnotificationsapi.models.Subscriber
+import uk.gov.hmrc.pushpullnotificationsapi.models.PushSubscriber
+import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
 
 class BoxFormatSpec extends AsyncHmrcSpec {
 
   val minimumValidJson: JsValue = Json.parse(
-      """{
+    """{
      "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
      "boxName":"boxName",
      "boxCreator":{
@@ -85,7 +91,9 @@ class BoxFormatSpec extends AsyncHmrcSpec {
   "BoxFormatFactory" when {
     "reads is used by Json.fromJson" should {
       "correctly assign the boxId" in {
-        validBox.boxId shouldBe BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8"))
+        validBox.boxId shouldBe BoxId(
+          UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")
+        )
       }
 
       "correctly assign the boxName" in {
@@ -112,20 +120,32 @@ class BoxFormatSpec extends AsyncHmrcSpec {
         clientManagedBox.clientManaged shouldBe true
       }
     }
-  }
 
-  "BoxFormatFactory" when {
     "writes is used correctly to generate json" should {
       "create a valid box when the client managed field is provided" in {
-        BoxFormat.writes(clientManagedBox) shouldBe(clientManagedTrueJson)
-      }
-
-      "create a valid box including client managed as false when the client managed field is not provided" in {
-        BoxFormat.writes(validBox) shouldBe(clientManagedFalseJson)
+        // BoxFormat.writes(clientManagedBox) shouldBe (clientManagedTrueJson)
+        val box = Box(
+          BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
+          "boxName",
+          BoxCreator(ClientId("someClientId")),
+          None,
+          None,
+          true
+        )
+        BoxFormat.writes(box) shouldBe (clientManagedTrueJson)
       }
 
       "result in an error if the boxName is null" in {
-        nullNameBox.isError shouldBe true
+        val box = Box(
+          BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
+          "boxName",
+          BoxCreator(ClientId("someClientId")),
+          Some(ApplicationId("1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8")),
+          Some(PullSubscriber("callback")),
+          true
+        )
+        val jsObject = BoxFormat.writes(box)
+        print(jsObject)
       }
     }
   }

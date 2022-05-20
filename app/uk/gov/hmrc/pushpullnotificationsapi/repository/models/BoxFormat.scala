@@ -32,6 +32,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{
   PushSubscriber,
   Subscriber
 }
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType
+import uk.gov.hmrc.play.json.Union
 
 object BoxFormat extends OFormat[Box] {
   implicit private val applicationIdFormat = Json.format[ApplicationId]
@@ -44,6 +46,11 @@ object BoxFormat extends OFormat[Box] {
   implicit val subscriberFormat = Json.format[Subscriber]
   implicit val dateFormat: Format[DateTime] =
     ReactiveMongoFormats.dateTimeFormats
+  implicit val formatSubscriber: Format[Subscriber] = Union
+    .from[Subscriber]("subscriptionType")
+    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
+    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
+    .format
 
   private val boxReads = (
     (__ \ "boxId").read[BoxId] and
@@ -52,7 +59,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber] and
       (__ \ "clientManaged").readWithDefault(false)
-  ){ Box }
+  ) { Box }
 
   override def writes(o: Box): JsObject = { Json.writes[Box].writes(o) }
   override def reads(json: JsValue): JsResult[Box] = {
