@@ -54,7 +54,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
                 case r: BoxRetrievedResult =>
                   Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
                 case r: BoxCreateFailedResult =>
-                  logger.info(s"Unable to create Box: ${r.message}")
+                  logger.error(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
               }
             }

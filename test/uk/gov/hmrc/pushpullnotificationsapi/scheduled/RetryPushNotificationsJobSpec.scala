@@ -136,7 +136,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
-    "not execute if the job is already running2222" in new Setup {
+    "not execute if the job is already running" in new Setup {
       val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
         BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
