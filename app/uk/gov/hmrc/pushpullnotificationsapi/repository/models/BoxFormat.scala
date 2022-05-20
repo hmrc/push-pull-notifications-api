@@ -33,10 +33,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{
   Subscriber
 }
 
-
 object BoxFormat extends OFormat[Box] {
   implicit private val applicationIdFormat = Json.format[ApplicationId]
-  implicit private val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
+  implicit private val clientIdFormatter: Format[ClientId] =
+    Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val boxCreatorFormat = Json.format[BoxCreator]
   implicit val pushSubscriberFormat = Json.format[PushSubscriber]
@@ -52,7 +52,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber] and
       (__ \ "clientManaged").readWithDefault(false)
-  )(Box.apply _)
+  ){ Box }
 
   override def writes(o: Box): JsObject = { Json.writes[Box].writes(o) }
   override def reads(json: JsValue): JsResult[Box] = {
