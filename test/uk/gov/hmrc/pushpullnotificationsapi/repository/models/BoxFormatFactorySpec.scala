@@ -5,6 +5,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 
 import java.util.UUID
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 
 class BoxFormatFactorySpec extends AsyncHmrcSpec {
 
@@ -56,14 +57,8 @@ class BoxFormatFactorySpec extends AsyncHmrcSpec {
 
   "BoxFormatFactory" when {
     "reads is used by Json.fromJson" should {
-
-      "correctly assign the boxId as a UUID" in {
-        validBox.boxId.value shouldBe a[UUID]
-      }
-
-      // Not sure how I feel about using toString here. Is there a better way to do this
       "correctly assign the boxId" in {
-        validBox.boxId.value.toString shouldBe "ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8"
+        validBox.boxId shouldBe BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8"))
       }
 
       "correctly assign the boxName" in {
