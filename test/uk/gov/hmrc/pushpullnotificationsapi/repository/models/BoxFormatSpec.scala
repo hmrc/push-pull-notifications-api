@@ -1,13 +1,15 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import play.api.libs.json.{JsResult, JsValue, Json, __}
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-
-import java.util.UUID
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 
-class BoxFormatFactorySpec extends AsyncHmrcSpec {
+import java.util.UUID
+
+class BoxFormatSpec extends AsyncHmrcSpec {
 
   val minimumValidJson: JsValue = Json.parse(
       """{
