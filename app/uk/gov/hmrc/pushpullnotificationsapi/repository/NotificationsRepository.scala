@@ -50,7 +50,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, D
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 @Singleton
 class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)
@@ -81,10 +80,6 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
     ),
     replaceIndexes = true
   ) {
-
-  private val logger = Logger(this.getClass)
-  private lazy val create_datetime_ttlIndexName = "create_datetime_ttl_idx"
-  private lazy val oldIndexes: List[String] = List(create_datetime_ttlIndexName)
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
   implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
@@ -121,26 +116,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       )
 
   override def ensureIndexes: Future[Seq[String]] = {
-    ensureLocalIndexes
     super.ensureIndexes
-  }
-
-  private def ensureLocalIndexes() = {
-    Future.sequence(
-      List(
-        Future.successful(oldIndexes.map(indexToDrop => {
-          collection.dropIndex(indexToDrop)
-            .toFuture
-            .map(_ => logger.info(s"dropping index $indexToDrop succeeded"))
-            .recover {
-              case NonFatal(e) => logger.info(s"dropping index $indexToDrop failed ${e.getMessage}")
-              case _ => logger.info(s"dropping index $indexToDrop failed")
-            }
-        })),
-        collection.createIndexes(models = indexes)
-          .toFuture().map(results => results.map(i => logger.info(s"created Index $i")))
-      )
-    )
   }
 
   def getByBoxIdAndFilters(boxId: BoxId,
