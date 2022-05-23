@@ -14,6 +14,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.Subscriber
 import uk.gov.hmrc.pushpullnotificationsapi.models.PushSubscriber
 import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
+import play.api.libs.json.OFormat
+import org.joda.time.DateTime
 
 class BoxFormatSpec extends AsyncHmrcSpec {
 
@@ -128,11 +130,27 @@ class BoxFormatSpec extends AsyncHmrcSpec {
           BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
           "boxName",
           BoxCreator(ClientId("someClientId")),
-          None,
-          None,
+          Some(ApplicationId("1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8")),
+          Some(
+            PullSubscriber("callback", DateTime.parse("2010-06-30T01:20+02:00"))
+          ),
           true
         )
-        BoxFormat.writes(box) shouldBe (clientManagedTrueJson)
+
+        val expectedJson = Json.parse(
+          """{
+     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+     "boxName":"boxName",
+     "boxCreator":{
+        "clientId":"someClientId"
+     },
+     "applicationId":{"value":"1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8"},
+     "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":1277853600000},"subscriptionType":"API_PULL_SUBSCRIBER"},
+     "clientManaged":true
+  }"""
+        )
+
+        BoxFormat.writes(box) shouldBe expectedJson
       }
 
       "result in an error if the boxName is null" in {
@@ -144,11 +162,17 @@ class BoxFormatSpec extends AsyncHmrcSpec {
           Some(PullSubscriber("callback")),
           true
         )
-        val jsObject = BoxFormat.writes(box)
-        print(jsObject)
+        // val jsObject = BoxFormat.writes(box)
+
+        // implicit val boxFormats: OFormat[Box] = Json.format[Box]
+
+        val json = Json.toJson(box)
+
+        print(json)
       }
     }
   }
 }
 
 // Mongo id field has been removed from Json, do we care about it?
+// Ensure subscriptionType is read correctly.
