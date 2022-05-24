@@ -1,131 +1,194 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import play.api.libs.json.JsResult
+import org.joda.time.DateTime
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
 
 import java.util.UUID
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.Subscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.PushSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
-import play.api.libs.json.OFormat
-import org.joda.time.DateTime
 
-class BoxFormatSpec extends AsyncHmrcSpec {
-
-  val minimumValidJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName":"boxName",
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
-
-  val maximumValidJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName":"boxName",
-     "clientManaged":true,
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
-
-  val clientManagedTrueJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName":"boxName",
-     "clientManaged":true,
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
-
-  val clientManagedFalseJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName":"boxName",
-     "clientManaged":false,
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
-
-  val missingNameJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
-
-  val nullNameJson: JsValue = Json.parse(
-    """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName": null,
-     "applicationId": "1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8",
-     "boxCreator":{
-        "clientId":"someClientId"
-     }
-  }"""
-  )
+class BoxFormatSpec extends HmrcSpec {
 
   implicit val format = BoxFormat
-  val validBox: Box = Json.fromJson[Box](minimumValidJson).get
-  val clientManagedBox: Box = Json.fromJson[Box](clientManagedTrueJson).get
-  val missingBoxName: JsResult[Box] = Json.fromJson[Box](missingNameJson)
-  val nullNameBox: JsResult[Box] = Json.fromJson[Box](nullNameJson)
 
-  val testerValue = BoxFormat.writes(validBox)
+  "BoxFormat" when {
+    "reading JSON with all fields present" should {
 
-  "BoxFormatFactory" when {
-    "reads is used by Json.fromJson" should {
-      "correctly assign the boxId" in {
-        validBox.boxId shouldBe BoxId(
+      val json: JsValue = Json.parse(
+        """{
+          | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+          | "boxName":"boxName",
+          | "clientManaged":true,
+          | "applicationId":"71ef5626-2f75-429c-b8b3-23bbdf5f0084",
+          | "boxCreator":{
+          |  "clientId":"someClientId"
+          | },
+          | "subscriber":{
+          |  "callBackUrl":"callback",
+          |  "subscribedDateTime":{
+          |   "$date":1277853600000
+          |  },
+          |  "subscriptionType":"API_PULL_SUBSCRIBER"
+          | }
+          |}""".stripMargin
+      )
+
+      val box = Json.fromJson[Box](json).get
+
+      "correctly assign the boxId value" in {
+        box.boxId shouldBe BoxId(
           UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")
         )
       }
 
-      "correctly assign the boxName" in {
-        validBox.boxName shouldBe ("boxName")
+      "correctly assign the boxName value" in {
+        box.boxName shouldBe ("boxName")
       }
 
-      "correctly assign the clientId" in {
-        validBox.boxCreator.clientId.value shouldBe ("someClientId")
+      "correctly assign the boxCreator value" in {
+        box.boxCreator shouldBe BoxCreator(ClientId("someClientId"))
       }
 
-      "result in an error if the boxName is missing" in {
-        missingBoxName.isError shouldBe true
+      "correctly assign the clientManaged value" in {
+        box.clientManaged shouldBe true
       }
 
-      "result in an error if the boxName is null" in {
-        nullNameBox.isError shouldBe true
+      "correctly assign the applicationId value" in {
+        box.applicationId shouldBe Some(
+          ApplicationId("71ef5626-2f75-429c-b8b3-23bbdf5f0084")
+        )
       }
 
-      "default clientManaged to false when not present" in {
-        validBox.clientManaged shouldBe false
-      }
-
-      "use clientManaged value when present" in {
-        clientManagedBox.clientManaged shouldBe true
+      "correctly assign the subscriber value" in {
+        box.subscriber shouldBe Some(
+          PullSubscriber("callback", DateTime.parse("2010-06-29T23:20+00:00"))
+        )
       }
     }
 
-    "writes is used correctly to generate json" should {
-      "create a valid box when the client managed field is provided" in {
-        // BoxFormat.writes(clientManagedBox) shouldBe (clientManagedTrueJson)
+    "reading JSON with optional fields missing" should {
+
+      val json: JsValue = Json.parse(
+        """{
+          | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+          | "boxName":"boxName",
+          | "boxCreator":{
+          |  "clientId":"someClientId"
+          | }
+          |}""".stripMargin
+      )
+
+      val box = Json.fromJson[Box](json).get
+
+      "default clientManaged to false" in {
+        box.clientManaged shouldBe false
+      }
+
+      "default applicationId to None" in {
+        box.applicationId shouldBe None
+      }
+
+      "default subscriber to None" in {
+        box.subscriber shouldBe None
+      }
+    }
+
+    "reading JSON with required fields missing" should {
+      "result in an error if the boxName is missing" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxCreator":{
+            |  "clientId":"someClientId"
+            | }
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+
+        box.isError shouldBe true
+      }
+
+      "result in an error if the boxName is null" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxName":null,
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxCreator":{
+            |  "clientId":"someClientId"
+            | }
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+        box.isError shouldBe true
+      }
+
+      "result in an error if the boxId is missing" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxName":"boxName",
+            | "boxCreator":{
+            |  "clientId":"someClientId"
+            | }
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+
+        box.isError shouldBe true
+      }
+
+      "result in an error if the boxId is null" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxName":"boxName",
+            | "boxId":null,
+            | "boxCreator":{
+            |  "clientId":"someClientId"
+            | }
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+        box.isError shouldBe true
+      }
+
+      "result in an error if the boxCreator is missing" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxName":"boxName"
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+
+        box.isError shouldBe true
+      }
+
+      "result in an error if the boxCreator is null" in {
+        val json: JsValue = Json.parse(
+          """{
+            | "boxName":"boxName",
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxCreator":null
+            |}""".stripMargin
+        )
+
+        val box = Json.fromJson[Box](json)
+        box.isError shouldBe true
+      }
+    }
+
+    "writing JSON" should {
+      "write all fields correctly into JSON" in {
         val box = Box(
           BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
           "boxName",
@@ -139,40 +202,38 @@ class BoxFormatSpec extends AsyncHmrcSpec {
 
         val expectedJson = Json.parse(
           """{
-     "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
-     "boxName":"boxName",
-     "boxCreator":{
-        "clientId":"someClientId"
-     },
-     "applicationId":{"value":"1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8"},
-     "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":1277853600000},"subscriptionType":"API_PULL_SUBSCRIBER"},
-     "clientManaged":true
-  }"""
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxName":"boxName",
+            | "boxCreator":{"clientId":"someClientId"},
+            | "applicationId":"1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8",
+            | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":1277853600000},"subscriptionType":"API_PULL_SUBSCRIBER"},
+            | "clientManaged":true
+            |}""".stripMargin
         )
 
         BoxFormat.writes(box) shouldBe expectedJson
       }
 
-      "result in an error if the boxName is null" in {
+      "handle optional fields being None" in {
         val box = Box(
           BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
           "boxName",
           BoxCreator(ClientId("someClientId")),
-          Some(ApplicationId("1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8")),
-          Some(PullSubscriber("callback")),
-          true
+          None,
+          None
         )
-        // val jsObject = BoxFormat.writes(box)
 
-        // implicit val boxFormats: OFormat[Box] = Json.format[Box]
+        val expectedJson = Json.parse(
+          """{
+            | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
+            | "boxName":"boxName",
+            | "boxCreator":{"clientId":"someClientId"},
+            | "clientManaged":false
+            |}""".stripMargin
+        )
 
-        val json = Json.toJson(box)
-
-        print(json)
+        BoxFormat.writes(box) shouldBe expectedJson
       }
     }
   }
 }
-
-// Mongo id field has been removed from Json, do we care about it?
-// Ensure subscriptionType is read correctly.
