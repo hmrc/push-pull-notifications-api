@@ -37,7 +37,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType
 
 /** */
 object BoxFormat extends OFormat[Box] {
-  implicit private val applicationIdFormat = Json.format[ApplicationId]
+  implicit private val applicationIdFormat = Json.valueFormat[ApplicationId]
   implicit private val clientIdFormatter = Json.valueFormat[ClientId]
   implicit private val boxIdFormatter = Json.valueFormat[BoxId]
   implicit private val boxCreatorFormat = Json.format[BoxCreator]
