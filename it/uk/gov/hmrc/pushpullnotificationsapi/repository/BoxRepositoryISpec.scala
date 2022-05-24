@@ -1,18 +1,24 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
-
 import org.joda.time.DateTime
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
+class BoxRepositoryISpec
+  extends AsyncHmrcSpec with BeforeAndAfterEach with BeforeAndAfterAll
+    with PlayMongoRepositorySupport[Box]
+    with CleanMongoCollectionSupport
+    with Matchers with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -25,9 +31,10 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
   def repo: BoxRepository =
     app.injector.instanceOf[BoxRepository]
 
+  override protected def repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
+
   override def beforeEach(): Unit = {
     super.beforeEach()
-    dropMongoDb()
     await(repo.ensureIndexes)
   }
 
@@ -46,7 +53,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
     "create a Box with one PushSubscriber" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       val fetchedBox = fetchedRecords.head
       fetchedBox.boxName shouldBe boxName
       fetchedBox.boxCreator.clientId shouldBe clientId
@@ -61,7 +68,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       val newbox = box.copy(newBoxId, boxName = "someNewName")
       val result2 = await(repo.createBox(newbox)).asInstanceOf[BoxCreatedResult]
       result2.box shouldBe newbox
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 2
     }
 
@@ -72,7 +79,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))
       val result2: Unit = await(repo.createBox(newBox))
       result2 shouldBe ((): Unit)
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 2
     }
 
@@ -81,8 +88,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
 
       val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
-
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
     }
 
@@ -93,7 +99,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       val result2 =  await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
     }
   }
@@ -149,9 +155,9 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       await(repo.createBox(aBoxWithADifferentClientId))
 
       val matchedBoxes = await(repo.getBoxesByClientId(clientId))
-      val totalBoxes = await(repo.find())
+      val totalBoxes = await(repo.collection.find().toFuture())
 
-      totalBoxes should have length (3)
+      totalBoxes.size shouldBe (3)
       matchedBoxes should have length (2)
     }
   }
@@ -172,7 +178,8 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
 
     "update the subscriber list" in {
       await(repo.createBox(box))
-      val fetchedRecords = await(repo.find())
+
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
 
       val createdBox = fetchedRecords.head
@@ -197,7 +204,7 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
 
     "update applicationId for box if it is not present" in {
       await(repo.createBox(box))
-      val fetchedRecords = await(repo.find())
+      val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
 
       val createdBox = fetchedRecords.head
@@ -233,4 +240,5 @@ class BoxRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPer
       result shouldBe None
     }
   }
+
 }

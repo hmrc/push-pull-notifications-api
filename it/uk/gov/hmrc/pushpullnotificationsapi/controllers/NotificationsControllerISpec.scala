@@ -1,7 +1,8 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
+import akka.stream.TLSRole.server
 
+import java.util.UUID
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
@@ -11,10 +12,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, Client, CreateNotificationResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
@@ -24,18 +28,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class NotificationsControllerISpec
   extends ServerBaseISpec
     with BeforeAndAfterEach
-    with MongoApp
+    with PlayMongoRepositorySupport[DbNotification]
+    with CleanMongoCollectionSupport
     with AuthService
     with AuditService
     with PushGatewayService
     with ThirdPartyApplicationService {
 
   this: Suite with ServerProvider =>
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-
+  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
+  override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
   val clientId = "someClientId"
@@ -46,7 +51,6 @@ class NotificationsControllerISpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    dropMongoDb()
     primeAuditService()
     primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
     await(boxRepository.ensureIndexes)
@@ -121,7 +125,7 @@ class NotificationsControllerISpec
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
     result.status shouldBe CREATED
-    await(boxRepository.findAll()).head
+    await(boxRepository.collection.find().toFuture()).head
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
@@ -132,7 +136,6 @@ class NotificationsControllerISpec
       notifications += result.body
     }
     List() ++ notifications
-
   }
 
   "NotificationsController" when {

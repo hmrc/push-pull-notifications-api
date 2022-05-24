@@ -12,8 +12,7 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.15.0-play-28",
     "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
     "uk.gov.hmrc"             %% "mongo-lock"                 % "7.0.0-play-28",
-    "uk.gov.hmrc"             %% "simple-reactivemongo"       % "8.0.0-play-28",
-    "org.reactivemongo"       %% "reactivemongo-akkastream"   % "0.20.13",
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"         % "0.63.0",
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",
     "com.typesafe.play"       %% "play-json-joda"             % "2.7.1",
@@ -21,10 +20,10 @@ object AppDependencies {
   )
 
   lazy val testDependencies = Seq(
-    "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % bootstrapVersion,
+    "uk.gov.hmrc"             %% "bootstrap-test-play-28"     % bootstrapVersion,
     "org.mockito"             %% "mockito-scala-scalatest"    % "1.14.8",
-    "com.typesafe.play"        %% "play-akka-http-server" % "2.8.7",
-    "uk.gov.hmrc"             %% "reactivemongo-test"         % "5.0.0-play-28",
+    "com.typesafe.play"       %% "play-akka-http-server"      % "2.8.7",
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"    % "0.63.0",
     "com.github.tomakehurst"  %  "wiremock-jre8-standalone"   % "2.27.2"
   ).map(_ % "test, it")
 }
