@@ -85,7 +85,7 @@ class BoxRepository @Inject()(mongo: MongoComponent)
   }
 
   def getAllBoxes()(implicit ec: ExecutionContext) : Future[List[Box]] = {
-    findAll()
+    collection.find().toFuture().map(_.toList)
   }
 
   def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
