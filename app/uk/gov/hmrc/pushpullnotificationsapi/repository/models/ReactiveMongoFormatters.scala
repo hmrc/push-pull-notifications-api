@@ -17,26 +17,41 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
+import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json, OFormat, __}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 private[repository] object ReactiveMongoFormatters {
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
-
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
-  implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
+  implicit val applicationIdFormat = Json.valueFormat[ApplicationId]
+  implicit val clientIdFormatter = Json.valueFormat[ClientId]
+  implicit val boxIdFormatter = Json.valueFormat[BoxId]
+  implicit val boxCreatorFormat = Json.format[BoxCreator]
+  implicit val formatSubscriber = Union
+    .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
-  implicit val boxFormats: OFormat[Box] = Json.format[Box]
+
+  val boxWrites = Json.writes[Box]
+  val boxReads = (
+    (__ \ "boxId").read[BoxId] and
+      (__ \ "boxName").read[String] and
+      (__ \ "boxCreator").read[BoxCreator] and
+      (__ \ "applicationId").readNullable[ApplicationId] and
+      (__ \ "subscriber").readNullable[Subscriber] and
+      (__ \ "clientManaged").readWithDefault(false)
+    ) { Box }
+
+  implicit val boxFormats = OFormat(boxReads, boxWrites)
+
+  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
+
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
 
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
