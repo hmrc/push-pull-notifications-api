@@ -17,11 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.DateTime
-import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
-import play.api.libs.json.{Format, JsObject, JsResult, JsValue, Json, OFormat, __}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import play.api.libs.json.{Format, JsPath, Json, OFormat, Reads}
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -40,18 +38,16 @@ private[repository] object PlayHmrcMongoFormatters {
     .format
 
   val boxWrites = Json.writes[Box]
-  val boxReads = (
-    (__ \ "boxId").read[BoxId] and
-      (__ \ "boxName").read[String] and
-      (__ \ "boxCreator").read[BoxCreator] and
-      (__ \ "applicationId").readNullable[ApplicationId] and
-      (__ \ "subscriber").readNullable[Subscriber] and
-      (__ \ "clientManaged").readWithDefault(false)
-    ) { Box }
+  val boxReads: Reads[Box] = (
+    (JsPath \ "boxId").read[BoxId] and
+      (JsPath \ "boxName").read[String] and
+      (JsPath \ "boxCreator").read[BoxCreator] and
+      (JsPath \ "applicationId").readNullable[ApplicationId] and
+      (JsPath \ "subscriber").readNullable[Subscriber] and
+      (JsPath \ "clientManaged").readWithDefault(false)
+    ) (Box.apply _)
 
   implicit val boxFormats = OFormat(boxReads, boxWrites)
-
-  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
 
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
