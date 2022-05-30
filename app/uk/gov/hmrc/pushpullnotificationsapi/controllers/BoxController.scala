@@ -20,9 +20,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAcceptHeaderAction
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -34,6 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
+                              validateContentTypeHeaderAction: ValidateContentTypeHeaderAction,
                               boxService: BoxService,
                               cc: ControllerComponents,
                               playBodyParsers: PlayBodyParsers,
@@ -65,6 +64,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     (Action
       andThen validateUserAgentHeaderAction
       andThen validateAcceptHeaderAction
+      andThen validateContentTypeHeaderAction
       andThen authAction)
       .async(playBodyParsers.json) { implicit request =>
         implicit val actualBody: Request[JsValue] = request.request
