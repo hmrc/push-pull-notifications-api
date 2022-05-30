@@ -224,6 +224,16 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
     }
 
     "createClientManagedBox" should {
+
+      "return unauthorised if bearer token doesn't contain client ID" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+
+        status(result) should be(UNAUTHORIZED)
+      }
+
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
         primeAuthAction(clientIdStr)

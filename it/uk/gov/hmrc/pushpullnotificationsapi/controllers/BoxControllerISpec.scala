@@ -1,7 +1,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
-
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
@@ -54,6 +53,8 @@ class BoxControllerISpec extends ServerBaseISpec
   val boxName = "myBoxName"
   val clientId = "someClientId"
   val clientId2 = "someClientId2"
+  val createClientManagedBoxJsonBody = raw"""{"boxName": "$boxName"}"""
+  val createClientManagedBox2JsonBody = raw"""{"boxName": "bbyybybyb"}"""
   val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId":  "$clientId2", "boxName": "bbyybybyb"}"""
   val tpaResponse: String = raw"""{"id":  "someappid", "clientId": "$clientId"}"""
@@ -67,12 +68,19 @@ class BoxControllerISpec extends ServerBaseISpec
          |""".stripMargin
 
   val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
+  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box")
+      .withHttpHeaders(headers: _*)
+      .put(jsonBody)
+      .futureValue
+  def callClientManagedCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/cmb/box")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
@@ -192,6 +200,83 @@ class BoxControllerISpec extends ServerBaseISpec
 
       "respond with 403 when UserAgent is not in allowlist" in {
         val result = callCreateBoxEndpoint("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
+        result.status shouldBe FORBIDDEN
+      }
+
+      "respond with 404 when invalid uri provided" in {
+        val result = wsClient
+          .url(s"$url/box/unKnownPath")
+          .withHttpHeaders(validHeaders: _*)
+          .get
+          .futureValue
+
+        result.status shouldBe NOT_FOUND
+        result.body shouldBe "{\"code\":\"NOT_FOUND\",\"message\":\"URI not found /box/unKnownPath\"}"
+      }
+    }
+    "PUT /cmb/box" should {
+      "respond with 201 when box created" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val result = callClientManagedCreateBoxEndpoint(createClientManagedBoxJsonBody, validHeadersWithAcceptHeader)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+      }
+
+      "respond with 200 with box ID  when box already exists" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val result1 = callClientManagedCreateBoxEndpoint(createClientManagedBoxJsonBody, validHeadersWithAcceptHeader)
+        validateStringIsUUID(result1.body)
+
+        val result2 = callClientManagedCreateBoxEndpoint(createClientManagedBoxJsonBody, validHeadersWithAcceptHeader)
+        result2.status shouldBe OK
+        validateStringIsUUID(result2.body)
+        result2.body shouldBe result1.body
+      }
+
+      "respond with 201 when two boxs are created" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val result = callClientManagedCreateBoxEndpoint(createClientManagedBoxJsonBody, validHeadersWithAcceptHeader)
+        result.status shouldBe CREATED
+        validateStringIsUUID(result.body)
+
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
+        val result2 = callClientManagedCreateBoxEndpoint(createClientManagedBox2JsonBody, validHeadersWithAcceptHeader)
+        result2.status shouldBe CREATED
+        validateStringIsUUID(result2.body)
+      }
+
+      "respond with 400 when NonJson is sent" in {
+        val result = callClientManagedCreateBoxEndpoint("nonJsonPayload", validHeadersWithAcceptHeader)
+        result.status shouldBe BAD_REQUEST
+      }
+
+      "respond with 400 when invalid Json is sent" in {
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val result = callClientManagedCreateBoxEndpoint("{}", validHeadersWithAcceptHeader)
+        result.status shouldBe BAD_REQUEST
+        result.body.contains("INVALID_REQUEST_PAYLOAD") shouldBe true
+      }
+
+      "respond with 415 when request content Type headers are empty" in {
+        val result = callClientManagedCreateBoxEndpoint("{}", List("someHeader" -> "someValue"))
+        result.status shouldBe UNSUPPORTED_MEDIA_TYPE
+      }
+
+      "respond with 415 when request content Type header is not JSON " in {
+        val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/xml"))
+        result.status shouldBe UNSUPPORTED_MEDIA_TYPE
+      }
+
+      "respond with 403 when UserAgent is not sent " in {
+        val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/json"))
+        result.status shouldBe FORBIDDEN
+      }
+
+      "respond with 403 when UserAgent is not in allowlist" in {
+        val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
         result.status shouldBe FORBIDDEN
       }
 
