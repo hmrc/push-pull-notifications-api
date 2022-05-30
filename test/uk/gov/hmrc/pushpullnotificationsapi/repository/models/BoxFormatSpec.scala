@@ -26,7 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.boxFormats
 import java.util.UUID
 
 class BoxFormatSpec extends HmrcSpec {
