@@ -275,7 +275,6 @@ class BoxControllerISpec extends ServerBaseISpec
 
       val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId), validHeaders)
       updateResult.status shouldBe OK
-      println(s"*************************** ${updateResult.body}")
 
       val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
       responseBody.successful shouldBe true
