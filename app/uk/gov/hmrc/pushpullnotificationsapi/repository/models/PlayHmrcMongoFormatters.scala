@@ -22,7 +22,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]

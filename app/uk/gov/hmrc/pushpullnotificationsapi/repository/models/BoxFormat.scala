@@ -25,15 +25,7 @@ import play.api.libs.json.OFormat
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.PushSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.Subscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 /** */
 object BoxFormat extends OFormat[Box] {
