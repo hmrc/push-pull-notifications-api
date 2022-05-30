@@ -45,7 +45,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, 
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, dbNotificationFormatter}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -95,7 +95,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
+            Codecs.playFormatCodec(BoxFormat.boxFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),

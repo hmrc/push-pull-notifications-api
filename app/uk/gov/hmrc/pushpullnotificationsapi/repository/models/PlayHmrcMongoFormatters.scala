@@ -17,51 +17,35 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.DateTime
+import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
-import play.api.libs.functional.syntax.toFunctionalBuilderOps
-import play.api.libs.json.{Format, __, Json, OFormat, Reads}
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
 
 private[repository] object PlayHmrcMongoFormatters {
-  implicit val applicationIdFormatter = Json.valueFormat[ApplicationId]
-
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.format[NotificationId]
+  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
+  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
+  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
+  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+  implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
+  implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
+  implicit val formatBoxCreator: OFormat[BoxCreator] = Json.format[BoxCreator]
+  implicit val formatSubscriber: OFormat[Subscriber] = Union.from[Subscriber]("subscriptionType")
+    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
+    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
+    .format
+  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
   implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]
   implicit val notificationAckStatusFormatter: OFormat[NotificationStatus.ACKNOWLEDGED.type] = Json.format[NotificationStatus.ACKNOWLEDGED.type]
   implicit val subscriptionTypePushFormatter: OFormat[SubscriptionType.API_PUSH_SUBSCRIBER.type] = Json.format[SubscriptionType.API_PUSH_SUBSCRIBER.type]
   implicit val subscriptionTypePullFormatter: OFormat[SubscriptionType.API_PULL_SUBSCRIBER.type] = Json.format[SubscriptionType.API_PULL_SUBSCRIBER.type]
-  implicit val clientIdFormatter = Json.valueFormat[ClientId]
-  implicit val boxIdFormatter = Json.valueFormat[BoxId]
-  implicit val dateFormat = MongoJodaFormats.dateTimeFormat
-  implicit val pullSubscriberFormats = Json.format[PullSubscriber]
-  implicit val pushSubscriberFormats = Json.format[PushSubscriber]
-  implicit val formatBoxCreator = Json.format[BoxCreator]
-  implicit val formatSubscriber = Union.from[Subscriber]("subscriptionType")
-    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
-    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
-    .format
 
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
-
-  val boxWrites = Json.writes[Box]
-  val boxReads: Reads[Box] = (
-    (__ \ "boxId").read[BoxId] and
-      (__ \ "boxName").read[String] and
-      (__ \ "boxCreator").read[BoxCreator] and
-      (__ \ "applicationId").readNullable[ApplicationId] and
-      (__ \ "subscriber").readNullable[Subscriber] and
-      (__ \ "clientManaged").readWithDefault(false)
-    ) (Box.apply _)
-
-  implicit val boxFormats = OFormat(boxReads, boxWrites)
-
   implicit val retryableNotificationFormatter: OFormat[RetryableNotification] = Json.format[RetryableNotification]
   implicit val dbRetryableNotificationFormatter: OFormat[DbRetryableNotification] = Json.format[DbRetryableNotification]
-
-
 }
