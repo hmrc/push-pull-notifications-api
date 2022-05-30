@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
@@ -38,7 +37,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
                               playBodyParsers: PlayBodyParsers,
                               authAction: AuthAction,
                               validateAcceptHeaderAction: ValidateAcceptHeaderAction)
-                             (implicit val ec: ExecutionContext, implicit val hc: HeaderCarrier) extends BackendController(cc) with ApplicationLogger{
+                             (implicit val ec: ExecutionContext) extends BackendController(cc) with ApplicationLogger{
 
   def createBox(): Action[JsValue] =
     (Action andThen
