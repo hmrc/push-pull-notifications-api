@@ -30,7 +30,7 @@ case class BoxId(value: UUID) extends AnyVal {
 
 case class ClientId(value: String) extends AnyVal
 
-case class ApplicationId(value: String)
+case class ApplicationId(value: String) extends AnyVal
 
 case class BoxCreator(clientId: ClientId)
 
