@@ -201,3 +201,71 @@ uses:
                  description: The Content-Type header is incorrect
                  value:
                    code: BAD_REQUEST
+  /cmb/box:
+    put:
+      displayName: Create client managed box
+      description: Create client managed box where clientId is obtained from oauth bearer token
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      is: [headers.acceptHeader]
+      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] }  ]
+      (annotations.scope): "write:ppns-boxes"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      body:
+        application/json:
+          type: !include schemas/client_managed_box.json
+          example: |
+            {
+              "boxName": "client ppns box"
+            }
+      responses:
+        204:
+        400:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The request body does not match the specification
+                 value:
+                   code: INVALID_REQUEST_PAYLOAD
+        403:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: You do not have access to the specified box
+                 value:
+                   code: FORBIDDEN
+        404:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The unique identifier for the box does not exist
+                 value:
+                   code: BOX_NOT_FOUND
+        406:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The Accept header is missing or invalid
+                 value:
+                   code: ACCEPT_HEADER_INVALID
+        415:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The Content-Type header is incorrect
+                 value:
+                   code: BAD_REQUEST
