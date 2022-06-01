@@ -29,7 +29,8 @@ import play.api.libs.json._
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -67,7 +68,7 @@ class BoxRepository @Inject()(mongo: MongoComponent)
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxFormats),
+            Codecs.playFormatCodec(BoxFormat.boxFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),

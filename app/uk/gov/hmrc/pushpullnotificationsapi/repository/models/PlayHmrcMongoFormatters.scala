@@ -22,6 +22,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
@@ -35,7 +36,6 @@ private[repository] object PlayHmrcMongoFormatters {
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
-  implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
   implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]

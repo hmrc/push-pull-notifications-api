@@ -14,7 +14,7 @@ import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositoryS
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
