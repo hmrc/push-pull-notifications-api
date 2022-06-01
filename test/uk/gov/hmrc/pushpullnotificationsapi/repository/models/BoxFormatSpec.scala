@@ -20,18 +20,13 @@ import org.joda.time.DateTime
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
 import java.util.UUID
 
 class BoxFormatSpec extends HmrcSpec {
-
-  implicit val format = BoxFormat
 
   "BoxFormat" when {
     "reading JSON with all fields present" should {
@@ -48,7 +43,7 @@ class BoxFormatSpec extends HmrcSpec {
           | "subscriber":{
           |  "callBackUrl":"callback",
           |  "subscribedDateTime":{
-          |   "$date":1277853600000
+          |   "$date":{"$numberLong":"1277853600000"}
           |  },
           |  "subscriptionType":"API_PULL_SUBSCRIBER"
           | }
@@ -222,12 +217,12 @@ class BoxFormatSpec extends HmrcSpec {
             | "boxName":"boxName",
             | "boxCreator":{"clientId":"someClientId"},
             | "applicationId":"1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8",
-            | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":1277853600000},"subscriptionType":"API_PULL_SUBSCRIBER"},
+            | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":{"$numberLong":"1277853600000"}},"subscriptionType":"API_PULL_SUBSCRIBER"},
             | "clientManaged":true
             |}""".stripMargin
         )
 
-        BoxFormat.writes(box) shouldBe expectedJson
+        boxFormats.writes(box) shouldBe expectedJson
       }
 
       "handle optional fields being None" in {
@@ -248,7 +243,7 @@ class BoxFormatSpec extends HmrcSpec {
             |}""".stripMargin
         )
 
-        BoxFormat.writes(box) shouldBe expectedJson
+        boxFormats.writes(box) shouldBe expectedJson
       }
     }
   }

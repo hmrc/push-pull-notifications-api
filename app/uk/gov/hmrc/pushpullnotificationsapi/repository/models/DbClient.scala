@@ -22,7 +22,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fr
 
 
 
-private[repository] case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
+case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
 private[repository] object DbClient {
   def fromClient(client: Client, crypto: CompositeSymmetricCrypto): DbClient = {
     DbClient(client.id, client.secrets.map(fromClientSecret(_, crypto)))

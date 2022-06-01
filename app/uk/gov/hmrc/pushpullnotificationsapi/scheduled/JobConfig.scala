@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import com.typesafe.config.Config
-import uk.gov.hmrc.lock.LockKeeper
+import uk.gov.hmrc.mongo.lock.LockService
 import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
@@ -39,14 +39,14 @@ object JobConfig {
 
 trait ScheduledMongoJob extends ExclusiveScheduledJob with ScheduledJobState with ApplicationLogger {
 
-  val lockKeeper: LockKeeper
+  val lockKeeper: LockService
 
   def isEnabled: Boolean
 
   def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful]
 
   override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
-    lockKeeper tryLock {
+    lockKeeper withLock {
       runJob
     } map {
       case Some(_) => Result(s"$name Job ran successfully.")

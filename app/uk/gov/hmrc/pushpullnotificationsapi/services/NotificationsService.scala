@@ -22,12 +22,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
-class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService) {
+class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService)
+  extends ApplicationLogger {
 
 
   def acknowledgeNotifications(boxId: BoxId,

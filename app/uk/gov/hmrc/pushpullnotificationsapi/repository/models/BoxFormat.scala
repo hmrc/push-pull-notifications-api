@@ -23,17 +23,9 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxCreator
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.PullSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.PushSubscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.Subscriber
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 /** */
 object BoxFormat extends OFormat[Box] {
@@ -41,7 +33,7 @@ object BoxFormat extends OFormat[Box] {
   implicit private val clientIdFormatter = Json.valueFormat[ClientId]
   implicit private val boxIdFormatter = Json.valueFormat[BoxId]
   implicit private val boxCreatorFormat = Json.format[BoxCreator]
-  implicit private val dateFormat = ReactiveMongoFormats.dateTimeFormats
+  implicit private val dateFormat = MongoJodaFormats.dateTimeFormat
   implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
   implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
   implicit private val formatSubscriber = Union
@@ -58,7 +50,9 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber] and
       (__ \ "clientManaged").readWithDefault(false)
-  ) { Box }
+    ) { Box }
+
+  implicit val boxFormats = OFormat(boxReads, boxWrites)
 
   override def writes(box: Box): JsObject = {
     boxWrites.writes(box)

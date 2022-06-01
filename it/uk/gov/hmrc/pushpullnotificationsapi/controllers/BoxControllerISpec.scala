@@ -9,9 +9,12 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,7 +22,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class BoxControllerISpec extends ServerBaseISpec
   with AuthService
   with BeforeAndAfterEach
-  with MongoApp
+  with PlayMongoRepositorySupport[Box]
+  with CleanMongoCollectionSupport
   with PushGatewayService
   with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>
@@ -29,9 +33,10 @@ class BoxControllerISpec extends ServerBaseISpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    dropMongoDb()
     await(repo.ensureIndexes)
   }
+
+  override protected def repository: PlayMongoRepository[Box] = new BoxRepository(mongoComponent)
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
