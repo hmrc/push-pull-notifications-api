@@ -143,6 +143,17 @@ class BoxControllerISpec extends ServerBaseISpec
         result.status shouldBe OK
         result.body should include(s""""boxName":"$boxName"""")
       }
+
+      "respond with client managed box when one created" in {
+        primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+        callClientManagedCreateBoxEndpoint(createClientManagedBoxJsonBody, validHeadersWithAcceptHeader)
+        val result = callGetBoxesByClientIdEndpoint(validHeadersWithAcceptHeader)
+
+        result.status shouldBe OK
+        result.body should include(s""""boxName":"$boxName"""")
+      }
     }
 
     "POST /box" should {
