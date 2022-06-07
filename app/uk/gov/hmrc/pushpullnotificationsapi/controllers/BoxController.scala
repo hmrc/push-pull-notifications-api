@@ -19,9 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.AuthAction
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAcceptHeaderAction
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -33,6 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
+                              validateContentTypeHeaderAction: ValidateContentTypeHeaderAction,
                               boxService: BoxService,
                               cc: ControllerComponents,
                               playBodyParsers: PlayBodyParsers,
@@ -61,6 +60,30 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         } recover recovery
       }
 
+  def createClientManagedBox(): Action[JsValue] =
+    (Action
+      andThen validateUserAgentHeaderAction
+      andThen validateAcceptHeaderAction
+      andThen validateContentTypeHeaderAction
+      andThen authAction)
+      .async(playBodyParsers.json) { implicit request =>
+        implicit val actualBody: Request[JsValue] = request.request
+        withJsonBody[CreateClientManagedBoxRequest] {
+          box: CreateClientManagedBoxRequest =>
+            if (box.boxName.isEmpty) {
+              Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
+            } else {
+              boxService.createBox(request.clientId, box.boxName, true).map {
+                case r: BoxCreatedResult => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+                case r: BoxRetrievedResult => Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+                case r: BoxCreateFailedResult =>
+                  logger.info(s"Unable to create Box: ${r.message}")
+                  UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
+              }
+            }
+        } (actualBody, manifest, RequestFormatters.createClientManagedBoxRequestFormatter) recover recovery
+      }
+
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
     (boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
@@ -73,7 +96,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
     boxService.getBoxByNameAndClientId(boxName, clientId) map {
       case Some(box) => Ok(Json.toJson(box))
       case None => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-    } 
+    }
   }
 
   def getBoxesByClientId(): Action[AnyContent] = (Action andThen validateAcceptHeaderAction andThen authAction).async {

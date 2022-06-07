@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
-
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -35,13 +34,16 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import org.mockito.Mockito.verifyNoInteractions
+import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val mockAppConfig: AppConfig = mock[AppConfig]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
@@ -76,41 +78,50 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
      raw"""{"boxName": "$boxNameVal",
              |"clientId": "$clientIdVal" }""".stripMargin
 
+  private val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
+  private val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
+  private val validContentTypeHeader = CONTENT_TYPE -> "application/json"
+  private val invalidContentTypeHeader = CONTENT_TYPE -> "text/xml"
+  private val emptyContentTypeHeader = CONTENT_TYPE -> ""
+
   private val validHeadersWithValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
-  private val validHeadersWithInValidUserAgent: Map[String, String] = Map(CONTENT_TYPE -> "application/json", USER_AGENT -> "some-other-service")
-  private val validHeadersWithInValidContentType: Map[String, String] = Map(CONTENT_TYPE -> "text/plain", USER_AGENT -> "api-subscription-fields")
-  private val validHeadersWithEmptyContentType: Map[String, String] = Map(CONTENT_TYPE -> "", USER_AGENT -> "api-subscription-fields")
-  private val validHeaders: Map[String, String] = Map(CONTENT_TYPE -> "application/json", ACCEPT -> "application/vnd.hmrc.1.0+json")
+
+  private val validHeadersWithInValidUserAgent: Map[String, String] = Map(validContentTypeHeader, USER_AGENT -> "some-other-service")
+  private val validHeadersWithInValidContentType: Map[String, String] = Map(invalidContentTypeHeader, USER_AGENT -> "api-subscription-fields")
+  private val validHeadersWithEmptyContentType: Map[String, String] = Map(emptyContentTypeHeader, USER_AGENT -> "api-subscription-fields")
+  private val validHeaders: Map[String, String] = Map(validContentTypeHeader, validAcceptHeader)
+  private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader, USER_AGENT -> "api-subscription-fields")
+  private val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader, USER_AGENT -> "api-subscription-fields")
 
   "BoxController" when {
     "createBox" should {
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be (Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 200 and boxId when box already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxRetrievedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(OK)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}")
         status(result) should be(BAD_REQUEST)
@@ -122,7 +133,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
      "return 400 when request payload is missing boxName" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, emptyJsonBody(boxNameVal = ""))
         status(result) should be(BAD_REQUEST)
@@ -134,7 +145,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 415 when content type header is invalid" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/box",  validHeadersWithInValidContentType, jsonBody)
@@ -145,7 +156,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 415 when content type header is empty" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/box",  validHeadersWithEmptyContentType, jsonBody)
@@ -156,12 +167,12 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 422 when Left returned from Box Service" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreateFailedResult(s"Box with name :$boxName already exists for cleintId: $clientId but unable to retrieve")))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when useragent config is empty" in {
@@ -190,12 +201,12 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 500 when service fails with any runtime exception" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when non JSon payload sent" in {
@@ -208,6 +219,185 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 400 when invalid JSon payload sent" in {
         setUpAppConfig(List("api-subscription-fields"))
         val result = doPut("/box", validHeadersWithValidUserAgent, "{}")
+        status(result) should be(BAD_REQUEST)
+        verifyNoInteractions(mockBoxService)
+      }
+    }
+
+    "createClientManagedBox" should {
+
+      "return unauthorised if bearer token doesn't contain client ID" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+
+        status(result) should be(UNAUTHORIZED)
+      }
+
+      "return 201 and boxId when box successfully created" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+        status(result) should be(CREATED)
+        val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
+        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+      }
+
+      "return 200 and boxId when box already exists" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxRetrievedResult(box)))
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+        status(result) should be(OK)
+        val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
+
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+      }
+
+      "return 400 when payload is completely invalid against expected format" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+        val result = doPut("/cmb/box", validHeadersJson, "{\"someOtherJson\":\"value\"}")
+        status(result) should be(BAD_REQUEST)
+        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
+        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 400 when request payload is missing boxName" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+        val result = doPut("/cmb/box", validHeadersJson, emptyJsonBody(boxNameVal = ""))
+        status(result) should be(BAD_REQUEST)
+        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
+        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 406 when accept header is invalid" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+
+        val result = doPut("/cmb/box",  validHeadersWithInvalidAcceptHeader, jsonBody)
+        status(result) should be(NOT_ACCEPTABLE)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 415 when content type header is invalid" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+
+        val result = doPut("/cmb/box",  validHeadersWithInValidContentType, jsonBody)
+        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 415 when content type header is empty" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreatedResult(box)))
+
+        val result = doPut("/cmb/box",  validHeadersWithEmptyContentType, jsonBody)
+        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 422 when Left returned from Box Service" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.successful(BoxCreateFailedResult(s"Box with name :$boxName already exists for cleintId: $clientId but unable to retrieve")))
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+        status(result) should be(UNPROCESSABLE_ENTITY)
+
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+      }
+
+      "return 400 when useragent config is empty" in {
+        setUpAppConfig(List.empty)
+        primeAuthAction(clientIdStr)
+
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 403 when invalid useragent provided" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        val result = doPut("/cmb/box", validHeadersWithInValidUserAgent, jsonBody)
+        status(result) should be(FORBIDDEN)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 403 when no useragent header provided" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        val result = doPut("/cmb/box", validHeaders, jsonBody)
+        status(result) should be(FORBIDDEN)
+
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 500 when service fails with any runtime exception" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+          .thenReturn(Future.failed(new RuntimeException("some error")))
+        val result = doPut("/cmb/box", validHeadersJson, jsonBody)
+        status(result) should be(INTERNAL_SERVER_ERROR)
+
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+      }
+
+      "return 400 when non JSon payload sent" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        val result = doPut("/cmb/box", validHeadersJson, "xxx")
+        status(result) should be(BAD_REQUEST)
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 400 when invalid JSon payload sent" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        primeAuthAction(clientIdStr)
+
+        val result = doPut("/cmb/box", validHeadersJson, "{}")
         status(result) should be(BAD_REQUEST)
         verifyNoInteractions(mockBoxService)
       }

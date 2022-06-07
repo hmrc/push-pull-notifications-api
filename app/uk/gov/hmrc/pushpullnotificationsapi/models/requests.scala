@@ -22,6 +22,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
+case class CreateClientManagedBoxRequest(boxName: String)
+
 case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A])
   extends WrappedRequest[A](request)
 
