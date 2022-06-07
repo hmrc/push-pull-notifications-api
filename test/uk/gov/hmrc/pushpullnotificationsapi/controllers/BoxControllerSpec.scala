@@ -36,6 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import org.mockito.Mockito.verifyNoInteractions
 import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -103,7 +104,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be (Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(false)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 200 and boxId when box already exists" in {
@@ -115,7 +116,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(false)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
@@ -171,7 +172,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(false)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when useragent config is empty" in {
@@ -205,7 +206,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(false)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
 
       "return 400 when non JSon payload sent" in {
@@ -245,7 +246,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be (Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(true)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
       }
 
       "return 200 and boxId when box already exists" in {
@@ -259,7 +260,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(true)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
@@ -338,7 +339,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(true)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
       }
 
       "return 400 when useragent config is empty" in {
@@ -380,7 +381,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(Some(true)))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
       }
 
       "return 400 when non JSon payload sent" in {

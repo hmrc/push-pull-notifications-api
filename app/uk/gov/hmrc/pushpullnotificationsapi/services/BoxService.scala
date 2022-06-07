@@ -38,7 +38,7 @@ class BoxService @Inject()(repository: BoxRepository,
                            eventsConnector: ApiPlatformEventsConnector,
                            clientService: ClientService) extends ApplicationLogger {
 
-  def createBox(clientId: ClientId, boxName: String, clientManaged: Option[Boolean] = Some(false))
+  def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)
                (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[CreateBoxResult] = {
 
     repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
@@ -48,7 +48,7 @@ class BoxService @Inject()(repository: BoxRepository,
           _ <- clientService.findOrCreateClient(clientId)
           appDetails <- applicationConnector.getApplicationDetails(clientId)
           createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id),
-            None, clientManaged.getOrElse(false)))
+            None, clientManaged))
         } yield createdBox
     } recoverWith {
       case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))
