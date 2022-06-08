@@ -73,7 +73,7 @@ class BoxControllerISpec extends ServerBaseISpec
          |""".stripMargin
 
   val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
-  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
+  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -284,16 +284,6 @@ class BoxControllerISpec extends ServerBaseISpec
       "respond with 415 when request content Type header is not JSON " in {
         val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/xml"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
-      }
-
-      "respond with 403 when UserAgent is not sent " in {
-        val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/json"))
-        result.status shouldBe FORBIDDEN
-      }
-
-      "respond with 403 when UserAgent is not in allowlist" in {
-        val result = callClientManagedCreateBoxEndpoint("{}", List("Content-Type" -> "application/json", "User-Agent" -> "not-a-known-one"))
-        result.status shouldBe FORBIDDEN
       }
 
       "respond with 404 when invalid uri provided" in {
