@@ -283,9 +283,9 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
-        val result = doPut("/cmb/box", validHeadersJson, emptyJsonBody(boxNameVal = ""))
+        val result = doPut("/cmb/box", validHeadersJson, s"""{"boxName":""}""")
         status(result) should be(BAD_REQUEST)
-        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
+        val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName in request body"}"""
         contentAsJson(result) should be (Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
@@ -426,14 +426,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(expectedBoxes))
 
         val result = doGet(s"/box", validHeaders)
-        
+
         status(result) should be(OK)
-        
+
         val bodyVal = Helpers.contentAsString(result)
         val actualBoxes = Json.parse(bodyVal).as[List[Box]]
 
         actualBoxes shouldBe expectedBoxes
-        
+
         verify(mockBoxService).getAllBoxes()(*)
       }
 
@@ -494,7 +494,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
       }
-      
+
       "return a 500 response code if service fails with an exception" in {
         primeAuthAction(clientIdStr)
 
@@ -555,7 +555,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
-          
+
             doPut(
               s"/box/${boxId.value}/callback",
               validHeadersWithValidUserAgent,
@@ -571,7 +571,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(CallbackUrlUpdated()))
 
          val result =
-           
+
              doPut(
                s"/box/${boxId.value}/callback",
                validHeadersWithValidUserAgent,
@@ -587,7 +587,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
-          
+
             doPut(
               s"/box/${boxId.value}/callback",
               validHeaders,
@@ -603,7 +603,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(BoxIdNotFound()))
 
          val result =
-           
+
              doPut(
                s"/box/${boxId.value}/callback",
                validHeadersWithValidUserAgent,
@@ -619,7 +619,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
          val result =
-           
+
              doPut(
                s"/box/${boxId.value}/callback",
                validHeadersWithValidUserAgent,
@@ -636,7 +636,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
          val result =
-           
+
              doPut(
                s"/box/${boxId.value}/callback",
                validHeadersWithValidUserAgent,
@@ -654,7 +654,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
            .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
          val result =
-           
+
              doPut(
                s"/box/${boxId.value}/callback",
                validHeadersWithValidUserAgent,
