@@ -62,7 +62,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
 
   def createClientManagedBox(): Action[JsValue] =
     (Action
-      andThen validateUserAgentHeaderAction
       andThen validateAcceptHeaderAction
       andThen validateContentTypeHeaderAction
       andThen authAction)
