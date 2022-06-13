@@ -101,7 +101,13 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
   def getBoxesByClientId(): Action[AnyContent] = (Action andThen validateAcceptHeaderAction andThen authAction).async {
     implicit request =>
         boxService.getBoxesByClientId(request.clientId).map { boxes =>
-        Ok(Json.toJson(boxes))
+        Ok(Json.toJson(boxes.map(box =>
+          if(box.clientManaged) {
+            box
+          } else {
+            box.copy(boxName = "DEFAULT")
+          }
+        )))
       } recover recovery
   }
 

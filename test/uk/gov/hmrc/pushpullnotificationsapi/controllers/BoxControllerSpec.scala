@@ -446,7 +446,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(List(box)))
         val result = doGet("/cmb/box", validHeaders)
         val expected =
-          s"""[{"boxId":"$boxIdStr","boxName":"boxName","boxCreator":{"clientId":"$clientIdStr"},"clientManaged":false}]"""
+          s"""[{"boxId":"$boxIdStr","boxName":"DEFAULT","boxCreator":{"clientId":"$clientIdStr"},"clientManaged":false}]"""
 
         contentAsString(result) shouldBe expected
 

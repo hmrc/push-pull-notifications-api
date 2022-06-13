@@ -141,7 +141,7 @@ class BoxControllerISpec extends ServerBaseISpec
         val result = callGetBoxesByClientIdEndpoint(validHeaders :+ additionalHeader)
   
         result.status shouldBe OK
-        result.body should include(s""""boxName":"$boxName"""")
+        result.body should include(s""""boxName":"DEFAULT"""")
       }
 
       "respond with client managed box when one created" in {
