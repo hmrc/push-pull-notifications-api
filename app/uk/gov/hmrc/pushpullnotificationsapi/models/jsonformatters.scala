@@ -40,7 +40,6 @@ object ResponseFormatters{
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
-  implicit val clientManagedBoxFormats: OFormat[ClientManagedBoxExternal] = Json.format[ClientManagedBoxExternal]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
