@@ -105,7 +105,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
           if(box.clientManaged) {
             box
           } else {
-            Box(box.boxId, "DEFAULT", box.boxCreator, box.applicationId, box.subscriber, box.clientManaged)
+            box.copy(boxName = "DEFAULT")
           }
         )))
       } recover recovery
