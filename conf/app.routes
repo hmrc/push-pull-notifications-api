@@ -21,4 +21,4 @@ GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.con
 # Client Managed Boxes
 PUT      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
 
-GET      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
+GET      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getClientManagedBoxesByClientId()

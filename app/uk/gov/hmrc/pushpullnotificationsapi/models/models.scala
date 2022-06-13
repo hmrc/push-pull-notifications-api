@@ -67,5 +67,11 @@ case class Box(boxId: BoxId,
                subscriber: Option[Subscriber] = None,
                clientManaged: Boolean = false)
 
+case class ClientManagedBoxExternal(boxId: BoxId,
+                                    boxCreator: BoxCreator,
+                                    applicationId: Option[ApplicationId] = None,
+                                    subscriber: Option[Subscriber] = None,
+                                    clientManaged: Boolean = false)
+
 case class Client(id: ClientId, secrets: Seq[ClientSecret])
 case class ClientSecret(value: String)
