@@ -37,6 +37,8 @@ case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String){
   }
 }
 
+case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
+
 
 
 // Notifications

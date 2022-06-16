@@ -121,7 +121,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       } else {
         boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
           case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
-          case c: CallbackValidationFailed  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
+          case c: CallbackValidationFailed => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
           case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
           case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
@@ -129,6 +129,25 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
       }
     }
   }
+
+  def updateClientManagedCallbackUrl(boxId: BoxId): Action[JsValue] =
+    (Action
+      andThen validateAcceptHeaderAction
+      andThen validateContentTypeHeaderAction
+      andThen authAction)
+      .async(playBodyParsers.json) {
+        implicit request =>
+          implicit val actualBody: Request[JsValue] = request.request
+          withJsonBody[UpdateManagedCallbackUrlRequest] { callbackUrlRequest =>
+          boxService.updateCallbackUrl(boxId, UpdateCallbackUrlRequest(request.clientId, callbackUrlRequest.callbackUrl)) map {
+            case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
+            case c: CallbackValidationFailed => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
+            case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
+            case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+            case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
+          } recover recovery
+        }(actualBody, manifest, RequestFormatters.updateManagedCallbackUrlRequestFormatter)
+      }
 
   override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =
     withJson(request.body)(f)

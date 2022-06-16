@@ -604,8 +604,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
          Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
        }
 
-
-
        "return 401 if client id does not match that on the box" in {
          setUpAppConfig(List("api-subscription-fields"))
          when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
@@ -630,25 +628,118 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 400 when payload is missing the clientId value" in {
         setUpAppConfig(List("api-subscription-fields"))
-          val result =
-            doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, createRequest("", "callbackUrl"))
+        val result =
+          doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, createRequest("", "callbackUrl"))
 
-          status(result) should be(BAD_REQUEST)
-          Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId is required"}"""
-          verifyNoInteractions(mockBoxService)
-       }
+        status(result) should be(BAD_REQUEST)
+        Helpers.contentAsString(result) shouldBe """{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId is required"}"""
+        verifyNoInteractions(mockBoxService)
+      }
 
        "return 200 when payload is missing the callbackUrl value" in {
-          setUpAppConfig(List("api-subscription-fields"))
+         setUpAppConfig(List("api-subscription-fields"))
          when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
-          val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
+         val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
 
-          status(result) should be(OK)
-          Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-          verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
-      }
+         status(result) should be(OK)
+         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+         verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
+       }
      }
+
+    "updatedManagedBoxCallbackUrl" should {
+      def createRequest(callBackUrl: String): String = s"""{"callbackUrl": "$callBackUrl"}"""
+
+      "return 200 when request is successful" in {
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+        primeAuthAction(clientIdStr)
+
+        val result = doPut(
+            s"/cmb/box/${boxId.value}/callback",
+            validHeadersJson,
+            createRequest("callbackUrl"))
+
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+      }
+
+      "return 404 if Box does not exist" in {
+        primeAuthAction(clientIdStr)
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(BoxIdNotFound()))
+
+        val result = doPut(
+          s"/cmb/box/${boxId.value}/callback",
+          validHeadersJson,
+          createRequest("callbackUrl"))
+
+        status(result) should be(NOT_FOUND)
+      }
+
+      "return 200, successful false and errormessage when mongo update fails" in {
+        primeAuthAction(clientIdStr)
+        val errorMessage = "Unable to update"
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
+
+        val result =
+          doPut(
+            s"/cmb/box/${boxId.value}/callback",
+            validHeadersJson,
+            createRequest("callbackUrl"))
+
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+      }
+
+      "return 200, successful false and errormessage when callback validation fails" in {
+        primeAuthAction(clientIdStr)
+        val errorMessage = "Unable to update"
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
+
+        val result = doPut(
+            s"/cmb/box/${boxId.value}/callback",
+            validHeadersJson,
+            createRequest("callbackUrl"))
+
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+      }
+
+      "return 401 if client id does not match that on the box" in {
+        primeAuthAction(clientIdStr)
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
+
+        val result = doPut(
+            s"/cmb/box/${boxId.value}/callback",
+            validHeadersJson,
+            createRequest("callbackUrl"))
+
+        status(result) should be(UNAUTHORIZED)
+      }
+
+      "return 400 when payload is non JSON" in {
+        val result = doPut(s"/cmb/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersJson, "someBody")
+
+        status(result) should be(BAD_REQUEST)
+        verifyNoInteractions(mockBoxService)
+      }
+
+      "return 200 when payload is missing the callbackUrl value" in {
+        primeAuthAction(clientIdStr)
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+        val result = doPut(s"/cmb/box/$boxIdStr/callback", validHeadersJson, createRequest(""))
+
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+        verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
+      }
+    }
   }
 
   private def primeAuthAction(clientId: String): Unit = {

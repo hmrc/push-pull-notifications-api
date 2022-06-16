@@ -1,6 +1,5 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
@@ -11,12 +10,13 @@ import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
-import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, MongoApp, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BoxControllerISpec extends ServerBaseISpec
@@ -104,6 +104,13 @@ class BoxControllerISpec extends ServerBaseISpec
       .put(jsonBody)
       .futureValue
 
+  def callClientManagedUpdateCallbackUrlEndpoint(boxId: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/cmb/box/$boxId/callback")
+      .withHttpHeaders(headers: _*)
+      .put(jsonBody)
+      .futureValue
+
   def callGetBoxByNameAndClientIdEndpoint(boxName: String, clientId: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=$clientId")
@@ -139,7 +146,7 @@ class BoxControllerISpec extends ServerBaseISpec
 
         callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
         val result = callGetBoxesByClientIdEndpoint(validHeaders :+ additionalHeader)
-  
+
         result.status shouldBe OK
         result.body should include(s""""boxName":"DEFAULT"""")
       }
@@ -446,9 +453,120 @@ class BoxControllerISpec extends ServerBaseISpec
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
   }
+  "PUT /cmb/box/{boxId}/callback" should {
+    val callbackUrl = "https://some.callback.url"
+
+    def updateCallbackUrlRequestJson() =raw"""{"callbackUrl": "$callbackUrl"}"""
+
+    def updateCallbackUrlRequestJsonNoCallBack(): String = raw"""{"callbackUrl": ""}"""
+
+    "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
+      primeGatewayServiceValidateCallBack(OK)
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe true
+
+      val updatedBox = await(repo.findByBoxId(createdBox.boxId))
+      updatedBox.get.subscriber.get.asInstanceOf[PushSubscriber].callBackUrl shouldBe callbackUrl
+    }
+
+    "return 200 with {successful:true} and update box successfully when Callback Url is empty" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJsonNoCallBack(), validHeadersWithAcceptHeader)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe true
+
+      val updatedBox = await(repo.findByBoxId(createdBox.boxId))
+      updatedBox.get.subscriber.get.asInstanceOf[PullSubscriber].callBackUrl.isEmpty shouldBe true
+    }
+
+    "return 200 with {successful:false} when Callback Url cannot be validated" in {
+      val errorMessage = "Unable to verify callback url"
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some(errorMessage))
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
+      updateResult.status shouldBe OK
+
+      val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
+      responseBody.successful shouldBe false
+      responseBody.errorMessage shouldBe Some(errorMessage)
+    }
+
+    "return 401 when clientId does not match that on the Box" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
+      primeAuthServiceSuccess(clientId2, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
+
+      updateResult.status shouldBe UNAUTHORIZED
+    }
+
+    "return 404 when box does not exist" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
+      updateResult.status shouldBe NOT_FOUND
+      updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
+    }
+
+    "return 400 when boxId is not a UUID" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint("NotaUUid", updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
+    }
+
+    "return 400 when requestBody is not a valid payload" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "{}", validHeadersWithAcceptHeader)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is not a valid payload against expected format" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "{\"foo\":\"bar\"}", validHeadersWithAcceptHeader)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+
+    "return 400 when requestBody is missing" in {
+
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
+      primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val updateResult = callClientManagedUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "", validHeadersWithAcceptHeader)
+      updateResult.status shouldBe BAD_REQUEST
+      updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+  }
 
   private def createBoxAndCheckExistsWithNoSubscribers(): Box = {
-
     primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
 
     val result = callCreateBoxEndpoint(createBoxJsonBody, validHeaders)
