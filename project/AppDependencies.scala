@@ -11,8 +11,6 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "crypto"                     % "5.6.0",
     "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.15.0-play-28",
     "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
-    "uk.gov.hmrc"             %% "mongo-lock"                 % "7.0.0-play-28"
-      excludeAll ExclusionRule(organization = "uk.gov.hmrc", name = "simple-reactivemongo_2.12"),
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"         % "0.63.0",
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",
