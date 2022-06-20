@@ -509,7 +509,7 @@ class BoxControllerISpec extends ServerBaseISpec
       responseBody.errorMessage shouldBe Some(errorMessage)
     }
 
-    "return 401 when clientId does not match that on the Box" in {
+    "return 403 when clientId does not match that on the Box" in {
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
       primeAuthServiceSuccess(clientId2, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
 
@@ -517,7 +517,7 @@ class BoxControllerISpec extends ServerBaseISpec
 
       val updateResult = callClientManagedUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(), validHeadersWithAcceptHeader)
 
-      updateResult.status shouldBe UNAUTHORIZED
+      updateResult.status shouldBe FORBIDDEN
     }
 
     "return 404 when box does not exist" in {

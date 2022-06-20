@@ -144,7 +144,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
             case c: CallbackValidationFailed => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
             case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
             case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-            case _: UpdateCallbackUrlUnauthorisedResult => Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Client Id did not match"))
+            case _: UpdateCallbackUrlUnauthorisedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access Denied"))
           } recover recovery
         }(actualBody, manifest, RequestFormatters.updateManagedCallbackUrlRequestFormatter)
       }
