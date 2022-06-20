@@ -709,7 +709,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
       }
 
-      "return 401 if client id does not match that on the box" in {
+      "return 403 if client id does not match that on the box" in {
         primeAuthAction(clientIdStr)
         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
@@ -719,7 +719,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
             validHeadersJson,
             createRequest("callbackUrl"))
 
-        status(result) should be(UNAUTHORIZED)
+        status(result) should be(FORBIDDEN)
       }
 
       "return 400 when payload is non JSON" in {
