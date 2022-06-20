@@ -1,24 +1,31 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.UUID
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.mongo.test.CleanMongoCollectionSupport
+import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BoxRepositoryISpec
-  extends AsyncHmrcSpec with BeforeAndAfterEach with BeforeAndAfterAll
-    with PlayMongoRepositorySupport[Box]
+  extends AsyncHmrcSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
     with CleanMongoCollectionSupport
-    with Matchers with GuiceOneAppPerSuite {
+    with GuiceOneAppPerSuite
+    with IntegrationPatience
+    with Matchers
+    with PlayMongoRepositorySupport[Box] {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
