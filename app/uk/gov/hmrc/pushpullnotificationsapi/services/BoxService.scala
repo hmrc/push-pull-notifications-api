@@ -16,19 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import javax.inject.{Inject, Singleton}
-
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{PushConnector, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import java.{util => ju}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
-import java.{util => ju}
 import scala.util.control.NonFatal
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 
 @Singleton
@@ -61,10 +59,10 @@ class BoxService @Inject()(repository: BoxRepository,
 
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
-  
+
   def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
     repository.getBoxesByClientId(clientId)
-  
+
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
@@ -91,6 +89,17 @@ class BoxService @Inject()(repository: BoxRepository,
       case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage))
     }
 
+  }
+
+  def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
+    repository.findByBoxId(boxId) flatMap {
+      case None => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+      case Some(box) => if (box.boxCreator.clientId.equals(clientId)) {
+        Future.successful(ValidateBoxOwnerSuccessResult())
+      } else {
+        Future.successful(ValidateBoxOwnerFailedResult("clientId does not match boxCreator"))
+      }
+    }
   }
 
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)

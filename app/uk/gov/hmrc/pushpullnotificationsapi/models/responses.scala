@@ -27,6 +27,8 @@ case class CreateNotificationResponse(notificationId: String)
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 
+case class ValidateBoxOwnershipResponse(valid: Boolean)
+
 case class NotificationResponse(notificationId: NotificationId,
                                 boxId: BoxId,
                                 messageContentType: MessageContentType,

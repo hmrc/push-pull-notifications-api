@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
+import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -28,15 +28,14 @@ import play.api.mvc.Result
 import play.api.test.Helpers.{BAD_REQUEST, route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import org.mockito.Mockito.verifyNoInteractions
-import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
@@ -496,15 +495,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
     }
 
-     "addCallbackUrl" should {
+    "addCallbackUrl" should {
 
-      def createRequest(clientId: String, callBackUrl:String)= {
-      raw"""
-        |{
-        |   "clientId": "$clientId",
-        |   "callbackUrl": "$callBackUrl"
-        |}
-        |""".stripMargin
+      def createRequest(clientId: String, callBackUrl: String) = {
+        raw"""
+             |{
+             |   "clientId": "$clientId",
+             |   "callbackUrl": "$callBackUrl"
+             |}
+             |""".stripMargin
       }
 
       "return 200 when request is successful" in {
@@ -514,7 +513,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         val result =
 
-            doPut(
+          doPut(
               s"/box/${boxId.value}/callback",
               validHeadersWithValidUserAgent,
               createRequest("clientId", "callbackUrl"))
@@ -740,6 +739,73 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
       }
     }
+
+    "validateBoxOwnership" should {
+      def validateBody(boxId: String, clientId: String): String = s"""{"boxId":"$boxId","clientId":"$clientId"}"""
+
+      "return 200 and valid when ownership confirmed" in {
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+          .thenReturn(Future.successful(ValidateBoxOwnerSuccessResult()))
+
+        val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))
+
+        status(result) shouldBe OK
+        (contentAsJson(result) \ "valid").as[Boolean] shouldBe true
+      }
+
+      "return 200 and invalid when ownership not confirmed" in {
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+          .thenReturn(Future.successful(ValidateBoxOwnerFailedResult("Ownership doesn't match")))
+
+        val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))
+
+        status(result) shouldBe OK
+        (contentAsJson(result) \ "valid").as[Boolean] shouldBe false
+      }
+
+      "return 404 when box not found" in {
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+          .thenReturn(Future.successful(ValidateBoxOwnerNotFoundResult("Box not found")))
+
+        val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))
+
+        status(result) shouldBe NOT_FOUND
+        (contentAsJson(result) \ "code").as[String] shouldBe "BOX_NOT_FOUND"
+        (contentAsJson(result) \ "message").as[String] shouldBe "Box not found"
+      }
+
+      "return 400 when clientId is empty" in {
+        val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, ""))
+
+        status(result) shouldBe BAD_REQUEST
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "Expecting boxId and clientId in request body"
+      }
+
+      "return 400 when format is wrong" in {
+        val result = doPost("/cmb/validate", validHeaders, s"""{"boxId":"$boxIdStr"}""")
+
+        status(result) shouldBe BAD_REQUEST
+        (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+        (contentAsJson(result) \ "message").as[String] shouldBe "JSON body is invalid against expected format"
+      }
+
+      "return 406 when accept header is missing" in {
+        val result = doPost("/cmb/validate", validHeaders - ACCEPT, validateBody(boxIdStr, clientIdStr))
+
+        status(result) shouldBe NOT_ACCEPTABLE
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+      }
+
+      "return 406 when accept header is invalid" in {
+        val result = doPost("/cmb/validate", validHeaders + (ACCEPT -> "XYZAccept"), validateBody(boxIdStr, clientIdStr))
+
+        status(result) shouldBe NOT_ACCEPTABLE
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+      }
+    }
   }
 
   private def primeAuthAction(clientId: String): Unit = {
@@ -751,11 +817,19 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
     route(app, fakeRequest).get
   }
 
+  def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+    doWithBody(uri, headers, bodyValue, POST)
+  }
+
   def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
     doPUT(uri, headers, bodyValue)
   }
 
   private def doPUT(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
+    doWithBody(uri, headers, bodyValue, PUT)
+  }
+
+  private def doWithBody(uri: String, headers: Map[String, String], bodyValue: String, method: String) = {
     val maybeBody: Option[JsValue] = Try {
       Json.parse(bodyValue)
     } match {
@@ -763,9 +837,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       case Failure(_) => None
     }
 
-    val fakeRequest = FakeRequest(PUT, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
-
   }
 }

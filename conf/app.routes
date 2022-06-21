@@ -21,6 +21,8 @@ GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.con
 # Client Managed Boxes
 PUT      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
 
+POST     /cmb/validate                  uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.validateBoxOwnership()
+
 GET      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
 
 PUT      /cmb/box/:boxId/callback       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)

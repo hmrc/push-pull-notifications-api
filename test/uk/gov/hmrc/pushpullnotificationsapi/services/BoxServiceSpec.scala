@@ -206,7 +206,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
         result.isInstanceOf[CallbackUrlUpdated] shouldBe true
-        
+
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockRepository, times(1)).updateApplicationId(*[BoxId], *[ApplicationId])(*)
         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
@@ -290,6 +290,27 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
         verifyNoInteractions(mockConnector)
         verifyNoInteractions(mockApiPlatformEventsConnector)
+      }
+    }
+
+    "validateBoxOwner" should {
+
+      "return ValidateBoxOwnerSuccessResult when boxId is found and clientId matches" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
+        result.isInstanceOf[ValidateBoxOwnerSuccessResult] shouldBe true
+      }
+
+      "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, ClientId(UUID.randomUUID().toString)))
+        result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
+      }
+
+      "return ValidateBoxOwnerNotFoundResult when boxId is not found" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(None))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
+        result.isInstanceOf[ValidateBoxOwnerNotFoundResult] shouldBe true
       }
     }
   }

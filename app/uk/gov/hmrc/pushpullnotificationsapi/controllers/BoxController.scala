@@ -149,6 +149,27 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         }(actualBody, manifest, RequestFormatters.updateManagedCallbackUrlRequestFormatter)
       }
 
+  def validateBoxOwnership(): Action[JsValue] =
+    (Action
+      andThen validateContentTypeHeaderAction
+      andThen validateAcceptHeaderAction)
+      .async(playBodyParsers.json) {
+        implicit request =>
+          withJsonBody[ValidateBoxOwnershipRequest] {
+            implicit request => {
+              if (request.clientId.value.isEmpty) {
+                Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxId and clientId in request body")))
+              } else {
+                boxService.validateBoxOwner(request.boxId, request.clientId) map {
+                  case _: ValidateBoxOwnerSuccessResult => Ok(Json.toJson(ValidateBoxOwnershipResponse(valid = true)))
+                  case _: ValidateBoxOwnerFailedResult => Ok(Json.toJson(ValidateBoxOwnershipResponse(valid = false)))
+                  case _: ValidateBoxOwnerNotFoundResult => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+                }
+              }
+            } recover recovery
+          }
+      }
+
   override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =
     withJson(request.body)(f)
 
