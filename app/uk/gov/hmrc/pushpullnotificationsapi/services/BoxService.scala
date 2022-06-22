@@ -57,6 +57,13 @@ class BoxService @Inject()(repository: BoxRepository,
     repository.getAllBoxes()
   }
 
+  def deleteBox(clientId: ClientId, boxId: BoxId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+    repository.findByBoxId(boxId) flatMap {
+      case Some(box) => validateAndDeleteBox(box, clientId)
+      case None => successful(BoxDeleteNotFoundResult())
+    }
+  }
+
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
 
@@ -140,6 +147,17 @@ class BoxService @Inject()(repository: BoxRepository,
         repository.updateApplicationId(box.boxId, appDetails.id)
         successful(appDetails.id)
       })
+  }
+
+  private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+    if (!box.clientManaged) {
+      successful(BoxDeleteAccessDeniedResult());
+    }
+    else if (box.boxCreator.clientId.equals(clientId)) {
+      repository.deleteBox(box.boxId)
+    } else {
+      successful(BoxDeleteNotFoundResult())
+    }
   }
 
 

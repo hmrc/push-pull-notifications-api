@@ -94,9 +94,17 @@ class BoxRepository @Inject()(mongo: MongoComponent)
       case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
     }
 
+  def deleteBox(boxId: BoxId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] =
+    collection.deleteOne(equal("boxId", Codecs.toBson(boxId))).map(_ => BoxDeleteSuccessfulResult()).head() recoverWith {
+      case NonFatal(e) => Future.successful(BoxDeleteFailedResult(e.getMessage))}
+
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
     logger.info(s"Getting box by boxName:$boxName & clientId: ${clientId.value}")
     collection.find(Filters.and(equal("boxName", Codecs.toBson(boxName)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
+  }
+
+  def getBoxByBoxIdAndClientId(boxId: BoxId, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
+    collection.find(Filters.and(equal("boxId", Codecs.toBson(boxId)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
   }
 
   def getBoxesByClientId(clientId: ClientId): Future[List[Box]] = {

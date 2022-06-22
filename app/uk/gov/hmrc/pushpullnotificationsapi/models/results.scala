@@ -24,6 +24,12 @@ sealed trait BoxCreateSuccessResult extends CreateBoxResult
 final case class BoxCreatedResult(box: Box) extends BoxCreateSuccessResult
 final case class BoxRetrievedResult(box: Box) extends BoxCreateSuccessResult
 
+sealed trait DeleteBoxResult
+final case class BoxDeleteFailedResult(message: String) extends DeleteBoxResult
+final case class BoxDeleteNotFoundResult() extends DeleteBoxResult
+final case class BoxDeleteAccessDeniedResult() extends DeleteBoxResult
+final case class BoxDeleteSuccessfulResult() extends DeleteBoxResult
+
 sealed trait NotificationCreateServiceResult
 
 sealed trait NotificationCreateServiceFailedResult extends NotificationCreateServiceResult

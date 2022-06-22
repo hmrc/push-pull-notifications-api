@@ -20,7 +20,7 @@ import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
+import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -34,7 +34,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-
+import play.api.http.Status.NO_CONTENT
+import play.api.mvc.Results.NoContent
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -91,7 +92,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   private val validHeaders: Map[String, String] = Map(validContentTypeHeader, validAcceptHeader)
   private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader)
   private val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
-
+  private val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
+                                                  ACCEPT -> "application/vnd.hmrc.1.0+json")
   "BoxController" when {
     "createBox" should {
       "return 201 and boxId when box successfully created" in {
@@ -357,6 +359,75 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, "{}")
         status(result) should be(BAD_REQUEST)
         verifyNoInteractions(mockBoxService)
+      }
+    }
+
+    "deleteClientManagedBox" should {
+
+      "return unauthorised if bearer token doesn't contain client ID on a box delete" in {
+        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+
+        status(result) should be(UNAUTHORIZED)
+      }
+
+      "return 201 and boxId when box successfully deleted" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteSuccessfulResult()))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        status(result) should be(NO_CONTENT)
+      }
+
+      "return 404(NOT FOUND) when attempting to delete a box with an ID that does not exist" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteNotFoundResult()))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        status(result) should be(NOT_FOUND)
+      }
+
+      "return 404(NOT FOUND) when Attempt to delete a box which for a different client ID" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteNotFoundResult()))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        status(result) should be(NOT_FOUND)
+      }
+
+      "return 403(FORBIDDEN) Attempt to delete a default box should not be allowed" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        status(result) should be(FORBIDDEN)
+      }
+
+      "return 406 when a Incorrect Accept Header Version" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithInvalidAcceptHeader.toList)
+        status(result) should be(NOT_ACCEPTABLE)
+        (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
+        (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
+      }
+
+      "return 400 when unable to delete in db" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.successful(BoxDeleteFailedResult("Fatal error occured in DB while deleting")))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader.toList)
+        status(result) should be(BAD_REQUEST)
+        (contentAsJson(result) \ "code").as[String] shouldBe "BAD_REQUEST"
+        (contentAsJson(result) \ "message").as[String] shouldBe "Fatal error occured in DB while deleting"
       }
     }
 
@@ -840,5 +911,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
     val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
+  }
+
+  def doDelete(uri: String, headers: List[(String, String)]): Future[Result] = {
+    val fakeRequest = FakeRequest(DELETE, uri).withHeaders(headers: _*)
+    route(app, fakeRequest).get
   }
 }

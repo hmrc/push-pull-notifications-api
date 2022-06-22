@@ -315,6 +315,36 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     }
   }
 
+  "deleteBox" should {
+
+    "return BoxDeleteSuccessfulResult when a box is found by boxId" in new Setup {
+      val clientManagedBox: Box = box.copy(clientManaged = true)
+      when(mockRepository.findByBoxId(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
+      when(mockRepository.deleteBox(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future(BoxDeleteSuccessfulResult()))
+
+      val result: DeleteBoxResult = await(objInTest.deleteBox(clientManagedBox.boxCreator.clientId, clientManagedBox.boxId))
+      result shouldBe BoxDeleteSuccessfulResult()
+    }
+
+    "return BoxDeleteAccessDeniedResult when clientManaged is false" in new Setup {
+      when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+      when(mockRepository.deleteBox(eqTo(box.boxId))(*)).thenReturn(Future(BoxDeleteAccessDeniedResult()))
+
+      val result: DeleteBoxResult = await(objInTest.deleteBox(clientId, boxId))
+      result shouldBe BoxDeleteAccessDeniedResult()
+    }
+
+    "return BoxDeleteNotFoundResult when the given clientId does not match the box's clientId" in new Setup {
+      val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
+      val clientManagedBox: Box = box.copy(clientManaged =true)
+
+      when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
+
+      val result: DeleteBoxResult = await(objInTest.deleteBox(incorrectClientId, boxId))
+      result shouldBe BoxDeleteNotFoundResult()
+    }
+  }
+
   def validateBox(box: Box, expectedApplicationId: Option[ApplicationId]): Unit = {
     box.boxName shouldBe boxName
     box.subscriber.isDefined shouldBe false

@@ -1,9 +1,25 @@
+/*
+ * Copyright 2022 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
+import play.api.http.Status.NO_CONTENT
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -11,6 +27,7 @@ import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UN
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, ClientId, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse, ValidateBoxOwnershipResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
@@ -73,8 +90,8 @@ class BoxControllerISpec extends ServerBaseISpec
          |""".stripMargin
 
   val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
-  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", ACCEPT -> "application/vnd.hmrc.1.0+json")
-
+  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
+                                          ACCEPT -> "application/vnd.hmrc.1.0+json")
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
@@ -133,6 +150,13 @@ class BoxControllerISpec extends ServerBaseISpec
       .futureValue
 
   // need to clean down mongo then run two
+
+  def callDeleteClientManagedBoxEndpoint(boxId: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/cmb/box/${boxId}")
+      .withHttpHeaders(headers: _*)
+      .delete
+      .futureValue
 
 
   "BoxController" when {
@@ -459,6 +483,41 @@ class BoxControllerISpec extends ServerBaseISpec
       val updateResult = callUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "", validHeaders)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+  }
+
+  "DELETE /cmb/box/$boxId" should {
+    val boxIdStr: String = UUID.randomUUID().toString
+    val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
+    val clientId: ClientId = ClientId("someClientId")
+    val clientManagedBox: Box = Box(boxName = "boxName",
+      boxId = boxId,
+      boxCreator = BoxCreator(clientId),
+      clientManaged = true)
+
+    "successfully delete a CMB and return status 204" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)
+      primeAuthServiceSuccess(clientId.value, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      await(repo.createBox(clientManagedBox))
+      val deleteResult = callDeleteClientManagedBoxEndpoint(clientManagedBox.boxId.raw, validHeadersWithAcceptHeader)
+      deleteResult.status shouldBe NO_CONTENT
+    }
+
+    "failed to delete a CMB when not found and return status 404" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)
+      primeAuthServiceSuccess(clientId.value, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      await(repo.createBox(clientManagedBox))
+      val deleteResult = callDeleteClientManagedBoxEndpoint(clientManagedBox.boxId.raw.replaceAll("9", "8"), validHeadersWithAcceptHeader)
+      deleteResult.status shouldBe NOT_FOUND
+    }
+
+    "failed to delete a CMB when unauthorised and return status 403" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)
+      primeAuthServiceSuccess(clientId.value, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      val notClientManaged = clientManagedBox.copy(clientManaged = false)
+      await(repo.createBox(notClientManaged))
+      val deleteResult = callDeleteClientManagedBoxEndpoint(notClientManaged.boxId.raw, validHeadersWithAcceptHeader)
+      deleteResult.status shouldBe FORBIDDEN
     }
   }
 

@@ -83,6 +83,20 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         } (actualBody, manifest, RequestFormatters.createClientManagedBoxRequestFormatter) recover recovery
       }
 
+  def deleteClientManagedBox(boxId: BoxId): Action[AnyContent] =
+    (Action
+      andThen validateAcceptHeaderAction
+      andThen validateContentTypeHeaderAction
+      andThen authAction)
+      .async { implicit request =>
+        boxService.deleteBox(request.clientId, boxId).map {
+          case _: BoxDeleteSuccessfulResult => NoContent
+          case _: BoxDeleteNotFoundResult => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case _: BoxDeleteAccessDeniedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access Denied"))
+          case failedResult: BoxDeleteFailedResult => BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, failedResult.message))
+        } recover recovery
+      }
+
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
     (boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
