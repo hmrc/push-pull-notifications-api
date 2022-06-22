@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{PushConnector, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import java.{util => ju}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
-import java.{util => ju}
 import scala.util.control.NonFatal
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
 
 
 @Singleton
@@ -35,9 +34,9 @@ class BoxService @Inject()(repository: BoxRepository,
                            pushConnector: PushConnector,
                            applicationConnector: ThirdPartyApplicationConnector,
                            eventsConnector: ApiPlatformEventsConnector,
-                           clientService: ClientService) {
+                           clientService: ClientService) extends ApplicationLogger {
 
-  def createBox(clientId: ClientId, boxName: String)
+  def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)
                (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[CreateBoxResult] = {
 
     repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
@@ -46,15 +45,30 @@ class BoxService @Inject()(repository: BoxRepository,
         for {
           _ <- clientService.findOrCreateClient(clientId)
           appDetails <- applicationConnector.getApplicationDetails(clientId)
-          createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id)))
+          createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id),
+            None, clientManaged))
         } yield createdBox
     } recoverWith {
       case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))
     }
   }
 
+  def deleteBox(clientId: ClientId, boxId: BoxId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+    repository.findByBoxId(boxId) flatMap {
+      case Some(box) => validateAndDeleteBox(box, clientId)
+      case None => successful(BoxDeleteNotFoundResult())
+    }
+  }
+
+  def getAllBoxes()(implicit ec: ExecutionContext): Future[List[Box]] = {
+    repository.getAllBoxes()
+  }
+
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
+
+  def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
+    repository.getBoxesByClientId(clientId)
 
   def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
@@ -66,13 +80,12 @@ class BoxService @Inject()(repository: BoxRepository,
           appId <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(box.applicationId.get)
           result <- validateCallBack(box, request)
           _ = result match {
-            case successfulUpdate: CallbackUrlUpdated => {
+            case successfulUpdate: CallbackUrlUpdated =>
               eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box) recoverWith {
-                case NonFatal(e) => Logger.warn(s"Unable to send CallbackUrlUpdated event", e)
-                successful(successfulUpdate)
+                case NonFatal(e) => logger.warn(s"Unable to send CallbackUrlUpdated event", e)
+                  successful(successfulUpdate)
               }
-            }
-            case _ => Logger.warn("Updating callback URL failed - not sending event")
+            case _ => logger.warn("Updating callback URL failed - not sending event")
           }
         } yield result
       }
@@ -85,21 +98,30 @@ class BoxService @Inject()(repository: BoxRepository,
 
   }
 
+  def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
+    repository.findByBoxId(boxId) flatMap {
+      case None => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+      case Some(box) => if (box.boxCreator.clientId.equals(clientId)) {
+        Future.successful(ValidateBoxOwnerSuccessResult())
+      } else {
+        Future.successful(ValidateBoxOwnerFailedResult("clientId does not match boxCreator"))
+      }
+    }
+  }
+
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)
                               (implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
-    if (!request.callbackUrl.isEmpty) {
+    if (request.callbackUrl.nonEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
-        case _: PushConnectorSuccessResult => {
-          Logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
+        case _: PushConnectorSuccessResult =>
+          logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
           updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
-        }
-        case result: PushConnectorFailedResult => {
-          Logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
+        case result: PushConnectorFailedResult =>
+          logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
           successful(CallbackValidationFailed(result.errorMessage))
-        }
       }
     } else {
-      Logger.info(s"updating callback for boxId:${box.boxId.value} with PullSubscriber")
+      logger.info(s"updating callback for boxId:${box.boxId.value} with PullSubscriber")
       updateBoxWithCallBack(box.boxId, new SubscriberContainer(PullSubscriber("")))
     }
   }
@@ -127,5 +149,14 @@ class BoxService @Inject()(repository: BoxRepository,
       })
   }
 
-
+  private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+    if (!box.clientManaged) {
+      successful(BoxDeleteAccessDeniedResult());
+    }
+    else if (box.boxCreator.clientId.equals(clientId)) {
+      repository.deleteBox(box.boxId)
+    } else {
+      successful(BoxDeleteNotFoundResult())
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ class NotificationsController @Inject()(appConfig: AppConfig,
           if (validateBodyAgainstContentType(contentType)) {
             val notificationId = NotificationId(UUID.randomUUID())
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
-              case _: NotificationCreateSuccessResult => Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+              case _: NotificationCreateSuccessResult =>
+                Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
               case _: NotificationCreateFailedBoxIdNotFoundResult =>
                 NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: NotificationCreateFailedDuplicateResult =>

@@ -2,9 +2,10 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import java.util.UUID.randomUUID
 
-import controllers.Assets.{BAD_REQUEST, CREATED}
+
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.http.Status.{BAD_REQUEST, CREATED}
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._

@@ -1,12 +1,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
-import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 
 trait TestApplication {
   _: BaseISpec =>
 
-  override implicit lazy val app: Application = appBuilder.build()
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

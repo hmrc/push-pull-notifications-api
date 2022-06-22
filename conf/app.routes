@@ -3,7 +3,7 @@
 # Box
 PUT       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
 
-GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxByNameAndClientId(boxName: String, clientId: ClientId)
+GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[ClientId])
 
 PUT       /box/:boxId/callback          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
 
@@ -17,3 +17,15 @@ PUT       /box/:boxId/notifications/acknowledge  uk.gov.hmrc.pushpullnotificatio
 # Client
 
 GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
+
+# Client Managed Boxes
+PUT      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
+
+POST     /cmb/validate                  uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.validateBoxOwnership()
+
+GET      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
+
+DELETE   /cmb/box/:boxId                uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.deleteClientManagedBox(boxId: BoxId)
+
+PUT      /cmb/box/:boxId/callback       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)
+

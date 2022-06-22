@@ -1,19 +1,23 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.UUID.randomUUID
+import org.mongodb.scala.MongoWriteException
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
+import java.util.UUID.randomUUID
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.core.errors.DatabaseException
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
-import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
-class ClientRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
+class ClientRepositoryISpec
+   extends AsyncHmrcSpec
+   with BeforeAndAfterEach with BeforeAndAfterAll
+   with PlayMongoRepositorySupport[DbClient]
+   with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -24,11 +28,14 @@ class ClientRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneApp
   override implicit lazy val app: Application = appBuilder.build()
 
   def repo: ClientRepository = app.injector.instanceOf[ClientRepository]
+  override protected def repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
 
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-    dropMongoDb()
-    await(repo.ensureIndexes)
+  override def beforeEach() {
+    prepareDatabase()
+  }
+
+  override protected def afterAll() {
+    prepareDatabase()
   }
 
   val clientId: ClientId = ClientId(randomUUID.toString)
@@ -52,14 +59,15 @@ class ClientRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneApp
 
       await(repo.insertClient(client))
 
-      val dbClients: List[DbClient] = await(repo.findAll())
+      val dbClients: Seq[DbClient] = await(repo.collection.find().toFuture())
+
       dbClients.head.secrets.head.encryptedValue shouldBe "X+UILjCREN19DnjPfxBDNECPVWlIUfd76KlrwnleZ/o="
     }
 
     "fail when a client with the same ID already exists" in {
       await(repo.insertClient(client))
 
-      val exception: DatabaseException = intercept[DatabaseException] {
+      val exception: MongoWriteException = intercept[MongoWriteException] {
         await(repo.insertClient(client))
       }
 

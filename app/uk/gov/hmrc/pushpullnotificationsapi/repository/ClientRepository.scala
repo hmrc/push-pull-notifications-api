@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,38 +17,43 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import akka.stream.Materializer
+import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.{IndexModel, IndexOptions}
+
 import javax.inject.{Inject, Singleton}
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient.{fromClient, toClient}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ReactiveMongoFormatters.dbClientFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.util.mongo.IndexHelper.createSingleFieldAscendingIndex
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbClientFormatter
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ClientRepository @Inject()(mongoComponent: ReactiveMongoComponent, crypto: CompositeSymmetricCrypto)
+class ClientRepository @Inject()(mongo: MongoComponent, crypto: CompositeSymmetricCrypto)
                                 (implicit ec: ExecutionContext, val mat: Materializer)
-  extends ReactiveRepository[DbClient, BSONObjectID](
-    "client",
-    mongoComponent.mongoConnector.db,
-    dbClientFormatter,
-    ReactiveMongoFormats.objectIdFormats) {
-
-  override def indexes = Seq(
-    createSingleFieldAscendingIndex("id", Some("id_index"), isUnique = true)
-  )
+  extends PlayMongoRepository[DbClient](
+    collectionName ="client",
+    mongoComponent = mongo,
+    domainFormat = dbClientFormatter,
+    indexes = Seq(
+      IndexModel(ascending("id"),
+        IndexOptions()
+          .name("id_index")
+          .background(true)
+          .unique(true))
+    )) {
 
   def insertClient(client: Client): Future[Client] = {
-    collection.insert.one(fromClient(client, crypto)).map(_ => client)
+    collection.insertOne(fromClient(client, crypto)).map(_ => client).head()
   }
 
   def findByClientId(id: ClientId): Future[Option[Client]] = {
-    find("id" -> id.value).map(_.headOption.map(toClient(_, crypto)))
+    collection.find(equal("id", Codecs.toBson(id.value)))
+      .headOption()
+      .map(_.map(toClient(_, crypto)))
   }
 }

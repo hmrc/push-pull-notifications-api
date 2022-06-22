@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 
-  val whitelistedUserAgentList: List[String] = config.underlying.getStringList("whitelisted.useragents").asScala.toList
+  val allowlistedUserAgentList: List[String] = config.underlying.getStringList("allowlisted.useragents").asScala.toList
 
   val apiStatus = config.get[String]("apiStatus")
   val authorizationToken: String = config.get[String]("authorizationKey")

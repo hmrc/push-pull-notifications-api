@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,45 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import play.api.Logger
-import uk.gov.hmrc.lock.LockKeeper
-import uk.gov.hmrc.play.scheduling.{ExclusiveScheduledJob, ScheduledJob}
+import com.typesafe.config.Config
+import uk.gov.hmrc.mongo.lock.LockService
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import java.time.Duration
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ScheduledMongoJob extends ExclusiveScheduledJob with ScheduledJobState {
+case class JobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, enabled: Boolean)
 
-  val lockKeeper: LockKeeper
+object JobConfig {
+  private implicit class ToFiniteDuration(d: Duration) {
+    def finite(): FiniteDuration = FiniteDuration(d.toNanos(), TimeUnit.NANOSECONDS)
+  }
+  def fromConfig(config: Config): JobConfig = {
+    new JobConfig(config.getDuration("initialDelay").finite, config.getDuration("interval").finite, config.getBoolean("enabled"))
+  }
+}
+
+trait ScheduledMongoJob extends ExclusiveScheduledJob with ScheduledJobState with ApplicationLogger {
+
+  val lockKeeper: LockService
+
   def isEnabled: Boolean
 
   def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful]
 
   override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
-    lockKeeper tryLock {
+    lockKeeper withLock {
       runJob
     } map {
       case Some(_) => Result(s"$name Job ran successfully.")
       case _ => Result(s"$name did not run because repository was locked by another instance of the scheduler.")
     } recover {
-      case failure: RunningOfJobFailed => {
-        Logger.error("The execution of the job failed.", failure.wrappedCause)
+      case failure: RunningOfJobFailed =>
+        logger.error("The execution of the job failed.", failure.wrappedCause)
         failure.asResult
-      }
     }
   }
 }
@@ -50,7 +65,7 @@ trait ScheduledJobState { e: ScheduledJob =>
   case object RunningOfJobSuccessful extends RunningOfJobSuccessful
 
   case class RunningOfJobFailed(jobName: String, wrappedCause: Throwable) extends RuntimeException {
-    def asResult = {
+    def asResult: Result = {
       Result(s"The execution of scheduled job $jobName failed with error '${wrappedCause.getMessage}'. " +
         s"The next execution of the job will do retry.")
     }

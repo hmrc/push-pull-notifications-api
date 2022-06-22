@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,12 @@ final case class BoxCreateFailedResult(message: String) extends CreateBoxResult
 sealed trait BoxCreateSuccessResult extends CreateBoxResult
 final case class BoxCreatedResult(box: Box) extends BoxCreateSuccessResult
 final case class BoxRetrievedResult(box: Box) extends BoxCreateSuccessResult
+
+sealed trait DeleteBoxResult
+final case class BoxDeleteFailedResult(message: String) extends DeleteBoxResult
+final case class BoxDeleteNotFoundResult() extends DeleteBoxResult
+final case class BoxDeleteAccessDeniedResult() extends DeleteBoxResult
+final case class BoxDeleteSuccessfulResult() extends DeleteBoxResult
 
 sealed trait NotificationCreateServiceResult
 
@@ -68,3 +74,9 @@ final case class BoxIdNotFound() extends UpdateCallbackUrlFailedResult
 final case class UnableToUpdateCallbackUrl(errorMessage: String) extends UpdateCallbackUrlFailedResult
 final case class CallbackValidationFailed(errorMessage: String) extends UpdateCallbackUrlFailedResult
 final case class UpdateCallbackUrlUnauthorisedResult() extends UpdateCallbackUrlFailedResult
+
+
+sealed trait ValidateBoxOwnerResult
+final case class ValidateBoxOwnerNotFoundResult(errorMessage: String) extends ValidateBoxOwnerResult
+final case class ValidateBoxOwnerSuccessResult() extends ValidateBoxOwnerResult
+final case class ValidateBoxOwnerFailedResult(errorMessage: String) extends ValidateBoxOwnerResult

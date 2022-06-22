@@ -1,27 +1,32 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID
-
 import akka.stream.scaladsl.Sink
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
+import org.mongodb.scala.{Document, bson}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.api.indexes.Index
-import reactivemongo.bson.BSONLong
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
-import uk.gov.hmrc.pushpullnotificationsapi.support.MongoApp
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbClient, DbNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with GuiceOneAppPerSuite {
+class NotificationRepositoryISpec
+    extends AsyncHmrcSpec
+    with BeforeAndAfterEach with BeforeAndAfterAll
+    with PlayMongoRepositorySupport[DbNotification]
+    with CleanMongoCollectionSupport
+    with GuiceOneAppPerSuite {
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
@@ -41,15 +46,20 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
 
   def repo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
   def boxRepo: BoxRepository = app.injector.instanceOf[BoxRepository]
+  override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-    dropMongoDb()
+
+  override def beforeEach() {
+    prepareDatabase()
     await(repo.ensureIndexes)
   }
 
-  def getIndex(indexName: String): Option[Index] ={
-    await(repo.collection.indexesManager.list().map(_.find(_.eventualName.equalsIgnoreCase(indexName))))
+
+  def getIndex(indexName: String): Option[Document] ={
+    await(repo.collection.listIndexes()
+      .filter(_.getString("name").equalsIgnoreCase(indexName))
+      .headOption()
+    )
   }
 
   private val boxIdStr = UUID.randomUUID().toString
@@ -63,9 +73,9 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
     "create ttl index and it should have correct value "in {
       val mayBeIndex = getIndex("create_datetime_ttl_idx")
       mayBeIndex shouldNot be(None)
-      val mayBeTtlValue: Option[Long] = mayBeIndex.flatMap(_.options.getAs[BSONLong]("expireAfterSeconds").map(_.as[Long]))
-      mayBeTtlValue  shouldNot be(None)
-      mayBeTtlValue.head shouldBe ttlTimeinSeconds
+      val mayBeTtlValue: Long = mayBeIndex.get("expireAfterSeconds")
+        .asNumber().longValue()
+      mayBeTtlValue shouldBe ttlTimeinSeconds
     }
     // to get full coverage we would need to try to get the index created with an expireAfterSeconds as a BSON value that is not a long
     // not sure their is any value in this test as we know we always create as a long
@@ -97,8 +107,9 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
 
       await(repo.saveNotification(notification))
 
-      val notifications: List[DbNotification] = await(repo.findAll())
-      notifications.head.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
+      val dbNotification: DbNotification = await(repo.collection.find()
+        .toFuture()).head
+        dbNotification.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
     }
 
     "not save duplicate Notifications" in {
@@ -123,7 +134,7 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
 
       await(repo.updateStatus(matchingNotificationId, ACKNOWLEDGED))
 
-      val notifications = await(repo.findAll())
+      val notifications = await(repo.collection.find().toFuture())
       notifications.find(_.notificationId == matchingNotificationId).get.status shouldBe ACKNOWLEDGED
       notifications.find(_.notificationId == nonMatchingNotificationId).get.status shouldBe PENDING
     }
@@ -147,7 +158,7 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
 
       await(repo.updateRetryAfterDateTime(matchingNotificationId, newDateTime))
 
-      val notifications = await(repo.findAll())
+      val notifications = await(repo.collection.find().toFuture())
       notifications.find(_.notificationId == matchingNotificationId).get.retryAfterDateTime shouldBe Some(newDateTime)
       notifications.find(_.notificationId == nonMatchingNotificationId).get.retryAfterDateTime shouldBe None
     }
@@ -275,6 +286,10 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
       val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING)))
       filteredList.isEmpty shouldBe false
       filteredList.size shouldBe 2
+
+      val filteredList2 = await(repo.getByBoxIdAndFilters(boxId, Some(ACKNOWLEDGED)))
+      filteredList2.isEmpty shouldBe false
+      filteredList2.size shouldBe 1
     }
 
 
@@ -379,8 +394,7 @@ class NotificationRepositoryISpec extends AsyncHmrcSpec with MongoApp with Guice
       val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
       returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
       returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
-
-      val result = await(repo.acknowledgeNotifications(boxId,notificationIdsToUpdate.map(_.value.toString)))
+      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate.map(_.value.toString)))
       result shouldBe true
 
       val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))

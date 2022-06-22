@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         verifyNoInteractions(mockNotificationService)
       }
 
-      "return 403 when useragent header is not whitelisted" in {
+      "return 403 when useragent header is not allowlisted" in {
         val result = doPost(s"/box/${boxId.raw}/notifications", headersWithInValidUserAgent, jsonBody)
         status(result) should be(FORBIDDEN)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,30 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
     }
 
+    "getBoxesByClientId" should {
+      "delegate to repo and return same list" in new Setup {
+        val boxes: List[Box] = List()
+        when(mockRepository.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(boxes))
+
+        val result = await(objInTest.getBoxesByClientId(clientId))
+
+        result should be theSameInstanceAs boxes
+
+        verify(mockRepository, times(1)).getBoxesByClientId(eqTo(clientId))
+      }
+    }
+
+    "getAllBoxes" in new Setup {
+      val boxes: List[Box] = List()
+      when(mockRepository.getAllBoxes()(*)).thenReturn(Future.successful(boxes))
+
+      val result = await(objInTest.getAllBoxes())
+
+      result should be theSameInstanceAs boxes
+
+      verify(mockRepository, times(1)).getAllBoxes()(*)
+    }
+
     "updateCallbackUrl" should {
       val applicationId = ApplicationId("123124")
 
@@ -182,7 +206,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
         result.isInstanceOf[CallbackUrlUpdated] shouldBe true
-        
+
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockRepository, times(1)).updateApplicationId(*[BoxId], *[ApplicationId])(*)
         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
@@ -268,12 +292,65 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         verifyNoInteractions(mockApiPlatformEventsConnector)
       }
     }
-  }
 
-  def validateBox(box: Box, expectedApplicationId: Option[ApplicationId]): Unit = {
-    box.boxName shouldBe boxName
-    box.subscriber.isDefined shouldBe false
-    box.boxCreator.clientId shouldBe clientId
-    box.applicationId shouldBe expectedApplicationId
+    "deleteBox" should {
+
+      "return BoxDeleteSuccessfulResult when a box is found by boxId" in new Setup {
+        val clientManagedBox: Box = box.copy(clientManaged = true)
+        when(mockRepository.findByBoxId(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
+        when(mockRepository.deleteBox(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future(BoxDeleteSuccessfulResult()))
+
+        val result: DeleteBoxResult = await(objInTest.deleteBox(clientManagedBox.boxCreator.clientId, clientManagedBox.boxId))
+        result shouldBe BoxDeleteSuccessfulResult()
+      }
+
+      "return BoxDeleteAccessDeniedResult when clientManaged is false" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.deleteBox(eqTo(box.boxId))(*)).thenReturn(Future(BoxDeleteAccessDeniedResult()))
+
+        val result: DeleteBoxResult = await(objInTest.deleteBox(clientId, boxId))
+        result shouldBe BoxDeleteAccessDeniedResult()
+      }
+
+      "return BoxDeleteNotFoundResult when the given clientId does not match the box's clientId" in new Setup {
+        val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
+        val clientManagedBox: Box = box.copy(clientManaged = true)
+
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
+
+        val result: DeleteBoxResult = await(objInTest.deleteBox(incorrectClientId, boxId))
+        result shouldBe BoxDeleteNotFoundResult()
+      }
+    }
+
+
+    "validateBoxOwner" should {
+
+      "return ValidateBoxOwnerSuccessResult when boxId is found and clientId matches" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
+        result.isInstanceOf[ValidateBoxOwnerSuccessResult] shouldBe true
+      }
+
+      "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, ClientId(UUID.randomUUID().toString)))
+        result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
+      }
+
+      "return ValidateBoxOwnerNotFoundResult when boxId is not found" in new Setup {
+        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(None))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
+        result.isInstanceOf[ValidateBoxOwnerNotFoundResult] shouldBe true
+      }
+    }
+
+
+    def validateBox(box: Box, expectedApplicationId: Option[ApplicationId]): Unit = {
+      box.boxName shouldBe boxName
+      box.subscriber.isDefined shouldBe false
+      box.boxCreator.clientId shouldBe clientId
+      box.applicationId shouldBe expectedApplicationId
+    }
   }
 }

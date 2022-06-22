@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fr
 
 
 
-private[repository] case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
+case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
 private[repository] object DbClient {
   def fromClient(client: Client, crypto: CompositeSymmetricCrypto): DbClient = {
     DbClient(client.id, client.secrets.map(fromClientSecret(_, crypto)))

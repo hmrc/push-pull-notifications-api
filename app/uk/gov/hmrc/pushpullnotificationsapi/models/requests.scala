@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
+case class CreateClientManagedBoxRequest(boxName: String)
+
 case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A])
   extends WrappedRequest[A](request)
 
@@ -35,6 +37,9 @@ case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String){
   }
 }
 
+case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
+
+case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
 
 
 // Notifications
