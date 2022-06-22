@@ -11,7 +11,7 @@ import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UN
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse, ValidateBoxOwnershipResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
@@ -124,6 +124,14 @@ class BoxControllerISpec extends ServerBaseISpec
       .withHttpHeaders(headers: _*)
       .get
       .futureValue
+
+  def callValidateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/cmb/validate")
+      .withHttpHeaders(headers: _*)
+      .post(jsonBody)
+      .futureValue
+
   // need to clean down mongo then run two
 
 
@@ -453,6 +461,7 @@ class BoxControllerISpec extends ServerBaseISpec
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
     }
   }
+
   "PUT /cmb/box/{boxId}/callback" should {
     val callbackUrl = "https://some.callback.url"
 
@@ -563,6 +572,34 @@ class BoxControllerISpec extends ServerBaseISpec
       val updateResult = callClientManagedUpdateCallbackUrlEndpoint(UUID.randomUUID().toString, "", validHeadersWithAcceptHeader)
       updateResult.status shouldBe BAD_REQUEST
       updateResult.body shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"JSON body is invalid against expected format\"}"
+    }
+  }
+
+  "POST /cmb/validate" should {
+    def validateBody(boxId: String, clientId: String): String = s"""{"boxId":"$boxId","clientId":"$clientId"}"""
+
+    "return 200 {valid: true} when boxId matches clientId" in {
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+      val response = callValidateBoxEndpoint( validateBody(createdBox.boxId.raw ,clientId), validHeadersWithAcceptHeader)
+      response.status shouldBe OK
+
+      val responseBody = Json.parse(response.body).as[ValidateBoxOwnershipResponse]
+      responseBody.valid shouldBe true
+    }
+
+    "return 200 {valid: false} when boxId does not match clientId" in {
+      val createdBox = createBoxAndCheckExistsWithNoSubscribers()
+      val response = callValidateBoxEndpoint( validateBody(createdBox.boxId.raw ,clientId2), validHeadersWithAcceptHeader)
+      response.status shouldBe OK
+
+      val responseBody = Json.parse(response.body).as[ValidateBoxOwnershipResponse]
+      responseBody.valid shouldBe false
+    }
+
+    "return 404 when boxId does not exist" in {
+      val response = callValidateBoxEndpoint( validateBody(UUID.randomUUID().toString,clientId), validHeadersWithAcceptHeader)
+      response.status shouldBe NOT_FOUND
+      response.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
   }
 

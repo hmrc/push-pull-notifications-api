@@ -39,6 +39,7 @@ case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String){
 
 case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
 
+case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
 
 
 // Notifications
