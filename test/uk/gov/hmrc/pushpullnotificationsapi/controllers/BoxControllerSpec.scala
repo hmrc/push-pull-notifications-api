@@ -419,15 +419,26 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
       }
 
-      "return 400 when unable to delete in db" in {
+      "return 422 when Left returned from Box Service" in {
         primeAuthAction(clientIdStr)
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
-          .thenReturn(Future.successful(BoxDeleteFailedResult("Fatal error occured in DB while deleting")))
+          .thenReturn(Future.successful(BoxDeleteFailedResult(s"Box with name :$boxName and clientId: $clientId but unable to delete")))
         val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader.toList)
-        status(result) should be(BAD_REQUEST)
-        (contentAsJson(result) \ "code").as[String] shouldBe "BAD_REQUEST"
-        (contentAsJson(result) \ "message").as[String] shouldBe "Fatal error occured in DB while deleting"
+        status(result) should be(UNPROCESSABLE_ENTITY)
+
+        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)
+      }
+
+      "return 500 when service fails with any runtime exception" in {
+        primeAuthAction(clientIdStr)
+
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+          .thenReturn(Future.failed(new RuntimeException("some error")))
+        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader.toList)
+        status(result) should be(INTERNAL_SERVER_ERROR)
+
+        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)
       }
     }
 

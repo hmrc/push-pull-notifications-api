@@ -103,10 +103,6 @@ class BoxRepository @Inject()(mongo: MongoComponent)
     collection.find(Filters.and(equal("boxName", Codecs.toBson(boxName)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
   }
 
-  def getBoxByBoxIdAndClientId(boxId: BoxId, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
-    collection.find(Filters.and(equal("boxId", Codecs.toBson(boxId)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
-  }
-
   def getBoxesByClientId(clientId: ClientId): Future[List[Box]] = {
     logger.info(s"Getting boxes by clientId: $clientId")
     collection.find(equal("boxCreator.clientId", Codecs.toBson(clientId.value))).toFuture().map(_.toList)

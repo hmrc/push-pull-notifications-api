@@ -93,7 +93,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
           case _: BoxDeleteSuccessfulResult => NoContent
           case _: BoxDeleteNotFoundResult => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case _: BoxDeleteAccessDeniedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access Denied"))
-          case failedResult: BoxDeleteFailedResult => BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, failedResult.message))
+          case failedResult: BoxDeleteFailedResult => UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to deleteBox:${failedResult.message}"))
         } recover recovery
       }
 
