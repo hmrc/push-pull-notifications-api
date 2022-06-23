@@ -90,7 +90,7 @@ class BoxRepositoryISpec
       fetchedRecords.size shouldBe 2
     }
 
-    "create a Box should throw and exception and only create box once when box with same name and client id called twice" in {
+    "create a Box should return BoxCreateFailedResult and only create a box once when box with same name and client id called twice" in {
       await(repo.createBox(box))
 
       val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
@@ -106,6 +106,29 @@ class BoxRepositoryISpec
       val result2 =  await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 1
+    }
+  }
+
+  "deleteBox" should {
+
+    "delete a Box given a valid boxId" in {
+      await(repo.createBox(box))
+      val fetchedRecordsOne = await(repo.collection.find().toFuture())
+      fetchedRecordsOne.size shouldBe 1
+
+      repo.deleteBox(box.boxId)
+      val fetchedRecords = await(repo.collection.find().toFuture())
+      fetchedRecords.size shouldBe 0
+    }
+
+    "not delete a Box given a boxId that doesn't exist" in {
+      await(repo.createBox(box))
+      val fetchedRecordsOne = await(repo.collection.find().toFuture())
+      fetchedRecordsOne.size shouldBe 1
+
+      repo.deleteBox(BoxId(UUID.randomUUID()))
       val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
     }
