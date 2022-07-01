@@ -201,3 +201,169 @@ uses:
                  description: The Content-Type header is incorrect
                  value:
                    code: BAD_REQUEST
+  /cmb/box:
+    put:
+      displayName: Create a client managed box
+      description: When given a valid bearer token and payload, a clinet managed box is created.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      is: [ headers.acceptHeader ]
+      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] } ]
+      (annotations.scope): "write:ppns-boxes"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      body:
+        application/json:
+          type: !include schemas/acknowledge.json
+          example: |
+            {
+              "boxName": "My first box"
+            }
+      responses:
+        201:
+          body:
+            application/json:
+              type: !include schemas/client_managed_box.json
+              example: |
+                [
+                  {
+                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+                  }
+                ]
+        200:
+          body:
+            application/json:
+              type: !include schemas/client_managed_box.json
+              example: |
+                [
+                  {
+                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+                  }
+                ]
+        400:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: JSON body is invalid against expected format
+                 value:
+                   code: INVALID_REQUEST_PAYLOAD
+        401:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: Invalid bearer token
+                 value:
+                   code: UNAUTHORISED
+               example-2:
+                 description: Bearer token expired
+                 value:
+                   code: UNAUTHORISED
+        403:
+         body:
+          application/json:
+            type: types.errorResponse
+            examples:
+              example-1:
+                description: Access Denied
+                value:
+                  code: FORBIDDEN
+              example-2:
+                description: Can not access the required resource. Ensure this token has all the required scopes
+                value:
+                  code: INVALID_SCOPE
+        404:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: A resource with the name in the request can not be found in the API
+                 value:
+                   code: MATCHING_RESOURCE_NOT_FOUND
+        406:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The Accept header is missing or invalid
+                 value:
+                   code: ACCEPT_HEADER_INVALID
+        415:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: Expecting text/json or application/json body
+                 value:
+                   code: BAD_REQUEST
+  /cmb/box/{boxId}:
+    uriParameters:
+      boxId:
+        description: Unique identifier for a box
+        type: string
+        required: true
+        example: 50dca3fc-c37c-4f03-b719-63571333624c
+    delete:
+      displayName: Delete a client managed box
+      description: Delete a client managed box when given a valid boxId
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      is: [headers.acceptHeader]
+      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] }  ]
+      (annotations.scope): "write:ppns-boxes"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      responses:
+        204:
+        401:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: Invalid bearer token
+                 value:
+                   code: UNAUTHORISED
+        403:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: Access Denied
+                 value:
+                   code: FORBIDDEN
+        404:
+         body:
+          application/json:
+            type: types.errorResponse
+            examples:
+              example-1:
+                description: Box not found
+                value:
+                  code: BOX_NOT_FOUND
+              example-2:
+                description: A resource with the name in the request can not be found in the API
+                value:
+                  code: MATCHING_RESOURCE_NOT_FOUND
+        406:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: The accept header is missing or invalid
+                 value:
+                   code: FACCEPT_HEADER_INVALID
