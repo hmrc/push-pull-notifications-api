@@ -305,6 +305,66 @@ uses:
                  description: Expecting text/json or application/json body
                  value:
                    code: BAD_REQUEST
+    get:
+      displayName: Get a list of boxes
+      description: Returns a list of boxes belonging to a specific Client ID which is passed in via auth.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:pull-notifications`.
+      is: [headers.acceptHeader]
+      securedBy: [ sec.x-application: { scopes: [ "read:ppns-boxes" ] }  ]
+      (annotations.scope): "read:ppns-boxes"
+      responses:
+        200:
+          body:
+            application/json:
+              type: !include schemas/client_managed_box.json
+              example: |
+                [
+                  {
+                    "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
+                    "boxName":"DEFAULT",
+                    "boxCreator":{
+                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+                    },
+                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+                    "subscriber":{
+                      "callBackUrl":"",
+                      "subscribedDateTime":"2022-06-15T14:24:24.385+0000",
+                      "subscriptionType":"API_PULL_SUBSCRIBER"
+                    },
+                    "clientManaged":false
+                  },
+                  {
+                    "boxId":"aca044b1-cd06-44a7-bd6b-bd7c58ea9ad4",
+                    "boxName":"My First Client Managed Box",
+                    "boxCreator":{
+                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+                    },
+                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+                    "clientManaged":true
+                  }
+                ]
+        401:
+          body:
+            application/json:
+              type: types.errorResponse
+              examples:
+                example-1:
+                  description: Invalid bearer token
+                  value:
+                    code: UNAUTHORISED
+                example-2:
+                  description: Bearer token not supplied
+                  value:
+                    code: UNAUTHORISED
+        406:
+          body:
+            application/json:
+              type: types.errorResponse
+              examples:
+                example-1:
+                  description: The Accept header is missing or invalid
+                  value:
+                    code: ACCEPT_HEADER_INVALID
   /cmb/box/{boxId}:
     uriParameters:
       boxId:
