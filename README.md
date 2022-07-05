@@ -313,6 +313,113 @@ HTTP Status: `200`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 | The accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
 
+## `PUT /cmb/box`
+Create a new client managed box
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-Type` | `application/json`
+| `Accept Header` | `application/vnd.hmrc.1.0+json`
+| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
+
+### Request
+```
+{
+   "boxName": "My first box"
+}
+```
+| Name | Description |
+| --- | --- |
+| `boxName` | The name of the box to create |
+
+
+### Response
+HTTP Status: `201` if the box is created
+```
+{
+    "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+}
+```
+
+HTTP Status: `200` if the box already exists
+```
+{
+    "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+}
+```
+
+### Error scenarios
+| Scenario | HTTP Status | Code |
+| --- | --- | --- |
+| Provided an invalid field value in request body | `400` | `INVALID_REQUEST_PAYLOAD`
+| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Provided a valid bearer token which belongs to a different client ID | `403` | `FORBIDDEN`
+| Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
+| Called the Create CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
+| Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
+| Missing or Invalid Content Type Header | `415` | `BAD_REQUEST`
+
+## `GET /cmb/box`
+Retrieve a list of all the boxes belonging to a specific Client ID which is passed in via auth
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Accept Header` | `application/vnd.hmrc.1.0+json`
+| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
+
+### Response
+HTTP Status: `200` list all boxes endpoint for a specific client ID
+```
+[
+   {
+      "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
+      "boxName":"DEFAULT",
+      "boxCreator":{
+         "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+      },
+      "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+      "subscriber":{
+         "callBackUrl":"",
+         "subscribedDateTime":"2022-06-15T14:24:24.385+0000",
+         "subscriptionType":"API_PULL_SUBSCRIBER"
+      },
+      "clientManaged":false
+   },
+   {
+      "boxId":"aca044b1-cd06-44a7-bd6b-bd7c58ea9ad4",
+      "boxName":"My First Client Managed Box",
+      "boxCreator":{
+         "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+      },
+      "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+      "clientManaged":true
+   }
+ ]
+```
+| Name | Description |
+| --- | --- |
+| `boxId` | Identifier for a box
+| `boxName` | The boxName will be returned as "DEFAULT" if clientManaged is false
+| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box
+| `subscriber` | Details of the subscriber to this box |
+| `subscriber.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
+| `subscriber.callBackUrl` | The URL of the endpoint where push notifications will be sent |
+| `subscriber.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
+| `clientManaged` | Boolean value to show if the box is client managed |
+
+HTTP Status: `200` list all boxes endpoint for a specific client ID which has no boxes
+```
+[]
+```
+
+### Error scenarios
+| Scenario | HTTP Status | Code |
+| --- | --- | --- |
+| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Called the endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
+
 # Run locally and call the API locally
 
 If you need to call any of the endpoints exposed over the API Platform, you need to pass in an valid bearer token for the application restricted endpoints:
