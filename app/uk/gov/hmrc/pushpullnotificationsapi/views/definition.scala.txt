@@ -11,6 +11,16 @@
       "key": "write:notifications",
       "name": "Write notifications",
       "description": "Write notifications"
+    },
+    {
+      "key": "write:ppns-boxes",
+      "name": "write ppns boxes",
+      "description": "Write ppns boxes"
+    },
+    {
+      "key": "read:ppns-boxes",
+      "name": "read ppns boxes",
+      "description": "Read ppns boxes"
     }
   ],
   "api": {

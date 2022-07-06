@@ -217,7 +217,7 @@ uses:
           example: application/json
       body:
         application/json:
-          type: !include schemas/acknowledge.json
+          type: !include schemas/client_managed_box.json
           example: |
             {
               "boxName": "My first box"
@@ -226,23 +226,19 @@ uses:
         201:
           body:
             application/json:
-              type: !include schemas/client_managed_box.json
+              type: !include schemas/created_client_managed_box.json
               example: |
-                [
                   {
                       "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
                   }
-                ]
         200:
           body:
             application/json:
-              type: !include schemas/client_managed_box.json
+              type: !include schemas/created_client_managed_box.json
               example: |
-                [
                   {
                       "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
                   }
-                ]
         400:
          body:
            application/json:
@@ -316,9 +312,8 @@ uses:
         200:
           body:
             application/json:
-              type: !include schemas/client_managed_box.json
+              type: !include schemas/get_client_managed_box.json
               example: |
-                [
                   {
                     "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
                     "boxName":"DEFAULT",
@@ -342,7 +337,6 @@ uses:
                     "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
                     "clientManaged":true
                   }
-                ]
         401:
           body:
             application/json:

@@ -420,6 +420,35 @@ HTTP Status: `200` list all boxes endpoint for a specific client ID which has no
 | Invalid or expired bearer token | `401` | `UNAUTHORISED`
 | Called the endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
 
+## `DELETE /cmb/box/:boxId`
+Delete a client managed box
+
+### Request headers
+| Name | Description |
+| --- | --- |
+| `Content-Type` | `application/json`
+| `Accept Header` | `application/vnd.hmrc.1.0+json`
+| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
+
+### Path parameters
+| Name | Description |
+| --- | --- |
+| `boxId` | Unique identifier for a box |
+
+
+### Response
+HTTP Status: `204` if the box is deleted
+
+### Error scenarios
+| Scenario | HTTP Status | Code |
+| --- | --- | --- |
+| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Attempt to delete a default box should not be allowed for example a default box | `403` | `FORBIDDEN`
+| Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
+| Response when attempting to delete a box with an ID that does not exist or belongs to a different client ID  | `404` | `BOX_NOT_FOUND`
+| Called the Delete CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
+| Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
+
 # Run locally and call the API locally
 
 If you need to call any of the endpoints exposed over the API Platform, you need to pass in an valid bearer token for the application restricted endpoints:
