@@ -353,7 +353,7 @@ HTTP Status: `200` if the box already exists
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
 | Provided an invalid field value in request body | `400` | `INVALID_REQUEST_PAYLOAD`
-| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
 | Provided a valid bearer token which belongs to a different client ID | `403` | `FORBIDDEN`
 | Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
 | Called the Create CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
@@ -417,7 +417,7 @@ HTTP Status: `200` list all boxes endpoint for a specific client ID which has no
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
 | Called the endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
 
 ## `DELETE /cmb/box/:boxId`
@@ -442,7 +442,7 @@ HTTP Status: `204` if the box is deleted
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
-| Invalid or expired bearer token | `401` | `UNAUTHORISED`
+| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
 | Attempt to delete a default box should not be allowed for example a default box | `403` | `FORBIDDEN`
 | Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
 | Response when attempting to delete a box with an ID that does not exist or belongs to a different client ID  | `404` | `BOX_NOT_FOUND`
