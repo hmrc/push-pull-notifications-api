@@ -304,7 +304,7 @@ uses:
     get:
       displayName: Get a list of boxes
       description: Returns a list of boxes belonging to a specific Client ID which is passed in via auth.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:pull-notifications`.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:ppns-boxes`.
       is: [headers.acceptHeader]
       securedBy: [ sec.x-application: { scopes: [ "read:ppns-boxes" ] }  ]
       (annotations.scope): "read:ppns-boxes"
