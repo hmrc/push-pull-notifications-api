@@ -248,50 +248,6 @@ uses:
                  description: JSON body is invalid against expected format
                  value:
                    code: INVALID_REQUEST_PAYLOAD
-        401:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: Invalid bearer token
-                 value:
-                   code: UNAUTHORIZED
-               example-2:
-                 description: Bearer token expired
-                 value:
-                   code: UNAUTHORIZED
-        403:
-         body:
-          application/json:
-            type: types.errorResponse
-            examples:
-              example-1:
-                description: Access Denied
-                value:
-                  code: FORBIDDEN
-              example-2:
-                description: Can not access the required resource. Ensure this token has all the required scopes
-                value:
-                  code: INVALID_SCOPE
-        404:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: A resource with the name in the request can not be found in the API
-                 value:
-                   code: MATCHING_RESOURCE_NOT_FOUND
-        406:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: The Accept header is missing or invalid
-                 value:
-                   code: ACCEPT_HEADER_INVALID
         415:
           body:
            application/json:
