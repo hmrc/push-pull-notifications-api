@@ -204,7 +204,7 @@ uses:
   /cmb/box:
     put:
       displayName: Create a client managed box
-      description: Create a client managed box with the given box name
+      description: Create a client managed box with the given box name.
         <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
       is: [ headers.acceptHeader ]
       securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] } ]
