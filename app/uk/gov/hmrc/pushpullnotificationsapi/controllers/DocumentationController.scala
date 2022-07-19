@@ -26,12 +26,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 @Singleton
 class DocumentationController @Inject()(appconfig: AppConfig, assets: Assets, cc: ControllerComponents) extends BackendController(cc) {
 
-
   def definition(): Action[AnyContent] = Action {
      Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
-  def raml(version: String, file: String): Action[AnyContent] = {
-    assets.at(s"/public/api/conf/$version", file)
+  def raml(version: String, file: String): Action[AnyContent] = Action {
+    Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
   }
 }
