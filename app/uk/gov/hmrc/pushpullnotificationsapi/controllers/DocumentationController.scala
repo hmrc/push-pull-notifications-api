@@ -37,19 +37,19 @@ class DocumentationController @Inject()(appconfig: AppConfig,
   }
 
   def raml(version: String, file: String): Action[AnyContent] = {
-    if (file == "application.ramll") {
-      testfunc1()
+    if (file == "application.raml") {
+      returnTemplatedRaml()
     }
     else {
-      testfunc2(version: String, file: String)
+      returnStaticAsset(version: String, file: String)
     }
   }
 
-  def testfunc1(): Action[AnyContent] = Action {
+  private def returnTemplatedRaml(): Action[AnyContent] = Action {
     Ok(txt.application(cmbEnabled)).as("application/text")
   }
 
-  def testfunc2(version: String, file: String): Action[AnyContent] = {
+  private def returnStaticAsset(version: String, file: String): Action[AnyContent] = {
     assets.at(s"/public/api/conf/$version", file)
  }
 }
