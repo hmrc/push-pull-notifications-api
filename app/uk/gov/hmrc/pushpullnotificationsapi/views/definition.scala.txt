@@ -1,29 +1,5 @@
 @(cmbEnabled: Boolean, apiStatus: String)
 {
-  "scopes": [
-    {
-      "key": "read:pull-notifications",
-      "name": "Read pull notifications",
-      "description": "Read pull notifications"
-    },
-    {
-      "key": "write:notifications",
-      "name": "Write notifications",
-      "description": "Write notifications"
-    }@if(cmbEnabled) {,
-
-    {
-      "key": "write:ppns-boxes",
-      "name": "write ppns boxes",
-      "description": "Write ppns boxes"
-    },
-    {
-      "key": "read:ppns-boxes",
-      "name": "read ppns boxes",
-      "description": "Read ppns boxes"
-    }
-    }
-  ],
   "api": {
     "name": "Push Pull Notifications",
     "description": "This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) \nnotifications. Notifications are create by other HMRC services.",

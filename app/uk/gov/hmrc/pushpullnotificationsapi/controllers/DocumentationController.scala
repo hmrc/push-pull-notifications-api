@@ -37,7 +37,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
   }
 
   def raml(version: String, file: String): Action[AnyContent] = {
-    if (file == "application.raml") {
+    if (file == "application.ramll") {
       testfunc1()
     }
     else {
@@ -50,7 +50,6 @@ class DocumentationController @Inject()(appconfig: AppConfig,
   }
 
   def testfunc2(version: String, file: String): Action[AnyContent] = {
-//    val file = "application.raml"
     assets.at(s"/public/api/conf/$version", file)
  }
 }
