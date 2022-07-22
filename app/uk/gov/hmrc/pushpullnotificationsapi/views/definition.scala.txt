@@ -1,5 +1,4 @@
-
-@(apiStatus: String)
+@(cmbEnabled: Boolean, apiStatus: String)
 {
   "scopes": [
     {
@@ -11,7 +10,8 @@
       "key": "write:notifications",
       "name": "Write notifications",
       "description": "Write notifications"
-    },
+    }@if(cmbEnabled) {,
+
     {
       "key": "write:ppns-boxes",
       "name": "write ppns boxes",
@@ -21,6 +21,7 @@
       "key": "read:ppns-boxes",
       "name": "read ppns boxes",
       "description": "Read ppns boxes"
+    }
     }
   ],
   "api": {

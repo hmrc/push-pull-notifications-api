@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import controllers.Assets
+import play.api.Configuration
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -24,13 +25,32 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 
 @Singleton
-class DocumentationController @Inject()(appconfig: AppConfig, assets: Assets, cc: ControllerComponents) extends BackendController(cc) {
+class DocumentationController @Inject()(appconfig: AppConfig,
+                                        assets: Assets,
+                                        cc: ControllerComponents,
+                                        configuration: Configuration) extends BackendController(cc) {
+
+  private lazy val cmbEnabled = configuration.getOptional[Boolean]("cmb.enabled").getOrElse(false)
 
   def definition(): Action[AnyContent] = Action {
-     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
+    Ok(txt.definition(cmbEnabled, appconfig.apiStatus)).as("application/json")
   }
 
-  def raml(version: String, file: String): Action[AnyContent] = Action {
-    Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
+  def raml(version: String, file: String): Action[AnyContent] = {
+    if (file == "application.raml") {
+      testfunc1()
+    }
+    else {
+      testfunc2(version: String, file: String)
+    }
   }
+
+  def testfunc1(): Action[AnyContent] = Action {
+    Ok(txt.application(cmbEnabled)).as("application/text")
+  }
+
+  def testfunc2(version: String, file: String): Action[AnyContent] = {
+//    val file = "application.raml"
+    assets.at(s"/public/api/conf/$version", file)
+ }
 }
