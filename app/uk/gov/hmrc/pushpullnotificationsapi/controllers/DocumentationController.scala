@@ -30,10 +30,8 @@ class DocumentationController @Inject()(appconfig: AppConfig,
                                         cc: ControllerComponents,
                                         configuration: Configuration) extends BackendController(cc) {
 
-  private lazy val cmbEnabled = appconfig.cmbEnabled
-
   def definition(): Action[AnyContent] = Action {
-    Ok(txt.definition(cmbEnabled, appconfig.apiStatus)).as("application/json")
+    Ok(txt.definition(appconfig.cmbEnabled, appconfig.apiStatus)).as("application/json")
   }
 
   def raml(version: String, file: String): Action[AnyContent] = {
@@ -46,7 +44,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
   }
 
   private def returnTemplatedRaml(): Action[AnyContent] = Action {
-    Ok(txt.application(cmbEnabled)).as("application/text")
+    Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
   }
 
   private def returnStaticAsset(version: String, file: String): Action[AnyContent] = {

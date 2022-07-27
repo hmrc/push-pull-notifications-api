@@ -38,7 +38,6 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
-
   override def beforeEach(): Unit = {
    reset(mockAppConfig)
   }
@@ -71,7 +70,9 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
     "raml" should {
       "return application.raml without cmb endpoints when cmb.enabled is false" in {
         when(mockAppConfig.cmbEnabled).thenReturn(false)
-        val result = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val result: Future[Result] = doGet("/api/conf/1.0/application.raml", Map.empty)
+
+        status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
         stringResult should not include ("/cmb/box:")
@@ -81,6 +82,8 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
       "return raml from twirl template with cmb endpoints when cmb.enabled is true" in {
         when(mockAppConfig.cmbEnabled).thenReturn(true)
         val result = doGet("/api/conf/1.0/application.raml", Map.empty)
+
+        status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
         stringResult should include ("/cmb/box:")
