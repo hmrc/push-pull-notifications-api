@@ -30,7 +30,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
                                         cc: ControllerComponents,
                                         configuration: Configuration) extends BackendController(cc) {
 
-  private lazy val cmbEnabled = configuration.getOptional[Boolean]("cmb.enabled").getOrElse(false)
+  private lazy val cmbEnabled = appconfig.cmbEnabled
 
   def definition(): Action[AnyContent] = Action {
     Ok(txt.definition(cmbEnabled, appconfig.apiStatus)).as("application/json")

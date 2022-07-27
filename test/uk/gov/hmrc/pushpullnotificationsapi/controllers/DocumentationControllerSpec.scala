@@ -53,7 +53,7 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         setUpAppConfig("ALPHA")
         val result = doGet("/api/definition", Map.empty)
 
-        val jsonResult = Helpers.contentAsJson(result) 
+        val jsonResult = Helpers.contentAsJson(result)
         (jsonResult \ "api" \ "versions" \ 0 \ "status").as[String] shouldBe "ALPHA"
         (jsonResult \ "api" \ "versions" \ 0 \ "endpointsEnabled").as[Boolean] shouldBe false
       }
@@ -62,9 +62,36 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         setUpAppConfig("BETA")
         val result = doGet("/api/definition", Map.empty)
 
-        val jsonResult = Helpers.contentAsJson(result) 
+        val jsonResult = Helpers.contentAsJson(result)
         (jsonResult \ "api" \ "versions" \ 0 \ "status").as[String] shouldBe "BETA"
         (jsonResult \ "api" \ "versions" \ 0 \ "endpointsEnabled").as[Boolean] shouldBe true
+      }
+    }
+
+    "raml" should {
+      "return application.raml without cmb endpoints when cmb.enabled is false" in {
+        when(mockAppConfig.cmbEnabled).thenReturn(false)
+        val result = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val stringResult = Helpers.contentAsString(result)
+
+        stringResult should not include ("/cmb/box:")
+        stringResult should not include ("/cmb/box/{boxId}:")
+      }
+
+      "return raml from twirl template with cmb endpoints when cmb.enabled is true" in {
+        when(mockAppConfig.cmbEnabled).thenReturn(true)
+        val result = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val stringResult = Helpers.contentAsString(result)
+
+        stringResult should include ("/cmb/box:")
+        stringResult should include ("/cmb/box/{boxId}:")
+      }
+
+      "return specified file when file is not application.raml" in {
+        val result = doGet("/api/conf/1.0/schemas/acknowledge.json", Map.empty)
+        val stringResult = Helpers.contentAsString(result)
+
+        stringResult should include ("\"title\": \"Acknowledge a list of notifications\"")
       }
     }
   }

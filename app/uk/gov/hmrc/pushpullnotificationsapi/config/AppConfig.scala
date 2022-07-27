@@ -40,7 +40,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val allowlistedUserAgentList: List[String] = config.underlying.getStringList("allowlisted.useragents").asScala.toList
 
   val apiStatus = config.get[String]("apiStatus")
-  val cmbEnabled = config.get[Boolean]("cmb.enabled")
+  val cmbEnabled: Boolean = config.getOptional[Boolean]("cmb.enabled").getOrElse(false)
   val authorizationToken: String = config.get[String]("authorizationKey")
   val mongoEncryptionKey: String = config.get[String]("mongodb.encryption.key")
 
