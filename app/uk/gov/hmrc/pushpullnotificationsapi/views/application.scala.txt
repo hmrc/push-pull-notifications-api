@@ -1,5 +1,4 @@
 @(cmbEnabled: Boolean)
-
 #%RAML 1.0
 ---
 title: Push Pull Notifications
