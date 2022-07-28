@@ -81,7 +81,7 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
 
       "return raml from twirl template with cmb endpoints when cmb.enabled is true" in {
         when(mockAppConfig.cmbEnabled).thenReturn(true)
-        val result = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val result: Future[Result] = doGet("/api/conf/1.0/application.raml", Map.empty)
 
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
@@ -91,10 +91,10 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
       }
 
       "return specified file when file is not application.raml" in {
-        val result = doGet("/api/conf/1.0/schemas/acknowledge.json", Map.empty)
-        val stringResult = Helpers.contentAsString(result)
+        val result: Future[Result] = doGet("/api/conf/1.0/schemas/acknowledge.json", Map.empty)
+        val jsonResult = Helpers.contentAsJson(result)
 
-        stringResult should include ("\"title\": \"Acknowledge a list of notifications\"")
+        (jsonResult \ "title").as[String] shouldBe "Acknowledge a list of notifications"
       }
     }
   }
