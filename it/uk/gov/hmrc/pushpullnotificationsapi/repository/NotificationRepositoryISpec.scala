@@ -6,6 +6,7 @@ import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.mongodb.scala.{Document, bson}
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -26,6 +27,7 @@ class NotificationRepositoryISpec
     with BeforeAndAfterEach with BeforeAndAfterAll
     with PlayMongoRepositorySupport[DbNotification]
     with CleanMongoCollectionSupport
+    with IntegrationPatience
     with GuiceOneAppPerSuite {
 
   private val fourAndHalfHoursInMins = 270

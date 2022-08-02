@@ -4,13 +4,13 @@ import play.sbt.PlayImport._
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-  lazy val bootstrapVersion = "6.4.0"
+  lazy val bootstrapVersion = "5.14.0"
   lazy val dependencies = Seq(
     ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  %  bootstrapVersion,
-    "uk.gov.hmrc"             %% "crypto"                     % "6.1.0",
+    "uk.gov.hmrc"             %% "crypto"                     % "5.6.0",
     "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.15.0-play-28",
-    "uk.gov.hmrc"             %% "domain"                     % "8.1.0-play-28",
+    "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"         % "0.68.0",
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",

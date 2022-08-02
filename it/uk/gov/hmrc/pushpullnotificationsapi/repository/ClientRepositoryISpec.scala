@@ -1,6 +1,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import org.mongodb.scala.MongoWriteException
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import java.util.UUID.randomUUID
@@ -17,6 +18,7 @@ class ClientRepositoryISpec
    extends AsyncHmrcSpec
    with BeforeAndAfterEach with BeforeAndAfterAll
    with PlayMongoRepositorySupport[DbClient]
+   with IntegrationPatience
    with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
