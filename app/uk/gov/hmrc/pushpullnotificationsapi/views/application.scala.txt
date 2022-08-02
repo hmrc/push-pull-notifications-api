@@ -1,3 +1,4 @@
+@(cmbEnabled: Boolean)
 #%RAML 1.0
 ---
 title: Push Pull Notifications
@@ -201,3 +202,128 @@ uses:
                  description: The Content-Type header is incorrect
                  value:
                    code: BAD_REQUEST
+@if(cmbEnabled) {
+  /cmb/box:
+    put:
+      displayName: Create a client managed box
+      description: Create a client managed box with the given box name.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      is: [ headers.acceptHeader ]
+      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] } ]
+      (annotations.scope): "write:ppns-boxes"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      body:
+        application/json:
+          type: !include schemas/client_managed_box.json
+          example: |
+            {
+              "boxName": "My first box"
+            }
+      responses:
+        201:
+          body:
+            application/json:
+              type: !include schemas/created_client_managed_box.json
+              example: |
+                  {
+                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+                  }
+        200:
+          body:
+            application/json:
+              type: !include schemas/created_client_managed_box.json
+              example: |
+                  {
+                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
+                  }
+        400:
+         body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: JSON body is invalid against expected format
+                 value:
+                   code: INVALID_REQUEST_PAYLOAD
+        415:
+          body:
+           application/json:
+             type: types.errorResponse
+             examples:
+               example-1:
+                 description: Expecting text/json or application/json body
+                 value:
+                   code: BAD_REQUEST
+    get:
+      displayName: Get a list of boxes
+      description: Returns a list of boxes belonging to a specific Client ID which is passed in via auth.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:ppns-boxes`.
+      is: [headers.acceptHeader]
+      securedBy: [ sec.x-application: { scopes: [ "read:ppns-boxes" ] }  ]
+      (annotations.scope): "read:ppns-boxes"
+      responses:
+        200:
+          body:
+            application/json:
+              type: !include schemas/get_client_managed_box.json
+              example: |
+                  {
+                    "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
+                    "boxName":"DEFAULT",
+                    "boxCreator":{
+                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+                    },
+                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+                    "subscriber":{
+                      "callBackUrl":"",
+                      "subscribedDateTime":"2022-06-15T14:24:24.385+0000",
+                      "subscriptionType":"API_PULL_SUBSCRIBER"
+                    },
+                    "clientManaged":false
+                  },
+                  {
+                    "boxId":"aca044b1-cd06-44a7-bd6b-bd7c58ea9ad4",
+                    "boxName":"My First Client Managed Box",
+                    "boxCreator":{
+                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
+                    },
+                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
+                    "clientManaged":true
+                  }
+  /cmb/box/{boxId}:
+    uriParameters:
+      boxId:
+        description: Unique identifier for a box
+        type: string
+        required: true
+        example: 50dca3fc-c37c-4f03-b719-63571333624c
+    delete:
+      displayName: Delete a client managed box
+      description: Delete a client managed box when given a valid boxId.
+        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      is: [headers.acceptHeader]
+      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] }  ]
+      (annotations.scope): "write:ppns-boxes"
+      headers:
+        Content-Type:
+          description: The format of the request body. This must be `application/json`.
+          type: string
+          required: true
+          example: application/json
+      responses:
+        204:
+        404:
+         body:
+          application/json:
+            type: types.errorResponse
+            examples:
+              example-1:
+                description: Box not found
+                value:
+                  code: BOX_NOT_FOUND
+}
