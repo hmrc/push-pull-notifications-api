@@ -31,7 +31,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
                                         configuration: Configuration) extends BackendController(cc) {
 
   def definition(): Action[AnyContent] = Action {
-    Ok(txt.definition(appconfig.cmbEnabled, appconfig.apiStatus)).as("application/json")
+    Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
   def raml(version: String, file: String): Action[AnyContent] = {

@@ -1,4 +1,4 @@
-@(cmbEnabled: Boolean, apiStatus: String)
+@(apiStatus: String)
 {
   "api": {
     "name": "Push Pull Notifications",
