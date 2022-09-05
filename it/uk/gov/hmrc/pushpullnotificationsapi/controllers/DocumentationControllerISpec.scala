@@ -60,7 +60,7 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
       }
 
       "provide raml documentation" in new Setup {
-        val result = documentationController.raml("1.0", "application.raml")(request)
+        val result = documentationController.ramlOrYaml("1.0", "application.raml")(request)
 
         status(result) shouldBe OK
         contentAsString(result) should startWith("#%RAML 1.0")
