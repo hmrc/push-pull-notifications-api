@@ -1,2 +1,2 @@
 GET        /api/definition                                  uk.gov.hmrc.pushpullnotificationsapi.controllers.DocumentationController.definition()
-GET        /api/conf/:version/*file                         uk.gov.hmrc.pushpullnotificationsapi.controllers.DocumentationController.raml(version, file)
+GET        /api/conf/:version/*file                         uk.gov.hmrc.pushpullnotificationsapi.controllers.DocumentationController.yaml(version, file)

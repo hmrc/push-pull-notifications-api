@@ -1,92 +1,176 @@
 @(cmbEnabled: Boolean)
-#%RAML 1.0
 ---
-title: Push Pull Notifications
-description: Use alongside your service to allow applications to receive asynchronous notifications. Use endpoints to pull or push notifications.
-version: 1.0
-
-protocols: [ HTTPS ]
-baseUri: https://api.service.hmrc.gov.uk/
-
-documentation:
- - title: Overview
-   content: !include docs/overview.md
- - title: Versioning
-   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/versioning.md
- - title: Errors
-   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/errors.md
- - title: Testing
-   content: !include docs/testing.md
-
-mediaType: application/json
-
-uses:
-  sec: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/securitySchemes.raml
-  headers: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/headers.raml
-  annotations: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/annotations.raml
-  types: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/types.raml
-
-/misc/push-pull-notification:
-  /box/{boxId}/notifications:
-    uriParameters:
-      boxId:
-        description: Unique identifier for a box
-        type: string
-        required: true
-        example: 50dca3fc-c37c-4f03-b719-63571333624c
+openapi: 3.0.0
+info:
+  title: Push Pull Notifications
+  description: "Use the Push Pull Notifications API to get notifications (pull) and
+    to send notifications (push) automatically.\n\nOther HMRC APIs create notifications
+    in response to events like asynchronous API requests.\n\nCheck if the HMRC API
+    you are using supports Push Pull Notifications in the API documentation.\n\nNotifications
+    will be deleted after 30 days.\n\n## Push notifications\n\nYou can enter a Push/Callback
+    URL after subscribing to an HMRC API that supports Push Pull Notifications. \n\nCreated
+    notifications are sent automatically by a POST request to the Push/Callback URL.
+    \n\nFor example, if the Push/Callback URL is set to `https://www.example.com/push`
+    when a notification is created, a POST\nrequest is sent to `https://www.example.com/push`
+    with a body similar to:\n\n`{\n    \"notificationId\": \"1ed5f407-8096-40d1-87ef-9a2a103eeb85\",\n    \"boxId\":
+    \"50dca3fc-c37c-4f03-b719-63571333624c\",\n    \"messageContentType\": \"application/json\",\n    \"message\":
+    \"{\\\"key\\\":\\\"value\\\"}\",\n    \"status\": \"PENDING\",\n    \"createdDateTime\":
+    \"2020-06-01T10:20:23.160+0000\"\n}\n`\n\nSee <a href=\"#_get-a-list-of-notifications_get_accordion\">get
+    a list of notifications</a> for details about the\nstructure of this JSON object.\n\nWhen
+    a notification is pushed its status will be `PENDING`. If your service responds
+    to this request with an HTTP status code 200, the notification status is updated
+    to `ACKNOWLEDGED`.\n\nIf your service responds with a different HTTP status code,
+    the notification status will remain as `PENDING` and the request is retried several
+    times over the next few hours.\n\nIf after a few hours, an HTTP status code 200
+    has not been received, the notification status is updated to `FAILED`.\n\n###
+    Validating the callback URL\n\nWhen you save a callback URL to receive push notifications
+    from an API, the system will try to verify it by sending a GET request to the
+    callback URL with the query parameter “challenge”.\n\nYou should return a 200
+    response with the challenge in the JSON response body. For example: \n\n<pre>\n{\n
+    \ “challenge”: “challenge_from_query_parameter”\n}\n</pre>\n\nIf we don’t receive
+    a successful response with a matching challenge within 20 seconds, the request
+    to save the callback URL will fail.\n\nYou will see an error message to inform
+    you that the callback URL is invalid.\n \n\n## Push Secret\n\nWhen you subscribe
+    to an API that sends Push notifications, we will generate a push secret you can
+    use to validate the payload signature and confirm notifications come from HMRC.\n\n###
+    Validate the payload signature\n\nUsing the push secret, HMRC will generate a
+    signature of the payload for every notification sent to the callback URL. \n\nThat
+    signature will be available in the HTTP header called `X-Hub-Signature`.\n\nWhen
+    receiving a notification, you should compute the signature of the payload using
+    the push secret and verify that it matches the value in the X-Hub-Signature header.\n\nThe
+    signature is calculated using HMAC-SHA1 and converted to hexadecimal format. For
+    example (example in Scala)\n\n<pre>\nimport java.nio.charset.StandardCharsets.UTF_8\nimport
+    javax.crypto.Mac\nimport javax.crypto.spec.SecretKeySpec\n\ndef sign(pushSecret:
+    String, payload: String): String = {\n val secretKey = new SecretKeySpec(pushSecret.getBytes(UTF_8),
+    \"HmacSHA1\")\n val mac = Mac.getInstance(\"HmacSHA1\")\n mac.init(secretKey)\n
+    mac.doFinal(payload.getBytes(UTF_8)).map(\"%02x\".format(_)).mkString\n}\n</pre>\n\nUsing
+    `sample key` as a pushSecret and `{\"sample\": \"payload\"}` as a payload, will
+    return the signature `c6cdd3e30021fe66d88d37088fed2566453eb7fb`.\n\n## Pull notifications\n\nRegardless
+    of whether a Push/Callback URL is set up, notifications can be retrieved by polling\n<a
+    href=\"#_get-a-list-of-notifications_get_accordion\">get a list of notifications</a>.\n\n**Avoid
+    breaking our rate limits and call the endpoint no more than once every 10 seconds.**\n\nYou
+    will need a Box Identifier to use this endpoint. A Box Identifier is made available
+    by the HMRC API you are using.\n\nWhen you have successfully processed the notification,
+    you can update its status to `ACKNOWLEDGED` by calling the \n<a href=\"#_acknowledge-a-list-of-notifications_put_accordion\">acknowledge
+    a list of notifications</a> endpoint.\n\n## Notification statuses\n\n* `PENDING`
+    means the notification was created but has not been processed\n* `FAILED` means
+    the notification was pushed to your Push/Callback URL, but no HTTP status code
+    200 was returned\n* `ACKNOWLEDGED` means the notification was successfully pushed
+    to your Push/Callback URL or you processed the\nnotification using the <a href=\"#_acknowledge-a-list-of-notifications_put_accordion\">acknowledge\na
+    list of notifications</a> endpoint\n\n## Processing notifications\n\nThe way to
+    process notifications is different for each HMRC API. Check the documentation
+    for the HMRC API you are using.\n\nNotification messages should include information
+    like a correlation or request identifier that allows notifications to\nbe identified.\nWhen
+    an API changes in a way that is backwards-incompatible, we increase the version
+    number of the API. \nSee our [reference guide](/api-documentation/docs/reference-guide#versioning)
+    for more on\nversioning.\nWe use standard HTTP status codes to show whether an
+    API request succeeded or not. They are usually in the range:\n* 200 to 299 if
+    it succeeded, including code 202 if it was accepted by an API that needs to wait
+    for further action\n* 400 to 499 if it failed because of a client error by your
+    application\n* 500 to 599 if it failed because of an error on our server\n\nErrors
+    specific to each API are shown in the Endpoints section, under Response. \nSee
+    our [reference guide](/api-documentation/docs/reference-guide#errors) for more
+    on errors.\nSubscribe to an HMRC API that supports Push Pull Notifications and
+    read the documentation for testing guidance."
+  contact: {}
+  version: '1.0'
+servers:
+- url: https://api.service.hmrc.gov.uk/
+  variables: {}
+paths:
+  "/misc/push-pull-notification/box/{boxId}/notifications":
     get:
-      displayName: Get a list of notifications
-      description: Returns a list of notifications that have been sent to a box.
-        <br><br>A maximum of 100 notifications will be returned. These will be ordered oldest first.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:pull-notifications`.
-      is: [headers.acceptHeader]
-#      TODO Documentation doesn't render the required scope !!!!!
-      securedBy: [ sec.x-application: { scopes: [ "read:pull-notifications" ] }  ]
-      (annotations.scope): "read:pull-notifications"
-      queryParameters:
-        status:
+      tags:
+      - misc
+      summary: Get a list of notifications
+      description: Returns a list of notifications that have been sent to a box. <br><br>A
+        maximum of 100 notifications will be returned. These will be ordered oldest
+        first. <br><br>The OAuth bearer token used by this endpoint must have the
+        scope `read:pull-notifications`.
+      operationId: Getalistofnotifications
+      parameters:
+      - name: boxId
+        in: path
+        description: Unique identifier for a box
+        required: true
+        style: simple
+        schema:
           type: string
-          description: Only return notifications with this status.<br>Either `PENDING`, `FAILED` or `ACKNOWLEDGED`.
-          required: false
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+      - name: status
+        in: query
+        description: Only return notifications with this status.<br>Either `PENDING`,
+          `FAILED` or `ACKNOWLEDGED`.
+        style: form
+        explode: true
+        schema:
+          type: string
           example: FAILED
-        fromDate:
+      - name: fromDate
+        in: query
+        description: Only return notifications created after this datetime.<br>ISO-8601
+          UTC date and time.
+        style: form
+        explode: true
+        schema:
           type: string
-          description: Only return notifications created after this datetime.<br>ISO-8601 UTC date and time.
-          required: false
-          example: 2020-06-03T14:20:54.987
-        toDate:
+          example: '2020-06-03T14:20:54.987'
+      - name: toDate
+        in: query
+        description: Only return notifications created before this datetime.<br>ISO-8601
+          UTC date and time.
+        style: form
+        explode: true
+        schema:
           type: string
-          description: Only return notifications created before this datetime.<br>ISO-8601 UTC date and time.
-          required: false
-          example: 2020-06-03T14:20:54.987
+          example: '2020-06-03T14:20:54.987'
       responses:
-        200:
-          body:
+        '200':
+          description: ''
+          headers: {}
+          content:
             application/json:
-              type: !include schemas/get_notifications.json
-              example: |
-                [
-                  {
-                      "notificationId": "1ed5f407-8096-40d1-87ef-9a2a103eeb85",
-                      "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
-                      "messageContentType": "application/json",
-                      "message": "{\"key\":\"value\"}",
-                      "status": "PENDING",
-                      "createdDateTime": "2020-06-01T10:20:23.160+0000"
-                  },
-                  {
-                      "notificationId": "86bb5f82-452e-49c8-88af-1f321d573960",
-                      "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
-                      "messageContentType": "application/xml",
-                      "message": "<someXml>xmlValue</someXml>",
-                      "status": "PENDING",
-                      "createdDateTime": "2020-06-02T10:27:33.613+0000"
-                  }
-                ]
-        400:
-          body:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Listofnotification"
+                description: ''
+                example:
+                - notificationId: 1ed5f407-8096-40d1-87ef-9a2a103eeb85
+                  boxId: 50dca3fc-c37c-4f03-b719-63571333624c
+                  messageContentType: application/json
+                  message: '{"key":"value"}'
+                  status: PENDING
+                  createdDateTime: '2020-06-01T10:20:23.160+0000'
+                - notificationId: 86bb5f82-452e-49c8-88af-1f321d573960
+                  boxId: 50dca3fc-c37c-4f03-b719-63571333624c
+                  messageContentType: application/xml
+                  message: "<someXml>xmlValue</someXml>"
+                  status: PENDING
+                  createdDateTime: '2020-06-02T10:27:33.613+0000'
+              example:
+              - notificationId: 1ed5f407-8096-40d1-87ef-9a2a103eeb85
+                boxId: 50dca3fc-c37c-4f03-b719-63571333624c
+                messageContentType: application/json
+                message: '{"key":"value"}'
+                status: PENDING
+                createdDateTime: '2020-06-01T10:20:23.160+0000'
+              - notificationId: 86bb5f82-452e-49c8-88af-1f321d573960
+                boxId: 50dca3fc-c37c-4f03-b719-63571333624c
+                messageContentType: application/xml
+                message: "<someXml>xmlValue</someXml>"
+                status: PENDING
+                createdDateTime: '2020-06-02T10:27:33.613+0000'
+        '400':
+          description: ''
+          headers: {}
+          content:
             application/json:
-              type: types.errorResponse
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BAD_REQUEST
               examples:
                 example-1:
                   description: The box identifier is not valid
@@ -96,234 +180,456 @@ uses:
                   description: The provided query parameters don't match the specification
                   value:
                     code: INVALID_REQUEST_PAYLOAD
-        403:
-          body:
+        '403':
+          description: ''
+          headers: {}
+          content:
             application/json:
-              type: types.errorResponse
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: FORBIDDEN
               examples:
                 example-1:
                   description: You do not have access to the specified box
                   value:
                     code: FORBIDDEN
-        404:
-          body:
+        '404':
+          description: ''
+          headers: {}
+          content:
             application/json:
-              type: types.errorResponse
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BOX_NOT_FOUND
               examples:
                 example-1:
                   description: The unique identifier for the box does not exist
                   value:
                     code: BOX_NOT_FOUND
-        406:
-          body:
+        '406':
+          description: ''
+          headers: {}
+          content:
             application/json:
-              type: types.errorResponse
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: ACCEPT_HEADER_INVALID
               examples:
                 example-1:
                   description: The accept header is missing or invalid
                   value:
                     code: ACCEPT_HEADER_INVALID
-  /box/{boxId}/notifications/acknowledge:
-    uriParameters:
-      boxId:
-        description: Unique identifier for a box
-        type: string
-        required: true
-        example: 50dca3fc-c37c-4f03-b719-63571333624c
+      deprecated: false
+  "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
     put:
-      displayName: Acknowledge a list of notifications
+      tags:
+      - misc
+      summary: Acknowledge a list of notifications
       description: Updates the status of one or more notifications to `ACKNOWLEDGED`.
-        <br><br>A maximum of 100 notifications will be updated.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:notifications`.
-      is: [headers.acceptHeader]
-       #      TODO Documentation doesn't render the required scope !!!!!
-      securedBy: [ sec.x-application: { scopes: [ "write:pull-notifications" ] }  ]
-      (annotations.scope): "write:notifications"
-      headers:
-        Content-Type:
-          description: The format of the request body. This must be `application/json`.
-          type: string
-          required: true
-          example: application/json
-      body:
-        application/json:
-          type: !include schemas/acknowledge.json
-          example: |
-            {
-              "notificationIds": [
-                "50dca3fc-c37c-4f03-b719-63571333624c",
-                "86bb5f82-452e-49c8-88af-1f321d573960"
-              ]
-            }
-      responses:
-        204:
-        400:
-          body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: The request body does not match the specification
-                 value:
-                   code: INVALID_REQUEST_PAYLOAD
-        403:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: You do not have access to the specified box
-                 value:
-                   code: FORBIDDEN
-        404:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: The unique identifier for the box does not exist
-                 value:
-                   code: BOX_NOT_FOUND
-        406:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: The Accept header is missing or invalid
-                 value:
-                   code: ACCEPT_HEADER_INVALID
-        415:
-          body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: The Content-Type header is incorrect
-                 value:
-                   code: BAD_REQUEST
-@if(cmbEnabled) {
-  /cmb/box:
-    put:
-      displayName: Create a client managed box
-      description: Create a client managed box with the given box name.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
-      is: [ headers.acceptHeader ]
-      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] } ]
-      (annotations.scope): "write:ppns-boxes"
-      headers:
-        Content-Type:
-          description: The format of the request body. This must be `application/json`.
-          type: string
-          required: true
-          example: application/json
-      body:
-        application/json:
-          type: !include schemas/client_managed_box.json
-          example: |
-            {
-              "boxName": "My first box"
-            }
-      responses:
-        201:
-          body:
-            application/json:
-              type: !include schemas/created_client_managed_box.json
-              example: |
-                  {
-                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
-                  }
-        200:
-          body:
-            application/json:
-              type: !include schemas/created_client_managed_box.json
-              example: |
-                  {
-                      "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
-                  }
-        400:
-         body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: JSON body is invalid against expected format
-                 value:
-                   code: INVALID_REQUEST_PAYLOAD
-        415:
-          body:
-           application/json:
-             type: types.errorResponse
-             examples:
-               example-1:
-                 description: Expecting text/json or application/json body
-                 value:
-                   code: BAD_REQUEST
-    get:
-      displayName: Get a list of boxes
-      description: Returns a list of boxes belonging to a specific Client ID which is passed in via auth.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `read:ppns-boxes`.
-      is: [headers.acceptHeader]
-      securedBy: [ sec.x-application: { scopes: [ "read:ppns-boxes" ] }  ]
-      (annotations.scope): "read:ppns-boxes"
-      responses:
-        200:
-          body:
-            application/json:
-              type: !include schemas/get_client_managed_box.json
-              example: |
-                  {
-                    "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
-                    "boxName":"DEFAULT",
-                    "boxCreator":{
-                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
-                    },
-                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
-                    "subscriber":{
-                      "callBackUrl":"",
-                      "subscribedDateTime":"2022-06-15T14:24:24.385+0000",
-                      "subscriptionType":"API_PULL_SUBSCRIBER"
-                    },
-                    "clientManaged":false
-                  },
-                  {
-                    "boxId":"aca044b1-cd06-44a7-bd6b-bd7c58ea9ad4",
-                    "boxName":"My First Client Managed Box",
-                    "boxCreator":{
-                      "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
-                    },
-                    "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
-                    "clientManaged":true
-                  }
-  /cmb/box/{boxId}:
-    uriParameters:
-      boxId:
+        <br><br>A maximum of 100 notifications will be updated. <br><br>The OAuth
+        bearer token used by this endpoint must have the scope `write:notifications`.
+      operationId: Acknowledgealistofnotifications
+      parameters:
+      - name: boxId
+        in: path
         description: Unique identifier for a box
-        type: string
         required: true
-        example: 50dca3fc-c37c-4f03-b719-63571333624c
-    delete:
-      displayName: Delete a client managed box
-      description: Delete a client managed box when given a valid boxId.
-        <br><br>The OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
-      is: [headers.acceptHeader]
-      securedBy: [ sec.x-application: { scopes: [ "write:ppns-boxes" ] }  ]
-      (annotations.scope): "write:ppns-boxes"
-      headers:
-        Content-Type:
-          description: The format of the request body. This must be `application/json`.
+        style: simple
+        schema:
           type: string
-          required: true
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              allOf:
+              - "$ref": "#/components/schemas/Acknowledgealistofnotifications"
+              - example:
+                  notificationIds:
+                  - 50dca3fc-c37c-4f03-b719-63571333624c
+                  - 86bb5f82-452e-49c8-88af-1f321d573960
+            example:
+              notificationIds:
+              - 50dca3fc-c37c-4f03-b719-63571333624c
+              - 86bb5f82-452e-49c8-88af-1f321d573960
+        required: true
+      responses:
+        '204':
+          description: ''
+          headers: {}
+          content: {}
+        '400':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: INVALID_REQUEST_PAYLOAD
+              examples:
+                example-1:
+                  description: The request body does not match the specification
+                  value:
+                    code: INVALID_REQUEST_PAYLOAD
+        '403':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: FORBIDDEN
+              examples:
+                example-1:
+                  description: You do not have access to the specified box
+                  value:
+                    code: FORBIDDEN
+        '404':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BOX_NOT_FOUND
+              examples:
+                example-1:
+                  description: The unique identifier for the box does not exist
+                  value:
+                    code: BOX_NOT_FOUND
+        '406':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: ACCEPT_HEADER_INVALID
+              examples:
+                example-1:
+                  description: The Accept header is missing or invalid
+                  value:
+                    code: ACCEPT_HEADER_INVALID
+        '415':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BAD_REQUEST
+              examples:
+                example-1:
+                  description: The Content-Type header is incorrect
+                  value:
+                    code: BAD_REQUEST
+      deprecated: false
+@if(cmbEnabled) {
+  "/misc/push-pull-notification/cmb/box":
+    put:
+      tags:
+      - misc
+      summary: Create a client managed box
+      description: Create a client managed box with the given box name. <br><br>The
+        OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      operationId: Createaclientmanagedbox
+      parameters: []
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              allOf:
+              - "$ref": "#/components/schemas/Createaclientmanagedbox"
+              - example:
+                  boxName: My first box
+            example:
+              boxName: My first box
+        required: true
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/Createdaclientmanagedbox"
+                - example:
+                    boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+              example:
+                boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+        '201':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/Createdaclientmanagedbox"
+                - example:
+                    boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+              example:
+                boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+        '400':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: INVALID_REQUEST_PAYLOAD
+              examples:
+                example-1:
+                  description: JSON body is invalid against expected format
+                  value:
+                    code: INVALID_REQUEST_PAYLOAD
+        '415':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BAD_REQUEST
+              examples:
+                example-1:
+                  description: Expecting text/json or application/json body
+                  value:
+                    code: BAD_REQUEST
+      deprecated: false
+    get:
+      tags:
+      - misc
+      summary: Get a list of boxes
+      description: Returns a list of boxes belonging to a specific Client ID which
+        is passed in via auth. <br><br>The OAuth bearer token used by this endpoint
+        must have the scope `read:ppns-boxes`.
+      operationId: Getalistofboxes
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/listofbox"
+                description: ''
+      deprecated: false
+  "/misc/push-pull-notification/cmb/box/{boxId}":
+    delete:
+      tags:
+      - misc
+      summary: Delete a client managed box
+      description: Delete a client managed box when given a valid boxId. <br><br>The
+        OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      operationId: Deleteaclientmanagedbox
+      parameters:
+      - name: boxId
+        in: path
+        description: Unique identifier for a box
+        required: true
+        style: simple
+        schema:
+          type: string
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+      - name: Content-Type
+        in: header
+        description: The format of the request body. This must be `application/json`.
+        required: true
+        style: simple
+        schema:
+          type: string
           example: application/json
       responses:
-        204:
-        404:
-         body:
-          application/json:
-            type: types.errorResponse
-            examples:
-              example-1:
-                description: Box not found
-                value:
-                  code: BOX_NOT_FOUND
+        '204':
+          description: ''
+          headers: {}
+          content: {}
+        '404':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+                - example:
+                    code: BOX_NOT_FOUND
+              examples:
+                example-1:
+                  description: Box not found
+                  value:
+                    code: BOX_NOT_FOUND
+      deprecated: false
 }
+components:
+  schemas:
+    errorResponse:
+      title: errorResponse
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          type: string
+    Acknowledgealistofnotifications:
+      title: Acknowledgealistofnotifications
+      required:
+      - notificationIds
+      type: object
+      properties:
+        notificationIds:
+          type: array
+          items:
+            type: string
+          description: Notification
+    Createaclientmanagedbox:
+      title: Createaclientmanagedbox
+      required:
+      - boxName
+      type: object
+      properties:
+        boxName:
+          type: string
+          description: Box Name
+          example: client ppns box
+    Createdaclientmanagedbox:
+      title: Createdaclientmanagedbox
+      required:
+      - boxId
+      type: object
+      properties:
+        boxId:
+          type: string
+          description: Box ID
+          example: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+    listofbox:
+      title: listofbox
+      required:
+      - boxId
+      - boxName
+      - boxCreator.clientId
+      - applicationId
+      - subscriber.callBackUrl
+      - subscriber.subscribedDateTime
+      - subscriber.subscriptionType
+      - clientManaged
+      type: object
+      properties:
+        boxId:
+          type: string
+          description: Unique identifier for a box the notification was sent to.
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+        boxName:
+          type: string
+          description: The boxName will be returned as "DEFAULT" if clientManaged
+            is false
+          example: client ppns box
+        boxCreator.clientId:
+          type: string
+          description: Developer Hub Application Client ID, that created and has access
+            to this box
+          example: A7JXjYo6Wn13k3l5SDBlV2Qgimsu
+        applicationId:
+          type: string
+          description: The application ID of the created box
+          example: 6722217f-25ce-423a-93cd-4d3d0c8af11c
+        subscriber.callBackUrl:
+          type: string
+          description: The URL of the endpoint where push notifications will be sent
+        subscriber.subscribedDateTime:
+          type: string
+          description: ISO-8601 UTC date and time that the subscription was created
+          example: '2022-06-15T14:24:24.385+0000'
+        subscriber.subscriptionType:
+          type: string
+          description: The type of subscriber. Currently only API_PUSH_SUBSCRIBER
+            is supported
+          example: API_PULL_SUBSCRIBER
+        clientManaged:
+          type: boolean
+          description: Boolean value to show if the box is client managed
+          example: true
+      description: Get a list of boxes
+    Listofnotification:
+      title: Listofnotification
+      required:
+      - notificationId
+      - boxId
+      - messageContentType
+      - message
+      - status
+      - createdDateTime
+      type: object
+      properties:
+        notificationId:
+          type: string
+          description: Unique identifier for a notification.
+          example: 86bb5f82-452e-49c8-88af-1f321d573960
+        boxId:
+          type: string
+          description: Unique identifier for a box the notification was sent to.
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+        messageContentType:
+          allOf:
+          - "$ref": "#/components/schemas/MessageContentType"
+          - description: Content type of the message.
+        message:
+          type: string
+          description: The notification message defined by messageContentType (JSON
+            or XML). If this is JSON then it will have been escaped. Details on the
+            structure of this data can be found in the documentation for the HMRC
+            API that created the notification.
+          example: '{\"key\":\"value\"}'
+        status:
+          allOf:
+          - "$ref": "#/components/schemas/Status"
+          - description: Status of the notification.
+        createdDateTime:
+          type: string
+          description: ISO-8601 UTC date and time the notification was created.
+          example: '2020-06-01T10:27:33.613+0000'
+      description: Notification
+    MessageContentType:
+      title: MessageContentType
+      enum:
+      - application/json
+      - application/xml
+      type: string
+      description: Content type of the message.
+    Status:
+      title: Status
+      enum:
+      - PENDING
+      - FAILED
+      - ACKNOWLEDGED
+      type: string
+      description: Status of the notification.
+tags:
+- name: misc
+  description: ''

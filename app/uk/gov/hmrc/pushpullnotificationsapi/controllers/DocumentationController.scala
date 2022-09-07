@@ -16,10 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import akka.stream.Materializer
 import controllers.Assets
 import play.api.Configuration
+
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.filters.cors.CORSActionBuilder
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.views.txt
@@ -34,16 +37,16 @@ class DocumentationController @Inject()(appconfig: AppConfig,
     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
-  def raml(version: String, file: String): Action[AnyContent] = {
-    if (file == "application.raml") {
-      returnTemplatedRaml()
+  def yaml(version: String, file: String): Action[AnyContent] = {
+    if (file == "application.yaml") {
+      returnTemplatedYaml()
     }
     else {
       returnStaticAsset(version: String, file: String)
     }
   }
 
-  private def returnTemplatedRaml(): Action[AnyContent] = Action {
+  private def returnTemplatedYaml(): Action[AnyContent] = Action {
     Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
   }
 

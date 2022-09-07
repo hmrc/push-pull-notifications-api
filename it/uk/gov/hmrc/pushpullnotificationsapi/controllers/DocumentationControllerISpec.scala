@@ -59,11 +59,11 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
         endpointsEnabledList.find(_ == false).size should be (endpointsEnabledList.size) // All instances of endpointsEnabled should be false
       }
 
-      "provide raml documentation" in new Setup {
-        val result = documentationController.raml("1.0", "application.raml")(request)
+      "provide yaml documentation" in new Setup {
+        val result = documentationController.yaml("1.0", "application.yaml")(request)
 
         status(result) shouldBe OK
-        contentAsString(result) should startWith("#%RAML 1.0")
+        contentAsString(result) should startWith("---")
       }
     }
 
