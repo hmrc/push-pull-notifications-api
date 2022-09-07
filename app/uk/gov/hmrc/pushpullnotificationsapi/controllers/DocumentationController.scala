@@ -41,7 +41,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
-  def ramlOrYaml(version: String, file: String): Action[AnyContent] = {
+  def yaml(version: String, file: String): Action[AnyContent] = {
     if (file == "application.yaml") {
       returnTemplatedYaml()
     }

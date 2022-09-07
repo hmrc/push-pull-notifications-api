@@ -67,10 +67,10 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
       }
     }
 
-    "raml" should {
-      "return application.raml without cmb endpoints when cmb.enabled is false" in {
+    "yaml" should {
+      "return application.yaml without cmb endpoints when cmb.enabled is false" in {
         when(mockAppConfig.cmbEnabled).thenReturn(false)
-        val result: Future[Result] = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val result: Future[Result] = doGet("/api/conf/1.0/application.yaml", Map.empty)
 
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
@@ -79,18 +79,18 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         stringResult should not include ("/cmb/box/{boxId}:")
       }
 
-      "return raml from twirl template with cmb endpoints when cmb.enabled is true" in {
+      "return yaml from twirl template with cmb endpoints when cmb.enabled is true" in {
         when(mockAppConfig.cmbEnabled).thenReturn(true)
-        val result: Future[Result] = doGet("/api/conf/1.0/application.raml", Map.empty)
+        val result: Future[Result] = doGet("/api/conf/1.0/application.yaml", Map.empty)
 
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
-        stringResult should include ("/cmb/box:")
-        stringResult should include ("/cmb/box/{boxId}:")
+        stringResult should include ("/misc/push-pull-notification/cmb/box")
+        stringResult should include ("/misc/push-pull-notification/cmb/box/{boxId}")
       }
 
-      "return specified file when file is not application.raml" in {
+      "return specified file when file is not application.yaml" in {
         val result: Future[Result] = doGet("/api/conf/1.0/schemas/acknowledge.json", Map.empty)
         val jsonResult = Helpers.contentAsJson(result)
 
