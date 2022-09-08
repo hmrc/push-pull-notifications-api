@@ -75,13 +75,16 @@ info:
   contact: {}
   version: '1.0'
 servers:
-- url: https://api.service.hmrc.gov.uk/
-  variables: {}
+  - url: https://test-api.service.hmrc.gov.uk
+    description: Sandbox
+  - url: https://api.service.hmrc.gov.uk
+    description: Production
+    variables: {}
 paths:
   "/misc/push-pull-notification/box/{boxId}/notifications":
     get:
       tags:
-      - misc
+      - push-pull-notification-api
       summary: Get a list of notifications
       description: Returns a list of notifications that have been sent to a box. <br><br>A
         maximum of 100 notifications will be returned. These will be ordered oldest
@@ -229,7 +232,7 @@ paths:
   "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
     put:
       tags:
-      - misc
+      - push-pull-notification-api
       summary: Acknowledge a list of notifications
       description: Updates the status of one or more notifications to `ACKNOWLEDGED`.
         <br><br>A maximum of 100 notifications will be updated. <br><br>The OAuth
@@ -345,7 +348,7 @@ paths:
   "/misc/push-pull-notification/cmb/box":
     put:
       tags:
-      - misc
+      - push-pull-notification-api
       summary: Create a client managed box
       description: Create a client managed box with the given box name. <br><br>The
         OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
@@ -421,7 +424,7 @@ paths:
       deprecated: false
     get:
       tags:
-      - misc
+      - push-pull-notification-api
       summary: Get a list of boxes
       description: Returns a list of boxes belonging to a specific Client ID which
         is passed in via auth. <br><br>The OAuth bearer token used by this endpoint
@@ -443,7 +446,7 @@ paths:
   "/misc/push-pull-notification/cmb/box/{boxId}":
     delete:
       tags:
-      - misc
+      - push-pull-notification-api
       summary: Delete a client managed box
       description: Delete a client managed box when given a valid boxId. <br><br>The
         OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
@@ -630,6 +633,3 @@ components:
       - ACKNOWLEDGED
       type: string
       description: Status of the notification.
-tags:
-- name: misc
-  description: ''
