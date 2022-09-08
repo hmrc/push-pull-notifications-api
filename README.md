@@ -488,5 +488,4 @@ curl --location --request GET 'http://localhost:6701/box/{box-id}/notifications'
 (Replacing the ```box-id``` with a valid local box-id and the ```Authorization: Bearer``` with the internal bearer token obtained in step 2)
 
 ### License
-
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
