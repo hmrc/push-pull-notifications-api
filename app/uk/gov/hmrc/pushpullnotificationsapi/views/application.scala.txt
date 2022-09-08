@@ -75,8 +75,11 @@ info:
   contact: {}
   version: '1.0'
 servers:
-- url: https://api.service.hmrc.gov.uk/
-  variables: {}
+  - url: https://test-api.service.hmrc.gov.uk
+    description: Sandbox
+  - url: https://api.service.hmrc.gov.uk
+    description: Production
+    variables: {}
 paths:
   "/misc/push-pull-notification/box/{boxId}/notifications":
     get:
@@ -632,4 +635,4 @@ components:
       description: Status of the notification.
 tags:
 - name: misc
-  description: ''
+  description: 'Push Pull Notifications'
