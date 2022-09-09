@@ -23,6 +23,8 @@ paths:
         scope `read:pull-notifications`.
       operationId: Getalistofnotifications
       parameters:
+      - $ref: '#/components/parameters/acceptHeader'
+      - $ref: '#/components/parameters/contentTypeHeader'
       - name: boxId
         in: path
         description: Unique identifier for a box
@@ -160,6 +162,9 @@ paths:
                   value:
                     code: ACCEPT_HEADER_INVALID
       deprecated: false
+      security:
+        - userRestricted:
+            - read:pull-notifications
   "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
     put:
       tags:
@@ -170,6 +175,8 @@ paths:
         bearer token used by this endpoint must have the scope `write:notifications`.
       operationId: Acknowledgealistofnotifications
       parameters:
+      - $ref: '#/components/parameters/acceptHeader'
+      - $ref: '#/components/parameters/contentTypeHeader'
       - name: boxId
         in: path
         description: Unique identifier for a box
@@ -275,6 +282,9 @@ paths:
                   value:
                     code: BAD_REQUEST
       deprecated: false
+      security:
+        - userRestricted:
+            - write:pull-notifications
 @if(cmbEnabled) {
   "/misc/push-pull-notification/cmb/box":
     put:
@@ -353,6 +363,9 @@ paths:
                   value:
                     code: BAD_REQUEST
       deprecated: false
+      security:
+        - userRestricted:
+            - write:ppns-boxes
     get:
       tags:
       - push-pull-notification-api
@@ -374,6 +387,9 @@ paths:
                   "$ref": "#/components/schemas/listofbox"
                 description: ''
       deprecated: false
+      security:
+        - userRestricted:
+            - read:ppns-boxes
   "/misc/push-pull-notification/cmb/box/{boxId}":
     delete:
       tags:
@@ -420,8 +436,51 @@ paths:
                   value:
                     code: BOX_NOT_FOUND
       deprecated: false
+      security:
+        - userRestricted:
+            - write:ppns-boxes
 }
 components:
+  securitySchemes:
+    userRestricted:
+      type: oauth2
+      description: |
+        HMRC supports OAuth 2.0 for authenticating user-restricted API requests using an OAuth 2.0 Bearer Token in the
+        AUTHORIZATION header.
+        See https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints for details.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          scopes:
+            read:pull-notifications: Grant read only access to list notifications
+            write:pull-notifications: Grant write access to acknowledge notifications
+            read:ppns-boxes: Grant read only access to list ppns boxes
+            write:ppns-boxes: Grant write access to update or delete ppns boxes
+ parameters:
+    acceptHeader:
+      name: Accept
+      in: header
+      description: |
+        Specifies the response format and the [version](/api-documentation/docs/reference-guide#versioning) of the API to be used.
+
+        For example: application/vnd.hmrc.1.0+json
+      schema:
+        type: string
+        enum: [
+            "application/vnd.hmrc.1.0+json"
+        ]
+      required: true
+    contentTypeHeader:
+      name: Content-Type
+      in: header
+      description:
+        The media type of the request body. This must be application/json.
+      schema:
+        type: string
+        enum: [
+            "application/json"
+        ]
+      required: true
   schemas:
     errorResponse:
       title: errorResponse
