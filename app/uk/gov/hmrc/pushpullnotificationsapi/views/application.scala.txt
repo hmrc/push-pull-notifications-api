@@ -284,7 +284,7 @@ paths:
       deprecated: false
       security:
         - userRestricted:
-            - write:pull-notifications
+            - write:notifications
 @if(cmbEnabled) {
   "/misc/push-pull-notification/cmb/box":
     put:
@@ -453,7 +453,7 @@ components:
           tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
           scopes:
             read:pull-notifications: Grant read only access to list notifications
-            write:pull-notifications: Grant write access to acknowledge notifications
+            write:notifications: Grant write access to acknowledge notifications
             read:ppns-boxes: Grant read only access to list ppns boxes
             write:ppns-boxes: Grant write access to update or delete ppns boxes
   parameters:
