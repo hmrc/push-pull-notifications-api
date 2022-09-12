@@ -1,6 +1,6 @@
 @(cmbEnabled: Boolean)
 ---
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: Push Pull Notifications
   contact: {}
@@ -456,7 +456,7 @@ components:
             write:pull-notifications: Grant write access to acknowledge notifications
             read:ppns-boxes: Grant read only access to list ppns boxes
             write:ppns-boxes: Grant write access to update or delete ppns boxes
- parameters:
+  parameters:
     acceptHeader:
       name: Accept
       in: header
