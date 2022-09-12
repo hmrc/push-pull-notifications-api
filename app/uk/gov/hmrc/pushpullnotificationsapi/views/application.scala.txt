@@ -24,7 +24,6 @@ paths:
       operationId: Getalistofnotifications
       parameters:
       - $ref: '#/components/parameters/acceptHeader'
-      - $ref: '#/components/parameters/contentTypeHeader'
       - name: boxId
         in: path
         description: Unique identifier for a box
@@ -163,7 +162,7 @@ paths:
                     code: ACCEPT_HEADER_INVALID
       deprecated: false
       security:
-        - userRestricted:
+        - applicationRestricted:
             - read:pull-notifications
   "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
     put:
@@ -283,7 +282,7 @@ paths:
                     code: BAD_REQUEST
       deprecated: false
       security:
-        - userRestricted:
+        - applicationRestricted:
             - write:notifications
 @if(cmbEnabled) {
   "/misc/push-pull-notification/cmb/box":
@@ -364,7 +363,7 @@ paths:
                     code: BAD_REQUEST
       deprecated: false
       security:
-        - userRestricted:
+        - applicationRestricted:
             - write:ppns-boxes
     get:
       tags:
@@ -388,7 +387,7 @@ paths:
                 description: ''
       deprecated: false
       security:
-        - userRestricted:
+        - applicationRestricted:
             - read:ppns-boxes
   "/misc/push-pull-notification/cmb/box/{boxId}":
     delete:
@@ -437,12 +436,12 @@ paths:
                     code: BOX_NOT_FOUND
       deprecated: false
       security:
-        - userRestricted:
+        - applicationRestricted:
             - write:ppns-boxes
 }
 components:
   securitySchemes:
-    userRestricted:
+    applicationRestricted:
       type: oauth2
       description: |
         HMRC supports OAuth 2.0 for authenticating user-restricted API requests using an OAuth 2.0 Bearer Token in the
@@ -454,8 +453,10 @@ components:
           scopes:
             read:pull-notifications: Grant read only access to list notifications
             write:notifications: Grant write access to acknowledge notifications
+            @if(cmbEnabled) {
             read:ppns-boxes: Grant read only access to list ppns boxes
             write:ppns-boxes: Grant write access to update or delete ppns boxes
+            }
   parameters:
     acceptHeader:
       name: Accept
