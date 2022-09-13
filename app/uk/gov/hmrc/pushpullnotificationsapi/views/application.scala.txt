@@ -6,13 +6,13 @@ info:
   contact: {}
   version: '1.0'
 servers:
-  - url: https://test-api.service.hmrc.gov.uk
+  - url: https://test-api.service.hmrc.gov.uk/misc/push-pull-notification
     description: Sandbox
-  - url: https://api.service.hmrc.gov.uk
+  - url: https://api.service.hmrc.gov.uk/misc/push-pull-notification
     description: Production
     variables: {}
 paths:
-  "/misc/push-pull-notification/box/{boxId}/notifications":
+  "/box/{boxId}/notifications":
     get:
       tags:
       - push-pull-notification-api
@@ -164,7 +164,7 @@ paths:
       security:
         - applicationRestricted:
             - read:pull-notifications
-  "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
+  "/box/{boxId}/notifications/acknowledge":
     put:
       tags:
       - push-pull-notification-api
@@ -285,7 +285,7 @@ paths:
         - applicationRestricted:
             - write:notifications
 @if(cmbEnabled) {
-  "/misc/push-pull-notification/cmb/box":
+  "/cmb/box":
     put:
       tags:
       - push-pull-notification-api
@@ -308,7 +308,7 @@ paths:
         required: true
       responses:
         '200':
-          description: ''
+          description: 'Box with given name already exists'
           headers: {}
           content:
             application/json:
@@ -320,7 +320,7 @@ paths:
               example:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '201':
-          description: ''
+          description: 'New box created'
           headers: {}
           content:
             application/json:
@@ -389,7 +389,7 @@ paths:
       security:
         - applicationRestricted:
             - read:ppns-boxes
-  "/misc/push-pull-notification/cmb/box/{boxId}":
+  "/cmb/box/{boxId}":
     delete:
       tags:
       - push-pull-notification-api
