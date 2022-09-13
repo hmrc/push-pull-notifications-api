@@ -25,7 +25,7 @@ request is sent to `https://www.example.com/push` with a body similar to:
 }
 `
 
-See [get a list of notifications](oas/page#tag/push-pull-notification-api/operation/Getalistofnotifications) for details about the
+See [get a list of notifications](1.0/oas/page#tag/push-pull-notification-api/operation/Getalistofnotifications) for details about the
 structure of this JSON object.
 
 When a notification is pushed its status will be `PENDING`. If your service responds to this request with an HTTP status code 200, the notification status is updated to `ACKNOWLEDGED`.
@@ -82,21 +82,21 @@ Using `sample key` as a pushSecret and `{"sample": "payload"}` as a payload, wil
 
 ## Pull notifications
 
-Regardless of whether a Push/Callback URL is set up, notifications can be retrieved by polling [get a list of notifications](oas/page#tag/push-pull-notification-api/operation/Getalistofnotifications)
+Regardless of whether a Push/Callback URL is set up, notifications can be retrieved by polling [get a list of notifications](1.0/oas/page#tag/push-pull-notification-api/operation/Getalistofnotifications)
 
 **Avoid breaking our rate limits and call the endpoint no more than once every 10 seconds.**
 
 You will need a Box Identifier to use this endpoint. A Box Identifier is made available by the HMRC API you are using.
 
 When you have successfully processed the notification, you can update its status to `ACKNOWLEDGED` by calling the 
-[acknowledge a list of notifications](oas/page#tag/push-pull-notification-api/operation/Acknowledgealistofnotifications) endpoint.
+[acknowledge a list of notifications](1.0/oas/page#tag/push-pull-notification-api/operation/Acknowledgealistofnotifications) endpoint.
 
 ## Notification statuses
 
 * `PENDING` means the notification was created but has not been processed
 * `FAILED` means the notification was pushed to your Push/Callback URL, but no HTTP status code 200 was returned
 * `ACKNOWLEDGED` means the notification was successfully pushed to your Push/Callback URL or you processed the
-notification using the [acknowledge a list of notifications](oas/page#tag/push-pull-notification-api/operation/Acknowledgealistofnotifications) endpoint
+notification using the [acknowledge a list of notifications](1.0/oas/page#tag/push-pull-notification-api/operation/Acknowledgealistofnotifications) endpoint
 
 ## Processing notifications
 
