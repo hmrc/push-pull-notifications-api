@@ -86,8 +86,8 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
-        stringResult should include ("/misc/push-pull-notification/cmb/box")
-        stringResult should include ("/misc/push-pull-notification/cmb/box/{boxId}")
+        stringResult should include ("/cmb/box")
+        stringResult should include ("/cmb/box/{boxId}")
       }
 
       "return specified file when file is not application.yaml" in {
