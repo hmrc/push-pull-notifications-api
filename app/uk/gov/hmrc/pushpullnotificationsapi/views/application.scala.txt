@@ -198,7 +198,7 @@ paths:
         required: true
       responses:
         '204':
-          description: ''
+          description: No Content
         '400':
           description: Bad Request
           content:
@@ -402,7 +402,7 @@ paths:
           example: application/json
       responses:
         '204':
-          description: ''
+          description: No Content
         '404':
           description: Not Found
           content:
