@@ -199,7 +199,6 @@ paths:
       responses:
         '204':
           description: ''
-          content: {}
         '400':
           description: Bad Request
           content:
@@ -321,7 +320,6 @@ paths:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '400':
           description: Bad Request
-          headers: {}
           content:
             application/json:
               schema:
@@ -364,7 +362,7 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: OK
           headers: {}
           content:
             application/json:
@@ -404,7 +402,7 @@ paths:
           example: application/json
       responses:
         '204':
-          description: No Content
+          description: ''
         '404':
           description: Not Found
           content:
