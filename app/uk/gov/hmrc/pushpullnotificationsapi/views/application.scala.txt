@@ -61,8 +61,7 @@ paths:
           example: '2020-06-03T14:20:54.987'
       responses:
         '200':
-          description: ''
-          headers: {}
+          description: OK
           content:
             application/json:
               schema:
@@ -97,8 +96,7 @@ paths:
                 status: PENDING
                 createdDateTime: '2020-06-02T10:27:33.613+0000'
         '400':
-          description: ''
-          headers: {}
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -116,7 +114,7 @@ paths:
                   value:
                     code: INVALID_REQUEST_PAYLOAD
         '403':
-          description: ''
+          description: Forbidden
           headers: {}
           content:
             application/json:
@@ -131,8 +129,7 @@ paths:
                   value:
                     code: FORBIDDEN
         '404':
-          description: ''
-          headers: {}
+          description: Not Found
           content:
             application/json:
               schema:
@@ -146,8 +143,7 @@ paths:
                   value:
                     code: BOX_NOT_FOUND
         '406':
-          description: ''
-          headers: {}
+          description: Not Acceptable
           content:
             application/json:
               schema:
@@ -203,11 +199,9 @@ paths:
       responses:
         '204':
           description: ''
-          headers: {}
           content: {}
         '400':
-          description: ''
-          headers: {}
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -221,8 +215,7 @@ paths:
                   value:
                     code: INVALID_REQUEST_PAYLOAD
         '403':
-          description: ''
-          headers: {}
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -236,8 +229,7 @@ paths:
                   value:
                     code: FORBIDDEN
         '404':
-          description: ''
-          headers: {}
+          description: Not Found
           content:
             application/json:
               schema:
@@ -251,8 +243,7 @@ paths:
                   value:
                     code: BOX_NOT_FOUND
         '406':
-          description: ''
-          headers: {}
+          description: Not Acceptable
           content:
             application/json:
               schema:
@@ -266,8 +257,7 @@ paths:
                   value:
                     code: ACCEPT_HEADER_INVALID
         '415':
-          description: ''
-          headers: {}
+          description: Unsupported Media-type
           content:
             application/json:
               schema:
@@ -309,7 +299,6 @@ paths:
       responses:
         '200':
           description: 'Box with given name already exists'
-          headers: {}
           content:
             application/json:
               schema:
@@ -321,7 +310,6 @@ paths:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '201':
           description: 'New box created'
-          headers: {}
           content:
             application/json:
               schema:
@@ -332,7 +320,7 @@ paths:
               example:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '400':
-          description: ''
+          description: Bad Request
           headers: {}
           content:
             application/json:
@@ -347,7 +335,7 @@ paths:
                   value:
                     code: INVALID_REQUEST_PAYLOAD
         '415':
-          description: ''
+          description: Unsupported Media-type
           headers: {}
           content:
             application/json:
@@ -416,12 +404,9 @@ paths:
           example: application/json
       responses:
         '204':
-          description: ''
-          headers: {}
-          content: {}
+          description: No Content
         '404':
-          description: ''
-          headers: {}
+          description: Not Found
           content:
             application/json:
               schema:
