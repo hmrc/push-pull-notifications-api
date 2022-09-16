@@ -215,21 +215,6 @@ paths:
                       "code": "INVALID_REQUEST_PAYLOAD",
                       "message": "Invalid / Unknown query parameter provided"
                     }
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                allOf:
-                - "$ref": "#/components/schemas/errorResponse"
-              examples:
-                example-1:
-                  description: You do not have access to the specified box
-                  value:
-                    {
-                      "code": "FORBIDDEN",
-                      "message": "Authorisation failed"
-                    }
         '404':
           description: Not Found
           content:
@@ -288,7 +273,9 @@ paths:
       description: Create a client managed box with the given box name. <br><br>The
         OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
       operationId: Createaclientmanagedbox
-      parameters: []
+      parameters:
+      - $ref: '#/components/parameters/acceptHeader'
+      - $ref: '#/components/parameters/contentTypeHeader'
       requestBody:
         description: ''
         content:
@@ -342,13 +329,13 @@ paths:
             application/json:
               schema:
                 allOf:
-                - "$ref": "#/components/schemas/errorResponse"
+                - "$ref": "#/components/schemas/frameworkErrorResponse"
               examples:
                 example-1:
                   description: Expecting text/json or application/json body
                   value:
                     {
-                      "code": "BAD_REQUEST",
+                      "statusCode": 400,
                       "message": "Expecting text/json or application/json body"
                     }
       deprecated: false
@@ -363,7 +350,8 @@ paths:
         is passed in via auth. <br><br>The OAuth bearer token used by this endpoint
         must have the scope `read:ppns-boxes`.
       operationId: Getalistofboxes
-      parameters: []
+      parameters:
+      - $ref: '#/components/parameters/acceptHeader'
       responses:
         '200':
           description: OK
@@ -375,6 +363,21 @@ paths:
                 items:
                   "$ref": "#/components/schemas/listofbox"
                 description: ''
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: The Accept header is missing or invalid
+                  value:
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
+                    }
       deprecated: false
       security:
         - applicationRestricted:
@@ -388,6 +391,7 @@ paths:
         OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
       operationId: Deleteaclientmanagedbox
       parameters:
+      - $ref: '#/components/parameters/acceptHeader'
       - name: boxId
         in: path
         description: Unique identifier for a box
@@ -396,14 +400,6 @@ paths:
         schema:
           type: string
           example: 50dca3fc-c37c-4f03-b719-63571333624c
-      - name: Content-Type
-        in: header
-        description: The format of the request body. This must be `application/json`.
-        required: true
-        style: simple
-        schema:
-          type: string
-          example: application/json
       responses:
         '204':
           description: No Content
