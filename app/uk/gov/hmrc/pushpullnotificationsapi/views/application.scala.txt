@@ -124,7 +124,7 @@ paths:
                   value:
                     {
                       "code": "FORBIDDEN",
-                      "message": "Authorisation failed"
+                      "message": "Access denied"
                     }
 
         '404':
@@ -229,7 +229,7 @@ paths:
                   value:
                     {
                       "code": "FORBIDDEN",
-                      "message": "Authorisation failed"
+                      "message": "Access denied"
                     }
         '404':
           description: Not Found
