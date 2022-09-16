@@ -124,7 +124,7 @@ paths:
                   value:
                     {
                       "code": "FORBIDDEN",
-                      "message": "Authorisation failed"
+                      "message": "Access denied"
                     }
 
         '404':
@@ -214,6 +214,22 @@ paths:
                     {
                       "code": "INVALID_REQUEST_PAYLOAD",
                       "message": "Invalid / Unknown query parameter provided"
+                    }
+        '403':
+          description: Forbidden
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: You do not have access to the specified box
+                  value:
+                    {
+                      "code": "FORBIDDEN",
+                      "message": "Access denied"
                     }
         '404':
           description: Not Found
