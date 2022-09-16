@@ -102,17 +102,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BAD_REQUEST
               examples:
                 example-1:
                   description: The box identifier is not valid
                   value:
-                    code: BAD_REQUEST
-                example-2:
-                  description: The provided query parameters don't match the specification
-                  value:
-                    code: INVALID_REQUEST_PAYLOAD
+                    {
+                      "code": "BAD_REQUEST",
+                      "message": "Expecting text/json or application/json body"
+                    }
         '403':
           description: Forbidden
           headers: {}
@@ -121,13 +118,15 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: FORBIDDEN
               examples:
                 example-1:
                   description: You do not have access to the specified box
                   value:
-                    code: FORBIDDEN
+                    {
+                      "code": "FORBIDDEN",
+                      "message": "Authorisation failed"
+                    }
+
         '404':
           description: Not Found
           content:
@@ -135,13 +134,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BOX_NOT_FOUND
               examples:
                 example-1:
                   description: The unique identifier for the box does not exist
                   value:
-                    code: BOX_NOT_FOUND
+                    {
+                      "code": "BOX_NOT_FOUND",
+                      "message": "Box not found"
+                    }
         '406':
           description: Not Acceptable
           content:
@@ -149,13 +149,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: ACCEPT_HEADER_INVALID
               examples:
                 example-1:
                   description: The accept header is missing or invalid
                   value:
-                    code: ACCEPT_HEADER_INVALID
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
+                    }
       deprecated: false
       security:
         - applicationRestricted:
@@ -206,13 +207,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: INVALID_REQUEST_PAYLOAD
               examples:
                 example-1:
                   description: The request body does not match the specification
                   value:
-                    code: INVALID_REQUEST_PAYLOAD
+                    {
+                      "code": "INVALID_REQUEST_PAYLOAD",
+                      "message": "Invalid / Unknown query parameter provided"
+                    }
         '403':
           description: Forbidden
           content:
@@ -220,13 +222,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: FORBIDDEN
               examples:
                 example-1:
                   description: You do not have access to the specified box
                   value:
-                    code: FORBIDDEN
+                    {
+                      "code": "FORBIDDEN",
+                      "message": "Authorisation failed"
+                    }
         '404':
           description: Not Found
           content:
@@ -234,13 +237,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BOX_NOT_FOUND
               examples:
                 example-1:
                   description: The unique identifier for the box does not exist
                   value:
-                    code: BOX_NOT_FOUND
+                    {
+                      "code": "BOX_NOT_FOUND",
+                      "message": "Box not found"
+                    }
         '406':
           description: Not Acceptable
           content:
@@ -248,27 +252,29 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: ACCEPT_HEADER_INVALID
               examples:
                 example-1:
                   description: The Accept header is missing or invalid
                   value:
-                    code: ACCEPT_HEADER_INVALID
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
+                    }
         '415':
-          description: Unsupported Media-type
+          description: Unsupported Media Type
           content:
             application/json:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BAD_REQUEST
               examples:
                 example-1:
                   description: The Content-Type header is incorrect
                   value:
-                    code: BAD_REQUEST
+                    {
+                      "code": "BAD_REQUEST",
+                      "message": "Expecting text/json or application/json body"
+                    }
       deprecated: false
       security:
         - applicationRestricted:
@@ -303,8 +309,6 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/Createdaclientmanagedbox"
-                - example:
-                    boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
               example:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '201':
@@ -314,8 +318,6 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/Createdaclientmanagedbox"
-                - example:
-                    boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
               example:
                 boxId: 105ca34d-7a45-4df4-9fcf-9685b53799ab
         '400':
@@ -325,28 +327,30 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: INVALID_REQUEST_PAYLOAD
               examples:
                 example-1:
                   description: JSON body is invalid against expected format
                   value:
-                    code: INVALID_REQUEST_PAYLOAD
+                    {
+                      "code": "INVALID_REQUEST_PAYLOAD",
+                      "message": "Invalid / Unknown query parameter provided"
+                    }
         '415':
-          description: Unsupported Media-type
+          description: Unsupported Media Type
           headers: {}
           content:
             application/json:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BAD_REQUEST
               examples:
                 example-1:
                   description: Expecting text/json or application/json body
                   value:
-                    code: BAD_REQUEST
+                    {
+                      "code": "BAD_REQUEST",
+                      "message": "Expecting text/json or application/json body"
+                    }
       deprecated: false
       security:
         - applicationRestricted:
@@ -410,13 +414,14 @@ paths:
               schema:
                 allOf:
                 - "$ref": "#/components/schemas/errorResponse"
-                - example:
-                    code: BOX_NOT_FOUND
               examples:
                 example-1:
                   description: Box not found
                   value:
-                    code: BOX_NOT_FOUND
+                    {
+                      "code": "BOX_NOT_FOUND",
+                      "message": "Box not found"
+                    }
       deprecated: false
       security:
         - applicationRestricted:
@@ -466,14 +471,32 @@ components:
         ]
       required: true
   schemas:
+    frameworkErrorResponse:
+      title: errorResponse
+      required:
+      - statusCode
+      - message
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: the HTTP status code
+        message:
+          type: string
+          description: the error description
     errorResponse:
       title: errorResponse
       required:
       - code
+      - message
       type: object
       properties:
         code:
           type: string
+          description: the error code
+        message:
+          type: string
+          description: the error description
     Acknowledgealistofnotifications:
       title: Acknowledgealistofnotifications
       required:
