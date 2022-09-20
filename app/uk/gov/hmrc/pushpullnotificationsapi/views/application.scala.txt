@@ -108,7 +108,7 @@ paths:
                   value:
                     {
                       "code": "BAD_REQUEST",
-                      "message": "Expecting text/json or application/json body"
+                      "message": "Box ID is not a UUID"
                     }
         '403':
           description: Forbidden
@@ -213,7 +213,7 @@ paths:
                   value:
                     {
                       "code": "INVALID_REQUEST_PAYLOAD",
-                      "message": "Invalid / Unknown query parameter provided"
+                      "message": "JSON body is invalid against expected format"
                     }
         '403':
           description: Forbidden
@@ -336,7 +336,22 @@ paths:
                   value:
                     {
                       "code": "INVALID_REQUEST_PAYLOAD",
-                      "message": "Invalid / Unknown query parameter provided"
+                      "message": "JSON body is invalid against expected format"
+                    }
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: The accept header is missing or invalid
+                  value:
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
                     }
         '415':
           description: Unsupported Media Type
@@ -433,6 +448,21 @@ paths:
                     {
                       "code": "BOX_NOT_FOUND",
                       "message": "Box not found"
+                    }
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: The accept header is missing or invalid
+                  value:
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
                     }
       deprecated: false
       security:
