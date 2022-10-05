@@ -86,7 +86,6 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
   def deleteClientManagedBox(boxId: BoxId): Action[AnyContent] =
     (Action
       andThen validateAcceptHeaderAction
-      andThen validateContentTypeHeaderAction
       andThen authAction)
       .async { implicit request =>
         boxService.deleteBox(request.clientId, boxId).map {
