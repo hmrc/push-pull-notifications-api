@@ -15,6 +15,7 @@
  */
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
@@ -41,6 +42,7 @@ class BoxControllerISpec extends ServerBaseISpec
   with BeforeAndAfterEach
   with PlayMongoRepositorySupport[Box]
   with CleanMongoCollectionSupport
+  with IntegrationPatience
   with PushGatewayService
   with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>

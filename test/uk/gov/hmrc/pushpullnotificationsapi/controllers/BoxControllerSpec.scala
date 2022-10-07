@@ -92,7 +92,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   private val validHeaders: Map[String, String] = Map(validContentTypeHeader, validAcceptHeader)
   private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader)
   private val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
-  private val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
+  private val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields",
                                                   ACCEPT -> "application/vnd.hmrc.1.0+json")
   "BoxController" when {
     "createBox" should {
