@@ -492,6 +492,7 @@ class BoxControllerISpec extends ServerBaseISpec
     val boxIdStr: String = UUID.randomUUID().toString
     val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
     val clientId: ClientId = ClientId("someClientId")
+    val incorrectClientId = ClientId("wrong")
     val clientManagedBox: Box = Box(boxName = "boxName",
       boxId = boxId,
       boxCreator = BoxCreator(clientId),
@@ -519,6 +520,14 @@ class BoxControllerISpec extends ServerBaseISpec
       val notClientManaged = clientManagedBox.copy(clientManaged = false)
       await(repo.createBox(notClientManaged))
       val deleteResult = callDeleteClientManagedBoxEndpoint(notClientManaged.boxId.raw, validHeadersWithAcceptHeader)
+      deleteResult.status shouldBe FORBIDDEN
+    }
+
+    "failed to delete a CMB when caller doesn't match clientId of box and return status 403" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
+      primeAuthServiceSuccess(clientId2, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      await(repo.createBox(clientManagedBox))
+      val deleteResult = callDeleteClientManagedBoxEndpoint(clientManagedBox.boxId.raw, validHeadersWithAcceptHeader)
       deleteResult.status shouldBe FORBIDDEN
     }
   }

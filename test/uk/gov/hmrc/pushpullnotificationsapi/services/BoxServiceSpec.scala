@@ -334,14 +334,14 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       result shouldBe BoxDeleteAccessDeniedResult()
     }
 
-    "return BoxDeleteNotFoundResult when the given clientId does not match the box's clientId" in new Setup {
+    "return BoxDeleteAccessDeniedResult when the given clientId does not match the box's clientId" in new Setup {
       val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
       val clientManagedBox: Box = box.copy(clientManaged =true)
 
       when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
 
       val result: DeleteBoxResult = await(objInTest.deleteBox(incorrectClientId, boxId))
-      result shouldBe BoxDeleteNotFoundResult()
+      result shouldBe BoxDeleteAccessDeniedResult()
     }
   }
 
