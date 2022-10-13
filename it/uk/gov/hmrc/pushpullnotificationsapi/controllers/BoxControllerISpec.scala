@@ -492,7 +492,6 @@ class BoxControllerISpec extends ServerBaseISpec
     val boxIdStr: String = UUID.randomUUID().toString
     val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
     val clientId: ClientId = ClientId("someClientId")
-    val incorrectClientId = ClientId("wrong")
     val clientManagedBox: Box = Box(boxName = "boxName",
       boxId = boxId,
       boxCreator = BoxCreator(clientId),
