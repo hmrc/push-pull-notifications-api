@@ -390,13 +390,13 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         status(result) should be(NOT_FOUND)
       }
 
-      "return 404(NOT FOUND) when Attempt to delete a box which for a different client ID" in {
+      "return 403(FORBIDDEN) when Attempt to delete a box which for a different client ID" in {
         primeAuthAction(clientIdStr)
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
-          .thenReturn(Future.successful(BoxDeleteNotFoundResult()))
+          .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
         val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
-        status(result) should be(NOT_FOUND)
+        status(result) should be(FORBIDDEN)
       }
 
       "return 403(FORBIDDEN) Attempt to delete a default box should not be allowed" in {

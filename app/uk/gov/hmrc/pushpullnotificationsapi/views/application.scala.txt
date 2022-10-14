@@ -434,6 +434,21 @@ paths:
       responses:
         '204':
           description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: Access denied
+                  value:
+                    {
+                      "code": "FORBIDDEN",
+                      "message": "forbidden"
+                    }
         '404':
           description: Not Found
           content:

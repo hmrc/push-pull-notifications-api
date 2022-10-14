@@ -150,10 +150,9 @@ class BoxService @Inject()(repository: BoxRepository,
   }
 
   private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
-    if (!box.clientManaged) {
-      successful(BoxDeleteAccessDeniedResult());
-    }
-    else if (box.boxCreator.clientId.equals(clientId)) {
+    if (!box.clientManaged || !box.boxCreator.clientId.equals(clientId)) {
+      successful(BoxDeleteAccessDeniedResult())
+    } else if (box.boxCreator.clientId.equals(clientId)) {
       repository.deleteBox(box.boxId)
     } else {
       successful(BoxDeleteNotFoundResult())

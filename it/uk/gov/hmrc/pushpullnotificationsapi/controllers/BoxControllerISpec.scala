@@ -521,6 +521,14 @@ class BoxControllerISpec extends ServerBaseISpec
       val deleteResult = callDeleteClientManagedBoxEndpoint(notClientManaged.boxId.raw, validHeadersWithAcceptHeader)
       deleteResult.status shouldBe FORBIDDEN
     }
+
+    "failed to delete a CMB when caller doesn't match clientId of box and return status 403" in {
+      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId2)
+      primeAuthServiceSuccess(clientId2, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      await(repo.createBox(clientManagedBox))
+      val deleteResult = callDeleteClientManagedBoxEndpoint(clientManagedBox.boxId.raw, validHeadersWithAcceptHeader)
+      deleteResult.status shouldBe FORBIDDEN
+    }
   }
 
   "PUT /cmb/box/{boxId}/callback" should {
