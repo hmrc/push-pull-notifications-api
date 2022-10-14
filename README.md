@@ -443,9 +443,10 @@ HTTP Status: `204` if the box is deleted
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
 | Invalid or expired bearer token | `401` | `UNAUTHORIZED`
+| Response when attempting to delete a box which belongs to a different client ID  | `403` | `FORBIDDEN`
 | Attempt to delete a default box should not be allowed for example a default box | `403` | `FORBIDDEN`
 | Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
-| Response when attempting to delete a box with an ID that does not exist or belongs to a different client ID  | `404` | `BOX_NOT_FOUND`
+| Response when attempting to delete a box with an ID that does not exist | `404` | `BOX_NOT_FOUND`
 | Called the Delete CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
 | Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
 
