@@ -447,7 +447,7 @@ paths:
                   value:
                     {
                       "code": "FORBIDDEN",
-                      "message": "forbidden"
+                      "message": "Access denied"
                     }
         '404':
           description: Not Found
