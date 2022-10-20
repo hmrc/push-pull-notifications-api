@@ -373,6 +373,137 @@ paths:
       security:
         - applicationRestricted:
             - write:ppns-boxes
+  "/cmb/box/{boxId}/callback":
+    put:
+      tags:
+      - push-pull-notification-api
+      summary: Update a client managed box with callback url
+      description: Update a client managed box with the callback url. <br><br>The
+        OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
+      operationId: Updateaclientmanagedboxcallbackurl
+      parameters:
+      - $ref: '#/components/parameters/acceptHeader'
+      - $ref: '#/components/parameters/contentTypeHeader'
+      - name: boxId
+        in: path
+        description: Unique identifier for a box
+        required: true
+        style: simple
+        schema:
+          type: string
+          example: 50dca3fc-c37c-4f03-b719-63571333624c
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              allOf:
+              - "$ref": "#/components/schemas/Updateaclientmanagedboxcallbackurl"
+              - example:
+                  callbackUrl: https://example.com/callbackUrl
+            example:
+                  callbackUrl: https://example.com/callbackUrl
+        required: true
+      responses:
+        '200':
+          description: 'Update callback url in Box subscriber to receive notifications'
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/Updatedaclientmanagedboxcallbackurl"
+              examples:
+                example-1:
+                  value:
+                    {
+                      "successful": true
+                    }
+                example-2:
+                  value:
+                    {
+                      "successful": false,
+                      "errorMessage": "Validation failed"
+                    }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: JSON body is invalid against expected format
+                  value:
+                    {
+                      "code": "INVALID_REQUEST_PAYLOAD",
+                      "message": "JSON body is invalid against expected format"
+                    }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: Access denied
+                  value:
+                    {
+                      "code": "FORBIDDEN",
+                      "message": "Access denied"
+                    }
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: Box not found
+                  value:
+                    {
+                      "code": "BOX_NOT_FOUND",
+                      "message": "Box not found"
+                    }
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: The accept header is missing or invalid
+                  value:
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
+                    }
+        '415':
+          description: Unsupported Media Type
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/frameworkErrorResponse"
+              examples:
+                example-1:
+                  description: Expecting text/json or application/json body
+                  value:
+                    {
+                      "statusCode": 415,
+                      "message": "Expecting text/json or application/json body"
+                    }
+      deprecated: false
+      security:
+        - applicationRestricted:
+            - write:ppns-boxes
     get:
       tags:
       - push-pull-notification-api
@@ -575,16 +706,31 @@ components:
           type: string
           description: Box Name
           example: client ppns box
-    Createdaclientmanagedbox:
-      title: Createdaclientmanagedbox
+    Updatedaclientmanagedboxcallbackurl:
+      title: Updatedaclientmanagedboxcallbackurl
       required:
-      - boxId
+      - successful
+      - errorMessage
       type: object
       properties:
-        boxId:
+        successful:
+          type: boolean
+          description: successfully updated
+          example: true
+        errorMessage:
           type: string
-          description: Box ID
-          example: 105ca34d-7a45-4df4-9fcf-9685b53799ab
+          description: error messaged if failed
+          example: failed to update callback url
+    Updateaclientmanagedboxcallbackurl:
+      title: Updatedaclientmanagedboxcallbackurl
+      required:
+        - callbackUrl
+      type: object
+      properties:
+        callbackUrl:
+          type: string
+          description: Callback url to update in subscriber
+          example: http://example.com/callbackUrl
     listofbox:
       title: listofbox
       required:
