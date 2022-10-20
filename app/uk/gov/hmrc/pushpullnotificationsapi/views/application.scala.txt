@@ -406,7 +406,7 @@ paths:
         required: true
       responses:
         '200':
-          description: 'Update callback url in Box's subscriber'
+          description: 'Update callback url in Box subscriber to receive notifications'
           content:
             application/json:
               schema:
@@ -416,13 +416,12 @@ paths:
                 example-1:
                   value:
                     {
-                      "successful": true,
-                      "errorMessage": null
+                      "successful": true
                     }
                 example-2:
                   value:
                     {
-                      "successful": true,
+                      "successful": false,
                       "errorMessage": "Validation failed"
                     }
         '400':
@@ -730,7 +729,7 @@ components:
       properties:
         callbackUrl:
           type: string
-          description: Callback Url
+          description: Callback url to update in subscriber
           example: http://example.com/callbackUrl
     listofbox:
       title: listofbox
