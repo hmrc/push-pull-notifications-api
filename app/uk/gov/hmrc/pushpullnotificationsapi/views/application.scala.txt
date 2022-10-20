@@ -497,7 +497,7 @@ paths:
                   description: Expecting text/json or application/json body
                   value:
                     {
-                      "statusCode": 400,
+                      "statusCode": 415,
                       "message": "Expecting text/json or application/json body"
                     }
       deprecated: false
