@@ -373,6 +373,46 @@ paths:
       security:
         - applicationRestricted:
             - write:ppns-boxes
+    get:
+      tags:
+      - push-pull-notification-api
+      summary: Get a list of boxes
+      description: Returns a list of boxes belonging to a specific Client ID which
+        is passed in via auth. <br><br>The OAuth bearer token used by this endpoint
+        must have the scope `read:ppns-boxes`.
+      operationId: Getalistofboxes
+      parameters:
+      - $ref: '#/components/parameters/acceptHeader'
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/listofbox"
+                description: ''
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                allOf:
+                - "$ref": "#/components/schemas/errorResponse"
+              examples:
+                example-1:
+                  description: The Accept header is missing or invalid
+                  value:
+                    {
+                      "code": "ACCEPT_HEADER_INVALID",
+                      "message": "The accept header is missing or invalid"
+                    }
+      deprecated: false
+      security:
+        - applicationRestricted:
+            - read:ppns-boxes
   "/cmb/box/{boxId}/callback":
     put:
       tags:
@@ -504,46 +544,6 @@ paths:
       security:
         - applicationRestricted:
             - write:ppns-boxes
-    get:
-      tags:
-      - push-pull-notification-api
-      summary: Get a list of boxes
-      description: Returns a list of boxes belonging to a specific Client ID which
-        is passed in via auth. <br><br>The OAuth bearer token used by this endpoint
-        must have the scope `read:ppns-boxes`.
-      operationId: Getalistofboxes
-      parameters:
-      - $ref: '#/components/parameters/acceptHeader'
-      responses:
-        '200':
-          description: OK
-          headers: {}
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  "$ref": "#/components/schemas/listofbox"
-                description: ''
-        '406':
-          description: Not Acceptable
-          content:
-            application/json:
-              schema:
-                allOf:
-                - "$ref": "#/components/schemas/errorResponse"
-              examples:
-                example-1:
-                  description: The Accept header is missing or invalid
-                  value:
-                    {
-                      "code": "ACCEPT_HEADER_INVALID",
-                      "message": "The accept header is missing or invalid"
-                    }
-      deprecated: false
-      security:
-        - applicationRestricted:
-            - read:ppns-boxes
   "/cmb/box/{boxId}":
     delete:
       tags:
