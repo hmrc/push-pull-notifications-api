@@ -706,6 +706,16 @@ components:
           type: string
           description: Box Name
           example: client ppns box
+    Createdaclientmanagedbox:
+      title: Createdaclientmanagedbox
+      required:
+      - boxId
+      type: object
+      properties:
+        boxId:
+          type: string
+          description: Box ID
+          example: 105ca34d-7a45-4df4-9fcf-9685b53799ab
     Updatedaclientmanagedboxcallbackurl:
       title: Updatedaclientmanagedboxcallbackurl
       required:
