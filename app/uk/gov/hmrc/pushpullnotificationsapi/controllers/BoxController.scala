@@ -91,7 +91,7 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         boxService.deleteBox(request.clientId, boxId).map {
           case _: BoxDeleteSuccessfulResult => NoContent
           case _: BoxDeleteNotFoundResult => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: BoxDeleteAccessDeniedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access Denied"))
+          case _: BoxDeleteAccessDeniedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
           case failedResult: BoxDeleteFailedResult => UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to deleteBox:${failedResult.message}"))
         } recover recovery
       }
@@ -152,12 +152,12 @@ class BoxController @Inject()(validateUserAgentHeaderAction: ValidateUserAgentHe
         implicit request =>
           implicit val actualBody: Request[JsValue] = request.request
           withJsonBody[UpdateManagedCallbackUrlRequest] { callbackUrlRequest =>
-          boxService.updateCallbackUrl(boxId, UpdateCallbackUrlRequest(request.clientId, callbackUrlRequest.callbackUrl)) map {
+          boxService.updateCallbackUrl(boxId, UpdateCallbackUrlRequest(request.clientId, callbackUrlRequest.callbackUrl), clientManaged = true) map {
             case _: CallbackUrlUpdated => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
             case c: CallbackValidationFailed => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
             case u: UnableToUpdateCallbackUrl => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
             case _: BoxIdNotFound => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-            case _: UpdateCallbackUrlUnauthorisedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access Denied"))
+            case _: UpdateCallbackUrlUnauthorisedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
           } recover recovery
         }(actualBody, manifest, RequestFormatters.updateManagedCallbackUrlRequestFormatter)
       }

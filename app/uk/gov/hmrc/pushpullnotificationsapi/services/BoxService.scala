@@ -70,10 +70,10 @@ class BoxService @Inject()(repository: BoxRepository,
   def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
     repository.getBoxesByClientId(clientId)
 
-  def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest)
+  def updateCallbackUrl(boxId: BoxId, request: UpdateCallbackUrlRequest, clientManaged: Boolean = false)
                        (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId)) {
+      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId) && box.clientManaged == clientManaged) {
         val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
 
         for {

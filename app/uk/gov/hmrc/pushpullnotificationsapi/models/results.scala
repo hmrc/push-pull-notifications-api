@@ -74,7 +74,6 @@ final case class BoxIdNotFound() extends UpdateCallbackUrlFailedResult
 final case class UnableToUpdateCallbackUrl(errorMessage: String) extends UpdateCallbackUrlFailedResult
 final case class CallbackValidationFailed(errorMessage: String) extends UpdateCallbackUrlFailedResult
 final case class UpdateCallbackUrlUnauthorisedResult() extends UpdateCallbackUrlFailedResult
-
 sealed trait ValidateBoxOwnerResult
 final case class ValidateBoxOwnerNotFoundResult(errorMessage: String) extends ValidateBoxOwnerResult
 final case class ValidateBoxOwnerSuccessResult() extends ValidateBoxOwnerResult
