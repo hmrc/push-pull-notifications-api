@@ -417,8 +417,8 @@ paths:
     put:
       tags:
       - push-pull-notification-api
-      summary: Update a client managed box with callback url
-      description: Update a client managed box with the callback url. <br><br>The
+      summary: Update a client managed box with callback URL
+      description: Update a client managed box with the callback URL. <br><br>The
         OAuth bearer token used by this endpoint must have the scope `write:ppns-boxes`.
       operationId: Updateaclientmanagedboxcallbackurl
       parameters:
@@ -446,7 +446,7 @@ paths:
         required: true
       responses:
         '200':
-          description: 'Update callback url in Box subscriber to receive notifications'
+          description: 'Update callback URL in Box subscriber to receive notifications'
           content:
             application/json:
               schema:
@@ -739,7 +739,7 @@ components:
       properties:
         callbackUrl:
           type: string
-          description: Callback url to update in subscriber
+          description: Callback URL to update in subscriber
           example: http://example.com/callbackUrl
     listofbox:
       title: listofbox

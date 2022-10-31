@@ -590,7 +590,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 200 when request is successful" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
@@ -606,7 +606,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
        "return 200 when request contains " in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
 
          val result =
@@ -622,7 +622,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
        "return 401 if User-Agent is not allowlisted" in {
           setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
@@ -638,7 +638,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
        "return 404 if Box does not exist" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(BoxIdNotFound()))
 
          val result =
@@ -654,7 +654,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
        "return 200, successful false and errormessage when mongo update fails" in {
          setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
          val result =
@@ -671,7 +671,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 200, successful false and errormessage when callback validation fails" in {
         setUpAppConfig(List("api-subscription-fields"))
          val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
          val result =
@@ -687,7 +687,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
        "return 401 if client id does not match that on the box" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
          val result =
@@ -719,13 +719,13 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
        "return 200 when payload is missing the callbackUrl value" in {
          setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
            .thenReturn(Future.successful(CallbackUrlUpdated()))
          val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
 
          status(result) should be(OK)
          Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-         verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
+         verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *, *)(*, *)
        }
      }
 
@@ -733,7 +733,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       def createRequest(callBackUrl: String): String = s"""{"callbackUrl": "$callBackUrl"}"""
 
       "return 200 when request is successful" in {
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
         primeAuthAction(clientIdStr)
 
@@ -748,7 +748,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 404 if Box does not exist" in {
         primeAuthAction(clientIdStr)
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(BoxIdNotFound()))
 
         val result = doPut(
@@ -762,7 +762,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 200, successful false and errormessage when mongo update fails" in {
         primeAuthAction(clientIdStr)
         val errorMessage = "Unable to update"
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
         val result =
@@ -778,7 +778,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 200, successful false and errormessage when callback validation fails" in {
         primeAuthAction(clientIdStr)
         val errorMessage = "Unable to update"
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
         val result = doPut(
@@ -792,7 +792,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 403 if client id does not match that on the box" in {
         primeAuthAction(clientIdStr)
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
         val result = doPut(
@@ -812,13 +812,13 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 200 when payload is missing the callbackUrl value" in {
         primeAuthAction(clientIdStr)
-        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *)(*, *))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
         val result = doPut(s"/cmb/box/$boxIdStr/callback", validHeadersJson, createRequest(""))
 
         status(result) should be(OK)
         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-        verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *)(*, *)
+        verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *, *)(*, *)
       }
     }
 
