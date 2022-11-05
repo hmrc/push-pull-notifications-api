@@ -4,7 +4,7 @@ import play.sbt.PlayImport._
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-  lazy val bootstrapVersion = "7.8.0"
+  lazy val bootstrapVersion = "7.11.0"
   lazy val dependencies = Seq(
     ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  %  bootstrapVersion,
@@ -14,7 +14,7 @@ object AppDependencies {
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"         % "0.73.0",
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",
-    "com.typesafe.play"       %% "play-json-joda"             % "2.7ClientSecretGenerator.scala.1",
+    "com.typesafe.play"       %% "play-json-joda"             % "2.7.1",
     "com.beachape"            %% "enumeratum-play-json"       % "1.6.0"
   )
 
