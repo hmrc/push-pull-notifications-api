@@ -24,7 +24,7 @@ import play.api.http.Status.NO_CONTENT
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import play.api.test.Helpers.{AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -91,9 +91,13 @@ class BoxControllerISpec extends ServerBaseISpec
          |}
          |""".stripMargin
 
-  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields")
+  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
+    AUTHORIZATION -> "Bearer token"
+  )
   val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
-                                          ACCEPT -> "application/vnd.hmrc.1.0+json")
+                                          ACCEPT -> "application/vnd.hmrc.1.0+json",
+    AUTHORIZATION -> "Bearer token"
+  )
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
