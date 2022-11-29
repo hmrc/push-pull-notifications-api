@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import com.google.inject.Inject
-import org.joda.time.DateTime
+import java.time.LocalDateTime
 import play.api.http.Status.CREATED
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
@@ -39,7 +39,7 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, DateTime.now(), oldUrl, newUrl, box.boxId.raw, box.boxName)
+    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, LocalDateTime.now(), oldUrl, newUrl, box.boxId.raw, box.boxName)
     http.POST[PpnsCallBackUriUpdatedEvent,HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {
@@ -62,7 +62,7 @@ object ApiPlatformEventsConnector {
 
   case class PpnsCallBackUriUpdatedEvent(id: EventId,
                                          applicationId: String,
-                                         eventDateTime: DateTime,
+                                         eventDateTime: LocalDateTime,
                                          oldCallbackUrl: String,
                                          newCallbackUrl: String,
                                          boxId: String,
