@@ -55,8 +55,8 @@ Return the details of a box
 ### Query parameters
 | Name | Description |
 | --- | --- |
-| `boxName` (required) | The name of the box to get. URL encoded. For example ```BOX%202``` |
-| `clientId` (required)| The Developer Hub Client ID that owns the box |
+| `boxName` (optional) | The name of the box to get. URL encoded. For example ```BOX%202``` |
+| `clientId` (optional)| The Developer Hub Client ID that owns the box |
 
 ### Response
 HTTP Status: `200`
