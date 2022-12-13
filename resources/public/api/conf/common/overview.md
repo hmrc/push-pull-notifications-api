@@ -25,6 +25,8 @@ request is sent to `https://www.example.com/push` with a body similar to:
 }
 `
 
+> We only support PPNS callback URLs on the default HTTPS port 443. You do not need to specify the port in the callback URL.
+
 See [get a list of notifications](1.0/oas/page#tag/push-pull-notification-api/operation/Getalistofnotifications) for details about the
 structure of this JSON object.
 
