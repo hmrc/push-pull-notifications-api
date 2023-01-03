@@ -16,10 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
-
 import akka.stream.Materializer
 import org.joda.time.DateTime
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
+import org.joda.time.format.DateTimeFormat
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -27,22 +28,21 @@ import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Json, JsValue}
 import play.api.mvc.Result
+import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
+import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
-import org.joda.time.format.DateTimeFormat
-import play.api.test.FakeRequest
 
 class NotificationsControllerSpec extends AsyncHmrcSpec
   with GuiceOneAppPerSuite with BeforeAndAfterEach {
@@ -52,6 +52,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
+    .configure(Map("notifications.envelopeSize" -> "256B"))
     .overrides(bind[NotificationsService].to(mockNotificationService))
     .overrides(bind[AuthConnector].to(mockAuthConnector))
     .build()
@@ -187,6 +188,134 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersXml, xmlBody)
+        status(result) should be(INTERNAL_SERVER_ERROR)
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+      }
+    }
+
+    "saveWrappedNotification" should {
+
+      def wrappedBody(body: String, contentType: String, version: String = "1"): String = {
+        s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version"}"""
+      }
+
+      "return 201 when valid json, json content type header are provided and notification successfully saved" in {
+        when(mockNotificationService.saveNotification(eqTo(boxId),
+          *[NotificationId],
+          eqTo(MessageContentType.APPLICATION_JSON),
+          eqTo(jsonBody))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON))
+        status(result) should be(CREATED)
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)
+      }
+
+      "return 201 when valid complicated json, json content type header are provided and notification successfully saved" in {
+        val complicatedJson = "{\"foo\":\"bar\"}"
+        val escapedComplicatedJson = "{\\\"foo\\\":\\\"bar\\\"}"
+        when(mockNotificationService.saveNotification(eqTo(boxId),
+          *[NotificationId],
+          eqTo(MessageContentType.APPLICATION_JSON),
+          eqTo(complicatedJson))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(escapedComplicatedJson, MimeTypes.JSON))
+        status(result) should be(CREATED)
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*, *)
+      }
+
+      "return 413 when payload is too large" in {
+        val overlyLargeJsonBody: String = """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
+        status(result) should be(REQUEST_ENTITY_TOO_LARGE)
+      }
+
+      "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
+        when(mockNotificationService
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .thenReturn(Future.successful(NotificationCreateSuccessResult()))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        status(result) should be(CREATED)
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+      }
+
+      "return 400 when version number isn't 1" in {
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON, "2"))
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
+      "return 400 when json content type header is sent but invalid json" in {
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.JSON))
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
+      "return 400 when xml content type header is sent but invalid xml" in {
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.XML))
+        status(result) should be(BAD_REQUEST)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
+      "return 403 when useragent header is not allowlisted" in {
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", headersWithInValidUserAgent, wrappedBody(jsonBody, MimeTypes.JSON))
+        status(result) should be(FORBIDDEN)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
+      "return 415 when bad contentType header is sent" in {
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), wrappedBody(xmlBody, MimeTypes.CSS))
+        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
+
+        verifyNoInteractions(mockNotificationService)
+      }
+
+      "return 500 when save notification throws Duplicate Notification Exception" in {
+        when(mockNotificationService
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        status(result) should be(INTERNAL_SERVER_ERROR)
+        val bodyVal = contentAsString(result)
+        bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
+
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+      }
+
+      "return 404 when save notification throws Box not found Exception" in {
+        when(mockNotificationService
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        status(result) should be(NOT_FOUND)
+
+        verify(mockNotificationService)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+      }
+
+      "return 500 when save notification throws Any non handled Non fatal exception" in {
+        when(mockNotificationService
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .thenReturn(Future.failed(new RuntimeException("some Exception")))
+
+        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)

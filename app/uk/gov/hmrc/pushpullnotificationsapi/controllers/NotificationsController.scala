@@ -16,25 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
-
-import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
+import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNotificationRequestFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 import scala.xml.NodeSeq
 
 @Singleton()
@@ -70,6 +70,38 @@ class NotificationsController @Inject()(appConfig: AppConfig,
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
           }
         }
+      }
+
+  def saveWrappedNotification(boxId: BoxId): Action[JsValue] =
+    (Action andThen
+      validateUserAgentHeaderAction)
+      .async(playBodyParsers.json(appConfig.maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize)) {
+        implicit request =>
+          withJsonBody[WrappedNotificationRequest] { wrappedNotification => {
+            val notification = wrappedNotification.notification
+            if (wrappedNotification.version.equals("1")) {
+              contentTypeHeaderToNotificationType(notification.contentType).fold(
+                Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
+              ) { contentType =>
+                if (validateBodyAgainstContentType(contentType, notification.body)) {
+                  val notificationId = NotificationId(UUID.randomUUID())
+                  notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) map {
+                    case _: NotificationCreateSuccessResult =>
+                      Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+                    case _: NotificationCreateFailedBoxIdNotFoundResult =>
+                      NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+                    case _: NotificationCreateFailedDuplicateResult =>
+                      InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
+                  } recover recovery
+                } else {
+                  Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+                }
+              }
+            } else {
+              Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+            }
+          }
+          }
       }
 
   def getNotificationsByBoxIdAndFilters(boxId: BoxId): Action[AnyContent] =
@@ -130,6 +162,21 @@ class NotificationsController @Inject()(appConfig: AppConfig,
     }
   }
 
+  private def contentTypeHeaderToNotificationType(contentType: String): Option[MessageContentType] = {
+    contentType match {
+      case MimeTypes.JSON => Some(APPLICATION_JSON)
+      case MimeTypes.XML => Some(APPLICATION_XML)
+      case _ => None
+    }
+  }
+
+
+  private def validateBodyAgainstContentType(notificationContentType: MessageContentType, body: String) = {
+    notificationContentType match {
+      case APPLICATION_JSON => checkValidJson(body)
+      case APPLICATION_XML => checkValidXml(body)
+    }
+  }
 
   private def validateBodyAgainstContentType(notificationContentType: MessageContentType)(implicit request: Request[String]) = {
     notificationContentType match {
