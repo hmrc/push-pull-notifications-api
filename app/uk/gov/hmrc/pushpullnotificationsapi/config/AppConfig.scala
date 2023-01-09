@@ -45,4 +45,5 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val mongoEncryptionKey: String = config.get[String]("mongodb.encryption.key")
 
   val maxNotificationSize = config.underlying.getBytes("notifications.maxSize")
+  val wrappedNotificationEnvelopeSize = config.underlying.getBytes("notifications.envelopeSize")
 }

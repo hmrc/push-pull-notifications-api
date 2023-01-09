@@ -9,7 +9,6 @@ object AppDependencies {
   lazy val dependencies = Seq(
     ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  % bootstrapVersion,
-    "uk.gov.hmrc"             %% "crypto"                     % "5.6.0",
     "uk.gov.hmrc"             %% "play-json-union-formatter"  % "1.15.0-play-28",
     "commons-codec"           %  "commons-codec"              % "1.15",
     "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",

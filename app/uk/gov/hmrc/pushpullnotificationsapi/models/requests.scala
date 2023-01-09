@@ -41,6 +41,9 @@ case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
 
 case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
 
+case class WrappedNotification(body: String, contentType: String)
+case class WrappedNotificationRequest(notification: WrappedNotification, version: String)
+
 
 // Notifications
 

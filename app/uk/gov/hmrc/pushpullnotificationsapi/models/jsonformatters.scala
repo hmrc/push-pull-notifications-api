@@ -60,6 +60,8 @@ object RequestFormatters {
   implicit val addCallbackUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
   implicit val updateManagedCallbackUrlRequestFormatter: OFormat[UpdateManagedCallbackUrlRequest] = Json.format[UpdateManagedCallbackUrlRequest]
   implicit val validateBoxOwnershipRequestFormatter: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
+  implicit val wrappedNotificationFormatter: OFormat[WrappedNotification] = Json.format[WrappedNotification]
+  implicit val wrappedNotificationRequestFormatter: OFormat[WrappedNotificationRequest] = Json.format[WrappedNotificationRequest]
 
 }
 
