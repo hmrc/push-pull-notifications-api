@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import org.joda.time.DateTime
 import play.api.mvc.{Request, WrappedRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+
+import java.time.Instant
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
@@ -54,8 +55,8 @@ case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationId
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 
 case class NotificationQueryParams(status: Option[NotificationStatus],
-                                   fromDate: Option[DateTime],
-                                   toDate: Option[DateTime])
+                                   fromDate: Option[Instant],
+                                   toDate: Option[Instant])
 
 case class ValidatedNotificationQueryRequest[A](clientId: ClientId, params: NotificationQueryParams, request: Request[A])
 

@@ -16,12 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import java.util.UUID
-
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import org.joda.time.{DateTime, DateTimeZone}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
+import java.time.Instant
+import java.util.UUID
 import scala.collection.immutable
 
 case class BoxId(value: UUID) extends AnyVal {
@@ -44,19 +43,19 @@ object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[Subscri
 }
 
 sealed trait Subscriber {
-  val subscribedDateTime: DateTime
+  val subscribedDateTime: Instant
   val subscriptionType: SubscriptionType
 }
 
 class SubscriberContainer[+A] (val elem: A)
 
 case class PushSubscriber(callBackUrl: String,
-                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC)) extends Subscriber {
+                          override val subscribedDateTime: Instant = Instant.now) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PUSH_SUBSCRIBER
 }
 
 case class PullSubscriber(callBackUrl: String, // Remove callbackUrl
-                          override val subscribedDateTime: DateTime = DateTime.now(DateTimeZone.UTC)) extends Subscriber {
+                          override val subscribedDateTime: Instant = Instant.now) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
 

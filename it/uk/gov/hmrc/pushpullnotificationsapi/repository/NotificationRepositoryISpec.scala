@@ -1,29 +1,28 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.util.UUID
 import akka.stream.scaladsl.Sink
-import org.joda.time.DateTime
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
-import org.mongodb.scala.{Document, bson}
-import org.scalatest.concurrent.IntegrationPatience
+import org.mongodb.scala.Document
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbClient, DbNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
+import java.time.{Duration, Instant}
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationRepositoryISpec
-    extends AsyncHmrcSpec
+  extends AsyncHmrcSpec
     with BeforeAndAfterEach with BeforeAndAfterAll
     with PlayMongoRepositorySupport[DbNotification]
     with CleanMongoCollectionSupport
@@ -156,7 +155,7 @@ class NotificationRepositoryISpec
       val nonMatchingNotificationId = NotificationId(UUID.randomUUID())
       createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
       createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
-      val newDateTime = now(UTC).plusHours(2)
+      val newDateTime = Instant.now.plus(Duration.ofHours(2))
 
       await(repo.updateRetryAfterDateTime(matchingNotificationId, newDateTime))
 
@@ -176,14 +175,14 @@ class NotificationRepositoryISpec
 
   "fetchRetryableNotifications" should {
     "return matching notifications and box" in {
-      val expectedNotification1 = createNotificationInDB(status = PENDING)
-      val expectedNotification2 = createNotificationInDB(status = PENDING)
+      val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now)
+      val expectedNotification2 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now)
       await(boxRepo.createBox(box))
 
       val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
 
       retryableNotifications should have size 2
-      retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2)
+      retryableNotifications.map(_.notification) should contain only(expectedNotification1, expectedNotification2)
       retryableNotifications.map(_.box) should contain only box
     }
 
@@ -198,8 +197,8 @@ class NotificationRepositoryISpec
     }
 
     "return pending notifications that were to be retried in the past" in {
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).minusHours(2)))
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).minusDays(1)))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofHours(2))))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofDays(1))))
       await(boxRepo.createBox(box))
 
       val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
@@ -208,8 +207,8 @@ class NotificationRepositoryISpec
     }
 
     "not return pending notifications that are not yet to be retried" in {
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).plusHours(2)))
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(now(UTC).plusDays(1)))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofHours(2))))
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofDays(1))))
       await(boxRepo.createBox(box))
 
       val retryableNotifications: Seq[RetryableNotification] = await(repo.fetchRetryableNotifications.runWith(Sink.seq))
@@ -318,8 +317,8 @@ class NotificationRepositoryISpec
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(PENDING),
-        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime = Some(DateTime.now())))
+        fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins))),
+        toDateTime = Some(Instant.now)))
       filteredList.size shouldBe 3
     }
 
@@ -332,7 +331,7 @@ class NotificationRepositoryISpec
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(PENDING),
-        fromDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
+        fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(fourAndHalfHoursInMins)))
       ))
       filteredList.size shouldBe 5
     }
@@ -347,7 +346,7 @@ class NotificationRepositoryISpec
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
         Some(PENDING),
-        toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
+        toDateTime = Some(Instant.now.minus(Duration.ofMinutes(fourAndHalfHoursInMins)))
       ))
       filteredList.size shouldBe 6
     }
@@ -357,12 +356,12 @@ class NotificationRepositoryISpec
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
-      createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
+      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)), status = ACKNOWLEDGED)
+      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)), status = ACKNOWLEDGED)
 
       val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime = Some(DateTime.now())))
+        fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins))),
+        toDateTime = Some(Instant.now)))
       filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
       filteredList.count(n => n.status == PENDING) shouldBe 3
     }
@@ -372,17 +371,17 @@ class NotificationRepositoryISpec
 
       // Create enough notifications to be returned in one request
       for (_ <- 0 until numberOfNotificationsToRetrievePerRequest) {
-        createNotificationInDB(createdDateTime = DateTime.now().minusDays(1))
+        createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofDays(1)))
       }
 
       // And 1 for today, which should not be returned
-      val mostRecentDate = DateTime.now
+      val mostRecentDate = Instant.now
       createNotificationInDB(createdDateTime = mostRecentDate)
 
       val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId))
 
-      returnedNotifications.size should be (numberOfNotificationsToRetrievePerRequest)
-      returnedNotifications.filter(n => n.createdDateTime.isEqual(mostRecentDate)) should be (List.empty)
+      returnedNotifications.size should be(numberOfNotificationsToRetrievePerRequest)
+      returnedNotifications.filter(n => n.createdDateTime.equals(mostRecentDate)) should be(List.empty)
     }
   }
 
@@ -413,9 +412,9 @@ class NotificationRepositoryISpec
   }
 
   private def createNotificationInDB(status: NotificationStatus = PENDING,
-                                     createdDateTime: DateTime = now(UTC),
+                                     createdDateTime: Instant = Instant.now,
                                      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
-                                     retryAfterDateTime: Option[DateTime] = None): Notification = {
+                                     retryAfterDateTime: Option[Instant] = None): Notification = {
     val notification = Notification(notificationId,
       boxId = boxId,
       APPLICATION_JSON,
@@ -431,13 +430,13 @@ class NotificationRepositoryISpec
 
   private def createHistoricalNotifications(numberToCreate: Int): Unit = {
     for (a <- 0 until numberToCreate) {
-      createNotificationInDB(createdDateTime = DateTime.now().minusHours(a))
+      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofHours(a)))
     }
   }
 
   private def createNotificationsWithIds(notificationIds: List[NotificationId]): Unit = {
     for (a <- notificationIds.indices) {
-      createNotificationInDB(createdDateTime = DateTime.now().minusHours(a), notificationId = notificationIds(a))
+      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofHours(a)), notificationId = notificationIds(a))
     }
   }
 

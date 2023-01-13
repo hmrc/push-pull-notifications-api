@@ -21,32 +21,28 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
-import org.joda.time.DateTime
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
+import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, SingleObservable, bson}
-import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
+import org.mongodb.scala.model._
+import org.mongodb.scala.model.Aggregates.{`lookup`, `match`, project}
+import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.Aggregates.{`lookup`, `match`, project}
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Sorts}
-import play.api.Logger
-import play.api.libs.json.{Format, JsArray, JsNumber, JsString, Json, OFormat}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, PENDING}
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, PENDING}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, dbNotificationFormatter}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -79,10 +75,9 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       )
     ),
     replaceIndexes = true
-  ) {
+  ) with MongoJavatimeFormats.Implicits {
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
-  implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
   override lazy val collection: MongoCollection[DbNotification] =
     CollectionFactory
       .collection(mongoComponent.database, collectionName, domainFormat)
@@ -90,7 +85,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
         fromRegistries(
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
@@ -121,8 +116,8 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   def getByBoxIdAndFilters(boxId: BoxId,
                            status: Option[NotificationStatus] = None,
-                           fromDateTime: Option[DateTime] = None,
-                           toDateTime: Option[DateTime] = None,
+                           fromDateTime: Option[Instant] = None,
+                           toDateTime: Option[Instant] = None,
                            numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
                           (implicit ec: ExecutionContext): Future[List[Notification]] = {
 
@@ -141,7 +136,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       .toFuture().map(_.toList)
   }
 
-  private def dateRange(fieldName: String, start: Option[DateTime], end: Option[DateTime]): Bson = {
+  private def dateRange(fieldName: String, start: Option[Instant], end: Option[Instant]): Bson = {
     if (start.isDefined || end.isDefined) {
       val startCompare = if (start.isDefined) gte(fieldName, Codecs.toBson(start.get)) else Filters.empty()
       val endCompare = if (end.isDefined) lte(fieldName, Codecs.toBson(end.get)) else Filters.empty()
@@ -189,7 +184,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
     ).map(toNotification(_, crypto)).head()
   }
 
-  def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
+  def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: Instant): Future[Notification] = {
     collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
@@ -199,7 +194,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
     val pipeline = List(
       `match`(and(equal("status", Codecs.toBson(PENDING)),
-        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC)))))),
+        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(Instant.now))))),
       `lookup`("box", "boxId", "boxId", "boxes"),
       `match`(and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
         Filters.exists("boxes.subscriber.callBackUrl"),

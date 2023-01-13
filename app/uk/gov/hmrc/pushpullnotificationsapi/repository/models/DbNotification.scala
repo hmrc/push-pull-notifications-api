@@ -16,22 +16,23 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import org.joda.time.{DateTime, DateTimeZone}
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 
+import java.time.Instant
+
 case class DbNotification(notificationId: NotificationId,
-                                              boxId: BoxId,
-                                              messageContentType: MessageContentType,
-                                              encryptedMessage: String,
-                                              status: NotificationStatus = PENDING,
-                                              createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                                              readDateTime: Option[DateTime] = None,
-                                              pushedDateTime: Option[DateTime] = None,
-                                              retryAfterDateTime: Option[DateTime] = None)
+                          boxId: BoxId,
+                          messageContentType: MessageContentType,
+                          encryptedMessage: String,
+                          status: NotificationStatus = PENDING,
+                          createdDateTime: Instant = Instant.now,
+                          readDateTime: Option[Instant] = None,
+                          pushedDateTime: Option[Instant] = None,
+                          retryAfterDateTime: Option[Instant] = None)
 
 private[repository] object DbNotification {
   def fromNotification(notification: Notification, crypto: CompositeSymmetricCrypto): DbNotification = {

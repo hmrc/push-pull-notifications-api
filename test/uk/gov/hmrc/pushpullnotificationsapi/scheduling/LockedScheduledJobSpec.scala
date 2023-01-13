@@ -17,18 +17,18 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 
-import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
-import java.util.concurrent.atomic.AtomicInteger
-import org.joda.time.Duration
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterEach, Matchers}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
+import org.scalatest.time.{Millis, Span}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.mongo.lock.{MongoLockRepository}
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import scala.concurrent.duration.{Duration, DurationInt}
 
+import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future.successful
@@ -51,7 +51,7 @@ class LockedScheduledJobSpec
 
   class SimpleJob(val name: String) extends LockedScheduledJob {
 
-    override val releaseLockAfter = new Duration(400)
+    override val releaseLockAfter = 400.millis
 
     val start = new CountDownLatch(1)
 

@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import org.joda.time.Duration
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LockedScheduledJob extends ScheduledJob {
@@ -29,7 +28,7 @@ trait LockedScheduledJob extends ScheduledJob {
   val releaseLockAfter: Duration
 
   val lockRepository: MongoLockRepository
-  lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = 1.hour)
+  lazy val lockKeeper: LockService = LockService(lockRepository, lockId = s"$name-scheduled-job-lock", ttl = releaseLockAfter)
 
   def isRunning: Future[Boolean] = lockRepository.isLocked(lockKeeper.lockId, "owner")
 

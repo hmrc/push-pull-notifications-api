@@ -17,13 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
-import org.joda.time.DateTime
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -51,8 +51,8 @@ class NotificationsService @Inject()(boxRepository: BoxRepository, notifications
   def getNotifications(boxId: BoxId,
                        clientId: ClientId,
                        status: Option[NotificationStatus] = None,
-                       fromDateTime: Option[DateTime] = None,
-                       toDateTime: Option[DateTime] = None)
+                       fromDateTime: Option[Instant] = None,
+                       toDateTime: Option[Instant] = None)
                       (implicit ec: ExecutionContext): Future[GetNotificationCreateServiceResult] = {
 
     boxRepository.findByBoxId(boxId)

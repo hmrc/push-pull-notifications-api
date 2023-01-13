@@ -17,8 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
-
-import org.joda.time.DateTime
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.http.HeaderCarrier
@@ -28,6 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
+import java.time.{Duration, Instant}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -125,8 +124,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   "getNotifications" should {
 
     val status = Some(NotificationStatus.PENDING)
-    val fromDate = Some(DateTime.now().minusHours(2))
-    val toDate = Some(DateTime.now())
+    val fromDate = Some(Instant.now.minus(Duration.ofHours(2)))
+    val toDate = Some(Instant.now)
 
 
     "return list of matched notifications" in new Setup {
@@ -211,7 +210,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
     val result: AcknowledgeNotificationsServiceResult =
       await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List("123455"))))
-      
+
     result shouldBe expectedResult
   }
 }

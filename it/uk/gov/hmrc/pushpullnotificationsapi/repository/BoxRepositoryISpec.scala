@@ -1,19 +1,17 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.CleanMongoCollectionSupport
-import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
+import java.time.{Instant, LocalDateTime}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -102,7 +100,7 @@ class BoxRepositoryISpec
     "create a Box should not allow creation of a duplicate box with same box details" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      
+
       val result2 =  await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
@@ -194,12 +192,12 @@ class BoxRepositoryISpec
 
   "get all boxes" in {
     val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
-    
+
     await(repo.createBox(box))
     await(repo.createBox(anotherBox))
 
     val allBoxes = await(repo.getAllBoxes())
-    
+
     allBoxes should have length (2)
     allBoxes shouldBe List(box, anotherBox)
   }
@@ -221,7 +219,7 @@ class BoxRepositoryISpec
 
       val subscriber = updatedBox.subscriber.get.asInstanceOf[PushSubscriber]
       subscriber.callBackUrl shouldBe callBackEndpoint
-      subscriber.subscribedDateTime.isBefore(DateTime.now())
+      subscriber.subscribedDateTime.isBefore(Instant.now)
     }
 
     "return None when the box doesn't exist" in {

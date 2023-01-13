@@ -16,20 +16,19 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.util.UUID
-
-import org.joda.time.DateTime
 import org.mockito.captor.ArgCaptor
+import org.mockito.Mockito.verifyNoInteractions
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import org.mockito.Mockito.verifyNoInteractions
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class BoxServiceSpec extends AsyncHmrcSpec {
 
@@ -60,7 +59,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     val objInTest = new BoxService(mockRepository, mockConnector, mockThirdPartyApplicationConnector, mockApiPlatformEventsConnector, mockClientService)
     val box: Box = Box(boxId, boxName, BoxCreator(clientId))
-    val boxWithExistingSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, DateTime.now)))
+    val boxWithExistingSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, Instant.now)))
     val argumentCaptor = ArgCaptor[Box]
 
 

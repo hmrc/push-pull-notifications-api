@@ -16,13 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import play.api.libs.json.Json.JsValueWrapper
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+
+import java.time.Instant
 
 case class CreateBoxResponse(boxId: String)
+
 case class CreateNotificationResponse(notificationId: String)
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
@@ -34,9 +36,9 @@ case class NotificationResponse(notificationId: NotificationId,
                                 messageContentType: MessageContentType,
                                 message: String,
                                 status: NotificationStatus = PENDING,
-                                createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                                readDateTime: Option[DateTime] = None,
-                                pushedDateTime: Option[DateTime] = None)
+                                createdDateTime: Instant = Instant.now,
+                                readDateTime: Option[Instant] = None,
+                                pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
   def fromNotification(notification: Notification): NotificationResponse = {

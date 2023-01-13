@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import org.joda.time.DateTime
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
@@ -24,6 +23,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
+import java.time.Instant
 import java.util.UUID
 
 class BoxFormatSpec extends HmrcSpec {
@@ -78,7 +78,7 @@ class BoxFormatSpec extends HmrcSpec {
 
       "correctly assign the subscriber value" in {
         box.subscriber shouldBe Some(
-          PullSubscriber("callback", DateTime.parse("2010-06-29T23:20+00:00"))
+          PullSubscriber("callback", Instant.parse("2010-06-29T23:20:00Z"))
         )
       }
     }
@@ -206,7 +206,7 @@ class BoxFormatSpec extends HmrcSpec {
           BoxCreator(ClientId("someClientId")),
           Some(ApplicationId("1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8")),
           Some(
-            PullSubscriber("callback", DateTime.parse("2010-06-30T01:20+02:00"))
+            PullSubscriber("callback", Instant.parse("2010-06-29T23:20:00Z"))
           ),
           true
         )

@@ -17,10 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import akka.stream.Materializer
-import org.joda.time.DateTime
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
-import org.joda.time.format.DateTimeFormat
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -40,6 +36,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
+import java.time.{Duration, Instant}
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -79,7 +77,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
   private val headersWithInValidUserAgent: Map[String, String] = Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
   private val headersWithInvalidContentType: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
-  val createdDateTime: DateTime = DateTime.now().minusDays(1)
+  val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
   val notification: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
     messageContentType = MessageContentType.APPLICATION_JSON,
     message = "{}",
@@ -89,7 +87,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
   val notification2: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
     messageContentType = MessageContentType.APPLICATION_XML,
     message = "<someXml/>",
-    createdDateTime = createdDateTime.plusHours(12),
+    createdDateTime = createdDateTime.plus(Duration.ofHours(12)),
     status = NotificationStatus.ACKNOWLEDGED)
 
 
@@ -336,7 +334,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           eqTo(None),
           eqTo(None),
           eqTo(None))(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(now(UTC)))))))
+          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(Instant.now))))))
 
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
@@ -356,7 +354,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
         val resultStr =  contentAsString(result)
-        val expectedCreatedDateTime = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ").print(notification.createdDateTime)
+        val expectedCreatedDateTime = DateTimeFormatter.ISO_INSTANT.format(createdDateTime)
         resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
         resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
         resultStr.contains(s""""createdDateTime":"$expectedCreatedDateTime"""") shouldBe true
@@ -626,8 +624,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
     } else {
       primeAuthAction(clientIdStr)
     }
-    val maybeFromDate: Option[DateTime] = stringToDateTimeLenient(maybeFromDateStr)
-    val maybeToDate: Option[DateTime] = stringToDateTimeLenient(maybeToDateStr)
+    val maybeFromDate: Option[Instant] = stringToDateTimeLenient(maybeFromDateStr)
+    val maybeToDate: Option[Instant] = stringToDateTimeLenient(maybeToDateStr)
 
 
 
@@ -662,13 +660,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
     }
   }
 
-  def stringToDateTime(dateStr: String): DateTime = {
-    DateTime.parse(dateStr)
+  def stringToDateTime(dateStr: String): Instant = {
+    Instant.parse(dateStr)
   }
 
-  def stringToDateTimeLenient(dateStr: Option[String]): Option[DateTime] = {
-    Try[Option[DateTime]] {
-      dateStr.map(DateTime.parse)
+  def stringToDateTimeLenient(dateStr: Option[String]): Option[Instant] = {
+    Try[Option[Instant]] {
+      dateStr.map(Instant.parse)
     } match {
       case Success(x) => x
       case Failure(_) => None

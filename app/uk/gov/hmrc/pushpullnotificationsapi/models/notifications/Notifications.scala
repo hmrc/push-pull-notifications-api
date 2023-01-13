@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
-import java.util.UUID
-import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import org.joda.time.{DateTime, DateTimeZone}
+import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 
+import java.time.Instant
+import java.util.UUID
 import scala.collection.immutable
 
 
@@ -34,6 +34,7 @@ object MessageContentType extends StringEnum[MessageContentType] with StringPlay
   val values: immutable.IndexedSeq[MessageContentType] = findValues
 
   case object APPLICATION_JSON extends MessageContentType("application/json")
+
   case object APPLICATION_XML extends MessageContentType("application/xml")
 }
 
@@ -57,13 +58,13 @@ case class Notification(notificationId: NotificationId,
                         messageContentType: MessageContentType,
                         message: String,
                         status: NotificationStatus = PENDING,
-                        createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                        readDateTime: Option[DateTime] = None,
-                        pushedDateTime: Option[DateTime] = None,
-                        retryAfterDateTime: Option[DateTime] = None)
+                        createdDateTime: Instant = Instant.now,
+                        readDateTime: Option[Instant] = None,
+                        pushedDateTime: Option[Instant] = None,
+                        retryAfterDateTime: Option[Instant] = None)
 
 object Notification {
-  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+  implicit val dateFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val formatBoxID: OFormat[BoxId] = Json.format[BoxId]
   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
