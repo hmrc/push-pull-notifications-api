@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationResponse] = {
     val url = s"${appConfig.thirdPartyApplicationUrl}/application"
@@ -37,4 +37,3 @@ class ThirdPartyApplicationConnector @Inject()(http: HttpClient, appConfig: AppC
 }
 
 case class ApplicationResponse(id: ApplicationId)
-

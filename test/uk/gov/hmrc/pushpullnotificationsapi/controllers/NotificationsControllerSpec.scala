@@ -28,7 +28,7 @@ import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{Json, JsValue}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -44,8 +44,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class NotificationsControllerSpec extends AsyncHmrcSpec
-  with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   val mockNotificationService: NotificationsService = mock[NotificationsService]
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
@@ -74,32 +73,45 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
 
   private val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
   private val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
-  private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
-  private val validHeadersXml: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
-  private val headersWithInValidUserAgent: Map[String, String] = Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
-  private val headersWithInvalidContentType: Map[String, String] = Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+
+  private val validHeadersJson: Map[String, String] =
+    Map(validAcceptHeader, "Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+
+  private val validHeadersXml: Map[String, String] =
+    Map(validAcceptHeader, "Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
+
+  private val headersWithInValidUserAgent: Map[String, String] =
+    Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
+
+  private val headersWithInvalidContentType: Map[String, String] =
+    Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
   val createdDateTime: DateTime = DateTime.now().minusDays(1)
-  val notification: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
+
+  val notification: Notification = Notification(
+    NotificationId(UUID.randomUUID()),
+    boxId,
     messageContentType = MessageContentType.APPLICATION_JSON,
     message = "{}",
     createdDateTime = createdDateTime,
-    status = PENDING)
+    status = PENDING
+  )
 
-  val notification2: Notification = Notification(NotificationId(UUID.randomUUID()), boxId,
+  val notification2: Notification = Notification(
+    NotificationId(UUID.randomUUID()),
+    boxId,
     messageContentType = MessageContentType.APPLICATION_XML,
     message = "<someXml/>",
     createdDateTime = createdDateTime.plusHours(12),
-    status = NotificationStatus.ACKNOWLEDGED)
-
+    status = NotificationStatus.ACKNOWLEDGED
+  )
 
   "NotificationController" when {
     "saveNotification" should {
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
-        when(mockNotificationService.saveNotification(eqTo(boxId),
-          *[NotificationId],
-          eqTo(MessageContentType.APPLICATION_JSON),
-          eqTo(jsonBody))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)).thenReturn(
+          Future.successful(NotificationCreateSuccessResult())
+        )
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
@@ -109,7 +121,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       }
 
       "fail when payload is too large" in {
-        val overlyLargeJsonBody: String = """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
+        val overlyLargeJsonBody: String =
+          """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
 
         val result = doPost(s"/box/${boxId.raw}/notifications", validHeadersJson, overlyLargeJsonBody)
         status(result) should be(REQUEST_ENTITY_TOO_LARGE)
@@ -149,7 +162,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       }
 
       "return 415 when bad contentType header is sent" in {
-        val result = doPost(s"/box/${boxId.raw}/notifications",  Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), jsonBody)
+        val result = doPost(s"/box/${boxId.raw}/notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockNotificationService)
@@ -164,7 +177,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         status(result) should be(INTERNAL_SERVER_ERROR)
         val bodyVal = contentAsString(result)
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
-
 
         verify(mockNotificationService)
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
@@ -202,10 +214,9 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       }
 
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
-        when(mockNotificationService.saveNotification(eqTo(boxId),
-          *[NotificationId],
-          eqTo(MessageContentType.APPLICATION_JSON),
-          eqTo(jsonBody))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)).thenReturn(
+          Future.successful(NotificationCreateSuccessResult())
+        )
 
         val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON))
         status(result) should be(CREATED)
@@ -217,10 +228,9 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       "return 201 when valid complicated json, json content type header are provided and notification successfully saved" in {
         val complicatedJson = "{\"foo\":\"bar\"}"
         val escapedComplicatedJson = "{\\\"foo\\\":\\\"bar\\\"}"
-        when(mockNotificationService.saveNotification(eqTo(boxId),
-          *[NotificationId],
-          eqTo(MessageContentType.APPLICATION_JSON),
-          eqTo(complicatedJson))(*, *)).thenReturn(Future.successful(NotificationCreateSuccessResult()))
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*, *)).thenReturn(
+          Future.successful(NotificationCreateSuccessResult())
+        )
 
         val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(escapedComplicatedJson, MimeTypes.JSON))
         status(result) should be(CREATED)
@@ -230,7 +240,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       }
 
       "return 413 when payload is too large" in {
-        val overlyLargeJsonBody: String = """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
+        val overlyLargeJsonBody: String =
+          """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
 
         val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
         status(result) should be(REQUEST_ENTITY_TOO_LARGE)
@@ -293,7 +304,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         val bodyVal = contentAsString(result)
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
 
-
         verify(mockNotificationService)
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
       }
@@ -335,7 +345,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(*))
+          eqTo(None)
+        )(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(now(UTC)))))))
 
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
@@ -350,12 +361,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(*))
+          eqTo(None)
+        )(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification))))
 
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
-        val resultStr =  contentAsString(result)
+        val resultStr = contentAsString(result)
         val expectedCreatedDateTime = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ").print(notification.createdDateTime)
         resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
         resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
@@ -370,12 +382,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           eqTo(clientId),
           eqTo(None),
           eqTo(None),
-          eqTo(None))(*))
+          eqTo(None)
+        )(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
 
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
         status(result) shouldBe OK
-        val resultStr =  contentAsString(result)
+        val resultStr = contentAsString(result)
         resultStr.contains("\"messageContentType\":\"application/json\"") shouldBe true
         resultStr.contains("\"messageContentType\":\"application/xml\"") shouldBe true
       }
@@ -440,7 +453,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           *[ClientId],
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
+          eqTo(stringToDateTimeLenient(Some(toDateStr)))
+        )(*))
           .thenReturn(Future.successful(GetNotificationsServiceBoxNotFoundResult("")))
 
         val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -457,7 +471,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           *[ClientId],
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
+          eqTo(stringToDateTimeLenient(Some(toDateStr)))
+        )(*))
           .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
 
         val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -473,7 +488,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
           eqTo(clientId),
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr))))(*))
+          eqTo(stringToDateTimeLenient(Some(toDateStr)))
+        )(*))
           .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List.empty)))
 
         val result = doGet(s"/box/${boxId.raw}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -542,7 +558,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
         status(result) shouldBe NOT_FOUND
       }
 
-
       "return 403 when acknowledge request is valid but service return unauthorised" in {
         primeAuthAction(clientIdStr)
         when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
@@ -603,7 +618,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
       "return 415 if Content-Type header is invalid" in {
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", headersWithInvalidContentType, validatedAcknowledgeRequest)
-        status(result) should be (UNSUPPORTED_MEDIA_TYPE)
+        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         val jsonBody = contentAsJson(result)
         (jsonBody \ "code").as[String] shouldBe "BAD_REQUEST"
@@ -616,11 +631,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
 
   }
 
-  private def testAndValidateGetByQueryParams(boxId: BoxId,
-                                              expectedStatusCode: Int,
-                                              maybeNotificationStatus: Option[String],
-                                              maybeFromDateStr: Option[String] = None,
-                                              maybeToDateStr: Option[String] = None): Unit = {
+  private def testAndValidateGetByQueryParams(
+      boxId: BoxId,
+      expectedStatusCode: Int,
+      maybeNotificationStatus: Option[String],
+      maybeFromDateStr: Option[String] = None,
+      maybeToDateStr: Option[String] = None
+    ): Unit = {
     if (expectedStatusCode.equals(UNAUTHORIZED)) {
       when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
     } else {
@@ -629,17 +646,16 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
     val maybeFromDate: Option[DateTime] = stringToDateTimeLenient(maybeFromDateStr)
     val maybeToDate: Option[DateTime] = stringToDateTimeLenient(maybeToDateStr)
 
-
-
     expectedStatusCode match {
-      case OK => when(mockNotificationService.getNotifications(
-        eqTo(boxId),
-        eqTo(clientId),
-        eqTo( maybeNotificationStatus.map(NotificationStatus.withName)),
-        eqTo(maybeFromDate),
-        eqTo(maybeToDate))(*))
-        .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
-      case NOT_FOUND => ()
+      case OK          => when(mockNotificationService.getNotifications(
+          eqTo(boxId),
+          eqTo(clientId),
+          eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
+          eqTo(maybeFromDate),
+          eqTo(maybeToDate)
+        )(*))
+          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
+      case NOT_FOUND   => ()
       case BAD_REQUEST => ()
     }
 
@@ -651,14 +667,15 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
     status(result) shouldBe expectedStatusCode
 
     expectedStatusCode match {
-      case NOT_FOUND => verifyNoInteractions(mockNotificationService)
+      case NOT_FOUND   => verifyNoInteractions(mockNotificationService)
       case BAD_REQUEST => verifyNoInteractions(mockNotificationService)
-      case OK => verify(mockNotificationService).getNotifications(
-        eqTo(boxId),
-        eqTo(clientId),
-        eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
-        eqTo(maybeFromDate),
-        eqTo(maybeToDate))(*)
+      case OK          => verify(mockNotificationService).getNotifications(
+          eqTo(boxId),
+          eqTo(clientId),
+          eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
+          eqTo(maybeFromDate),
+          eqTo(maybeToDate)
+        )(*)
     }
   }
 
@@ -688,14 +705,12 @@ class NotificationsControllerSpec extends AsyncHmrcSpec
     doPOSTorPUT(uri, headers, bodyValue, PUT)
   }
 
-  private def doPOSTorPUT(uri: String, headers: Map[String, String], bodyValue: String, method: String): Future[Result]
-
-  = {
+  private def doPOSTorPUT(uri: String, headers: Map[String, String], bodyValue: String, method: String): Future[Result] = {
     val maybeBody: Option[JsValue] = Try {
       Json.parse(bodyValue)
     } match {
       case Success(value) => Some(value)
-      case Failure(_) => None
+      case Failure(_)     => None
     }
 
     val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)

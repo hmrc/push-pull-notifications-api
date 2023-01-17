@@ -29,19 +29,29 @@ case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[S
 
 case class ValidateBoxOwnershipResponse(valid: Boolean)
 
-case class NotificationResponse(notificationId: NotificationId,
-                                boxId: BoxId,
-                                messageContentType: MessageContentType,
-                                message: String,
-                                status: NotificationStatus = PENDING,
-                                createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                                readDateTime: Option[DateTime] = None,
-                                pushedDateTime: Option[DateTime] = None)
+case class NotificationResponse(
+    notificationId: NotificationId,
+    boxId: BoxId,
+    messageContentType: MessageContentType,
+    message: String,
+    status: NotificationStatus = PENDING,
+    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
+    readDateTime: Option[DateTime] = None,
+    pushedDateTime: Option[DateTime] = None)
 
 object NotificationResponse {
+
   def fromNotification(notification: Notification): NotificationResponse = {
-    NotificationResponse(notification.notificationId, notification.boxId, notification.messageContentType, notification.message,
-      notification.status, notification.createdDateTime, notification.readDateTime, notification.pushedDateTime)
+    NotificationResponse(
+      notification.notificationId,
+      notification.boxId,
+      notification.messageContentType,
+      notification.message,
+      notification.status,
+      notification.createdDateTime,
+      notification.readDateTime,
+      notification.pushedDateTime
+    )
   }
 }
 
@@ -55,7 +65,7 @@ object ErrorCode extends Enumeration {
   val DUPLICATE_NOTIFICATION = Value("DUPLICATE_NOTIFICATION")
   val FORBIDDEN = Value("FORBIDDEN")
   val INVALID_ACCEPT_HEADER = Value("INVALID_ACCEPT_HEADER")
-  val INVALID_CONTENT_TYPE =Value("INVALID_CONTENT_TYPE")
+  val INVALID_CONTENT_TYPE = Value("INVALID_CONTENT_TYPE")
   val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
   val NOT_FOUND = Value("NOT_FOUND")
   val UNAUTHORISED = Value("UNAUTHORISED")
@@ -64,6 +74,7 @@ object ErrorCode extends Enumeration {
 }
 
 object JsErrorResponse {
+
   def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
     Json.obj(
       "code" -> errorCode.toString,

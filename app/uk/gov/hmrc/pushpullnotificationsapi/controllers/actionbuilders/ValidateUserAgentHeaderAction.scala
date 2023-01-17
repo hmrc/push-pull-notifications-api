@@ -27,8 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ValidateUserAgentHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateUserAgentHeaderAction @Inject() (appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
@@ -36,7 +35,7 @@ class ValidateUserAgentHeaderAction @Inject()(appConfig: AppConfig)(implicit ec:
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     val userAgent = request.headers.get(HeaderNames.USER_AGENT).getOrElse("")
     appConfig.allowlistedUserAgentList match {
-      case Nil =>  Future.successful(Some(BadRequest))
+      case Nil             => Future.successful(Some(BadRequest))
       case x: List[String] =>
         if (x.contains(userAgent)) {
           Future.successful(None)

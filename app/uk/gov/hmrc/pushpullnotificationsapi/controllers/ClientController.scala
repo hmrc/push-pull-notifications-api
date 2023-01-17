@@ -28,17 +28,17 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 import scala.concurrent.ExecutionContext
 
 @Singleton()
-class ClientController @Inject()(validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
-                                 clientService: ClientService,
-                                 cc: ControllerComponents)
-                                (implicit val ec: ExecutionContext) extends BackendController(cc) {
+class ClientController @Inject() (
+    validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
+    clientService: ClientService,
+    cc: ControllerComponents
+  )(implicit val ec: ExecutionContext)
+    extends BackendController(cc) {
 
   def getClientSecrets(clientId: ClientId): Action[AnyContent] = (Action andThen validateAuthorizationHeaderAction).async {
     clientService.getClientSecrets(clientId) map {
       case Some(clientSecrets) => Ok(Json.toJson(clientSecrets))
-      case None => NotFound(JsErrorResponse(ErrorCode.CLIENT_NOT_FOUND, "Client not found"))
+      case None                => NotFound(JsErrorResponse(ErrorCode.CLIENT_NOT_FOUND, "Client not found"))
     } recover recovery
   }
 }
-
-

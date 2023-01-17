@@ -37,11 +37,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class RetryPushNotificationsJob @Inject()(mongoLockRepository: MongoLockRepository,
-                                          jobConfig: RetryPushNotificationsJobConfig,
-                                          notificationsRepository: NotificationsRepository,
-                                          notificationPushService: NotificationPushService)
-                                         (implicit mat: Materializer) extends ScheduledMongoJob {
+class RetryPushNotificationsJob @Inject() (
+    mongoLockRepository: MongoLockRepository,
+    jobConfig: RetryPushNotificationsJobConfig,
+    notificationsRepository: NotificationsRepository,
+    notificationPushService: NotificationPushService
+  )(implicit mat: Materializer)
+    extends ScheduledMongoJob {
 
   override def name: String = "RetryPushNotificationsJob"
   override def interval: FiniteDuration = jobConfig.interval
@@ -61,7 +63,7 @@ class RetryPushNotificationsJob @Inject()(mongoLockRepository: MongoLockReposito
         case NonFatal(e) =>
           logger.error("Failed to retry failed push pull notifications", e)
           Future.failed(RunningOfJobFailed(name, e))
-    }
+      }
   }
 
   private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: DateTime)(implicit ec: ExecutionContext): Future[Unit] = {
@@ -84,8 +86,4 @@ class RetryPushNotificationsJob @Inject()(mongoLockRepository: MongoLockReposito
   }
 }
 
-case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration,
-                                           interval: FiniteDuration,
-                                           enabled: Boolean,
-                                           numberOfHoursToRetry: Int,
-                                           parallelism: Int)
+case class RetryPushNotificationsJobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, enabled: Boolean, numberOfHoursToRetry: Int, parallelism: Int)

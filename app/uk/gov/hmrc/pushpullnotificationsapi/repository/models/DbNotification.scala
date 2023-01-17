@@ -23,17 +23,19 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 
-case class DbNotification(notificationId: NotificationId,
-                                              boxId: BoxId,
-                                              messageContentType: MessageContentType,
-                                              encryptedMessage: String,
-                                              status: NotificationStatus = PENDING,
-                                              createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                                              readDateTime: Option[DateTime] = None,
-                                              pushedDateTime: Option[DateTime] = None,
-                                              retryAfterDateTime: Option[DateTime] = None)
+case class DbNotification(
+    notificationId: NotificationId,
+    boxId: BoxId,
+    messageContentType: MessageContentType,
+    encryptedMessage: String,
+    status: NotificationStatus = PENDING,
+    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
+    readDateTime: Option[DateTime] = None,
+    pushedDateTime: Option[DateTime] = None,
+    retryAfterDateTime: Option[DateTime] = None)
 
 private[repository] object DbNotification {
+
   def fromNotification(notification: Notification, crypto: CompositeSymmetricCrypto): DbNotification = {
     DbNotification(
       notification.notificationId,
@@ -66,6 +68,7 @@ private[repository] object DbNotification {
 private[repository] case class DbRetryableNotification(notification: DbNotification, box: Box)
 
 private[repository] object DbRetryableNotification {
+
   def fromRetryableNotification(retryableNotification: RetryableNotification, crypto: CompositeSymmetricCrypto): DbRetryableNotification = {
     DbRetryableNotification(fromNotification(retryableNotification.notification, crypto), retryableNotification.box)
   }

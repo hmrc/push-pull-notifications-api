@@ -17,5 +17,5 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 object MongoErrorCodes {
-    val DuplicateKey = 11000
+  val DuplicateKey = 11000
 }

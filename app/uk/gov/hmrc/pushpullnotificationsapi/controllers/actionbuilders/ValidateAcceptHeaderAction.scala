@@ -27,14 +27,14 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ValidateAcceptHeaderAction @Inject()(implicit ec: ExecutionContext) extends ActionFilter[Request] {
+class ValidateAcceptHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] {
 
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(ACCEPT) match {
       case Some("application/vnd.hmrc.1.0+json") => successful(None)
-      case _ => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
+      case _                                     => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
     }
   }
 }

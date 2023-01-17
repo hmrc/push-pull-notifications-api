@@ -29,11 +29,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PPNSJsonErrorHandler @Inject()(auditConnector: AuditConnector,
-                                     httpAuditEvent: HttpAuditEvent,
-                                     configuration: Configuration)
-                                    (implicit ec: ExecutionContext)
-  extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {
+class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditEvent: HttpAuditEvent, configuration: Configuration)(implicit ec: ExecutionContext)
+    extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {
 
   import httpAuditEvent.dataEvent
 
@@ -41,16 +38,16 @@ class PPNSJsonErrorHandler @Inject()(auditConnector: AuditConnector,
     Future.successful {
       implicit val headerCarrier: HeaderCarrier = hc(request)
       statusCode match {
-        case NOT_FOUND =>
+        case NOT_FOUND              =>
           NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"URI not found ${request.path}"))
-        case BAD_REQUEST =>
+        case BAD_REQUEST            =>
           if (message.contains("Invalid Json")) {
             BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format"))
           } else {
             BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
           }
         case UNSUPPORTED_MEDIA_TYPE => UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
-        case _ =>
+        case _                      =>
           auditConnector.sendEvent(
             dataEvent(
               eventType = "ClientError",

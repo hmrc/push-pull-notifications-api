@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 import org.joda.time.Duration
@@ -35,15 +34,10 @@ import scala.concurrent.Future.successful
 import scala.concurrent.duration._
 import scala.util.Try
 
-class LockedScheduledJobSpec
-  extends AsyncHmrcSpec
-    with Matchers
-    with ScalaFutures
-    with GuiceOneAppPerTest
-    with BeforeAndAfterEach {
+class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutures with GuiceOneAppPerTest with BeforeAndAfterEach {
 
   override def fakeApplication(): Application =
-      GuiceApplicationBuilder()
+    GuiceApplicationBuilder()
       .configure("mongodb.uri" -> "mongodb://localhost:27017/test-play-schedule")
       .build()
 
@@ -94,14 +88,14 @@ class LockedScheduledJobSpec
       when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))
 
       val pausedExecution = job.execute
-      pausedExecution.isCompleted     shouldBe false
-      job.isRunning.futureValue       shouldBe true
+      pausedExecution.isCompleted shouldBe false
+      job.isRunning.futureValue shouldBe true
       job.execute.futureValue.message shouldBe "Job with job2 cannot aquire mongo lock, not running"
-      job.isRunning.futureValue       shouldBe true
+      job.isRunning.futureValue shouldBe true
 
       job.continueExecution()
       pausedExecution.futureValue.message shouldBe "Job with job2 run and completed with result 1"
-      job.isRunning.futureValue           shouldBe false
+      job.isRunning.futureValue shouldBe false
     }
 
     "should tolerate exceptions in execution" in {

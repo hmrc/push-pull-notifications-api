@@ -24,7 +24,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.Authorization
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlResponse, VerifyCallbackUrlRequest}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.fromUpdateCallbackUrlRequest
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
@@ -36,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class PushConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def send(pushNotificationRequest: OutboundNotification)(implicit hc: HeaderCarrier): Future[PushConnectorResult] = {
     doSend(pushNotificationRequest, hc)
@@ -45,7 +45,7 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
   private def doSend(notification: OutboundNotification, hc: HeaderCarrier): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/notify"
     doSend[OutboundNotification, PushConnectorResponse](url, notification, hc).map(_.successful) map {
-      case true => PushConnectorSuccessResult()
+      case true  => PushConnectorSuccessResult()
       case false => PushConnectorFailedResult("PPNS Gateway was unable to successfully deliver notification")
     } recover {
       case NonFatal(e) => PushConnectorFailedResult(e.getMessage)
@@ -55,14 +55,15 @@ class PushConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit e
   def validateCallbackUrl(request: UpdateCallbackUrlRequest): Future[PushConnectorResult] = {
     val url = s"${appConfig.outboundNotificationsUrl}/validate-callback"
     doSend[VerifyCallbackUrlRequest, VerifyCallbackUrlResponse](url, fromUpdateCallbackUrlRequest(request), HeaderCarrier()).map {
-      result: VerifyCallbackUrlResponse => if(result.successful) PushConnectorSuccessResult()
-      else result.errorMessage.fold(PushConnectorFailedResult("Unknown Error"))(PushConnectorFailedResult)
+      result: VerifyCallbackUrlResponse =>
+        if (result.successful) PushConnectorSuccessResult()
+        else result.errorMessage.fold(PushConnectorFailedResult("Unknown Error"))(PushConnectorFailedResult)
     } recover {
       case NonFatal(e) => PushConnectorFailedResult(e.getMessage)
     }
   }
 
-  private def doSend[T, V](url:String, payload: T, hc: HeaderCarrier)(implicit wr: Writes[T], rd: HttpReads[V]): Future[V] = {
+  private def doSend[T, V](url: String, payload: T, hc: HeaderCarrier)(implicit wr: Writes[T], rd: HttpReads[V]): Future[V] = {
 
     val authorizationKey = appConfig.gatewayAuthToken
 
@@ -84,5 +85,5 @@ object PushConnector {
   private[connectors] case class VerifyCallbackUrlResponse(successful: Boolean, errorMessage: Option[String])
 
   private[connectors] def fromUpdateCallbackUrlRequest(updateCallbackUrlRequest: UpdateCallbackUrlRequest): VerifyCallbackUrlRequest =
-   VerifyCallbackUrlRequest(updateCallbackUrlRequest.callbackUrl)
+    VerifyCallbackUrlRequest(updateCallbackUrlRequest.callbackUrl)
 }

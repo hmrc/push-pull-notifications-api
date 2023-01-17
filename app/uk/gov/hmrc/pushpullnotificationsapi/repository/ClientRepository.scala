@@ -33,19 +33,21 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoForma
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ClientRepository @Inject()(mongo: MongoComponent, crypto: CompositeSymmetricCrypto)
-                                (implicit ec: ExecutionContext, val mat: Materializer)
-  extends PlayMongoRepository[DbClient](
-    collectionName ="client",
-    mongoComponent = mongo,
-    domainFormat = dbClientFormatter,
-    indexes = Seq(
-      IndexModel(ascending("id"),
-        IndexOptions()
-          .name("id_index")
-          .background(true)
-          .unique(true))
-    )) {
+class ClientRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, val mat: Materializer)
+    extends PlayMongoRepository[DbClient](
+      collectionName = "client",
+      mongoComponent = mongo,
+      domainFormat = dbClientFormatter,
+      indexes = Seq(
+        IndexModel(
+          ascending("id"),
+          IndexOptions()
+            .name("id_index")
+            .background(true)
+            .unique(true)
+        )
+      )
+    ) {
 
   def insertClient(client: Client): Future[Client] = {
     collection.insertOne(fromClient(client, crypto)).map(_ => client).head()

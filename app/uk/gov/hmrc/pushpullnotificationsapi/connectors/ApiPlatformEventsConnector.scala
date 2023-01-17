@@ -34,13 +34,12 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 @Singleton
-class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {
-
+class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
     val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, LocalDateTime.now(), oldUrl, newUrl, box.boxId.raw, box.boxName)
-    http.POST[PpnsCallBackUriUpdatedEvent,HttpResponse](url, event)
+    http.POST[PpnsCallBackUriUpdatedEvent, HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {
         case NonFatal(e) =>
@@ -53,6 +52,7 @@ class ApiPlatformEventsConnector @Inject()(http: HttpClient, appConfig: AppConfi
 object ApiPlatformEventsConnector {
 
   case class EventId(value: UUID) extends AnyVal
+
   object EventId {
     def random: EventId = EventId(randomUUID())
   }
@@ -60,14 +60,15 @@ object ApiPlatformEventsConnector {
   //This is hardcoded at the moment as we dont have the details of the user who initiated the callback change
   case class Actor(id: String = "", actorType: String = "UNKNOWN")
 
-  case class PpnsCallBackUriUpdatedEvent(id: EventId,
-                                         applicationId: String,
-                                         eventDateTime: LocalDateTime,
-                                         oldCallbackUrl: String,
-                                         newCallbackUrl: String,
-                                         boxId: String,
-                                         boxName: String,
-                                         actor: Actor = Actor()) {
+  case class PpnsCallBackUriUpdatedEvent(
+      id: EventId,
+      applicationId: String,
+      eventDateTime: LocalDateTime,
+      oldCallbackUrl: String,
+      newCallbackUrl: String,
+      boxId: String,
+      boxName: String,
+      actor: Actor = Actor()) {
     val eventType = "PPNS_CALLBACK_URI_UPDATED"
   }
 }

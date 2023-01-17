@@ -28,8 +28,7 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ValidateContentTypeHeaderAction @Inject()(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateContentTypeHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
@@ -37,7 +36,7 @@ class ValidateContentTypeHeaderAction @Inject()(implicit ec: ExecutionContext)
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(CONTENT_TYPE) match {
       case Some("application/json") => successful(None)
-      case _ => successful(Some(NotAcceptable(JsErrorResponse(INVALID_CONTENT_TYPE, "The content type header is missing or invalid"))))
+      case _                        => successful(Some(NotAcceptable(JsErrorResponse(INVALID_CONTENT_TYPE, "The content type header is missing or invalid"))))
     }
   }
 }

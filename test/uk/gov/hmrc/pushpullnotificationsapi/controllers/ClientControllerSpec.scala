@@ -36,8 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
-class ClientControllerSpec extends AsyncHmrcSpec
-  with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
 
@@ -54,12 +53,13 @@ class ClientControllerSpec extends AsyncHmrcSpec
   }
 
   val authToken = randomUUID.toString
+
   private def setUpAppConfig(authHeaderValue: Option[String]): Unit = {
     authHeaderValue match {
       case Some(value) =>
         when(mockAppConfig.authorizationToken).thenReturn(value)
         ()
-      case None => ()
+      case None        => ()
     }
   }
 
@@ -72,38 +72,37 @@ class ClientControllerSpec extends AsyncHmrcSpec
   val clientId: ClientId = ClientId(clientIdStr)
   val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
 
-    "getClientSecrets" should {
-      "return 200 and the array of secrets for the requested client" in {
-        setUpAppConfig(Some(authToken))
-        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(Some(Seq(clientSecret))))
+  "getClientSecrets" should {
+    "return 200 and the array of secrets for the requested client" in {
+      setUpAppConfig(Some(authToken))
+      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(Some(Seq(clientSecret))))
 
-        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
+      val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
 
-        status(result) shouldBe OK
-        contentAsJson(result) shouldBe toJson(Seq(clientSecret))
-      }
-
-      "return 404 when there is no matching client for the given client ID" in {
-        setUpAppConfig(Some(authToken))
-        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
-
-        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
-
-
-        status(result) shouldBe NOT_FOUND
-        (contentAsJson(result) \ "code").as[String] shouldBe "CLIENT_NOT_FOUND"
-        (contentAsJson(result) \ "message").as[String] shouldBe "Client not found"
-      }
-
-      "return 403 when the authorization header does not match the token from the app config" in {
-        setUpAppConfig(Some(authToken))
-        when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
-
-        val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken"))
-
-        status(result) shouldBe FORBIDDEN
-        (contentAsJson(result) \ "code").as[String] shouldBe "FORBIDDEN"
-        (contentAsJson(result) \ "message").as[String] shouldBe "Authorisation failed"
-      }
+      status(result) shouldBe OK
+      contentAsJson(result) shouldBe toJson(Seq(clientSecret))
     }
+
+    "return 404 when there is no matching client for the given client ID" in {
+      setUpAppConfig(Some(authToken))
+      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+
+      val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
+
+      status(result) shouldBe NOT_FOUND
+      (contentAsJson(result) \ "code").as[String] shouldBe "CLIENT_NOT_FOUND"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Client not found"
+    }
+
+    "return 403 when the authorization header does not match the token from the app config" in {
+      setUpAppConfig(Some(authToken))
+      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+
+      val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken"))
+
+      status(result) shouldBe FORBIDDEN
+      (contentAsJson(result) \ "code").as[String] shouldBe "FORBIDDEN"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Authorisation failed"
+    }
+  }
 }

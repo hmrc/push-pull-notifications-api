@@ -24,8 +24,7 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ClientService @Inject()(clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)
-                             (implicit ec: ExecutionContext) {
+class ClientService @Inject() (clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)(implicit ec: ExecutionContext) {
 
   def getClientSecrets(clientId: ClientId): Future[Option[Seq[ClientSecret]]] = {
     clientRepository.findByClientId(clientId).map(_.map(_.secrets))

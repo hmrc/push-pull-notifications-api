@@ -39,7 +39,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
     "schedule a configured job with the given interval and initialDuration" in new TestCase {
       object Captured {
         var initialDelay: FiniteDuration = _
-        var interval: FiniteDuration     = _
+        var interval: FiniteDuration = _
       }
       private val testApp = fakeApplication()
       val runner = new RunningOfScheduledJobs {
@@ -48,10 +48,9 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
         override lazy val application: Application = testApp
         override lazy val scheduler: Scheduler = new StubbedScheduler {
-          override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)
-                               (implicit executor: ExecutionContext): Cancellable = {
+          override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
             Captured.initialDelay = initialDelay
-            Captured.interval     = interval
+            Captured.interval = interval
             new Cancellable {
               override def cancel(): Boolean = true
               override def isCancelled: Boolean = false
@@ -81,8 +80,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
         override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
         override lazy val scheduler: Scheduler = new StubbedScheduler {
-          override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)
-                               (implicit executor: ExecutionContext): Cancellable = {
+          override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
             capturedRunnable = runnable
             new Cancellable {
               override def cancel(): Boolean = true
@@ -138,21 +136,28 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
       }
 
       val stopFuture = testApp.stop()
-      stopFuture should not be'completed
+      stopFuture should not be 'completed
 
       stoppableJob.isRunning = Future.successful(false)
-      eventually (timeout(Span(1, Minute))) { stopFuture should be('completed) }
+      eventually(timeout(Span(1, Minute))) { stopFuture should be('completed) }
     }
   }
 
   trait TestCase {
+
     class StubbedScheduler extends Scheduler {
-      override def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
-        implicit executor: ExecutionContext): Cancellable = new Cancellable {
+
+      override def scheduleWithFixedDelay(
+          initialDelay: FiniteDuration,
+          delay: FiniteDuration
+        )(runnable: Runnable
+        )(implicit executor: ExecutionContext
+        ): Cancellable = new Cancellable {
         override def cancel(): Boolean = true
         override def isCancelled: Boolean = false
       }
-      def maxFrequency: Double  = 1
+      def maxFrequency: Double = 1
+
       def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = new Cancellable {
         override def cancel(): Boolean = true
         override def isCancelled: Boolean = false
@@ -160,6 +165,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
 
       override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext) = ???
     }
+
     class TestScheduledJob extends ScheduledJob {
       override lazy val initialDelay: FiniteDuration = 2.seconds
       override lazy val interval: FiniteDuration = 3.seconds
@@ -170,8 +176,10 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
       var isRunning: Future[Boolean] = Future.successful(false)
     }
     val testScheduledJob = new TestScheduledJob
+
     class StubCancellable extends Cancellable {
       var isCancelled = false
+
       def cancel(): Boolean = {
         isCancelled = true
         isCancelled

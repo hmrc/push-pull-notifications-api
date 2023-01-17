@@ -26,60 +26,69 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 @Singleton
-class NotificationsService @Inject()(boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService)
-  extends ApplicationLogger {
+class NotificationsService @Inject() (boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService)
+    extends ApplicationLogger {
 
-
-  def acknowledgeNotifications(boxId: BoxId,
-                               clientId: ClientId,
-                               request: AcknowledgeNotificationsRequest)(implicit ec: ExecutionContext): Future[AcknowledgeNotificationsServiceResult] = {
+  def acknowledgeNotifications(
+      boxId: BoxId,
+      clientId: ClientId,
+      request: AcknowledgeNotificationsRequest
+    )(implicit ec: ExecutionContext
+    ): Future[AcknowledgeNotificationsServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
+        case None      => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
         case Some(box) =>
-          if(box.boxCreator.clientId.equals(clientId)) {
+          if (box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(AcknowledgeNotificationsSuccessUpdatedResult)
-          }else{
+          } else {
             Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
           }
       }
   }
 
-  def getNotifications(boxId: BoxId,
-                       clientId: ClientId,
-                       status: Option[NotificationStatus] = None,
-                       fromDateTime: Option[DateTime] = None,
-                       toDateTime: Option[DateTime] = None)
-                      (implicit ec: ExecutionContext): Future[GetNotificationCreateServiceResult] = {
+  def getNotifications(
+      boxId: BoxId,
+      clientId: ClientId,
+      status: Option[NotificationStatus] = None,
+      fromDateTime: Option[DateTime] = None,
+      toDateTime: Option[DateTime] = None
+    )(implicit ec: ExecutionContext
+    ): Future[GetNotificationCreateServiceResult] = {
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+        case None      => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
         case Some(box) =>
-          if(box.boxCreator.clientId.equals(clientId)) {
+          if (box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)
               .map(results => GetNotificationsSuccessRetrievedResult(results))
-          }else{
+          } else {
             Future.successful(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
           }
       }
   }
 
-  def saveNotification(boxId: BoxId, notificationId: NotificationId, contentType: MessageContentType, message: String)
-                      (implicit ec: ExecutionContext, hc: HeaderCarrier): Future[NotificationCreateServiceResult] = {
+  def saveNotification(
+      boxId: BoxId,
+      notificationId: NotificationId,
+      contentType: MessageContentType,
+      message: String
+    )(implicit ec: ExecutionContext,
+      hc: HeaderCarrier
+    ): Future[NotificationCreateServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
+        case None      => Future.successful(NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: $boxId not found"))
         case Some(box) =>
           val notification = Notification(notificationId, boxId, contentType, message)
           notificationsRepository.saveNotification(notification).map {
             case Some(_) =>
               pushService.handlePushNotification(box, notification)
               NotificationCreateSuccessResult()
-            case None => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")
+            case None    => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")
           }
       }
   }

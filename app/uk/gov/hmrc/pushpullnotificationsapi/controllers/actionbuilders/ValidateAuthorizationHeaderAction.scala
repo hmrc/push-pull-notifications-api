@@ -27,8 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 @Singleton
-class ValidateAuthorizationHeaderAction @Inject()(appConfig: AppConfig)(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateAuthorizationHeaderAction @Inject() (appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
 
   override def executionContext: ExecutionContext = ec
 

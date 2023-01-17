@@ -27,7 +27,8 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
-/** */
+/**
+  */
 object BoxFormat extends OFormat[Box] {
   implicit private val applicationIdFormat = Json.valueFormat[ApplicationId]
   implicit private val clientIdFormatter = Json.valueFormat[ClientId]
@@ -36,6 +37,7 @@ object BoxFormat extends OFormat[Box] {
   implicit private val dateFormat = MongoJodaFormats.dateTimeFormat
   implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
   implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
+
   implicit private val formatSubscriber = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
@@ -43,6 +45,7 @@ object BoxFormat extends OFormat[Box] {
     .format
 
   private val boxWrites = Json.writes[Box]
+
   private val boxReads = (
     (__ \ "boxId").read[BoxId] and
       (__ \ "boxName").read[String] and
@@ -50,7 +53,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber] and
       (__ \ "clientManaged").readWithDefault(false)
-    ) { Box }
+  ) { Box }
 
   implicit val boxFormats = OFormat(boxReads, boxWrites)
 

@@ -40,7 +40,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         "metrics.enabled" -> true,
         "auditing.enabled" -> false,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
-        "authorizationKey"  -> authToken
+        "authorizationKey" -> authToken
       )
 
   val url = s"http://localhost:$port"

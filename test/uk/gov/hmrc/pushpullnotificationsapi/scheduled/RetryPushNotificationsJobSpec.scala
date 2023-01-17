@@ -32,7 +32,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-
 import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import akka.stream.Materializer
@@ -68,10 +67,17 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
   trait Setup {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     val mongoLockRepo: MongoLockRepository = mock[MongoLockRepository]
+
     val retryPushNotificationsJobConfig: RetryPushNotificationsJobConfig = RetryPushNotificationsJobConfig(
-      FiniteDuration(60, SECONDS), FiniteDuration(24, HOURS), enabled = true, 6, 1)
+      FiniteDuration(60, SECONDS),
+      FiniteDuration(24, HOURS),
+      enabled = true,
+      6,
+      1
+    )
     val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
     val mockNotificationPushService: NotificationPushService = mock[NotificationPushService]
+
     val underTest = new RetryPushNotificationsJob(
       mongoLockRepo,
       retryPushNotificationsJobConfig,
@@ -89,11 +95,11 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     val boxName: String = "boxName"
     val clientId: ClientId = ClientId(UUID.randomUUID.toString)
     val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", now)
-    val box: Box = Box(boxId, boxName, BoxCreator(clientId),  subscriber = Some(subscriber))
+    val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
 
     "retry pushing the notifications" in new Setup {
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(Source.future(successful(retryableNotification)))
@@ -106,8 +112,8 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     }
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(5))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(5))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(Source.future(successful(retryableNotification)))
@@ -121,8 +127,8 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     }
 
     "set notification status to failed when it fails to push and the notification is too old for further retries" in new Setup {
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationsRepository.fetchRetryableNotifications)
         .thenReturn(Source.future(successful(retryableNotification)))
@@ -137,8 +143,8 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     }
 
     "not execute if the job is already running" in new Setup {
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED, now(UTC).minusHours(7))
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
       when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
       when(mockNotificationsRepository.fetchRetryableNotifications)

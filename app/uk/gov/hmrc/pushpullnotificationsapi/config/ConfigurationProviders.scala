@@ -38,8 +38,7 @@ class ConfigurationModule extends Module {
 }
 
 @Singleton
-class RetryPushNotificationsJobConfigProvider  @Inject()(configuration: Configuration)
-  extends Provider[RetryPushNotificationsJobConfig] {
+class RetryPushNotificationsJobConfigProvider @Inject() (configuration: Configuration) extends Provider[RetryPushNotificationsJobConfig] {
 
   override def get(): RetryPushNotificationsJobConfig = {
     // scalastyle:off magic.number

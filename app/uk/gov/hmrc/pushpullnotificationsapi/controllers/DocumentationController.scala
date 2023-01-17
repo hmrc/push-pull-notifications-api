@@ -28,10 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 
 @Singleton
-class DocumentationController @Inject()(appconfig: AppConfig,
-                                        assets: Assets,
-                                        cc: ControllerComponents,
-                                        configuration: Configuration) extends BackendController(cc) {
+class DocumentationController @Inject() (appconfig: AppConfig, assets: Assets, cc: ControllerComponents, configuration: Configuration) extends BackendController(cc) {
 
   def definition(): Action[AnyContent] = Action {
     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
@@ -40,8 +37,7 @@ class DocumentationController @Inject()(appconfig: AppConfig,
   def yaml(version: String, file: String): Action[AnyContent] = {
     if (file == "application.yaml") {
       returnTemplatedYaml()
-    }
-    else {
+    } else {
       returnStaticAsset(version: String, file: String)
     }
   }
@@ -52,5 +48,5 @@ class DocumentationController @Inject()(appconfig: AppConfig,
 
   private def returnStaticAsset(version: String, file: String): Action[AnyContent] = {
     assets.at(s"/public/api/conf/$version", file)
- }
+  }
 }

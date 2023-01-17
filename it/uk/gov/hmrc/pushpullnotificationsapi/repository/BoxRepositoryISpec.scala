@@ -18,7 +18,7 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BoxRepositoryISpec
-  extends AsyncHmrcSpec
+    extends AsyncHmrcSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with CleanMongoCollectionSupport
@@ -51,9 +51,7 @@ class BoxRepositoryISpec
   val boxIdStr: String = UUID.randomUUID().toString
   val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
   val callBackEndpoint = "some/endpoint"
-  val box: Box = Box(boxName = boxName,
-    boxId = boxId,
-    boxCreator = BoxCreator(clientId))
+  val box: Box = Box(boxName = boxName, boxId = boxId, boxCreator = BoxCreator(clientId))
 
   "createBox" should {
 
@@ -102,8 +100,8 @@ class BoxRepositoryISpec
     "create a Box should not allow creation of a duplicate box with same box details" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      
-      val result2 =  await(repo.createBox(box))
+
+      val result2 = await(repo.createBox(box))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
       val fetchedRecords = await(repo.collection.find().toFuture())
@@ -166,9 +164,7 @@ class BoxRepositoryISpec
 
   "getBoxesByClientId" should {
 
-    val aBoxWithADifferentClientId = Box(boxName = "Another box",
-      boxId = BoxId(UUID.randomUUID()),
-      boxCreator = BoxCreator(ClientId("Another client")))
+    val aBoxWithADifferentClientId = Box(boxName = "Another box", boxId = BoxId(UUID.randomUUID()), boxCreator = BoxCreator(ClientId("Another client")))
 
     "return an empty list when no boxes match" in {
       await(repo.createBox(aBoxWithADifferentClientId))
@@ -194,12 +190,12 @@ class BoxRepositoryISpec
 
   "get all boxes" in {
     val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
-    
+
     await(repo.createBox(box))
     await(repo.createBox(anotherBox))
 
     val allBoxes = await(repo.getAllBoxes())
-    
+
     allBoxes should have length (2)
     allBoxes shouldBe List(box, anotherBox)
   }
@@ -247,7 +243,7 @@ class BoxRepositoryISpec
     }
 
     "return None when the box doesn't exist" in {
-      intercept[RuntimeException]{
+      intercept[RuntimeException] {
         await(repo.updateApplicationId(BoxId(UUID.randomUUID()), ApplicationId("123")))
       }
     }

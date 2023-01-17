@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -69,14 +68,14 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
       val job = new SimpleJob
 
       val pausedExecution = job.execute
-      pausedExecution.isCompleted     shouldBe false
-      job.isRunning.futureValue       shouldBe true
+      pausedExecution.isCompleted shouldBe false
+      job.isRunning.futureValue shouldBe true
       job.execute.futureValue.message shouldBe "Skipping execution: job running"
-      job.isRunning.futureValue       shouldBe true
+      job.isRunning.futureValue shouldBe true
 
       job.continueExecution()
       pausedExecution.futureValue.message shouldBe "1"
-      job.isRunning.futureValue           shouldBe false
+      job.isRunning.futureValue shouldBe false
 
     }
 

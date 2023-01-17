@@ -32,6 +32,7 @@ private[repository] object PlayHmrcMongoFormatters {
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
   implicit val formatBoxCreator: OFormat[BoxCreator] = Json.format[BoxCreator]
+
   implicit val formatSubscriber: OFormat[Subscriber] = Union.from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)

@@ -29,8 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 import scala.concurrent.Future
 
-class DocumentationControllerSpec extends AsyncHmrcSpec
-  with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
@@ -38,11 +37,12 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
+
   override def beforeEach(): Unit = {
-   reset(mockAppConfig)
+    reset(mockAppConfig)
   }
 
-  def setUpAppConfig(status: String): Unit ={
+  def setUpAppConfig(status: String): Unit = {
     when(mockAppConfig.apiStatus).thenReturn(status)
   }
 
@@ -86,8 +86,8 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
-        stringResult should include ("/cmb/box")
-        stringResult should include ("/cmb/box/{boxId}")
+        stringResult should include("/cmb/box")
+        stringResult should include("/cmb/box/{boxId}")
       }
 
       "return specified file when file is not application.yaml" in {

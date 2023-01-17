@@ -26,8 +26,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
 class ClientSecretGenerator {
 
   /**
-   * Generates a client secret with 32 random characters (160 bits)
-   */
+    * Generates a client secret with 32 random characters (160 bits)
+    */
   def generate: ClientSecret = {
     val randomBytes: Array[Byte] = new Array[Byte](20) // scalastyle:off magic.number
     new SecureRandom().nextBytes(randomBytes)
