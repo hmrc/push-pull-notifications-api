@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Singleton

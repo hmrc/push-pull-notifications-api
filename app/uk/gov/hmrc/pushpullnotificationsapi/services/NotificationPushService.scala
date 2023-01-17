@@ -16,8 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
@@ -26,9 +30,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class NotificationPushService @Inject() (connector: PushConnector, notificationsRepository: NotificationsRepository, clientService: ClientService, hmacService: HmacService)

@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
+import java.util.UUID
+
 import org.joda.time.DateTime
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json
+
+import play.api.libs.json.{JsValue, Json}
+
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-
-import java.util.UUID
 
 class BoxFormatSpec extends HmrcSpec {
 

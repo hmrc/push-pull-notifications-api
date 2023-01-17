@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import akka.stream.Materializer
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
 
-import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient.{fromClient, toClient}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbClientFormatter
-
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ClientRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, val mat: Materializer)

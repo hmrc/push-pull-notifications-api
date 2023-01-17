@@ -16,25 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
-
 import javax.inject.{Inject, Singleton}
-import org.mongodb.scala.{MongoClient, MongoCollection}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
+
+import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument, Updates}
+import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
+import org.mongodb.scala.{MongoClient, MongoCollection}
+
 import play.api.Logger
-import play.api.libs.json._
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 
 @Singleton
 class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionContext)

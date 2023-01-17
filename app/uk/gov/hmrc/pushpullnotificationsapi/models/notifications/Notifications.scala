@@ -17,15 +17,17 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
 import java.util.UUID
+import scala.collection.immutable
+
 import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
+
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
-
-import scala.collection.immutable
 
 sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 

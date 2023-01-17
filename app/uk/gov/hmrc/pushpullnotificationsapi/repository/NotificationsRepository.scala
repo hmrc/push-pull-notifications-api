@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.util.concurrent.TimeUnit
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
@@ -25,18 +29,19 @@ import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{bson, MongoClient, MongoCollection, MongoWriteException, ReadPreference, SingleObservable}
-import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
+import org.mongodb.scala.model.Aggregates.{`match`, lookup, project}
+import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.Aggregates.{`lookup`, `match`, project}
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Sorts}
-import play.api.Logger
-import play.api.libs.json.{Format, JsArray, JsNumber, JsString, Json, OFormat}
+import org.mongodb.scala.model._
+import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
+
+import play.api.libs.json.Format
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -44,12 +49,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, dbNotificationFormatter}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
-
-import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, mat: Materializer)

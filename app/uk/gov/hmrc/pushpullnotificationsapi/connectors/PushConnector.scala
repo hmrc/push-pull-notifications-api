@@ -16,24 +16,22 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import com.google.inject.Inject
 import javax.inject.Singleton
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
+
+import com.google.inject.Inject
+
 import play.api.libs.json.{Json, OFormat, Writes}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.Authorization
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HttpClient, HttpReads}
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.fromUpdateCallbackUrlRequest
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse, fromUpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult, UpdateCallbackUrlRequest}
-import uk.gov.hmrc.http.HttpReads.Implicits._
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 @Singleton
 class PushConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {

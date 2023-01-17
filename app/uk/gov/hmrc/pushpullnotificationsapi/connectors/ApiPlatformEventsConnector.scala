@@ -16,22 +16,24 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import com.google.inject.Inject
 import java.time.LocalDateTime
-import play.api.http.Status.CREATED
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 import java.util.UUID
 import java.util.UUID.randomUUID
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
+import com.google.inject.Inject
+
+import play.api.http.Status.CREATED
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
+
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
 class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {

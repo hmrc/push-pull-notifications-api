@@ -17,7 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.{DateTime, DateTimeZone}
+
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}

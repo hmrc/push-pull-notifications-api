@@ -17,15 +17,16 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
+
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAuthorizationHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
-
-import scala.concurrent.ExecutionContext
 
 @Singleton()
 class ClientController @Inject() (

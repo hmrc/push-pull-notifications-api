@@ -17,15 +17,15 @@
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import java.util.concurrent.TimeUnit.{MINUTES, SECONDS}
-
 import javax.inject.{Inject, Provider, Singleton}
+import scala.concurrent.duration.{Duration, FiniteDuration}
+
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+
 import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJobConfig
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
-
-import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class ConfigurationModule extends Module {
 

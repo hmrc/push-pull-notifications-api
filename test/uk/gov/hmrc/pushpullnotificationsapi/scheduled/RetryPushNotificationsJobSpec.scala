@@ -34,28 +34,26 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
+import scala.concurrent.Future.{failed, successful}
+import scala.concurrent.duration.FiniteDuration
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, ClientId, PushSubscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.scheduling.ExclusiveScheduledJob
-
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.Future.{failed, successful}
-import scala.concurrent.duration.FiniteDuration
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 

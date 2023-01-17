@@ -16,16 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future.successful
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.INVALID_CONTENT_TYPE
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future.successful
-import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.INVALID_CONTENT_TYPE
+import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
 
 @Singleton
 class ValidateContentTypeHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {

@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import com.typesafe.config.Config
-import uk.gov.hmrc.mongo.lock.LockService
-import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+
+import com.typesafe.config.Config
+
+import uk.gov.hmrc.mongo.lock.LockService
+
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 case class JobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, enabled: Boolean)
 

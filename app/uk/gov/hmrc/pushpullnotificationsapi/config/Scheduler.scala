@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
+
 import com.google.inject.AbstractModule
 
-import javax.inject.{Inject, Singleton}
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
+
 import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJob
 import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{RunningOfScheduledJobs, ScheduledJob}
-
-import scala.concurrent.ExecutionContext
 
 class SchedulerModule extends AbstractModule {
 

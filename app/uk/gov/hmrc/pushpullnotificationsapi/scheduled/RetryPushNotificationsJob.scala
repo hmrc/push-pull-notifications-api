@@ -16,25 +16,26 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
-import com.google.inject.Singleton
-
 import javax.inject.Inject
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
-import org.joda.time.{DateTime, Duration}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-
 import scala.concurrent.Future.successful
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+import com.google.inject.Singleton
+import org.joda.time.DateTime
+import org.joda.time.DateTime.now
+import org.joda.time.DateTimeZone.UTC
+
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 @Singleton
 class RetryPushNotificationsJob @Inject() (

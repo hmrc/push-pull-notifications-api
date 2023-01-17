@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import akka.stream.Materializer
-import controllers.Assets
-import play.api.Configuration
-
 import javax.inject.{Inject, Singleton}
+
+import controllers.Assets
+
+import play.api.Configuration
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import play.filters.cors.CORSActionBuilder
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 

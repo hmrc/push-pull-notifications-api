@@ -16,18 +16,20 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import scala.concurrent.Future
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.Result
 import play.api.test.Helpers.{route, _}
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-import scala.concurrent.Future
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

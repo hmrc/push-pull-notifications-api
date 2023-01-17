@@ -16,11 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
+
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
+import play.api.http.Status.NO_CONTENT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -29,16 +35,12 @@ import play.api.test.Helpers.{BAD_REQUEST, route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-import play.api.http.Status.NO_CONTENT
-import play.api.mvc.Results.NoContent
-import java.util.UUID
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

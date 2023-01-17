@@ -16,26 +16,27 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
+
 import play.api.libs.json._
 import play.api.mvc._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNotificationRequestFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-
-import java.util.UUID
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-import scala.util.matching.Regex
-import scala.xml.NodeSeq
 
 @Singleton()
 class NotificationsController @Inject() (

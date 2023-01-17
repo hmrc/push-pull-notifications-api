@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.util.Try
+
 import play.api.Logger
 import play.api.mvc.{PathBindable, QueryStringBindable}
 
-import java.util.UUID
 import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, ClientId}
-
-import scala.util.Try
 
 object Binders {
   val logger = Logger("binders")

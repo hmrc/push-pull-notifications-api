@@ -17,12 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.util.UUID
+import scala.collection.immutable
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
-import scala.collection.immutable
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
 case class BoxId(value: UUID) extends AnyVal {
   def raw: String = value.toString

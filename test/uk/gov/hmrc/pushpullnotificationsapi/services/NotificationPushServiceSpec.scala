@@ -17,22 +17,23 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
 
 import org.joda.time.DateTime
+import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.successful
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import org.mockito.captor.ArgCaptor
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 

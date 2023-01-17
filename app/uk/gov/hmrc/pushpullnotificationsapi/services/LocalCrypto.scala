@@ -17,7 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
+
 import uk.gov.hmrc.crypto.{AesCrypto, CompositeSymmetricCrypto, Decrypter}
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 @Singleton

@@ -17,14 +17,15 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future.successful
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.http.HeaderNames.ACCEPT
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID
 import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
-
-import scala.concurrent.Future.successful
-import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ValidateAcceptHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] {

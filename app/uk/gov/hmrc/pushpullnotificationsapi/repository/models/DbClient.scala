@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fromClientSecret, toClientSecret}
 

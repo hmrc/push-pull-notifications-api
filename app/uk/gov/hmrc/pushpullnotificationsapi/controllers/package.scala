@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi
 
+import scala.util.control.NonFatal
+
 import _root_.play.api.Logger
 import _root_.play.api.mvc.Result
 import _root_.play.api.mvc.Results._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
-import scala.util.control.NonFatal
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 package object controllers {
   val logger = Logger("controllers")

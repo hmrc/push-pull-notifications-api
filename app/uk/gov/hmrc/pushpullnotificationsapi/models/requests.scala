@@ -17,7 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import org.joda.time.DateTime
+
 import play.api.mvc.{Request, WrappedRequest}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 
 case class CreateBoxRequest(boxName: String, clientId: String)

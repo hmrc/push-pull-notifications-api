@@ -17,10 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import javax.inject.{Inject, Singleton}
+import scala.collection.JavaConverters._
+
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-
-import scala.collection.JavaConverters._
 
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {

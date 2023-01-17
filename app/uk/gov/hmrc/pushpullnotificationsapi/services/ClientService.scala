@@ -17,11 +17,11 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
-
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 @Singleton
 class ClientService @Inject() (clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)(implicit ec: ExecutionContext) {

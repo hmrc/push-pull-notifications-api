@@ -17,13 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
-
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 class ClientServiceSpec extends AsyncHmrcSpec {
 

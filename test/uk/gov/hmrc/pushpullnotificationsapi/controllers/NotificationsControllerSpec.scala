@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
+
 import akka.stream.Materializer
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
@@ -24,6 +28,7 @@ import org.joda.time.format.DateTimeFormat
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
@@ -34,15 +39,12 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-import java.util.UUID
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

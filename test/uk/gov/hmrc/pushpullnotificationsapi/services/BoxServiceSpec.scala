@@ -17,19 +17,20 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 import org.joda.time.DateTime
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.captor.ArgCaptor
+
 import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import org.mockito.Mockito.verifyNoInteractions
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class BoxServiceSpec extends AsyncHmrcSpec {
 

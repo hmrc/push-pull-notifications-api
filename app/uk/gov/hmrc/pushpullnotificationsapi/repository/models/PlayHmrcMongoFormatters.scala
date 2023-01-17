@@ -17,11 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import org.joda.time.DateTime
+
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {

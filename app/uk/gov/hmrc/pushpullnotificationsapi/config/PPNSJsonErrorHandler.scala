@@ -17,17 +17,18 @@
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.Configuration
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, UNSUPPORTED_MEDIA_TYPE}
 import play.api.mvc.Results.{BadRequest, NotFound, Status, UnsupportedMediaType}
 import play.api.mvc.{RequestHeader, Result}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.bootstrap.config.HttpAuditEvent
 import uk.gov.hmrc.play.bootstrap.backend.http.JsonErrorHandler
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
+import uk.gov.hmrc.play.bootstrap.config.HttpAuditEvent
 
-import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditEvent: HttpAuditEvent, configuration: Configuration)(implicit ec: ExecutionContext)
     extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {

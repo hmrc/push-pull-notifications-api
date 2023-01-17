@@ -17,9 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID.randomUUID
+import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -27,14 +30,12 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
 
 class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

@@ -17,12 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.http.HeaderNames
 import play.api.mvc.Results._
 import play.api.mvc.{ActionFilter, Request, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
 
-import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 

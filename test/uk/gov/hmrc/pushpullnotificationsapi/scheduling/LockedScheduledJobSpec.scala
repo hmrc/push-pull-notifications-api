@@ -16,23 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
-import org.joda.time.Duration
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatestplus.play.guice.GuiceOneAppPerTest
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.mongo.lock.{MongoLockRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-
-import scala.concurrent.{Await, ExecutionContext, Future}
+import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future.successful
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
+
+import org.joda.time.Duration
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Span}
+import org.scalatest.{BeforeAndAfterEach, Matchers}
+import org.scalatestplus.play.guice.GuiceOneAppPerTest
+
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutures with GuiceOneAppPerTest with BeforeAndAfterEach {
 

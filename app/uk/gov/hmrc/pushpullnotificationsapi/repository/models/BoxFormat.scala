@@ -17,14 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.JsObject
-import play.api.libs.json.JsResult
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json
-import play.api.libs.json.OFormat
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.play.json.Union
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 /**

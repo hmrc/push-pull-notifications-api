@@ -17,9 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.security.SecureRandom
-
 import javax.inject.Singleton
+
 import org.apache.commons.codec.binary.Base32
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
 
 @Singleton

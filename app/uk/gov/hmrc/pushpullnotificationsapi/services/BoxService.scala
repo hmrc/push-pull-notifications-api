@@ -16,17 +16,18 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 import java.{util => ju}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
+import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
 class BoxService @Inject() (
