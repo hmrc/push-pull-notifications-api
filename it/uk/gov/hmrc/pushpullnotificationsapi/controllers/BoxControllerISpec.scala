@@ -508,7 +508,7 @@ class BoxControllerISpec
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)
       primeAuthServiceSuccess(clientId.value, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
       await(repo.createBox(clientManagedBox))
-      val deleteResult = callDeleteClientManagedBoxEndpoint(clientManagedBox.boxId.raw.replaceAll("9", "8"), validHeadersWithAcceptHeader)
+      val deleteResult = callDeleteClientManagedBoxEndpoint(UUID.randomUUID().toString, validHeadersWithAcceptHeader)
       deleteResult.status shouldBe NOT_FOUND
     }
 
