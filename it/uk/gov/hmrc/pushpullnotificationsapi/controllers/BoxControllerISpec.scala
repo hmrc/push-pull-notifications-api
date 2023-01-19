@@ -37,14 +37,15 @@ import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewaySer
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BoxControllerISpec extends ServerBaseISpec
-  with AuthService
-  with BeforeAndAfterEach
-  with PlayMongoRepositorySupport[Box]
-  with CleanMongoCollectionSupport
-  with IntegrationPatience
-  with PushGatewayService
-  with ThirdPartyApplicationService {
+class BoxControllerISpec
+    extends ServerBaseISpec
+    with AuthService
+    with BeforeAndAfterEach
+    with PlayMongoRepositorySupport[Box]
+    with CleanMongoCollectionSupport
+    with IntegrationPatience
+    with PushGatewayService
+    with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>
 
   def repo: BoxRepository =
@@ -73,7 +74,6 @@ class BoxControllerISpec extends ServerBaseISpec
 
   val url = s"http://localhost:$port"
 
-
   val boxName = "myBoxName"
   val clientId = "someClientId"
   val clientId2 = "someClientId2"
@@ -82,6 +82,7 @@ class BoxControllerISpec extends ServerBaseISpec
   val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId":  "$clientId2", "boxName": "bbyybybyb"}"""
   val tpaResponse: String = raw"""{"id":  "someappid", "clientId": "$clientId"}"""
+
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
          |  {
@@ -91,13 +92,10 @@ class BoxControllerISpec extends ServerBaseISpec
          |}
          |""".stripMargin
 
-  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
-    AUTHORIZATION -> "Bearer token"
-  )
-  val validHeadersWithAcceptHeader = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
-                                          ACCEPT -> "application/vnd.hmrc.1.0+json",
-    AUTHORIZATION -> "Bearer token"
-  )
+  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
+
+  val validHeadersWithAcceptHeader =
+    List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json", AUTHORIZATION -> "Bearer token")
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
@@ -106,6 +104,7 @@ class BoxControllerISpec extends ServerBaseISpec
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
+
   def callClientManagedCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/cmb/box")
@@ -163,7 +162,6 @@ class BoxControllerISpec extends ServerBaseISpec
       .withHttpHeaders(headers: _*)
       .delete
       .futureValue
-
 
   "BoxController" when {
 
@@ -434,7 +432,7 @@ class BoxControllerISpec extends ServerBaseISpec
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
-      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId),  List("Content-Type" -> "application/json"))
+      val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId.raw, updateCallbackUrlRequestJson(clientId), List("Content-Type" -> "application/json"))
       updateResult.status shouldBe FORBIDDEN
 
     }
@@ -496,10 +494,7 @@ class BoxControllerISpec extends ServerBaseISpec
     val boxIdStr: String = UUID.randomUUID().toString
     val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
     val clientId: ClientId = ClientId("someClientId")
-    val clientManagedBox: Box = Box(boxName = "boxName",
-      boxId = boxId,
-      boxCreator = BoxCreator(clientId),
-      clientManaged = true)
+    val clientManagedBox: Box = Box(boxName = "boxName", boxId = boxId, boxCreator = BoxCreator(clientId), clientManaged = true)
 
     "successfully delete a CMB and return status 204" in {
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)
@@ -540,11 +535,8 @@ class BoxControllerISpec extends ServerBaseISpec
     val boxIdStr: String = UUID.randomUUID().toString
     val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
     val clientId: ClientId = ClientId("someClientId")
-    val clientManagedBox: Box = Box(boxName = "boxName",
-      boxId = boxId,
-      boxCreator = BoxCreator(clientId),
-      clientManaged = true)
-    def updateCallbackUrlRequestJson() =raw"""{"callbackUrl": "$callbackUrl"}"""
+    val clientManagedBox: Box = Box(boxName = "boxName", boxId = boxId, boxCreator = BoxCreator(clientId), clientManaged = true)
+    def updateCallbackUrlRequestJson() = raw"""{"callbackUrl": "$callbackUrl"}"""
 
     def updateCallbackUrlRequestJsonNoCallBack(): String = raw"""{"callbackUrl": ""}"""
 
@@ -670,7 +662,7 @@ class BoxControllerISpec extends ServerBaseISpec
 
     "return 200 {valid: true} when boxId matches clientId" in {
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
-      val response = callValidateBoxEndpoint( validateBody(createdBox.boxId.raw ,clientId), validHeadersWithAcceptHeader)
+      val response = callValidateBoxEndpoint(validateBody(createdBox.boxId.raw, clientId), validHeadersWithAcceptHeader)
       response.status shouldBe OK
 
       val responseBody = Json.parse(response.body).as[ValidateBoxOwnershipResponse]
@@ -679,7 +671,7 @@ class BoxControllerISpec extends ServerBaseISpec
 
     "return 200 {valid: false} when boxId does not match clientId" in {
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
-      val response = callValidateBoxEndpoint( validateBody(createdBox.boxId.raw ,clientId2), validHeadersWithAcceptHeader)
+      val response = callValidateBoxEndpoint(validateBody(createdBox.boxId.raw, clientId2), validHeadersWithAcceptHeader)
       response.status shouldBe OK
 
       val responseBody = Json.parse(response.body).as[ValidateBoxOwnershipResponse]
@@ -687,7 +679,7 @@ class BoxControllerISpec extends ServerBaseISpec
     }
 
     "return 404 when boxId does not exist" in {
-      val response = callValidateBoxEndpoint( validateBody(UUID.randomUUID().toString,clientId), validHeadersWithAcceptHeader)
+      val response = callValidateBoxEndpoint(validateBody(UUID.randomUUID().toString, clientId), validHeadersWithAcceptHeader)
       response.status shouldBe NOT_FOUND
       response.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }

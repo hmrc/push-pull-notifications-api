@@ -14,26 +14,27 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport  {
+class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def commonStubs(): Unit = givenCleanMetricRegistry()
 
   override implicit lazy val app: Application = appBuilder.build()
 
-  protected  def appBuilder: GuiceApplicationBuilder =
+  protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
-        "metrics.enabled"                 -> true,
-        "auditing.enabled"                -> false,
-        "auditing.consumer.baseUri.host"  -> wireMockHost,
-        "auditing.consumer.baseUri.port"  -> wireMockPort,
+        "metrics.enabled" -> true,
+        "auditing.enabled" -> false,
+        "auditing.consumer.baseUri.host" -> wireMockHost,
+        "auditing.consumer.baseUri.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi"
       )
 
   trait SetUp {
+
     val notificationResponse: String =
       Json.toJson(NotificationResponse(NotificationId(UUID.randomUUID), BoxId(UUID.randomUUID), MessageContentType.APPLICATION_JSON, "{}")).toString
     val objInTest: PushConnector = app.injector.instanceOf[PushConnector]
@@ -69,7 +70,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceO
     "return PushConnectorSuccessResult when validate-callback call returns true" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK)
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl" )
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorSuccessResult] shouldBe true
@@ -78,7 +79,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceO
     "return PushConnectorFailedResult when validate-callback call returns false" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false, Some("someError"))
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl" )
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
@@ -86,7 +87,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceO
       convertedResult.errorMessage shouldBe "someError"
     }
 
-     "return PushConnectorFailedResult when validate-callback call returns false with no error message" in new SetUp() {
+    "return PushConnectorFailedResult when validate-callback call returns false with no error message" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false)
 
       val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
@@ -97,10 +98,10 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with  GuiceO
       convertedResult.errorMessage shouldBe "Unknown Error"
     }
 
-     "return summat when validate-callback call returns false" in new SetUp() {
+    "return summat when validate-callback call returns false" in new SetUp() {
       primeGatewayServiceValidateNoBody(Status.BAD_REQUEST)
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl" )
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true

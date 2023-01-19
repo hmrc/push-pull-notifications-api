@@ -15,11 +15,12 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class ClientRepositoryISpec
-   extends AsyncHmrcSpec
-   with BeforeAndAfterEach with BeforeAndAfterAll
-   with PlayMongoRepositorySupport[DbClient]
-   with IntegrationPatience
-   with GuiceOneAppPerSuite {
+    extends AsyncHmrcSpec
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with PlayMongoRepositorySupport[DbClient]
+    with IntegrationPatience
+    with GuiceOneAppPerSuite {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -73,7 +74,7 @@ class ClientRepositoryISpec
         await(repo.insertClient(client))
       }
 
-      exception.getMessage should include ("E11000 duplicate key error collection")
+      exception.getMessage should include("E11000 duplicate key error collection")
     }
   }
 

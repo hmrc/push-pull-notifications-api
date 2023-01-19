@@ -17,25 +17,24 @@
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import javax.inject.{Inject, Singleton}
+import scala.collection.JavaConverters._
+
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.collection.JavaConverters._
-
 @Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
   val notificationTTLinSeconds: Long = config.get[Long]("notifications.ttlinseconds")
   val numberOfNotificationsToRetrievePerRequest: Int = config.get[Int]("notifications.numberToRetrievePerRequest")
 
   val outboundNotificationsUrl = servicesConfig.baseUrl("push-pull-notifications-gateway")
   val gatewayAuthToken: String = config.get[String]("microservice.services.push-pull-notifications-gateway.authorizationKey")
 
-
   val apiPlatformEventsUrl = servicesConfig.baseUrl("api-platform-events")
   val thirdPartyApplicationUrl = servicesConfig.baseUrl("third-party-application")
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-  val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
+  val graphiteHost: String = config.get[String]("microservice.metrics.graphite.host")
 
   val allowlistedUserAgentList: List[String] = config.underlying.getStringList("allowlisted.useragents").asScala.toList
 

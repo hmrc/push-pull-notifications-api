@@ -8,8 +8,7 @@ trait AuthService {
   val authUrl = "/auth/authorise"
   private val authUrlMatcher = urlEqualTo(authUrl)
 
-
-  def primeAuthServiceNoClientId( body: String): StubMapping = {
+  def primeAuthServiceNoClientId(body: String): StubMapping = {
     stubFor(post(authUrlMatcher)
       .withRequestBody(equalToJson(body))
       .withHeader("Authorization", containing("Bearer token"))
@@ -18,8 +17,7 @@ trait AuthService {
           .withStatus(Status.OK)
           .withBody(s"""{
                        |}""".stripMargin)
-      )
-    )
+      ))
   }
 
   def primeAuthServiceSuccess(clientId: String, body: String): StubMapping = {
@@ -30,10 +28,9 @@ trait AuthService {
         aResponse()
           .withStatus(Status.OK)
           .withBody(s"""{
-            |"clientId": "$clientId"
-            |}""".stripMargin)
-      )
-    )
+                       |"clientId": "$clientId"
+                       |}""".stripMargin)
+      ))
   }
 
   def primeAuthServiceFail(): StubMapping = {
@@ -42,8 +39,6 @@ trait AuthService {
       .willReturn(
         aResponse()
           .withStatus(Status.UNAUTHORIZED)
-
-      )
-    )
+      ))
   }
 }

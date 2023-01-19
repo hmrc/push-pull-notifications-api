@@ -5,7 +5,7 @@ import akka.stream.scaladsl.Sink
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
-import org.mongodb.scala.{Document, bson}
+import org.mongodb.scala.{bson, Document}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -24,7 +24,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationRepositoryISpec
     extends AsyncHmrcSpec
-    with BeforeAndAfterEach with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with BeforeAndAfterAll
     with PlayMongoRepositorySupport[DbNotification]
     with CleanMongoCollectionSupport
     with IntegrationPatience
@@ -36,12 +37,12 @@ class NotificationRepositoryISpec
   private val numberOfNotificationsToRetrievePerRequest = 100
 
   protected def appBuilder: GuiceApplicationBuilder =
-  new GuiceApplicationBuilder()
-    .configure(
-  "notifications.ttlinseconds" -> ttlTimeinSeconds,
-  "notifications.numberToRetrievePerRequest" -> numberOfNotificationsToRetrievePerRequest,
-  "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
-  )
+    new GuiceApplicationBuilder()
+      .configure(
+        "notifications.ttlinseconds" -> ttlTimeinSeconds,
+        "notifications.numberToRetrievePerRequest" -> numberOfNotificationsToRetrievePerRequest,
+        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
+      )
 
   override implicit lazy val app: Application = appBuilder.build()
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
@@ -50,29 +51,29 @@ class NotificationRepositoryISpec
   def boxRepo: BoxRepository = app.injector.instanceOf[BoxRepository]
   override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
-
   override def beforeEach() {
     prepareDatabase()
     await(repo.ensureIndexes)
   }
 
-
-  def getIndex(indexName: String): Option[Document] ={
+  def getIndex(indexName: String): Option[Document] = {
     await(repo.collection.listIndexes()
       .filter(_.getString("name").equalsIgnoreCase(indexName))
-      .headOption()
-    )
+      .headOption())
   }
 
   private val boxIdStr = UUID.randomUUID().toString
   private val boxId = BoxId(UUID.fromString(boxIdStr))
-  val box: Box = Box(boxName = UUID.randomUUID().toString,
+
+  val box: Box = Box(
+    boxName = UUID.randomUUID().toString,
     boxId = boxId,
     boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-    subscriber = Some(PushSubscriber("http://example.com")))
+    subscriber = Some(PushSubscriber("http://example.com"))
+  )
 
   "Indexes" should {
-    "create ttl index and it should have correct value "in {
+    "create ttl index and it should have correct value " in {
       val mayBeIndex = getIndex("create_datetime_ttl_idx")
       mayBeIndex shouldNot be(None)
       val mayBeTtlValue: Long = mayBeIndex.get("expireAfterSeconds")
@@ -92,33 +93,24 @@ class NotificationRepositoryISpec
     }
 
     "save a Notification" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
-      messageContentType = APPLICATION_JSON,
-      message = "{\"someJsone\": \"someValue\"}",
-      status = PENDING)
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
 
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
     }
 
     "encrypt the notification message in the database" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
-        messageContentType = APPLICATION_JSON,
-        message = "{\"someJsone\": \"someValue\"}",
-        status = PENDING)
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
 
       await(repo.saveNotification(notification))
 
       val dbNotification: DbNotification = await(repo.collection.find()
         .toFuture()).head
-        dbNotification.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
+      dbNotification.encryptedMessage shouldBe "7n6b74s5fsOk4jbiENErrBGgKGfrtWv8TOzHhyNvlUE="
     }
 
     "not save duplicate Notifications" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId,
-      messageContentType = APPLICATION_JSON,
-      message = "{",
-      status = PENDING)
+      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{", status = PENDING)
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
 
@@ -218,10 +210,12 @@ class NotificationRepositoryISpec
     }
 
     "not return pending notifications for pull subscribers" in {
-      val boxForPullSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
+      val boxForPullSubscriber: Box = Box(
+        boxName = UUID.randomUUID().toString,
         boxId = boxId,
         boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-        subscriber = Some(PullSubscriber("http://example.com")))
+        subscriber = Some(PullSubscriber("http://example.com"))
+      )
       createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxForPullSubscriber))
 
@@ -231,10 +225,7 @@ class NotificationRepositoryISpec
     }
 
     "not return pending notifications for which the box has no subscriber" in {
-      val boxWithNoSubscriber: Box = Box(boxName = UUID.randomUUID().toString,
-        boxId = boxId,
-        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-        subscriber = None)
+      val boxWithNoSubscriber: Box = Box(boxName = UUID.randomUUID().toString, boxId = boxId, boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)), subscriber = None)
       createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxWithNoSubscriber))
 
@@ -244,10 +235,8 @@ class NotificationRepositoryISpec
     }
 
     "not return pending notifications with emtpy callback URL" in {
-      val boxWithNoCallbackUrl: Box = Box(boxName = UUID.randomUUID().toString,
-        boxId = boxId,
-        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-        subscriber = Some(PushSubscriber("")))
+      val boxWithNoCallbackUrl: Box =
+        Box(boxName = UUID.randomUUID().toString, boxId = boxId, boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)), subscriber = Some(PushSubscriber("")))
       createNotificationInDB(status = PENDING)
       await(boxRepo.createBox(boxWithNoCallbackUrl))
 
@@ -294,7 +283,6 @@ class NotificationRepositoryISpec
       filteredList2.size shouldBe 1
     }
 
-
     "return empty List when notifications exist but do not match the given status filter" in {
       createNotificationInDB()
 
@@ -309,17 +297,14 @@ class NotificationRepositoryISpec
       await(repo.getByBoxIdAndFilters(BoxId(UUID.randomUUID()), Some(PENDING))).isEmpty shouldBe true
     }
 
-
     "return list of notification for boxId gte fromDate and lt toDate" in {
       await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(PENDING),
-        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime = Some(DateTime.now())))
+      val filteredList =
+        await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)), toDateTime = Some(DateTime.now())))
       filteredList.size shouldBe 3
     }
 
@@ -330,13 +315,9 @@ class NotificationRepositoryISpec
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(PENDING),
-        fromDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
-      ))
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), fromDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))))
       filteredList.size shouldBe 5
     }
-
 
     "return list of notification for boxId lt toDate when from date is missing" in {
       await(repo.getAllByBoxId(boxId)).isEmpty shouldBe true
@@ -345,10 +326,7 @@ class NotificationRepositoryISpec
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        Some(PENDING),
-        toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))
-      ))
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), toDateTime = Some(DateTime.now().minusMinutes(fourAndHalfHoursInMins))))
       filteredList.size shouldBe 6
     }
 
@@ -360,9 +338,7 @@ class NotificationRepositoryISpec
       createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
       createNotificationInDB(createdDateTime = DateTime.now().minusMinutes(twoAndHalfHoursInMins - 30), status = ACKNOWLEDGED)
 
-      val filteredList = await(repo.getByBoxIdAndFilters(boxId,
-        fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)),
-        toDateTime = Some(DateTime.now())))
+      val filteredList = await(repo.getByBoxIdAndFilters(boxId, fromDateTime = Some(DateTime.now().minusMinutes(twoAndHalfHoursInMins)), toDateTime = Some(DateTime.now())))
       filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
       filteredList.count(n => n.status == PENDING) shouldBe 3
     }
@@ -381,8 +357,8 @@ class NotificationRepositoryISpec
 
       val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId))
 
-      returnedNotifications.size should be (numberOfNotificationsToRetrievePerRequest)
-      returnedNotifications.filter(n => n.createdDateTime.isEqual(mostRecentDate)) should be (List.empty)
+      returnedNotifications.size should be(numberOfNotificationsToRetrievePerRequest)
+      returnedNotifications.filter(n => n.createdDateTime.isEqual(mostRecentDate)) should be(List.empty)
     }
   }
 
@@ -412,17 +388,21 @@ class NotificationRepositoryISpec
     notifications.size shouldBe numberExpected
   }
 
-  private def createNotificationInDB(status: NotificationStatus = PENDING,
-                                     createdDateTime: DateTime = now(UTC),
-                                     notificationId: NotificationId = NotificationId(UUID.randomUUID()),
-                                     retryAfterDateTime: Option[DateTime] = None): Notification = {
-    val notification = Notification(notificationId,
+  private def createNotificationInDB(
+      status: NotificationStatus = PENDING,
+      createdDateTime: DateTime = now(UTC),
+      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+      retryAfterDateTime: Option[DateTime] = None
+    ): Notification = {
+    val notification = Notification(
+      notificationId,
       boxId = boxId,
       APPLICATION_JSON,
       message = "{\"someJsone\": \"someValue\"}",
       status = status,
       createdDateTime = createdDateTime,
-      retryAfterDateTime = retryAfterDateTime)
+      retryAfterDateTime = retryAfterDateTime
+    )
 
     val result: Unit = await(repo.saveNotification(notification))
     result shouldBe ((): Unit)

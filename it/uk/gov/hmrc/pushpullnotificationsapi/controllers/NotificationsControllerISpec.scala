@@ -26,7 +26,7 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationsControllerISpec
-  extends ServerBaseISpec
+    extends ServerBaseISpec
     with BeforeAndAfterEach
     with PlayMongoRepositorySupport[DbNotification]
     with CleanMongoCollectionSupport
@@ -94,15 +94,9 @@ class NotificationsControllerISpec
          |""".stripMargin
 
   val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
-  val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields",
-    AUTHORIZATION -> "Bearer token"
-  )
-  val validHeadersJsonWithNoUserAgent = List(acceptHeader, CONTENT_TYPE -> "application/json",
-    AUTHORIZATION -> "Bearer token"
-  )
-  val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml", USER_AGENT -> "api-subscription-fields",
-    AUTHORIZATION -> "Bearer token"
-  )
+  val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
+  val validHeadersJsonWithNoUserAgent = List(acceptHeader, CONTENT_TYPE -> "application/json", AUTHORIZATION -> "Bearer token")
+  val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
@@ -112,7 +106,6 @@ class NotificationsControllerISpec
       .withHttpHeaders(headers: _*)
       .post(jsonBody)
       .futureValue
-
 
   def doPut(urlString: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
@@ -185,7 +178,6 @@ class NotificationsControllerISpec
         validateStringIsUUID(result.body)
       }
 
-
       "respond with 400 when boxId is not a UUID" in {
         val result = doPost(s"$url/box/ImNotaUUid/notifications", "{}", validHeadersJson)
         result.status shouldBe BAD_REQUEST
@@ -203,7 +195,6 @@ class NotificationsControllerISpec
         val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-allowlisted-agent"))
         result.status shouldBe FORBIDDEN
       }
-
 
       "respond with 400 when for valid xml and but json content type" in {
         val box = createBoxAndReturn()
@@ -346,7 +337,7 @@ class NotificationsControllerISpec
   private def stringToCreateNotificationResponse(notificationIdResponse: String): CreateNotificationResponse = {
     Json.parse(notificationIdResponse).validate[CreateNotificationResponse] match {
       case JsSuccess(value: CreateNotificationResponse, _) => value
-      case _ => fail()
+      case _                                               => fail()
     }
   }
 

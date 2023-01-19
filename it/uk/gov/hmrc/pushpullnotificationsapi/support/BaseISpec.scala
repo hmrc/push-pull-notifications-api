@@ -15,8 +15,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import scala.concurrent.Future
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
-abstract class BaseISpec
-  extends AsyncHmrcSpec with WireMockSupport  with MetricsTestSupport {
+abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with MetricsTestSupport {
 
   def app: Application
   protected def appBuilder: GuiceApplicationBuilder
@@ -43,7 +42,8 @@ abstract class BaseISpec
     HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
   val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
-  def validateStringIsUUID(toTest: String): Unit ={
+
+  def validateStringIsUUID(toTest: String): Unit = {
     uuidPattern.matcher(toTest).find() shouldBe true
   }
 }

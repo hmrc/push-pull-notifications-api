@@ -16,8 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
@@ -27,20 +31,15 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeade
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
 @Singleton
-class NotificationPushService @Inject()(connector: PushConnector,
-                                        notificationsRepository: NotificationsRepository,
-                                        clientService: ClientService,
-                                        hmacService: HmacService) extends ApplicationLogger {
+class NotificationPushService @Inject() (connector: PushConnector, notificationsRepository: NotificationsRepository, clientService: ClientService, hmacService: HmacService)
+    extends ApplicationLogger {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
       sendNotificationToPush(box, notification) map {
-        case true =>
-          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => 
+        case true  =>
+          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ =>
             logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId}")
           )
           true
@@ -52,17 +51,15 @@ class NotificationPushService @Inject()(connector: PushConnector,
     } else Future.successful(true)
   }
 
-  private def sendNotificationToPush(box: Box, notification: Notification)
-                                    (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  private def sendNotificationToPush(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
     clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>
       val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
-      val outboundNotification = OutboundNotification(subscriber.callBackUrl,
-        calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
+      val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 
       connector.send(outboundNotification).map {
-        case _ : PushConnectorSuccessResult => true
+        case _: PushConnectorSuccessResult    => true
         case error: PushConnectorFailedResult =>
           logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false

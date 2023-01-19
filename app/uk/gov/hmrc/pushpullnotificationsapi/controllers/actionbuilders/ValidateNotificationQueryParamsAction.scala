@@ -17,22 +17,25 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
-import org.joda.time.format.ISODateTimeFormat
-import org.joda.time.{DateTime, DateTimeZone}
-import play.api.mvc.Results.BadRequest
-import play.api.mvc.{ActionRefiner, Result}
-import uk.gov.hmrc.http.HttpErrorFunctions
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
+import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.{DateTime, DateTimeZone}
+
+import play.api.mvc.Results.BadRequest
+import play.api.mvc.{ActionRefiner, Result}
+import uk.gov.hmrc.http.HttpErrorFunctions
+
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionContext)
-  extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest] with HttpErrorFunctions with ApplicationLogger {
+class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionContext)
+    extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest]
+    with HttpErrorFunctions
+    with ApplicationLogger {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
@@ -40,7 +43,7 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   override def refine[A](request: AuthenticatedNotificationRequest[A]): Future[Either[Result, ValidatedNotificationQueryRequest[A]]] = Future.successful {
     validateNotificationQueryParams(request) match {
       case Right(value) => Right(ValidatedNotificationQueryRequest[A](request.clientId, value, request.request))
-      case Left(error) => Left(error)
+      case Left(error)  => Left(error)
     }
   }
 
@@ -48,7 +51,6 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
   val fromDateParamKey = "fromDate"
   val toDateParamKey = "toDate"
   val validKeys = List(statusParamKey, fromDateParamKey, toDateParamKey)
-
 
   def validateQueryParamsKeys(queryParams: Map[String, Seq[String]]): Either[Result, Boolean] = {
     if (queryParams.nonEmpty) {
@@ -66,23 +68,22 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
       statusVal <- validateStatusParamValue(request.request.getQueryString(statusParamKey))
       fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
       toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
-      _ <-  validateToDateIsAfterFromDate(fromDateVal, toDateVal)
+      _ <- validateToDateIsAfterFromDate(fromDateVal, toDateVal)
     } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
   }
 
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {
     maybeStatusStr match {
       case Some(statusVal) => Try[NotificationStatus] {
-        NotificationStatus.withName(statusVal)
-      } match {
-        case Success(x) => Right(Some(x))
-        case Failure(_) => logger.info(s"Invalid Status Param provided: $statusVal")
-          Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
-      }
-      case None => Right(None)
+          NotificationStatus.withName(statusVal)
+        } match {
+          case Success(x) => Right(Some(x))
+          case Failure(_) => logger.info(s"Invalid Status Param provided: $statusVal")
+            Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
+        }
+      case None            => Right(None)
     }
   }
-
 
   def validateDateParamValue(maybeString: Option[String]): Either[Result, Option[DateTime]] = {
     maybeString match {
@@ -91,24 +92,23 @@ class ValidateNotificationQueryParamsAction @Inject()(implicit ec: ExecutionCont
           DateTime.parse(stringVal, ISODateTimeFormat.dateTimeParser())
         } match {
           case Success(parseDate) => Right(Some(parseDate.withZone(DateTimeZone.UTC)))
-          case Failure(_) => logger.info(s"Unparsable DateValue Param provided: $stringVal")
+          case Failure(_)         => logger.info(s"Unparsable DateValue Param provided: $stringVal")
             Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Unparsable DateValue Param provided")))
         }
-      case None => Right(None)
+      case None            => Right(None)
     }
   }
 
-  def validateToDateIsAfterFromDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime] ): Either[Result, Option[Boolean]] = {
+  def validateToDateIsAfterFromDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime]): Either[Result, Option[Boolean]] = {
     (fromDateVal, toDateVal) match {
       case (Some(fromDate), Some(toDate)) =>
-        if(fromDate.isBefore(toDate)){
+        if (fromDate.isBefore(toDate)) {
           Right(Some(true))
-        }else{
+        } else {
           Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "fromDate parameter is before toDateParameter")))
         }
-      case _ => Right(Some(true))
+      case _                              => Right(Some(true))
     }
   }
-
 
 }

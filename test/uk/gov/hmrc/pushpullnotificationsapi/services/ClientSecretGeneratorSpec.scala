@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-
 import scala.util.matching.Regex
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
 
 class ClientSecretGeneratorSpec extends AsyncHmrcSpec {
 

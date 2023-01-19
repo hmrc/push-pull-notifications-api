@@ -17,23 +17,23 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
 
 import org.joda.time.DateTime
+import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.successful
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import org.mockito.captor.ArgCaptor
-
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
@@ -49,8 +49,8 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   }
 
   trait Setup {
-     val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService)
-    }
+    val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService)
+  }
 
   "handlePushNotification" should {
     val boxId = BoxId(UUID.randomUUID)
@@ -75,16 +75,17 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(
           NotificationId(UUID.randomUUID()),
           BoxId(UUID.randomUUID()),
           MessageContentType.APPLICATION_JSON,
           """{ "foo": "bar" }""",
-          NotificationStatus.PENDING)
+          NotificationStatus.PENDING
+        )
 
-      when(mockNotificationsRepo.updateStatus(*[NotificationId],*)).thenReturn(successful(mock[Notification]))
+      when(mockNotificationsRepo.updateStatus(*[NotificationId], *)).thenReturn(successful(mock[Notification]))
       when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
 
@@ -101,7 +102,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
       when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
-      when(mockNotificationsRepo.updateStatus(*[NotificationId],*)).thenReturn(successful(mock[Notification]))
+      when(mockNotificationsRepo.updateStatus(*[NotificationId], *)).thenReturn(successful(mock[Notification]))
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
@@ -110,11 +111,12 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
           BoxId(UUID.randomUUID()),
           MessageContentType.APPLICATION_JSON,
           """{ "foo": "bar" }""",
-          NotificationStatus.PENDING)
+          NotificationStatus.PENDING
+        )
 
       await(serviceToTest.handlePushNotification(box, notification))
 
-      outboundNotificationCaptor.value.forwardedHeaders should contain (ForwardedHeader("X-Hub-Signature", expectedSignature))
+      outboundNotificationCaptor.value.forwardedHeaders should contain(ForwardedHeader("X-Hub-Signature", expectedSignature))
     }
 
     "return false when connector returns failed result due to exception" in new Setup {
@@ -124,10 +126,8 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()),
-        MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.PENDING)
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
@@ -141,11 +141,9 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
         .thenReturn(successful(PushConnectorFailedResult("Some Error")))
 
       val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()),
-        MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.FAILED)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
@@ -156,11 +154,9 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
 
     "return true when subscriber has no callback url" in new Setup {
       val subscriber: PushSubscriber = PushSubscriber("", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()),
-        MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.PENDING)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
@@ -171,11 +167,9 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
 
     "return true when there are no push subscribers" in new Setup {
       val subscriber: PullSubscriber = PullSubscriber("", DateTime.now)
-      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber =  Some(subscriber))
-      val notification: Notification = Notification(NotificationId(UUID.randomUUID()),
-        BoxId(UUID.randomUUID()),
-        MessageContentType.APPLICATION_JSON,
-        "{}", NotificationStatus.PENDING)
+      val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
+      val notification: Notification =
+        Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)
 
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 

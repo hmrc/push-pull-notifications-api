@@ -16,17 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
+import org.scalatest.{Matchers, WordSpec}
 
 class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures {
 
@@ -69,14 +67,14 @@ class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures
       val job = new SimpleJob
 
       val pausedExecution = job.execute
-      pausedExecution.isCompleted     shouldBe false
-      job.isRunning.futureValue       shouldBe true
+      pausedExecution.isCompleted shouldBe false
+      job.isRunning.futureValue shouldBe true
       job.execute.futureValue.message shouldBe "Skipping execution: job running"
-      job.isRunning.futureValue       shouldBe true
+      job.isRunning.futureValue shouldBe true
 
       job.continueExecution()
       pausedExecution.futureValue.message shouldBe "1"
-      job.isRunning.futureValue           shouldBe false
+      job.isRunning.futureValue shouldBe false
 
     }
 

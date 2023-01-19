@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import org.joda.time.Duration
-import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
-
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+
+import org.joda.time.Duration
+
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 trait LockedScheduledJob extends ScheduledJob {
 

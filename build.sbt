@@ -4,6 +4,16 @@ import uk.gov.hmrc.SbtAutoBuildPlugin
 import bloop.integrations.sbt.BloopDefaults
 import sbt.Keys._
 
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+
+inThisBuild(
+  List(
+    scalaVersion := "2.12.15",
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
+  )
+)
+
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
   Seq(

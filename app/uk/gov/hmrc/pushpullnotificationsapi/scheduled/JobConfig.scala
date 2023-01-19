@@ -16,22 +16,26 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import com.typesafe.config.Config
-import uk.gov.hmrc.mongo.lock.LockService
-import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
+import com.typesafe.config.Config
+
+import uk.gov.hmrc.mongo.lock.LockService
+
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{ExclusiveScheduledJob, ScheduledJob}
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+
 case class JobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, enabled: Boolean)
 
 object JobConfig {
+
   private implicit class ToFiniteDuration(d: Duration) {
     def finite(): FiniteDuration = FiniteDuration(d.toNanos(), TimeUnit.NANOSECONDS)
   }
+
   def fromConfig(config: Config): JobConfig = {
     new JobConfig(config.getDuration("initialDelay").finite, config.getDuration("interval").finite, config.getBoolean("enabled"))
   }
@@ -50,7 +54,7 @@ trait ScheduledMongoJob extends ExclusiveScheduledJob with ScheduledJobState wit
       runJob
     } map {
       case Some(_) => Result(s"$name Job ran successfully.")
-      case _ => Result(s"$name did not run because repository was locked by another instance of the scheduler.")
+      case _       => Result(s"$name did not run because repository was locked by another instance of the scheduler.")
     } recover {
       case failure: RunningOfJobFailed =>
         logger.error("The execution of the job failed.", failure.wrappedCause)
@@ -65,6 +69,7 @@ trait ScheduledJobState { e: ScheduledJob =>
   case object RunningOfJobSuccessful extends RunningOfJobSuccessful
 
   case class RunningOfJobFailed(jobName: String, wrappedCause: Throwable) extends RuntimeException {
+
     def asResult: Result = {
       Result(s"The execution of scheduled job $jobName failed with error '${wrappedCause.getMessage}'. " +
         s"The next execution of the job will do retry.")

@@ -16,11 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
+
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
+import play.api.http.Status.NO_CONTENT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -29,16 +35,12 @@ import play.api.test.Helpers.{BAD_REQUEST, route, _}
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-import play.api.http.Status.NO_CONTENT
-import play.api.mvc.Results.NoContent
-import java.util.UUID
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -50,10 +52,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   val mockBoxService: BoxService = mock[BoxService]
 
   override lazy val app: Application = GuiceApplicationBuilder()
-  .overrides(bind[BoxService].to(mockBoxService))
-  .overrides(bind[AppConfig].to(mockAppConfig))
-  .overrides(bind[AuthConnector].to(mockAuthConnector))
-  .build()
+    .overrides(bind[BoxService].to(mockBoxService))
+    .overrides(bind[AppConfig].to(mockAppConfig))
+    .overrides(bind[AuthConnector].to(mockAuthConnector))
+    .build()
 
   override def beforeEach(): Unit = {
     reset(mockBoxService, mockAppConfig, mockAuthConnector)
@@ -70,13 +72,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   val boxIdStr: String = UUID.randomUUID().toString
   val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
   val box: Box = Box(boxId, boxName, BoxCreator(clientId))
+
   val jsonBody: String =
     raw"""{"boxName": "$boxName",
          |"clientId": "$clientIdStr" }""".stripMargin
 
   def emptyJsonBody(boxNameVal: String = boxName, clientIdVal: String = clientIdStr): String =
-     raw"""{"boxName": "$boxNameVal",
-             |"clientId": "$clientIdVal" }""".stripMargin
+    raw"""{"boxName": "$boxNameVal",
+         |"clientId": "$clientIdVal" }""".stripMargin
 
   private val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
   private val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
@@ -92,8 +95,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
   private val validHeaders: Map[String, String] = Map(validContentTypeHeader, validAcceptHeader)
   private val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader)
   private val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
-  private val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields",
-                                                  ACCEPT -> "application/vnd.hmrc.1.0+json")
+  private val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
   "BoxController" when {
     "createBox" should {
       "return 201 and boxId when box successfully created" in {
@@ -103,7 +105,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
       }
@@ -127,19 +129,19 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}")
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
       }
 
-     "return 400 when request payload is missing boxName" in {
+      "return 400 when request payload is missing boxName" in {
         setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, emptyJsonBody(boxNameVal = ""))
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
       }
@@ -149,7 +151,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
-        val result = doPut("/box",  validHeadersWithInValidContentType, jsonBody)
+        val result = doPut("/box", validHeadersWithInValidContentType, jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockBoxService)
@@ -160,7 +162,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
-        val result = doPut("/box",  validHeadersWithEmptyContentType, jsonBody)
+        val result = doPut("/box", validHeadersWithEmptyContentType, jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockBoxService)
@@ -243,7 +245,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
       }
@@ -269,7 +271,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, "{\"someOtherJson\":\"value\"}")
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
       }
@@ -282,7 +284,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut("/cmb/box", validHeadersJson, s"""{"boxName":""}""")
         status(result) should be(BAD_REQUEST)
         val expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName in request body"}"""
-        contentAsJson(result) should be (Json.parse(expectedBodyStr))
+        contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
         verifyNoInteractions(mockBoxService)
       }
@@ -293,7 +295,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
-        val result = doPut("/cmb/box",  validHeadersWithInvalidAcceptHeader, jsonBody)
+        val result = doPut("/cmb/box", validHeadersWithInvalidAcceptHeader, jsonBody)
         status(result) should be(NOT_ACCEPTABLE)
 
         verifyNoInteractions(mockBoxService)
@@ -305,7 +307,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
-        val result = doPut("/cmb/box",  validHeadersWithInValidContentType, jsonBody)
+        val result = doPut("/cmb/box", validHeadersWithInValidContentType, jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockBoxService)
@@ -317,7 +319,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
-        val result = doPut("/cmb/box",  validHeadersWithEmptyContentType, jsonBody)
+        val result = doPut("/cmb/box", validHeadersWithEmptyContentType, jsonBody)
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockBoxService)
@@ -462,7 +464,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 200 and all boxes when no parameters provided" in {
         val expectedBoxes = List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))
         when(mockBoxService.getAllBoxes()(*))
-           .thenReturn(Future.successful(expectedBoxes))
+          .thenReturn(Future.successful(expectedBoxes))
 
         val result = doGet(s"/box", validHeaders)
 
@@ -594,118 +596,118 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
-
           doPut(
-              s"/box/${boxId.value}/callback",
-              validHeadersWithValidUserAgent,
-              createRequest("clientId", "callbackUrl"))
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
         status(result) should be(OK)
         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-       }
+      }
 
-       "return 200 when request contains " in {
-         setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(CallbackUrlUpdated()))
-
-         val result =
-
-             doPut(
-               s"/box/${boxId.value}/callback",
-               validHeadersWithValidUserAgent,
-               createRequest("clientId", "callbackUrl"))
-
-         status(result) should be(OK)
-         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-       }
-
-       "return 401 if User-Agent is not allowlisted" in {
-          setUpAppConfig(List("api-subscription-fields"))
+      "return 200 when request contains " in {
+        setUpAppConfig(List("api-subscription-fields"))
         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
           .thenReturn(Future.successful(CallbackUrlUpdated()))
 
         val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
-            doPut(
-              s"/box/${boxId.value}/callback",
-              validHeaders,
-              createRequest("clientId", "callbackUrl"))
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+      }
+
+      "return 401 if User-Agent is not allowlisted" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+
+        val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeaders,
+            createRequest("clientId", "callbackUrl")
+          )
 
         status(result) should be(FORBIDDEN)
         Helpers.contentAsString(result) shouldBe """{"code":"FORBIDDEN","message":"Authorisation failed"}"""
-       }
+      }
 
-       "return 404 if Box does not exist" in {
-         setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(BoxIdNotFound()))
+      "return 404 if Box does not exist" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(BoxIdNotFound()))
 
-         val result =
+        val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
-             doPut(
-               s"/box/${boxId.value}/callback",
-               validHeadersWithValidUserAgent,
-               createRequest("clientId", "callbackUrl"))
+        status(result) should be(NOT_FOUND)
+      }
 
-         status(result) should be(NOT_FOUND)
-       }
+      "return 200, successful false and errormessage when mongo update fails" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        val errorMessage = "Unable to update"
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
 
-       "return 200, successful false and errormessage when mongo update fails" in {
-         setUpAppConfig(List("api-subscription-fields"))
-         val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(UnableToUpdateCallbackUrl(errorMessage)))
+        val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
-         val result =
-
-             doPut(
-               s"/box/${boxId.value}/callback",
-               validHeadersWithValidUserAgent,
-               createRequest("clientId", "callbackUrl"))
-
-         status(result) should be(OK)
-         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
-       }
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+      }
 
       "return 200, successful false and errormessage when callback validation fails" in {
         setUpAppConfig(List("api-subscription-fields"))
-         val errorMessage = "Unable to update"
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
+        val errorMessage = "Unable to update"
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
-         val result =
+        val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
-             doPut(
-               s"/box/${boxId.value}/callback",
-               validHeadersWithValidUserAgent,
-               createRequest("clientId", "callbackUrl"))
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+      }
 
-         status(result) should be(OK)
-         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
-       }
+      "return 401 if client id does not match that on the box" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
-       "return 401 if client id does not match that on the box" in {
-         setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
+        val result =
+          doPut(
+            s"/box/${boxId.value}/callback",
+            validHeadersWithValidUserAgent,
+            createRequest("clientId", "callbackUrl")
+          )
 
-         val result =
-
-             doPut(
-               s"/box/${boxId.value}/callback",
-               validHeadersWithValidUserAgent,
-               createRequest("clientId", "callbackUrl"))
-
-         status(result) should be(UNAUTHORIZED)
-       }
+        status(result) should be(UNAUTHORIZED)
+      }
 
       "return 400 when payload is non JSON" in {
-          val result = doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, "someBody")
+        val result = doPut(s"/box/5fc1f8e5-8881-4863-8a8c-5c897bb56815/callback", validHeadersWithValidUserAgent, "someBody")
 
-          status(result) should be(BAD_REQUEST)
-          verifyNoInteractions(mockBoxService)
-       }
+        status(result) should be(BAD_REQUEST)
+        verifyNoInteractions(mockBoxService)
+      }
 
       "return 400 when payload is missing the clientId value" in {
         setUpAppConfig(List("api-subscription-fields"))
@@ -717,17 +719,17 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         verifyNoInteractions(mockBoxService)
       }
 
-       "return 200 when payload is missing the callbackUrl value" in {
-         setUpAppConfig(List("api-subscription-fields"))
-         when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
-           .thenReturn(Future.successful(CallbackUrlUpdated()))
-         val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
+      "return 200 when payload is missing the callbackUrl value" in {
+        setUpAppConfig(List("api-subscription-fields"))
+        when(mockBoxService.updateCallbackUrl(eqTo(boxId), *, *)(*, *))
+          .thenReturn(Future.successful(CallbackUrlUpdated()))
+        val result = doPut(s"/box/$boxIdStr/callback", validHeadersWithValidUserAgent, createRequest(clientIdStr, ""))
 
-         status(result) should be(OK)
-         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
-         verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *, *)(*, *)
-       }
-     }
+        status(result) should be(OK)
+        Helpers.contentAsString(result) shouldBe """{"successful":true}"""
+        verify(mockBoxService).updateCallbackUrl(eqTo(boxId), *, *)(*, *)
+      }
+    }
 
     "updatedManagedBoxCallbackUrl" should {
       def createRequest(callBackUrl: String): String = s"""{"callbackUrl": "$callBackUrl"}"""
@@ -738,9 +740,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         primeAuthAction(clientIdStr)
 
         val result = doPut(
-            s"/cmb/box/${boxId.value}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl"))
+          s"/cmb/box/${boxId.value}/callback",
+          validHeadersJson,
+          createRequest("callbackUrl")
+        )
 
         status(result) should be(OK)
         Helpers.contentAsString(result) shouldBe """{"successful":true}"""
@@ -754,7 +757,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
         val result = doPut(
           s"/cmb/box/${boxId.value}/callback",
           validHeadersJson,
-          createRequest("callbackUrl"))
+          createRequest("callbackUrl")
+        )
 
         status(result) should be(NOT_FOUND)
       }
@@ -769,7 +773,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           doPut(
             s"/cmb/box/${boxId.value}/callback",
             validHeadersJson,
-            createRequest("callbackUrl"))
+            createRequest("callbackUrl")
+          )
 
         status(result) should be(OK)
         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
@@ -782,9 +787,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           .thenReturn(Future.successful(CallbackValidationFailed(errorMessage)))
 
         val result = doPut(
-            s"/cmb/box/${boxId.value}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl"))
+          s"/cmb/box/${boxId.value}/callback",
+          validHeadersJson,
+          createRequest("callbackUrl")
+        )
 
         status(result) should be(OK)
         Helpers.contentAsString(result) shouldBe s"""{"successful":false,"errorMessage":"$errorMessage"}"""
@@ -796,9 +802,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
           .thenReturn(Future.successful(UpdateCallbackUrlUnauthorisedResult()))
 
         val result = doPut(
-            s"/cmb/box/${boxId.value}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl"))
+          s"/cmb/box/${boxId.value}/callback",
+          validHeadersJson,
+          createRequest("callbackUrl")
+        )
 
         status(result) should be(FORBIDDEN)
       }
@@ -916,7 +923,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       Json.parse(bodyValue)
     } match {
       case Success(value) => Some(value)
-      case Failure(_) => None
+      case Failure(_)     => None
     }
 
     val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)

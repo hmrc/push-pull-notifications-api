@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
-import play.api.http.HeaderNames.CONTENT_TYPE
-import play.api.mvc.Results._
-import play.api.mvc.{ActionFilter, Request, Result}
-import uk.gov.hmrc.http.HttpErrorFunctions
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.INVALID_CONTENT_TYPE
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
+import play.api.http.HeaderNames.CONTENT_TYPE
+import play.api.mvc.Results._
+import play.api.mvc.{ActionFilter, Request, Result}
+import uk.gov.hmrc.http.HttpErrorFunctions
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.INVALID_CONTENT_TYPE
+import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
+
 @Singleton
-class ValidateContentTypeHeaderAction @Inject()(implicit ec: ExecutionContext)
-  extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateContentTypeHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
   actionName =>
 
   override def executionContext: ExecutionContext = ec
@@ -37,7 +37,7 @@ class ValidateContentTypeHeaderAction @Inject()(implicit ec: ExecutionContext)
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(CONTENT_TYPE) match {
       case Some("application/json") => successful(None)
-      case _ => successful(Some(NotAcceptable(JsErrorResponse(INVALID_CONTENT_TYPE, "The content type header is missing or invalid"))))
+      case _                        => successful(Some(NotAcceptable(JsErrorResponse(INVALID_CONTENT_TYPE, "The content type header is missing or invalid"))))
     }
   }
 }

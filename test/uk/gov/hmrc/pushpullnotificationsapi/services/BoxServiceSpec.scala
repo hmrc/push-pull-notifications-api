@@ -17,19 +17,20 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 import org.joda.time.DateTime
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.captor.ArgCaptor
+
 import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import org.mockito.Mockito.verifyNoInteractions
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class BoxServiceSpec extends AsyncHmrcSpec {
 
@@ -62,7 +63,6 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     val box: Box = Box(boxId, boxName, BoxCreator(clientId))
     val boxWithExistingSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, DateTime.now)))
     val argumentCaptor = ArgCaptor[Box]
-
 
     def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]) =
       when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(optionalBox))
@@ -114,10 +114,8 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*)).thenReturn(Future.failed(new RuntimeException("")))
 
-
         val result: CreateBoxResult = await(objInTest.createBox(clientId, boxName))
         result.isInstanceOf[BoxCreateFailedResult] shouldBe true
-
 
         verify(mockRepository, times(1)).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)
         verify(mockRepository, times(0)).createBox(argumentCaptor)(*)
@@ -145,7 +143,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     "getBoxesByClientId" should {
       "delegate to repo and return same list" in new Setup {
-        val boxes : List[Box] = List()
+        val boxes: List[Box] = List()
         when(mockRepository.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(boxes))
 
         val result = await(objInTest.getBoxesByClientId(clientId))
@@ -157,14 +155,14 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     }
 
     "getAllBoxes" in new Setup {
-        val boxes : List[Box] = List()
-        when(mockRepository.getAllBoxes()(*)).thenReturn(Future.successful(boxes))
+      val boxes: List[Box] = List()
+      when(mockRepository.getAllBoxes()(*)).thenReturn(Future.successful(boxes))
 
-        val result = await(objInTest.getAllBoxes())
+      val result = await(objInTest.getAllBoxes())
 
-        result should be theSameInstanceAs boxes
+      result should be theSameInstanceAs boxes
 
-        verify(mockRepository, times(1)).getAllBoxes()(*)
+      verify(mockRepository, times(1)).getAllBoxes()(*)
     }
 
     "updateCallbackUrl" should {
@@ -239,7 +237,6 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
         result.isInstanceOf[UnableToUpdateCallbackUrl] shouldBe true
 
-
         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
         verifyNoInteractions(mockApiPlatformEventsConnector)
       }
@@ -268,7 +265,6 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         verifyNoInteractions(mockConnector)
         verifyNoInteractions(mockApiPlatformEventsConnector)
       }
-
 
       "return CallbackValidationFailed when connector call returns false" in new Setup {
         when(mockRepository.findByBoxId(eqTo(boxId))(*))
@@ -336,7 +332,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     "return BoxDeleteAccessDeniedResult when the given clientId does not match the box's clientId" in new Setup {
       val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
-      val clientManagedBox: Box = box.copy(clientManaged =true)
+      val clientManagedBox: Box = box.copy(clientManaged = true)
 
       when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
 

@@ -17,22 +17,24 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import org.joda.time.DateTime
+
 import play.api.mvc.{Request, WrappedRequest}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
 case class CreateClientManagedBoxRequest(boxName: String)
 
-case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A])
-  extends WrappedRequest[A](request)
+case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A]) extends WrappedRequest[A](request)
 
 case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType)
 
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
-case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String){
-  def isInvalid(): Boolean ={
+case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String) {
+
+  def isInvalid(): Boolean = {
     this.clientId.value.isEmpty
   }
 }
@@ -44,18 +46,13 @@ case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
 case class WrappedNotification(body: String, contentType: String)
 case class WrappedNotificationRequest(notification: WrappedNotification, version: String)
 
-
 // Notifications
-
 
 case class AcknowledgeNotificationsRequest(notificationIds: List[String])
 case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationIds: Set[NotificationId])
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 
-case class NotificationQueryParams(status: Option[NotificationStatus],
-                                   fromDate: Option[DateTime],
-                                   toDate: Option[DateTime])
+case class NotificationQueryParams(status: Option[NotificationStatus], fromDate: Option[DateTime], toDate: Option[DateTime])
 
 case class ValidatedNotificationQueryRequest[A](clientId: ClientId, params: NotificationQueryParams, request: Request[A])
-

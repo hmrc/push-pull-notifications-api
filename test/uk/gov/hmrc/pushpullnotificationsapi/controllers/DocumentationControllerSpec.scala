@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import scala.concurrent.Future
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.Result
 import play.api.test.Helpers.{route, _}
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
-import scala.concurrent.Future
-
-class DocumentationControllerSpec extends AsyncHmrcSpec
-  with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
@@ -38,11 +39,12 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
+
   override def beforeEach(): Unit = {
-   reset(mockAppConfig)
+    reset(mockAppConfig)
   }
 
-  def setUpAppConfig(status: String): Unit ={
+  def setUpAppConfig(status: String): Unit = {
     when(mockAppConfig.apiStatus).thenReturn(status)
   }
 
@@ -86,8 +88,8 @@ class DocumentationControllerSpec extends AsyncHmrcSpec
         status(result) shouldBe OK
         val stringResult = Helpers.contentAsString(result)
 
-        stringResult should include ("/cmb/box")
-        stringResult should include ("/cmb/box/{boxId}")
+        stringResult should include("/cmb/box")
+        stringResult should include("/cmb/box/{boxId}")
       }
 
       "return specified file when file is not application.yaml" in {

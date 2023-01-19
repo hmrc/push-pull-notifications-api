@@ -12,8 +12,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPa
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-class ThirdPartyApplicationConnectorISpec
-  extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
+class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -49,7 +48,6 @@ class ThirdPartyApplicationConnectorISpec
 
       result.id shouldBe expectedApplicationId
     }
-
 
     "return failed Future if TPA returns a 404" in new SetUp {
       primeApplicationQueryEndpoint(NOT_FOUND, "", clientId)

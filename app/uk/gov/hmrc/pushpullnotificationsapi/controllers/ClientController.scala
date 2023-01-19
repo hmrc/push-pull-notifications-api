@@ -17,28 +17,29 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
+
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAuthorizationHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 
-import scala.concurrent.ExecutionContext
-
 @Singleton()
-class ClientController @Inject()(validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
-                                 clientService: ClientService,
-                                 cc: ControllerComponents)
-                                (implicit val ec: ExecutionContext) extends BackendController(cc) {
+class ClientController @Inject() (
+    validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
+    clientService: ClientService,
+    cc: ControllerComponents
+  )(implicit val ec: ExecutionContext)
+    extends BackendController(cc) {
 
   def getClientSecrets(clientId: ClientId): Action[AnyContent] = (Action andThen validateAuthorizationHeaderAction).async {
     clientService.getClientSecrets(clientId) map {
       case Some(clientSecrets) => Ok(Json.toJson(clientSecrets))
-      case None => NotFound(JsErrorResponse(ErrorCode.CLIENT_NOT_FOUND, "Client not found"))
+      case None                => NotFound(JsErrorResponse(ErrorCode.CLIENT_NOT_FOUND, "Client not found"))
     } recover recovery
   }
 }
-
-

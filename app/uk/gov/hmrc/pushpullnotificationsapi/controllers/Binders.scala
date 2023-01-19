@@ -16,22 +16,24 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.util.Try
+
 import play.api.Logger
 import play.api.mvc.{PathBindable, QueryStringBindable}
 
-import java.util.UUID
 import uk.gov.hmrc.pushpullnotificationsapi.models.{BoxId, ClientId}
 
-import scala.util.Try
 object Binders {
   val logger = Logger("binders")
 
   private def boxIdFromString(text: String): Either[String, BoxId] = {
     Try(UUID.fromString(text))
       .toOption
-      .toRight({   logger.info("Cannot parse parameter %s as BoxId".format(text))
+      .toRight({
+        logger.info("Cannot parse parameter %s as BoxId".format(text))
         "Box ID is not a UUID"
-        })
+      })
       .map(BoxId(_))
   }
 
@@ -43,7 +45,7 @@ object Binders {
       } yield {
         text match {
           case Right(clientId) => Right(ClientId(clientId))
-          case _              =>  Left("Unable to bind a clientId")
+          case _               => Left("Unable to bind a clientId")
         }
       }
     }
@@ -54,6 +56,7 @@ object Binders {
   }
 
   implicit def boxIdPathBindable(implicit textBinder: PathBindable[String]): PathBindable[BoxId] = new PathBindable[BoxId] {
+
     override def bind(key: String, value: String): Either[String, BoxId] = {
       textBinder.bind(key, value).flatMap(boxIdFromString)
     }

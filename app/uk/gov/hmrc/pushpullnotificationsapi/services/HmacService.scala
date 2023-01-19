@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.nio.charset.StandardCharsets.UTF_8
-
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Singleton
@@ -28,12 +27,12 @@ class HmacService {
   private val algorithm = "HmacSHA1"
 
   /**
-   * Generates an HMAC-SHA1 signature for the provided message using the provided key.
-   *
-   * @param key The signing key in hexadecimal format
-   * @param message The message to be signed
-   * @return The generated HMAC signature in hexadecimal format
-   */
+    * Generates an HMAC-SHA1 signature for the provided message using the provided key.
+    *
+    * @param key The signing key in hexadecimal format
+    * @param message The message to be signed
+    * @return The generated HMAC signature in hexadecimal format
+    */
   def sign(key: String, message: String): String = {
     val secretKey = new SecretKeySpec(key.getBytes(UTF_8), algorithm)
     val mac = Mac.getInstance(algorithm)

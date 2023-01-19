@@ -16,6 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.util.concurrent.TimeUnit
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
+
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
@@ -25,18 +29,19 @@ import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import org.joda.time.DateTimeZone.UTC
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference, SingleObservable, bson}
-import org.mongodb.scala.model.Filters.{and, equal, gte, in, lte, or}
+import org.mongodb.scala.model.Aggregates.{`match`, lookup, project}
+import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.Aggregates.{`lookup`, `match`, project}
-import org.mongodb.scala.model.{Aggregates, Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, Projections, ReturnDocument, Sorts}
-import play.api.Logger
-import play.api.libs.json.{Format, JsArray, JsNumber, JsString, Json, OFormat}
+import org.mongodb.scala.model._
+import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
+
+import play.api.libs.json.Format
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -44,45 +49,45 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, dbNotificationFormatter}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
 
-import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
 @Singleton
-class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)
-                                       (implicit ec: ExecutionContext, mat: Materializer)
-  extends PlayMongoRepository[DbNotification](
-    collectionName = "notifications",
-    mongoComponent = mongoComponent,
-    domainFormat = dbNotificationFormatter,
-    indexes = Seq(
-      IndexModel(ascending(List("notificationId", "boxId", "status"): _*),
-        IndexOptions()
-          .name("notifications_idx")
-          .background(true)
-          .unique(true)),
-      IndexModel(ascending(List("boxId, createdDateTime"): _*),
-        IndexOptions()
-          .name("notifications_created_datetime_idx")
-          .background(true)
-          .unique(false)
+class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, mat: Materializer)
+    extends PlayMongoRepository[DbNotification](
+      collectionName = "notifications",
+      mongoComponent = mongoComponent,
+      domainFormat = dbNotificationFormatter,
+      indexes = Seq(
+        IndexModel(
+          ascending(List("notificationId", "boxId", "status"): _*),
+          IndexOptions()
+            .name("notifications_idx")
+            .background(true)
+            .unique(true)
+        ),
+        IndexModel(
+          ascending(List("boxId, createdDateTime"): _*),
+          IndexOptions()
+            .name("notifications_created_datetime_idx")
+            .background(true)
+            .unique(false)
+        ),
+        IndexModel(
+          ascending(Seq("createdDateTime"): _*),
+          IndexOptions()
+            .name("create_datetime_ttl_idx")
+            .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
+            .background(true)
+            .unique(false)
+        )
       ),
-      IndexModel(ascending(Seq("createdDateTime"): _*),
-        IndexOptions()
-          .name("create_datetime_ttl_idx")
-          .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
-          .background(true)
-          .unique(false)
-      )
-    ),
-    replaceIndexes = true
-  ) {
+      replaceIndexes = true
+    ) {
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
   implicit val dateFormation: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+
   override lazy val collection: MongoCollection[DbNotification] =
     CollectionFactory
       .collection(mongoComponent.database, collectionName, domainFormat)
@@ -119,18 +124,17 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
     super.ensureIndexes
   }
 
-  def getByBoxIdAndFilters(boxId: BoxId,
-                           status: Option[NotificationStatus] = None,
-                           fromDateTime: Option[DateTime] = None,
-                           toDateTime: Option[DateTime] = None,
-                           numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn)
-                          (implicit ec: ExecutionContext): Future[List[Notification]] = {
+  def getByBoxIdAndFilters(
+      boxId: BoxId,
+      status: Option[NotificationStatus] = None,
+      fromDateTime: Option[DateTime] = None,
+      toDateTime: Option[DateTime] = None,
+      numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn
+    )(implicit ec: ExecutionContext
+    ): Future[List[Notification]] = {
 
     val query: Bson =
-      Filters.and(boxIdQuery(boxId),
-          statusQuery(status),
-          dateRange("createdDateTime", fromDateTime, toDateTime))
-
+      Filters.and(boxIdQuery(boxId), statusQuery(status), dateRange("createdDateTime", fromDateTime, toDateTime))
 
     collection
       .withReadPreference(ReadPreference.primaryPreferred)
@@ -146,8 +150,7 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
       val startCompare = if (start.isDefined) gte(fieldName, Codecs.toBson(start.get)) else Filters.empty()
       val endCompare = if (end.isDefined) lte(fieldName, Codecs.toBson(end.get)) else Filters.empty()
       Filters.and(startCompare, endCompare)
-    }
-    else Filters.empty()
+    } else Filters.empty()
   }
 
   private def boxIdQuery(boxId: BoxId): Bson = {
@@ -155,15 +158,14 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", notificationIds:_ *)
+    in("notificationId", notificationIds: _*)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
     maybeStatus.fold(Filters.empty())(status => equal("status", Codecs.toBson(status)))
   }
 
-  def getAllByBoxId(boxId: BoxId)
-                   (implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
+  def getAllByBoxId(boxId: BoxId)(implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
   def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
@@ -173,24 +175,23 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
   }
 
   def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
-    val query = and(boxIdQuery(boxId),
-        notificationIdsQuery(notificationIds))
+    val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
 
     collection
-      .updateMany(query,
-        set("status", Codecs.toBson(ACKNOWLEDGED))
-      ).toFuture().map(_.wasAcknowledged())
+      .updateMany(query, set("status", Codecs.toBson(ACKNOWLEDGED))).toFuture().map(_.wasAcknowledged())
   }
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
-    collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
+    collection.findOneAndUpdate(
+      equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("status", Codecs.toBson(newStatus)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
   }
 
   def updateRetryAfterDateTime(notificationId: NotificationId, newRetryAfterDateTime: DateTime): Future[Notification] = {
-    collection.findOneAndUpdate(equal("notificationId", Codecs.toBson(notificationId.value)),
+    collection.findOneAndUpdate(
+      equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
@@ -198,19 +199,20 @@ class NotificationsRepository @Inject()(appConfig: AppConfig, mongoComponent: Mo
 
   def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
     val pipeline = List(
-      `match`(and(equal("status", Codecs.toBson(PENDING)),
-        or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC)))))),
+      `match`(and(equal("status", Codecs.toBson(PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(now(UTC)))))),
       `lookup`("box", "boxId", "boxId", "boxes"),
-      `match`(and(equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
+      `match`(and(
+        equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
         Filters.exists("boxes.subscriber.callBackUrl"),
-        Filters.ne("boxes.subscriber.callBackUrl", ""))),
+        Filters.ne("boxes.subscriber.callBackUrl", "")
+      )),
       project(Document(
-          """{ "notification": {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
-            | "message" : "$message", "encryptedMessage" : "$encryptedMessage", "status" : "$status", "createdDateTime" : "$createdDateTime",
-            | "retryAfterDateTime" : "$retryAfterDateTime"},
-            | "box": {"$arrayElemAt": ["$boxes", 0]}
-            | }""".stripMargin))
-
+        """{ "notification": {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
+          | "message" : "$message", "encryptedMessage" : "$encryptedMessage", "status" : "$status", "createdDateTime" : "$createdDateTime",
+          | "retryAfterDateTime" : "$retryAfterDateTime"},
+          | "box": {"$arrayElemAt": ["$boxes", 0]}
+          | }""".stripMargin
+      ))
     )
 
     Source.fromPublisher(

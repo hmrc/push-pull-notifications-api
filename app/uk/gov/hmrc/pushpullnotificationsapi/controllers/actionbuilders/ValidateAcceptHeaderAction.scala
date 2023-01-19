@@ -17,24 +17,25 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
 import javax.inject.{Inject, Singleton}
-import play.api.http.HeaderNames.ACCEPT
-import play.api.mvc.Results._
-import play.api.mvc.{ActionFilter, Request, Result}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID
-import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
-
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
+import play.api.http.HeaderNames.ACCEPT
+import play.api.mvc.Results._
+import play.api.mvc.{ActionFilter, Request, Result}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID
+import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
+
 @Singleton
-class ValidateAcceptHeaderAction @Inject()(implicit ec: ExecutionContext) extends ActionFilter[Request] {
+class ValidateAcceptHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] {
 
   override def executionContext: ExecutionContext = ec
 
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(ACCEPT) match {
       case Some("application/vnd.hmrc.1.0+json") => successful(None)
-      case _ => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
+      case _                                     => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
     }
   }
 }

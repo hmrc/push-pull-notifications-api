@@ -17,16 +17,17 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
 import java.util.UUID
+import scala.collection.immutable
+
 import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 import org.joda.time.{DateTime, DateTimeZone}
+
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
-
-import scala.collection.immutable
-
 
 sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 
@@ -47,20 +48,20 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
   case object FAILED extends NotificationStatus
 }
 
-
 case class NotificationId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
-case class Notification(notificationId: NotificationId,
-                        boxId: BoxId,
-                        messageContentType: MessageContentType,
-                        message: String,
-                        status: NotificationStatus = PENDING,
-                        createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-                        readDateTime: Option[DateTime] = None,
-                        pushedDateTime: Option[DateTime] = None,
-                        retryAfterDateTime: Option[DateTime] = None)
+case class Notification(
+    notificationId: NotificationId,
+    boxId: BoxId,
+    messageContentType: MessageContentType,
+    message: String,
+    status: NotificationStatus = PENDING,
+    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
+    readDateTime: Option[DateTime] = None,
+    pushedDateTime: Option[DateTime] = None,
+    retryAfterDateTime: Option[DateTime] = None)
 
 object Notification {
   implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat

@@ -17,13 +17,14 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fromClientSecret, toClientSecret}
 
-
-
 case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
+
 private[repository] object DbClient {
+
   def fromClient(client: Client, crypto: CompositeSymmetricCrypto): DbClient = {
     DbClient(client.id, client.secrets.map(fromClientSecret(_, crypto)))
   }
@@ -34,7 +35,9 @@ private[repository] object DbClient {
 }
 
 private[repository] case class DbClientSecret(encryptedValue: String)
+
 private[repository] object DbClientSecret {
+
   def fromClientSecret(clientSecret: ClientSecret, crypto: CompositeSymmetricCrypto): DbClientSecret = {
     DbClientSecret(crypto.encrypt(PlainText(clientSecret.value)).value)
   }

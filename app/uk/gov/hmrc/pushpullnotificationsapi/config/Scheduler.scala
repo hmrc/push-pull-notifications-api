@@ -16,26 +16,30 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
+
 import com.google.inject.AbstractModule
 
-import javax.inject.{Inject, Singleton}
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
+
 import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJob
 import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{RunningOfScheduledJobs, ScheduledJob}
 
-import scala.concurrent.ExecutionContext
-
 class SchedulerModule extends AbstractModule {
+
   override def configure(): Unit = {
     bind(classOf[Scheduler]).asEagerSingleton()
   }
 }
 
 @Singleton
-class Scheduler @Inject()(retryPushNotificationsJob: RetryPushNotificationsJob,
-                          override val applicationLifecycle: ApplicationLifecycle,
-                          override val application: Application)
-                         (implicit val ec: ExecutionContext) extends RunningOfScheduledJobs {
+class Scheduler @Inject() (
+    retryPushNotificationsJob: RetryPushNotificationsJob,
+    override val applicationLifecycle: ApplicationLifecycle,
+    override val application: Application
+  )(implicit val ec: ExecutionContext)
+    extends RunningOfScheduledJobs {
   override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob).filter(_.isEnabled)
 }
