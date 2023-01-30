@@ -8,7 +8,7 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 
 inThisBuild(
   List(
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.10",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision
   )
@@ -53,7 +53,7 @@ lazy val root = (project in file("."))
     IntegrationTest / parallelExecution := false,
     IntegrationTest / testGrouping := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
-    
+
     Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT")
   )
