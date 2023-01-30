@@ -1,19 +1,17 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.test.CleanMongoCollectionSupport
-import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
+import java.time.{Instant, LocalDateTime}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -217,7 +215,7 @@ class BoxRepositoryISpec
 
       val subscriber = updatedBox.subscriber.get.asInstanceOf[PushSubscriber]
       subscriber.callBackUrl shouldBe callBackEndpoint
-      subscriber.subscribedDateTime.isBefore(DateTime.now())
+      subscriber.subscribedDateTime.isBefore(Instant.now)
     }
 
     "return None when the box doesn't exist" in {

@@ -47,6 +47,7 @@ object ResponseFormatters {
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
   implicit val createNotificationResponseFormatter: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
+  implicit val createWrappedNotificationResponseFormatter: OFormat[CreateWrappedNotificationResponse] = Json.format[CreateWrappedNotificationResponse]
   implicit val updateCallbackUrlResponseFormatter: OFormat[UpdateCallbackUrlResponse] = Json.format[UpdateCallbackUrlResponse]
   implicit val validateBoxOwnershipResponseFormatter: OFormat[ValidateBoxOwnershipResponse] = Json.format[ValidateBoxOwnershipResponse]
   implicit val clientSecretResponseFormatter: OFormat[ClientSecret] = Json.format[ClientSecret]
@@ -74,13 +75,15 @@ object ConnectorFormatters {
   implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
   implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
   implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
-  implicit val forwardedHeadersFormatter = Json.format[ForwardedHeader]
+  implicit val forwardedHeadersFormatter: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val outboundNotificationFormatter = Json.format[OutboundNotification]
-  implicit val updateCallBAckUrlRequestFormatter = Json.format[UpdateCallbackUrlRequest]
-  implicit val applicationResponseformater = Json.format[ApplicationResponse]
+  implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
+  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
+  implicit val updateCallBAckUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
+  implicit val applicationResponseFormatter: OFormat[ApplicationResponse] = Json.format[ApplicationResponse]
   implicit val eventIdFormat: Format[EventId] = Json.valueFormat[EventId]
   implicit val actorFormat: Format[Actor] = Json.format[Actor]
   implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
-
+  implicit val outboundNotificationFormatter: OFormat[OutboundNotification] = Json.format[OutboundNotification]
+  implicit val outboundConfirmationFormatter: OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
 }

@@ -68,7 +68,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
         fromRegistries(
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dateFormat),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),

@@ -16,15 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.time.format.DateTimeFormatter
+import java.time.{Duration, Instant}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 import akka.stream.Materializer
-import org.joda.time.DateTime
-import org.joda.time.DateTime.now
-import org.joda.time.DateTimeZone.UTC
-import org.joda.time.format.DateTimeFormat
 import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -88,7 +86,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
   private val headersWithInvalidContentType: Map[String, String] =
     Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
-  val createdDateTime: DateTime = DateTime.now().minusDays(1)
+  val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
 
   val notification: Notification = Notification(
     NotificationId(UUID.randomUUID()),
@@ -104,7 +102,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
     boxId,
     messageContentType = MessageContentType.APPLICATION_XML,
     message = "<someXml/>",
-    createdDateTime = createdDateTime.plusHours(12),
+    createdDateTime = createdDateTime.plus(Duration.ofHours(12)),
     status = NotificationStatus.ACKNOWLEDGED
   )
 
@@ -349,7 +347,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None)
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(now(UTC)))))))
+          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(Instant.now))))))
 
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
@@ -370,7 +368,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
         val resultStr = contentAsString(result)
-        val expectedCreatedDateTime = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ").print(notification.createdDateTime)
+        val expectedCreatedDateTime = DateTimeFormatter.ISO_INSTANT.format(createdDateTime)
         resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
         resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
         resultStr.contains(s""""createdDateTime":"$expectedCreatedDateTime"""") shouldBe true
@@ -535,7 +533,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 200 when acknowledge request is valid " in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(Future.successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -544,7 +542,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 403 when service returns unauthorised result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -553,7 +551,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 404 when service returns box not found result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -562,7 +560,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 403 when acknowledge request is valid but service return unauthorised" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -571,7 +569,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 406 when invalid accept header is provided" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.raw}/notifications/acknowledge", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest)
@@ -645,8 +643,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
     } else {
       primeAuthAction(clientIdStr)
     }
-    val maybeFromDate: Option[DateTime] = stringToDateTimeLenient(maybeFromDateStr)
-    val maybeToDate: Option[DateTime] = stringToDateTimeLenient(maybeToDateStr)
+    val maybeFromDate: Option[Instant] = stringToDateTimeLenient(maybeFromDateStr)
+    val maybeToDate: Option[Instant] = stringToDateTimeLenient(maybeToDateStr)
 
     expectedStatusCode match {
       case OK          => when(mockNotificationService.getNotifications(
@@ -681,13 +679,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
     }
   }
 
-  def stringToDateTime(dateStr: String): DateTime = {
-    DateTime.parse(dateStr)
+  def stringToDateTime(dateStr: String): Instant = {
+    Instant.parse(dateStr)
   }
 
-  def stringToDateTimeLenient(dateStr: Option[String]): Option[DateTime] = {
-    Try[Option[DateTime]] {
-      dateStr.map(DateTime.parse)
+  def stringToDateTimeLenient(dateStr: Option[String]): Option[Instant] = {
+    Try[Option[Instant]] {
+      dateStr.map(Instant.parse)
     } match {
       case Success(x) => x
       case Failure(_) => None

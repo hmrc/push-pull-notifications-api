@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.Instant
 
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
 
@@ -31,10 +31,10 @@ case class DbNotification(
     messageContentType: MessageContentType,
     encryptedMessage: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-    readDateTime: Option[DateTime] = None,
-    pushedDateTime: Option[DateTime] = None,
-    retryAfterDateTime: Option[DateTime] = None)
+    createdDateTime: Instant = Instant.now,
+    readDateTime: Option[Instant] = None,
+    pushedDateTime: Option[Instant] = None,
+    retryAfterDateTime: Option[Instant] = None)
 
 private[repository] object DbNotification {
 

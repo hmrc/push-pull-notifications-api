@@ -3,17 +3,15 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import akka.stream.TLSRole.server
 
 import java.util.UUID
-import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{Format, JsSuccess, Json}
+import play.api.libs.json.{Format, JsSuccess, Json, Reads, Writes}
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -22,6 +20,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
+import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,7 +35,7 @@ class NotificationsControllerISpec
     with ThirdPartyApplicationService {
 
   this: Suite with ServerProvider =>
-  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+  implicit val instantFormatter: Format[Instant] = Format(Reads.DefaultInstantReads, Writes.DefaultInstantWrites)
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]

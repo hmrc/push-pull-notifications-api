@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
-import org.joda.time.DateTime
 import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
 
@@ -29,7 +29,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
@@ -41,6 +40,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   private val mockNotificationsRepo = mock[NotificationsRepository]
   private val mockClientService = mock[ClientService]
   private val mockHmacService = mock[HmacService]
+  private val mockConfirmationService = mock[ConfirmationService]
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def beforeEach(): Unit = {
@@ -49,7 +49,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   }
 
   trait Setup {
-    val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService)
+    val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService, mockConfirmationService)
   }
 
   "handlePushNotification" should {
@@ -68,13 +68,13 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       (jsonPayload \ "messageContentType").as[String] shouldBe originalNotification.messageContentType.value
       (jsonPayload \ "message").as[String] shouldBe originalNotification.message
       (jsonPayload \ "status").as[NotificationStatus] shouldBe originalNotification.status
-      (jsonPayload \ "createdDateTime").as[DateTime].getMillis shouldBe originalNotification.createdDateTime.getMillis
+      (jsonPayload \ "createdDateTime").as[Instant].getEpochSecond shouldBe originalNotification.createdDateTime.getEpochSecond
     }
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
       val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
 
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(
@@ -94,6 +94,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.value)
       result shouldBe true
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
+      verify(mockConfirmationService).sendConfirmation(notification.notificationId)
     }
 
     "put the notification signature in the forwarded headers" in new Setup {
@@ -103,7 +104,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       when(mockConnector.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
       when(mockClientService.findOrCreateClient(clientId)).thenReturn(successful(client))
       when(mockNotificationsRepo.updateStatus(*[NotificationId], *)).thenReturn(successful(mock[Notification]))
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(
@@ -124,7 +125,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       when(mockConnector.send(outboundNotificationCaptor)(*))
         .thenReturn(successful(PushConnectorFailedResult("some error")))
 
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)
@@ -140,7 +141,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       when(mockConnector.send(outboundNotificationCaptor)(*))
         .thenReturn(successful(PushConnectorFailedResult("Some Error")))
 
-      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
@@ -153,7 +154,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
     }
 
     "return true when subscriber has no callback url" in new Setup {
-      val subscriber: PushSubscriber = PushSubscriber("", DateTime.now)
+      val subscriber: PushSubscriber = PushSubscriber("", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)
@@ -166,7 +167,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
     }
 
     "return true when there are no push subscribers" in new Setup {
-      val subscriber: PullSubscriber = PullSubscriber("", DateTime.now)
+      val subscriber: PullSubscriber = PullSubscriber("", Instant.now)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)

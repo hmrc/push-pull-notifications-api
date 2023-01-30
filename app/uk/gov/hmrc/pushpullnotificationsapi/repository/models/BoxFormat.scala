@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -30,7 +30,7 @@ object BoxFormat extends OFormat[Box] {
   implicit private val clientIdFormatter = Json.valueFormat[ClientId]
   implicit private val boxIdFormatter = Json.valueFormat[BoxId]
   implicit private val boxCreatorFormat = Json.format[BoxCreator]
-  implicit private val dateFormat = MongoJodaFormats.dateTimeFormat
+  implicit private val instantFormat = MongoJavatimeFormats.instantFormat
   implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
   implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
 

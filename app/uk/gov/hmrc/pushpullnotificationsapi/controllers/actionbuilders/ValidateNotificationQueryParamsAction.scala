@@ -16,12 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 
+import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
-import org.joda.time.format.ISODateTimeFormat
-import org.joda.time.{DateTime, DateTimeZone}
 
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.{ActionRefiner, Result}
@@ -85,13 +83,13 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
     }
   }
 
-  def validateDateParamValue(maybeString: Option[String]): Either[Result, Option[DateTime]] = {
+  def validateDateParamValue(maybeString: Option[String]): Either[Result, Option[Instant]] = {
     maybeString match {
       case Some(stringVal) =>
-        Try[DateTime] {
-          DateTime.parse(stringVal, ISODateTimeFormat.dateTimeParser())
+        Try[Instant] {
+          Instant.parse(stringVal)
         } match {
-          case Success(parseDate) => Right(Some(parseDate.withZone(DateTimeZone.UTC)))
+          case Success(parseDate) => Right(Some(parseDate))
           case Failure(_)         => logger.info(s"Unparsable DateValue Param provided: $stringVal")
             Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Unparsable DateValue Param provided")))
         }
@@ -99,7 +97,7 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
     }
   }
 
-  def validateToDateIsAfterFromDate(fromDateVal: Option[DateTime], toDateVal: Option[DateTime]): Either[Result, Option[Boolean]] = {
+  def validateToDateIsAfterFromDate(fromDateVal: Option[Instant], toDateVal: Option[Instant]): Either[Result, Option[Boolean]] = {
     (fromDateVal, toDateVal) match {
       case (Some(fromDate), Some(toDate)) =>
         if (fromDate.isBefore(toDate)) {
