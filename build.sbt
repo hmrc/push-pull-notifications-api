@@ -53,7 +53,7 @@ lazy val root = (project in file("."))
     IntegrationTest / parallelExecution := false,
     IntegrationTest / testGrouping := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
-    
+
     Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT")
   )

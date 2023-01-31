@@ -36,12 +36,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
+import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 
 @Singleton()
 class NotificationsController @Inject() (
     appConfig: AppConfig,
     notificationsService: NotificationsService,
+    confirmationService: ConfirmationService,
     queryParamValidatorAction: ValidateNotificationQueryParamsAction,
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
     authAction: AuthAction,
@@ -89,13 +90,23 @@ class NotificationsController @Inject() (
                 ) { contentType =>
                   if (validateBodyAgainstContentType(contentType, notification.body)) {
                     val notificationId = NotificationId(UUID.randomUUID())
-                    notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) map {
+                    notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) flatMap {
                       case _: NotificationCreateSuccessResult             =>
-                        Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+                        if (wrappedNotification.confirmationUrl.isDefined) {
+                          val confirmationId = ConfirmationId(UUID.randomUUID())
+                          confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
+                            case _: ConfirmationCreateServiceSuccessResult =>
+                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
+                            case _: ConfirmationCreateServiceFailedResult  =>
+                              InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
+                          }
+                        } else {
+                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))
+                        }
                       case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                        NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+                        Future.successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
                       case _: NotificationCreateFailedDuplicateResult     =>
-                        InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
+                        Future.successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
                     } recover recovery
                   } else {
                     Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))

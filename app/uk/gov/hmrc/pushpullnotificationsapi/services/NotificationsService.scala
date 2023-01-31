@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.Instant
+import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-
-import org.joda.time.DateTime
 
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -29,14 +29,19 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, Notificat
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class NotificationsService @Inject() (boxRepository: BoxRepository, notificationsRepository: NotificationsRepository, pushService: NotificationPushService)
+class NotificationsService @Inject() (
+    boxRepository: BoxRepository,
+    notificationsRepository: NotificationsRepository,
+    pushService: NotificationPushService,
+    confirmationService: ConfirmationService)
     extends ApplicationLogger {
 
   def acknowledgeNotifications(
       boxId: BoxId,
       clientId: ClientId,
       request: AcknowledgeNotificationsRequest
-    )(implicit ec: ExecutionContext
+    )(implicit ec: ExecutionContext,
+      hc: HeaderCarrier
     ): Future[AcknowledgeNotificationsServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
@@ -44,6 +49,13 @@ class NotificationsService @Inject() (boxRepository: BoxRepository, notification
         case Some(box) =>
           if (box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
+              .map(result => {
+                request.notificationIds
+                  .map(UUID.fromString)
+                  .map(NotificationId)
+                  .foreach(confirmationService.sendConfirmation)
+                result
+              })
               .map(AcknowledgeNotificationsSuccessUpdatedResult)
           } else {
             Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
@@ -55,8 +67,8 @@ class NotificationsService @Inject() (boxRepository: BoxRepository, notification
       boxId: BoxId,
       clientId: ClientId,
       status: Option[NotificationStatus] = None,
-      fromDateTime: Option[DateTime] = None,
-      toDateTime: Option[DateTime] = None
+      fromDateTime: Option[Instant] = None,
+      toDateTime: Option[Instant] = None
     )(implicit ec: ExecutionContext
     ): Future[GetNotificationCreateServiceResult] = {
 

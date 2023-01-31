@@ -39,6 +39,11 @@ final case class NotificationCreateSuccessResult() extends NotificationCreateSer
 final case class NotificationCreateFailedDuplicateResult(message: String) extends NotificationCreateServiceFailedResult
 final case class NotificationCreateFailedBoxIdNotFoundResult(message: String) extends NotificationCreateServiceFailedResult
 
+sealed trait ConfirmationCreateServiceResult
+
+final case class ConfirmationCreateServiceFailedResult(message: String) extends ConfirmationCreateServiceResult
+final case class ConfirmationCreateServiceSuccessResult() extends ConfirmationCreateServiceResult
+
 sealed trait GetNotificationCreateServiceResult
 
 sealed trait GetNotificationsServiceFailedResult extends GetNotificationCreateServiceResult
@@ -60,6 +65,10 @@ final case class AcknowledgeNotificationsSuccessUpdatedResult(result: Boolean) e
 sealed trait PushConnectorResult
 final case class PushConnectorSuccessResult() extends PushConnectorResult
 final case class PushConnectorFailedResult(errorMessage: String) extends PushConnectorResult
+
+sealed trait ConfirmationConnectorResult
+final case class ConfirmationConnectorSuccessResult() extends ConfirmationConnectorResult
+final case class ConfirmationConnectorFailedResult(errorMessage: String) extends ConfirmationConnectorResult
 
 sealed trait UpdateCallbackUrlResult
 sealed trait UpdateCallbackUrlSuccessResult extends UpdateCallbackUrlResult

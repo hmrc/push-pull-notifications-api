@@ -32,16 +32,22 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class NotificationPushService @Inject() (connector: PushConnector, notificationsRepository: NotificationsRepository, clientService: ClientService, hmacService: HmacService)
+class NotificationPushService @Inject() (
+    connector: PushConnector,
+    notificationsRepository: NotificationsRepository,
+    clientService: ClientService,
+    hmacService: HmacService,
+    confirmationService: ConfirmationService)
     extends ApplicationLogger {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
       sendNotificationToPush(box, notification) map {
         case true  =>
-          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ =>
+          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => {
             logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId}")
-          )
+            confirmationService.sendConfirmation(notification.notificationId)
+          })
           true
         case false => {
           logger.info(s"Notification not sent successfully for clientId : ${box.boxCreator.clientId}")

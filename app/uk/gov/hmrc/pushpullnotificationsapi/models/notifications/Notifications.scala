@@ -16,18 +16,18 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
+import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable
 
 import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-import org.joda.time.{DateTime, DateTimeZone}
 
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId}
 
 sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 
@@ -35,6 +35,7 @@ object MessageContentType extends StringEnum[MessageContentType] with StringPlay
   val values: immutable.IndexedSeq[MessageContentType] = findValues
 
   case object APPLICATION_JSON extends MessageContentType("application/json")
+
   case object APPLICATION_XML extends MessageContentType("application/xml")
 }
 
@@ -58,19 +59,35 @@ case class Notification(
     messageContentType: MessageContentType,
     message: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-    readDateTime: Option[DateTime] = None,
-    pushedDateTime: Option[DateTime] = None,
-    retryAfterDateTime: Option[DateTime] = None)
+    createdDateTime: Instant = Instant.now,
+    readDateTime: Option[Instant] = None,
+    pushedDateTime: Option[Instant] = None,
+    retryAfterDateTime: Option[Instant] = None)
 
 object Notification {
-  implicit val dateFormat: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+  implicit val dateFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val formatBoxID: OFormat[BoxId] = Json.format[BoxId]
   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
+case class WrappedNotification(
+    confirmationId: ConfirmationId,
+    confirmationUrl: String,
+    notificationId: NotificationId,
+    status: NotificationStatus = PENDING,
+    createdDateTime: Instant = Instant.now,
+    pushedDateTime: Option[Instant] = None,
+    retryAfterDateTime: Option[Instant] = None)
+
+object WrappedNotification {
+  implicit val formatConfirmationId: OFormat[ConfirmationId] = Json.format[ConfirmationId]
+  implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
+  implicit val format: OFormat[WrappedNotification] = Json.format[WrappedNotification]
+}
+
 case class ForwardedHeader(key: String, value: String)
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
+case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: NotificationStatus, dateTime: Option[Instant])
 
 case class RetryableNotification(notification: Notification, box: Box)

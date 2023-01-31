@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import org.joda.time.DateTime
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.captor.ArgCaptor
 
@@ -61,7 +61,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     val objInTest = new BoxService(mockRepository, mockConnector, mockThirdPartyApplicationConnector, mockApiPlatformEventsConnector, mockClientService)
     val box: Box = Box(boxId, boxName, BoxCreator(clientId))
-    val boxWithExistingSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, DateTime.now)))
+    val boxWithExistingSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, Instant.now)))
     val argumentCaptor = ArgCaptor[Box]
 
     def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]) =

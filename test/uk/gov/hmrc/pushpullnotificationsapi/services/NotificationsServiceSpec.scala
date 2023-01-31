@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.{Duration, Instant}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import org.joda.time.DateTime
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
 
@@ -36,7 +36,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   private val mockBoxRepo = mock[BoxRepository]
   private val mockNotificationsRepo = mock[NotificationsRepository]
   private val mockNotificationsPushService = mock[NotificationPushService]
-  val serviceToTest = new NotificationsService(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService)
+  private val mockConfirmationService = mock[ConfirmationService]
+  val serviceToTest = new NotificationsService(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService, mockConfirmationService)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -123,8 +124,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   "getNotifications" should {
 
     val status = Some(NotificationStatus.PENDING)
-    val fromDate = Some(DateTime.now().minusHours(2))
-    val toDate = Some(DateTime.now())
+    val fromDate = Some(Instant.now.minus(Duration.ofHours(2)))
+    val toDate = Some(Instant.now)
 
     "return list of matched notifications" in new Setup {
 
@@ -175,6 +176,17 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsSuccessUpdatedResult(true), repoResult = Future.successful(true))
     }
 
+    "should call confirmations on all ids after ACKNOWLEDGING notifications" in new Setup {
+      primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
+      when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(Future.successful(true))
+
+      private val notificationId: UUID = UUID.randomUUID()
+      private val notificationId2: UUID = UUID.randomUUID()
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId.toString, notificationId2.toString))))
+      verify(mockConfirmationService).sendConfirmation(NotificationId(notificationId))
+      verify(mockConfirmationService).sendConfirmation(NotificationId(notificationId2))
+    }
+
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns false" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsSuccessUpdatedResult(false))
@@ -199,7 +211,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
 
     val result: AcknowledgeNotificationsServiceResult =
-      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List("123455"))))
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(UUID.randomUUID().toString))))
 
     result shouldBe expectedResult
   }

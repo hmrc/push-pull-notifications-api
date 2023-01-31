@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.Instant
 
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
@@ -25,7 +25,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
 case class CreateBoxResponse(boxId: String)
+
 case class CreateNotificationResponse(notificationId: String)
+case class CreateWrappedNotificationResponse(notificationId: String, confirmationId: String)
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 
@@ -37,9 +39,9 @@ case class NotificationResponse(
     messageContentType: MessageContentType,
     message: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: DateTime = DateTime.now(DateTimeZone.UTC),
-    readDateTime: Option[DateTime] = None,
-    pushedDateTime: Option[DateTime] = None)
+    createdDateTime: Instant = Instant.now,
+    readDateTime: Option[Instant] = None,
+    pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
 
@@ -65,6 +67,7 @@ object ErrorCode extends Enumeration {
   val CLIENT_NOT_FOUND = Value("CLIENT_NOT_FOUND")
   val DUPLICATE_BOX = Value("DUPLICATE_BOX")
   val DUPLICATE_NOTIFICATION = Value("DUPLICATE_NOTIFICATION")
+  val DUPLICATE_CONFIRMATION = Value("DUPLICATE_CONFIRMATION")
   val FORBIDDEN = Value("FORBIDDEN")
   val INVALID_ACCEPT_HEADER = Value("INVALID_ACCEPT_HEADER")
   val INVALID_CONTENT_TYPE = Value("INVALID_CONTENT_TYPE")
