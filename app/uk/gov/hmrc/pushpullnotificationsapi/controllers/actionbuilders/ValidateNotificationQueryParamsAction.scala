@@ -25,6 +25,7 @@ import play.api.mvc.Results.BadRequest
 import play.api.mvc.{ActionRefiner, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
@@ -87,7 +88,7 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
     maybeString match {
       case Some(stringVal) =>
         Try[Instant] {
-          Instant.parse(stringVal)
+          lenientFormatter.parse(stringVal, inst => Instant.from(inst))
         } match {
           case Success(parseDate) => Right(Some(parseDate))
           case Failure(_)         => logger.info(s"Unparsable DateValue Param provided: $stringVal")

@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.time.format.DateTimeFormatter
-import java.time.{Duration, Instant}
+import java.time.format.DateTimeFormatterBuilder
+import java.time.{Duration, Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -39,6 +39,7 @@ import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
@@ -368,7 +369,11 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
         val result = doGet(s"/box/${boxId.raw}/notifications", validHeadersJson)
 
         val resultStr = contentAsString(result)
-        val expectedCreatedDateTime = DateTimeFormatter.ISO_INSTANT.format(createdDateTime)
+        val expectedCreatedDateTime = new DateTimeFormatterBuilder()
+          .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+          .toFormatter
+          .withZone(ZoneId.of("UTC"))
+          .format(createdDateTime)
         resultStr.contains(s""""notificationId":"${notification.notificationId.value}"""") shouldBe true
         resultStr.contains(s""""boxId":"${notification.boxId.value}"""") shouldBe true
         resultStr.contains(s""""createdDateTime":"$expectedCreatedDateTime"""") shouldBe true
@@ -411,6 +416,13 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 200 when valid toDate filter provided" in {
         testAndValidateGetByQueryParams(boxId, OK, None, maybeToDateStr = Some("2020-02-02T00:54:00Z"))
+      }
+
+      "return 200 when valid param filter with just date" in {
+        testAndValidateGetByQueryParams(boxId, OK, None, maybeToDateStr = Some("2020-02-02"))
+      }
+      "return 200 when valid param filter without Z" in {
+        testAndValidateGetByQueryParams(boxId, OK, None, maybeToDateStr = Some("2020-02-02T00:54:00"))
       }
 
       "return 200 when valid toDate and status filters are provided" in {
@@ -685,7 +697,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
   def stringToDateTimeLenient(dateStr: Option[String]): Option[Instant] = {
     Try[Option[Instant]] {
-      dateStr.map(Instant.parse)
+      dateStr.map(a => lenientFormatter.parse(a, b => Instant.from(b)))
     } match {
       case Success(x) => x
       case Failure(_) => None
