@@ -29,7 +29,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.{AsyncHmrcSpec, models}
+import uk.gov.hmrc.pushpullnotificationsapi.{models, AsyncHmrcSpec}
 
 class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 

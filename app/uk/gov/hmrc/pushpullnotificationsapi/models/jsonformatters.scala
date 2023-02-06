@@ -16,20 +16,40 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import org.joda.time.DateTime
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.temporal.ChronoField.{HOUR_OF_DAY, MINUTE_OF_HOUR, NANO_OF_SECOND, SECOND_OF_MINUTE}
+import java.time.{Instant, ZoneId}
 
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{Actor, EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
+import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.{instantReads, instantWrites}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
+object InstantFormatter {
+
+  val lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+    .parseLenient()
+    .parseCaseInsensitive()
+    .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.nnnnnn][Z]['Z']]")
+    .parseDefaulting(NANO_OF_SECOND, 0)
+    .parseDefaulting(SECOND_OF_MINUTE, 0)
+    .parseDefaulting(MINUTE_OF_HOUR, 0)
+    .parseDefaulting(HOUR_OF_DAY, 0)
+    .toFormatter
+    .withZone(ZoneId.of("UTC"))
+
+  val instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
+
+  val instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
+    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+    .toFormatter
+    .withZone(ZoneId.of("UTC")))
+}
+
 object ResponseFormatters {
-  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
-  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
-  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
@@ -43,6 +63,7 @@ object ResponseFormatters {
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
+  implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
@@ -54,6 +75,8 @@ object ResponseFormatters {
 }
 
 object RequestFormatters {
+  implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
+
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
@@ -70,10 +93,6 @@ object RequestFormatters {
 }
 
 object ConnectorFormatters {
-  val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val JodaDateReads: Reads[org.joda.time.DateTime] = JodaReads.jodaDateReads(dateFormat)
-  implicit val JodaDateWrites: Writes[org.joda.time.DateTime] = JodaWrites.jodaDateWrites(dateFormat)
-  implicit val JodaDateTimeFormat: Format[DateTime] = Format(JodaDateReads, JodaDateWrites)
   implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val forwardedHeadersFormatter: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]

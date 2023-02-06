@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.time.Instant
+import java.time.format.DateTimeFormatterBuilder
+import java.time.{Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -31,7 +32,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, _}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
@@ -61,6 +62,10 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {
       sentOutboundNotification.destinationUrl shouldBe subscriber.callBackUrl
+      val stringCreated = new DateTimeFormatterBuilder()
+        .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+        .toFormatter
+        .withZone(ZoneId.of("UTC")).format(originalNotification.createdDateTime)
 
       val jsonPayload = Json.parse(sentOutboundNotification.payload)
       (jsonPayload \ "notificationId").as[String] shouldBe originalNotification.notificationId.value.toString
@@ -68,7 +73,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       (jsonPayload \ "messageContentType").as[String] shouldBe originalNotification.messageContentType.value
       (jsonPayload \ "message").as[String] shouldBe originalNotification.message
       (jsonPayload \ "status").as[NotificationStatus] shouldBe originalNotification.status
-      (jsonPayload \ "createdDateTime").as[Instant].getEpochSecond shouldBe originalNotification.createdDateTime.getEpochSecond
+      (jsonPayload \ "createdDateTime").as[String] shouldBe stringCreated
     }
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
