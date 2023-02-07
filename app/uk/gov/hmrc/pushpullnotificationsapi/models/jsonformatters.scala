@@ -50,6 +50,7 @@ object InstantFormatter {
 }
 
 object ResponseFormatters {
+  implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
@@ -63,7 +64,6 @@ object ResponseFormatters {
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
-  implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
@@ -76,7 +76,6 @@ object ResponseFormatters {
 
 object RequestFormatters {
   implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
@@ -89,7 +88,6 @@ object RequestFormatters {
   implicit val validateBoxOwnershipRequestFormatter: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
   implicit val wrappedNotificationFormatter: OFormat[WrappedNotification] = Json.format[WrappedNotification]
   implicit val wrappedNotificationRequestFormatter: OFormat[WrappedNotificationRequest] = Json.format[WrappedNotificationRequest]
-
 }
 
 object ConnectorFormatters {
