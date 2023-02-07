@@ -15,7 +15,8 @@ Created notifications are sent automatically by a POST request to the Push/Callb
 For example, if the Push/Callback URL is set to `https://www.example.com/push` when a notification is created, a POST
 request is sent to `https://www.example.com/push` with a body similar to:
 
-`{
+<pre>
+{
     "notificationId": "1ed5f407-8096-40d1-87ef-9a2a103eeb85",
     "boxId": "50dca3fc-c37c-4f03-b719-63571333624c",
     "messageContentType": "application/json",
@@ -23,7 +24,7 @@ request is sent to `https://www.example.com/push` with a body similar to:
     "status": "PENDING",
     "createdDateTime": "2020-06-01T10:20:23.160+0000"
 }
-`
+</pre>
 
 > We only support PPNS callback URLs on the default HTTPS port 443. You do not need to specify the port in the callback URL.
 
