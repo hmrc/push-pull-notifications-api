@@ -63,7 +63,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {
       sentOutboundNotification.destinationUrl shouldBe subscriber.callBackUrl
       val stringCreated = new DateTimeFormatterBuilder()
-        .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+        .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
         .toFormatter
         .withZone(ZoneId.of("UTC")).format(originalNotification.createdDateTime)
 

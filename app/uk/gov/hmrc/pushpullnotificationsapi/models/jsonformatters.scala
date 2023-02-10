@@ -17,23 +17,22 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField.{HOUR_OF_DAY, MINUTE_OF_HOUR, NANO_OF_SECOND, SECOND_OF_MINUTE}
+import java.time.temporal.ChronoField._
 import java.time.{Instant, ZoneId}
-
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
-
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{Actor, EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.{instantReads, instantWrites}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+
 
 object InstantFormatter {
 
   val lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
     .parseLenient()
     .parseCaseInsensitive()
-    .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.nnnnnn][Z]['Z']]")
+    .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.SSS][Z]['Z']]")
     .parseDefaulting(NANO_OF_SECOND, 0)
     .parseDefaulting(SECOND_OF_MINUTE, 0)
     .parseDefaulting(MINUTE_OF_HOUR, 0)
@@ -44,7 +43,7 @@ object InstantFormatter {
   val instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
 
   val instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
-    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
     .toFormatter
     .withZone(ZoneId.of("UTC")))
 }
