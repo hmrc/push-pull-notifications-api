@@ -370,7 +370,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
         val resultStr = contentAsString(result)
         val expectedCreatedDateTime = new DateTimeFormatterBuilder()
-          .appendPattern("uuuu-MM-dd'T'HH:mm:ss.nnnZ")
+          .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
           .toFormatter
           .withZone(ZoneId.of("UTC"))
           .format(createdDateTime)
