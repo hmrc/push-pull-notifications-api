@@ -46,7 +46,7 @@ class NotificationPushService @Inject() (
         case true  =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => {
             logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId}")
-            confirmationService.sendConfirmation(notification.notificationId)
+            confirmationService.handleConfirmation(notification.notificationId)
           })
           true
         case false => {

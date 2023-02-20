@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
+import java.time.Instant
+
 import play.api.libs.json.Json
+
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-
-import java.time.Instant
 
 class JsonFormatterSpec extends HmrcSpec {
 

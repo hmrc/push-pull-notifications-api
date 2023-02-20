@@ -24,7 +24,7 @@ import com.google.inject.AbstractModule
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
 
-import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJob
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.{RetryConfirmationRequestJob, RetryPushNotificationsJob}
 import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{RunningOfScheduledJobs, ScheduledJob}
 
 class SchedulerModule extends AbstractModule {
@@ -37,9 +37,10 @@ class SchedulerModule extends AbstractModule {
 @Singleton
 class Scheduler @Inject() (
     retryPushNotificationsJob: RetryPushNotificationsJob,
+    retryConfirmationRequestJob: RetryConfirmationRequestJob,
     override val applicationLifecycle: ApplicationLifecycle,
     override val application: Application
   )(implicit val ec: ExecutionContext)
     extends RunningOfScheduledJobs {
-  override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob).filter(_.isEnabled)
+  override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob, retryConfirmationRequestJob).filter(_.isEnabled)
 }
