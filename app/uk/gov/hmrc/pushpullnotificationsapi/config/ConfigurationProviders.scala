@@ -16,23 +16,26 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
+import com.typesafe.config.Config
+
 import java.util.concurrent.TimeUnit.{MINUTES, SECONDS}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.duration.{Duration, FiniteDuration}
-
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
-
-import uk.gov.hmrc.pushpullnotificationsapi.scheduled.RetryPushNotificationsJobConfig
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.{RetryConfirmationRequestJobConfig, RetryPushNotificationsJobConfig}
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
+
+import java.util.concurrent.TimeUnit
 
 class ConfigurationModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
     Seq(
       bind[CompositeSymmetricCrypto].to[LocalCrypto],
-      bind[RetryPushNotificationsJobConfig].toProvider[RetryPushNotificationsJobConfigProvider]
+      bind[RetryPushNotificationsJobConfig].toProvider[RetryPushNotificationsJobConfigProvider],
+      bind[RetryConfirmationRequestJobConfig].toProvider[RetryConfirmationRequestJobConfigProvider]
     )
   }
 }
@@ -50,5 +53,26 @@ class RetryPushNotificationsJobConfigProvider @Inject() (configuration: Configur
     val numberOfHoursToRetry = configuration.getOptional[Int]("retryPushNotificationsJob.numberOfHoursToRetry").getOrElse(6)
     val parallelism = configuration.getOptional[Int]("retryPushNotificationsJob.parallelism").getOrElse(10)
     RetryPushNotificationsJobConfig(initialDelay, interval, enabled, numberOfHoursToRetry, parallelism)
+    // scalastyle:on magic.number
+
+  }
+}
+
+@Singleton
+class RetryConfirmationRequestJobConfigProvider @Inject() (configuration: Config) extends Provider[RetryConfirmationRequestJobConfig] {
+
+  override def get(): RetryConfirmationRequestJobConfig = {
+    val initialDelay = configuration.getDuration("retryConfirmationRequestJob.initialDelay")
+    val interval = configuration.getDuration("retryConfirmationRequestJob.interval")
+    val enabled = configuration.getBoolean("retryConfirmationRequestJob.enabled")
+    val numberOfHoursToRetry = configuration.getInt("retryConfirmationRequestJob.numberOfHoursToRetry")
+    val parallelism = configuration.getInt("retryConfirmationRequestJob.parallelism")
+    RetryConfirmationRequestJobConfig(
+      FiniteDuration(initialDelay.toNanos, TimeUnit.NANOSECONDS),
+      FiniteDuration(interval.toNanos, TimeUnit.NANOSECONDS),
+      enabled,
+      numberOfHoursToRetry,
+      parallelism
+    )
   }
 }

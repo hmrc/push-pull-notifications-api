@@ -99,7 +99,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
       checkOutboundNotificationIsCorrect(notification, subscriber, outboundNotificationCaptor.value)
       result shouldBe true
       verify(mockNotificationsRepo).updateStatus(notification.notificationId, ACKNOWLEDGED)
-      verify(mockConfirmationService).sendConfirmation(notification.notificationId)
+      verify(mockConfirmationService).handleConfirmation(notification.notificationId)
     }
 
     "put the notification signature in the forwarded headers" in new Setup {

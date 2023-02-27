@@ -53,7 +53,7 @@ class NotificationsService @Inject() (
                 request.notificationIds
                   .map(UUID.fromString)
                   .map(NotificationId)
-                  .foreach(confirmationService.sendConfirmation)
+                  .foreach(confirmationService.handleConfirmation)
                 result
               })
               .map(AcknowledgeNotificationsSuccessUpdatedResult)

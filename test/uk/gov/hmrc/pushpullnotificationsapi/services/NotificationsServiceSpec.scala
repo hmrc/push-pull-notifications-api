@@ -29,7 +29,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.{AsyncHmrcSpec, models}
+import uk.gov.hmrc.pushpullnotificationsapi.{models, AsyncHmrcSpec}
 
 class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
@@ -183,8 +183,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       private val notificationId: UUID = UUID.randomUUID()
       private val notificationId2: UUID = UUID.randomUUID()
       await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId.toString, notificationId2.toString))))
-      verify(mockConfirmationService).sendConfirmation(NotificationId(notificationId))
-      verify(mockConfirmationService).sendConfirmation(NotificationId(notificationId2))
+      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId))
+      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId2))
     }
 
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns false" in new Setup {

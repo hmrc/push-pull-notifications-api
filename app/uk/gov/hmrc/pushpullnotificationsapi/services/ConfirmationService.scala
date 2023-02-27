@@ -43,20 +43,28 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
     }
   }
 
-  def sendConfirmation(notificationId: NotificationId)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
+  def handleConfirmation(notificationId: NotificationId)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     repository.updateConfirmationNeed(notificationId) map {
-      case Some(confirmationRequest) => sendConfirmation(confirmationRequest)
-      case None                      => logger.trace(s"No confirmation needed for ${notificationId}")
+      case Some(confirmationRequest) =>
+        sendConfirmation(confirmationRequest)
+        true
+      case None                      =>
+        logger.trace(s"No confirmation needed for ${notificationId}")
+        false
     }
   }
 
-  private def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
+  def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     connector.sendConfirmation(
       request.confirmationUrl,
       OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime)
     ) map {
-      case _: ConfirmationConnectorSuccessResult => repository.updateConfirmationStatus(request.notificationId, NotificationStatus.ACKNOWLEDGED)
-      case _: ConfirmationConnectorFailedResult  => repository.updateConfirmationStatus(request.notificationId, NotificationStatus.FAILED)
+      case _: ConfirmationConnectorSuccessResult =>
+        repository.updateStatus(request.notificationId, NotificationStatus.ACKNOWLEDGED)
+        true
+      case _: ConfirmationConnectorFailedResult  =>
+        logger.info(s"Confirmation not sent for notificationId: ${request.notificationId}")
+        false
     }
   }
 }

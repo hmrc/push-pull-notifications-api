@@ -19,13 +19,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.time.{Instant, ZoneId}
+
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{Actor, EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.{instantReads, instantWrites}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-
 
 object InstantFormatter {
 
