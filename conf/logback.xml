@@ -57,8 +57,6 @@
 
     <logger name="akka" level="ERROR"/>
 
-    <logger name="wiremock" level="ERROR"/>
-
     <logger name="org.asynchttpclient" level="ERROR"/>
 
     <logger name="org.eclipse.jetty" level="ERROR"/>
