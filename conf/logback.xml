@@ -49,9 +49,15 @@
 
     <logger name="uk.gov.hmrc.audit" level="ERROR"/>
 
+    <logger name="uk.gov.hmrc.play" level="ERROR"/>
+
+    <logger name="uk.gov.hmrc.mongo" level="ERROR"/>
+
+    <logger name="org.mongodb.driver" level="ERROR"/>
+
     <logger name="akka" level="ERROR"/>
 
-    <logger name="reactivemongo" level="ERROR"/>
+    <logger name="wiremock" level="ERROR"/>
 
     <logger name="org.asynchttpclient" level="ERROR"/>
 

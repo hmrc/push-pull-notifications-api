@@ -64,9 +64,9 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
             .unique(true)
         ),
         IndexModel(
-          ascending(List("boxId, createdDateTime"): _*),
+          ascending(List("boxId", "createdDateTime"): _*),
           IndexOptions()
-            .name("notifications_created_datetime_idx")
+            .name("boxid_createdatetime_idx")
             .background(true)
             .unique(false)
         ),
