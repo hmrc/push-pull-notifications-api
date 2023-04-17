@@ -19,7 +19,7 @@ lazy val scoverageSettings = {
   Seq(
     // Semicolon-separated list of regexs matching classes to exclude
     ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimum := 95.16,
+    ScoverageKeys.coverageMinimumStmtTotal := 95.16,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false
@@ -38,7 +38,6 @@ lazy val root = (project in file("."))
     PlayKeys.playDefaultPort := 6701,
     resolvers += Resolver.typesafeRepo("releases"),
     libraryDependencies ++= AppDependencies(),
-    publishingSettings,
     scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources"
   )
@@ -51,7 +50,7 @@ lazy val root = (project in file("."))
     IntegrationTest / unmanagedSourceDirectories += baseDirectory.value / "it",
     IntegrationTest / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
     IntegrationTest / parallelExecution := false,
-    IntegrationTest / testGrouping := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
+    IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
 
     Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
