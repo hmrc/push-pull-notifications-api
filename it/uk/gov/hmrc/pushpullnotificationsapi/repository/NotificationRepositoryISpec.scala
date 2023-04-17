@@ -32,7 +32,7 @@ class NotificationRepositoryISpec
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
-  private val ttlTimeinSeconds = 3
+  private val ttlTimeinSeconds = 30
   private val numberOfNotificationsToRetrievePerRequest = 100
 
   protected def appBuilder: GuiceApplicationBuilder =
@@ -53,6 +53,7 @@ class NotificationRepositoryISpec
   override def beforeEach() {
     prepareDatabase()
     await(repo.ensureIndexes)
+    await(boxRepo.ensureIndexes)
   }
 
   def getIndex(indexName: String): Option[Document] = {
@@ -385,8 +386,9 @@ class NotificationRepositoryISpec
       result shouldBe true
 
       val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
-      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
       returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
+      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
+
     }
 
   }
