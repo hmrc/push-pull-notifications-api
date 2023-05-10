@@ -29,12 +29,12 @@ import com.google.inject.Singleton
 
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
+import uk.gov.hmrc.thirdpartydelegatedauthority.utils.FutureUtils
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-import uk.gov.hmrc.thirdpartydelegatedauthority.utils.FutureUtils
 
 @Singleton
 class RetryPushNotificationsJob @Inject() (
@@ -56,17 +56,20 @@ class RetryPushNotificationsJob @Inject() (
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
     val retryAfterDateTime: Instant = Instant.now.plus(Duration.ofMillis(jobConfig.interval.toMillis))
 
-    FutureUtils.timeThisFuture({
-      boxRepository
-      .fetchRetryableNotifications
-      .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
-      .map(_ => RunningOfJobSuccessful)
-      .recoverWith {
-        case NonFatal(e) =>
-          logger.error("Failed to retry failed push pull notifications", e)
-          Future.failed(RunningOfJobFailed(name, e))
-      }
-    }, "FetchRetryableNotifications")
+    FutureUtils.timeThisFuture(
+      {
+        boxRepository
+          .fetchRetryableNotifications
+          .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
+          .map(_ => RunningOfJobSuccessful)
+          .recoverWith {
+            case NonFatal(e) =>
+              logger.error("Failed to retry failed push pull notifications", e)
+              Future.failed(RunningOfJobFailed(name, e))
+          }
+      },
+      "FetchRetryableNotifications"
+    )
   }
 
   private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {

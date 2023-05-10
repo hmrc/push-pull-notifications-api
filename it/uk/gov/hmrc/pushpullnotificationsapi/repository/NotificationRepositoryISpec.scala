@@ -165,7 +165,6 @@ class NotificationRepositoryISpec
     }
   }
 
- 
   "getByBoxIdAndFilters" should {
 
     "return list of notifications for a box id when no other filters are present" in {

@@ -23,9 +23,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
 
 class ExclusiveScheduledJobSpec extends AnyWordSpec with Matchers with ScalaFutures {
 

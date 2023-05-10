@@ -41,7 +41,7 @@ class BoxRepositoryISpec
 
   override implicit lazy val app: Application = appBuilder.build()
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
-  
+
   def repo: BoxRepository = app.injector.instanceOf[BoxRepository]
   def notificationsRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
 
@@ -61,11 +61,11 @@ class BoxRepositoryISpec
   val box: Box = Box(boxName = boxName, boxId = boxId, boxCreator = BoxCreator(clientId))
 
   def createNotificationInDB(
-    status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now,
-    notificationId: NotificationId = NotificationId(UUID.randomUUID()),
-    retryAfterDateTime: Option[Instant] = None
-  ): Notification = {
+      status: NotificationStatus = PENDING,
+      createdDateTime: Instant = Instant.now,
+      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+      retryAfterDateTime: Option[Instant] = None
+    ): Notification = {
     val notification = Notification(
       notificationId,
       boxId,
@@ -77,10 +77,9 @@ class BoxRepositoryISpec
     )
 
     val save = await(notificationsRepo.saveNotification(notification))
-    if(save.isEmpty) throw new RuntimeException("Oh dear")
+    if (save.isEmpty) throw new RuntimeException("Oh dear")
     notification
   }
-
 
   "createBox" should {
 
@@ -296,13 +295,13 @@ class BoxRepositoryISpec
     }
   }
 
-   "fetchRetryableNotifications" should {
-      val pushBox: Box = Box(
-        boxName = UUID.randomUUID().toString,
-        boxId = boxId,
-        boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-        subscriber = Some(PushSubscriber("http://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
-      )
+  "fetchRetryableNotifications" should {
+    val pushBox: Box = Box(
+      boxName = UUID.randomUUID().toString,
+      boxId = boxId,
+      boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
+      subscriber = Some(PushSubscriber("http://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+    )
 
     "return matching notifications and box" in {
       val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS))

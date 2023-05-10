@@ -18,6 +18,7 @@ package uk.gov.hmrc.thirdpartydelegatedauthority.utils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 object FutureUtils extends ApplicationLogger {
@@ -34,10 +35,10 @@ object FutureUtils extends ApplicationLogger {
 
   def timeThisFuture[T](f: => Future[T], msg: => String)(implicit ec: ExecutionContext): Future[T] = {
     val startTime = System.currentTimeMillis()
-    val theF      = f
+    val theF = f
 
     theF.onComplete({ t =>
-      val endTime  = System.currentTimeMillis()
+      val endTime = System.currentTimeMillis()
       val duration = endTime - startTime
       if (duration >= 100) {
         val message = s"Timer @ $msg"
