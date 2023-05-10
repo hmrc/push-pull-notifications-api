@@ -76,7 +76,8 @@ class BoxRepositoryISpec
       retryAfterDateTime = retryAfterDateTime
     )
 
-    await(notificationsRepo.saveNotification(notification))
+    val save = await(notificationsRepo.saveNotification(notification))
+    if(save.isEmpty) throw new RuntimeException("Oh dear")
     notification
   }
 
@@ -144,7 +145,7 @@ class BoxRepositoryISpec
       val fetchedRecordsOne = await(repo.collection.find().toFuture())
       fetchedRecordsOne.size shouldBe 1
 
-      repo.deleteBox(box.boxId)
+      await(repo.deleteBox(box.boxId))
       val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 0
     }
@@ -154,7 +155,7 @@ class BoxRepositoryISpec
       val fetchedRecordsOne = await(repo.collection.find().toFuture())
       fetchedRecordsOne.size shouldBe 1
 
-      repo.deleteBox(BoxId(UUID.randomUUID()))
+      await(repo.deleteBox(BoxId(UUID.randomUUID())))
       val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
     }

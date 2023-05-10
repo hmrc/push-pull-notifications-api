@@ -44,8 +44,6 @@ private[repository] object PlayHmrcMongoFormatters {
   implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
   implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]
   implicit val notificationAckStatusFormatter: OFormat[NotificationStatus.ACKNOWLEDGED.type] = Json.format[NotificationStatus.ACKNOWLEDGED.type]
-  implicit val subscriptionTypePushFormatter: OFormat[SubscriptionType.API_PUSH_SUBSCRIBER.type] = Json.format[SubscriptionType.API_PUSH_SUBSCRIBER.type]
-  implicit val subscriptionTypePullFormatter: OFormat[SubscriptionType.API_PULL_SUBSCRIBER.type] = Json.format[SubscriptionType.API_PULL_SUBSCRIBER.type]
 
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]

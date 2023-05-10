@@ -32,15 +32,14 @@ import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import play.api.Logger
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbRetryableNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, applicationIdFormatter, formatSubscriber}
 import akka.stream.scaladsl.Source
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
 import akka.NotUsed
@@ -49,7 +48,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import java.time.Instant
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 
 @Singleton
@@ -57,7 +55,7 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
     extends PlayMongoRepository[Box](
       collectionName = "box",
       mongoComponent = mongo,
-      domainFormat = boxFormats,
+      domainFormat = BoxFormat.boxFormats,
       indexes = Seq(
         IndexModel(
           ascending(List("boxName", "boxCreator.clientId"): _*),
@@ -73,7 +71,7 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
             .unique(true)
         )
       )
-    ) {
+    ) with MongoJavatimeFormats.Implicits {
 
   private val logger = Logger(this.getClass)
 
@@ -85,17 +83,23 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
             Codecs.playFormatCodec(BoxFormat.boxFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )

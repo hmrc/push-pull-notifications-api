@@ -118,9 +118,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
