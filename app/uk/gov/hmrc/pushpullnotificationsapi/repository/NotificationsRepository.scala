@@ -23,13 +23,9 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Aggregates.{`match`, lookup, project}
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
@@ -42,14 +38,12 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, PENDING}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, DbRetryableNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, PlayHmrcMongoFormatters}
 
 @Singleton
 class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, mat: Materializer)
@@ -199,28 +193,5 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
-  }
-
-  @deprecated("To be removed once we prove the move to box repo")
-  def poorlyPerformingfetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
-    val pipeline = List(
-      `match`(and(equal("status", Codecs.toBson(PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(Instant.now))))),
-      `lookup`("box", "boxId", "boxId", "boxes"),
-      `match`(and(
-        equal("boxes.subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
-        Filters.exists("boxes.subscriber.callBackUrl"),
-        Filters.ne("boxes.subscriber.callBackUrl", "")
-      )),
-      project(Document(
-        """{ "notification": "$notification",
-          | "box": { "boxId": "$boxId", "boxName": "$boxName", "subscriber": "$subscriber", "applicationId": "$applicationId", "boxCreator": "$boxCreator" }
-          | }""".stripMargin
-      ))
-    )
-
-    Source.fromPublisher(
-      collection.aggregate[DbRetryableNotification](pipeline)
-        .map(toRetryableNotification(_, crypto))
-    )
   }
 }

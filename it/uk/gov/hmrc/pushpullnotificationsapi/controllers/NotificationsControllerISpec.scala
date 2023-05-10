@@ -1,7 +1,5 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import akka.stream.TLSRole.server
-
 import java.util.UUID
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
