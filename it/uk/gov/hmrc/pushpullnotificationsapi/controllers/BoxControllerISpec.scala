@@ -56,7 +56,7 @@ class BoxControllerISpec
     await(repo.ensureIndexes)
   }
 
-  override protected def repository: PlayMongoRepository[Box] = new BoxRepository(mongoComponent)
+  override protected def repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

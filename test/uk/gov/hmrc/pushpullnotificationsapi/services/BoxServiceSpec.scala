@@ -65,9 +65,9 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     val argumentCaptor = ArgCaptor[Box]
 
     def getByBoxNameAndClientIdReturns(optionalBox: Option[Box]) =
-      when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(optionalBox))
+      when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(optionalBox))
 
-    when(mockRepository.updateSubscriber(eqTo(boxId), *)(*)).thenReturn(Future.successful(None))
+    when(mockRepository.updateSubscriber(eqTo(boxId), *)).thenReturn(Future.successful(None))
   }
 
   "BoxService" when {
@@ -75,7 +75,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       val applicationId = ApplicationId("12345")
 
       "return BoxCreatedResult and call tpa to get application id when box is created" in new Setup {
-        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(None))
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*))
           .thenReturn(Future.successful(ApplicationResponse(applicationId)))
         when(mockRepository.createBox(*)(*)).thenReturn(Future.successful(BoxCreatedResult(box)))
@@ -93,7 +93,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return BoxRetrievedResult when box is already exists and verify no attempt to call tpa" in new Setup {
-        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(Some(box)))
 
         when(mockClientService.findOrCreateClient(eqTo(clientId))).thenReturn(Future.successful(client))
 
@@ -108,7 +108,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return BoxCreateFailedResult when attempt to get applicationId fails during box creation" in new Setup {
-        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(None))
+        when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
         when(mockRepository.createBox(*)(*)).thenReturn(Future.successful(BoxCreatedResult(box)))
 
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
@@ -117,7 +117,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         val result: CreateBoxResult = await(objInTest.createBox(clientId, boxName))
         result.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
-        verify(mockRepository, times(1)).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)
+        verify(mockRepository, times(1)).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))
         verify(mockRepository, times(0)).createBox(argumentCaptor)(*)
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockClientService, times(1)).findOrCreateClient(eqTo(clientId))
@@ -173,8 +173,8 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         val newUrl = "callbackUrl"
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, newUrl)
 
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(boxWithApplicationId)))
-        when(mockRepository.updateSubscriber(eqTo(boxId), *)(*))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(boxWithApplicationId)))
+        when(mockRepository.updateSubscriber(eqTo(boxId), *))
           .thenReturn(Future.successful(Some(boxWithApplicationId)))
         when(mockConnector.validateCallbackUrl(eqTo(validRequest))).thenReturn(Future.successful(PushConnectorSuccessResult()))
         when(mockApiPlatformEventsConnector.sendCallBackUpdatedEvent(eqTo(applicationId), *, eqTo(newUrl), eqTo(boxWithApplicationId))(*))
@@ -184,18 +184,18 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         result.isInstanceOf[CallbackUrlUpdated] shouldBe true
 
         verifyNoInteractions(mockThirdPartyApplicationConnector)
-        verify(mockRepository, times(0)).updateApplicationId(*[BoxId], *[ApplicationId])(*)
+        verify(mockRepository, times(0)).updateApplicationId(*[BoxId], *[ApplicationId])
         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
         verify(mockApiPlatformEventsConnector).sendCallBackUpdatedEvent(eqTo(applicationId), eqTo(endpoint), eqTo(newUrl), eqTo(boxWithApplicationId))(*)
       }
 
       "return CallbackUrlUpdated when box has application id added and callback url is validated" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(boxWithExistingSubscriber)))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(boxWithExistingSubscriber)))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*))
           .thenReturn(Future.successful(ApplicationResponse(applicationId)))
-        when(mockRepository.updateApplicationId(eqTo(boxId), eqTo(applicationId))(*))
+        when(mockRepository.updateApplicationId(eqTo(boxId), eqTo(applicationId)))
           .thenReturn(Future.successful(boxWithExistingSubscriber.copy(applicationId = Some(applicationId))))
-        when(mockRepository.updateSubscriber(eqTo(boxId), *)(*))
+        when(mockRepository.updateSubscriber(eqTo(boxId), *))
           .thenReturn(Future.successful(Some(box)))
         when(mockApiPlatformEventsConnector.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(*)).thenReturn(Future.successful(true))
 
@@ -206,14 +206,14 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         result.isInstanceOf[CallbackUrlUpdated] shouldBe true
 
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
-        verify(mockRepository, times(1)).updateApplicationId(*[BoxId], *[ApplicationId])(*)
+        verify(mockRepository, times(1)).updateApplicationId(*[BoxId], *[ApplicationId])
         verify(mockConnector).validateCallbackUrl(eqTo(validRequest))
         verify(mockApiPlatformEventsConnector).sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(*)
       }
 
       "return CallbackUrlUpdated when callbackUrl is empty, applicationId exists, and dont call callBackUrl in connector" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
-        when(mockRepository.updateSubscriber(eqTo(boxId), *)(*))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
+        when(mockRepository.updateSubscriber(eqTo(boxId), *))
           .thenReturn(Future.successful(Some(box)))
         when(mockApiPlatformEventsConnector.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(*)).thenReturn(Future.successful(true))
 
@@ -227,8 +227,8 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return UnableToUpdateCallbackUrl when update of box with applicationId with callback fails" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
-        when(mockRepository.updateSubscriber(eqTo(boxId), *)(*))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
+        when(mockRepository.updateSubscriber(eqTo(boxId), *))
           .thenReturn(Future.successful(None))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
@@ -242,7 +242,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return UnableToUpdateCallbackUrl box has no appliction id and call to tpa fails" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*))
           .thenReturn(Future.failed(new RuntimeException("some Error")))
 
@@ -257,7 +257,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return UpdateCallbackUrlUnauthorisedResult when clientId of box is different from request clientId" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("someotherId"), "callbackUrl")
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
@@ -267,7 +267,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return CallbackValidationFailed when connector call returns false" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*))
+        when(mockRepository.findByBoxId(eqTo(boxId)))
           .thenReturn(Future.successful(Some(box.copy(applicationId = Some(applicationId)))))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
@@ -279,7 +279,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       }
 
       "return BoxIdNotFound when boxId is not found" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(None))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(None))
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         val result: UpdateCallbackUrlResult = await(objInTest.updateCallbackUrl(boxId, validRequest))
         result.isInstanceOf[BoxIdNotFound] shouldBe true
@@ -292,19 +292,19 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     "validateBoxOwner" should {
 
       "return ValidateBoxOwnerSuccessResult when boxId is found and clientId matches" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
         val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
         result.isInstanceOf[ValidateBoxOwnerSuccessResult] shouldBe true
       }
 
       "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
         val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, ClientId(UUID.randomUUID().toString)))
         result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
       }
 
       "return ValidateBoxOwnerNotFoundResult when boxId is not found" in new Setup {
-        when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(None))
+        when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(None))
         val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
         result.isInstanceOf[ValidateBoxOwnerNotFoundResult] shouldBe true
       }
@@ -315,16 +315,16 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     "return BoxDeleteSuccessfulResult when a box is found by boxId" in new Setup {
       val clientManagedBox: Box = box.copy(clientManaged = true)
-      when(mockRepository.findByBoxId(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
-      when(mockRepository.deleteBox(eqTo(clientManagedBox.boxId))(*)).thenReturn(Future(BoxDeleteSuccessfulResult()))
+      when(mockRepository.findByBoxId(eqTo(clientManagedBox.boxId))).thenReturn(Future.successful(Some(clientManagedBox)))
+      when(mockRepository.deleteBox(eqTo(clientManagedBox.boxId))).thenReturn(Future(BoxDeleteSuccessfulResult()))
 
       val result: DeleteBoxResult = await(objInTest.deleteBox(clientManagedBox.boxCreator.clientId, clientManagedBox.boxId))
       result shouldBe BoxDeleteSuccessfulResult()
     }
 
     "return BoxDeleteAccessDeniedResult when clientManaged is false" in new Setup {
-      when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(box)))
-      when(mockRepository.deleteBox(eqTo(box.boxId))(*)).thenReturn(Future(BoxDeleteAccessDeniedResult()))
+      when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
+      when(mockRepository.deleteBox(eqTo(box.boxId))).thenReturn(Future(BoxDeleteAccessDeniedResult()))
 
       val result: DeleteBoxResult = await(objInTest.deleteBox(clientId, boxId))
       result shouldBe BoxDeleteAccessDeniedResult()
@@ -334,7 +334,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
       val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
       val clientManagedBox: Box = box.copy(clientManaged = true)
 
-      when(mockRepository.findByBoxId(eqTo(boxId))(*)).thenReturn(Future.successful(Some(clientManagedBox)))
+      when(mockRepository.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(clientManagedBox)))
 
       val result: DeleteBoxResult = await(objInTest.deleteBox(incorrectClientId, boxId))
       result shouldBe BoxDeleteAccessDeniedResult()

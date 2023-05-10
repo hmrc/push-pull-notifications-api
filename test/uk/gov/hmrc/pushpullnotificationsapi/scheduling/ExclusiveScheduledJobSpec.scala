@@ -24,9 +24,10 @@ import scala.util.Try
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
-class ExclusiveScheduledJobSpec extends WordSpec with Matchers with ScalaFutures {
+class ExclusiveScheduledJobSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 

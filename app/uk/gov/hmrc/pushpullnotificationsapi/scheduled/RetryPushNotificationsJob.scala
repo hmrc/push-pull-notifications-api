@@ -32,13 +32,14 @@ import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 @Singleton
 class RetryPushNotificationsJob @Inject() (
     mongoLockRepository: MongoLockRepository,
     jobConfig: RetryPushNotificationsJobConfig,
+    boxRepository: BoxRepository,
     notificationsRepository: NotificationsRepository,
     notificationPushService: NotificationPushService
   )(implicit mat: Materializer)
@@ -54,7 +55,7 @@ class RetryPushNotificationsJob @Inject() (
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
     val retryAfterDateTime: Instant = Instant.now.plus(Duration.ofMillis(jobConfig.interval.toMillis))
 
-    notificationsRepository
+    boxRepository
       .fetchRetryableNotifications
       .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
       .map(_ => RunningOfJobSuccessful)

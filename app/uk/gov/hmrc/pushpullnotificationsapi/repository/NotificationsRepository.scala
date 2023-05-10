@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+// TODO - Tidy up imports after proving the move to boxes works
+//
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -57,11 +59,18 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       domainFormat = dbNotificationFormatter,
       indexes = Seq(
         IndexModel(
-          ascending(List("notificationId", "boxId", "status"): _*),
+          ascending(List("notificationId"): _*),
           IndexOptions()
             .name("notifications_idx")
             .background(true)
             .unique(true)
+        ),
+        IndexModel(
+          ascending(List("boxId", "status"): _*),
+          IndexOptions()
+            .name("boxid_status_idx")
+            .background(true)
+            .unique(false)
         ),
         IndexModel(
           ascending(List("boxId", "createdDateTime"): _*),
@@ -194,7 +203,8 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     ).map(toNotification(_, crypto)).head()
   }
 
-  def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
+  @deprecated("To be removed once we prove the move to box repo")
+  def poorlyPerformingfetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
     val pipeline = List(
       `match`(and(equal("status", Codecs.toBson(PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Codecs.toBson(Instant.now))))),
       `lookup`("box", "boxId", "boxId", "boxes"),
@@ -204,10 +214,8 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
         Filters.ne("boxes.subscriber.callBackUrl", "")
       )),
       project(Document(
-        """{ "notification": {"notificationId": "$notificationId", "boxId": "$boxId", "messageContentType": "$messageContentType",
-          | "message" : "$message", "encryptedMessage" : "$encryptedMessage", "status" : "$status", "createdDateTime" : "$createdDateTime",
-          | "retryAfterDateTime" : "$retryAfterDateTime"},
-          | "box": {"$arrayElemAt": ["$boxes", 0]}
+        """{ "notification": "$notification",
+          | "box": { "boxId": "$boxId", "boxName": "$boxName", "subscriber": "$subscriber", "applicationId": "$applicationId", "boxCreator": "$boxCreator" }
           | }""".stripMargin
       ))
     )
@@ -216,6 +224,5 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       collection.aggregate[DbRetryableNotification](pipeline)
         .map(toRetryableNotification(_, crypto))
     )
-
   }
 }

@@ -84,7 +84,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     )
     when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true))
     when(mongoLockRepo.takeLock(*, *, *)).thenReturn(successful(true))
-    when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(true))
+    when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(()))
   }
 
   "RetryConfirmationRequestJob" should {
@@ -139,9 +139,9 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         .thenReturn(Source.future(successful(request)))
       when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
       when(mongoLockRepo.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
-      when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(true))
+      when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(()))
 
-      val result: underTest.Result = await(underTest.execute)
+      val _: underTest.Result = await(underTest.execute)
       val result2: underTest.Result = await(underTest.execute)
 
       verify(mockRepo, times(1)).fetchRetryableConfirmations

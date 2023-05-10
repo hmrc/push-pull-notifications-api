@@ -60,7 +60,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     }
 
     def primeBoxRepo(result: Future[Option[Box]], boxId: BoxId) = {
-      when(mockBoxRepo.findByBoxId(eqTo(boxId))(*)).thenReturn(result)
+      when(mockBoxRepo.findByBoxId(eqTo(boxId))).thenReturn(result)
     }
   }
 
@@ -85,7 +85,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
-      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(*)
+      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
       verify(mockNotificationsPushService).handlePushNotification(eqTo(BoxObjectWithSubscribers), *)(*, *)
       validateNotificationSaved(notificationCaptor)
     }
@@ -97,7 +97,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
-      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(*)
+      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
       verify(mockNotificationsPushService).handlePushNotification(eqTo(BoxObjectWithNoSubscribers), *)(*, *)
       validateNotificationSaved(notificationCaptor)
     }
@@ -109,7 +109,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
         await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeXml, message))
       result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: BoxId($boxIdStr) not found")
 
-      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))(*)
+      verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
       verifyZeroInteractions(mockNotificationsRepo)
     }
 
