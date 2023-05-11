@@ -53,8 +53,6 @@ private[repository] object DbNotification {
   }
 
   def toNotification(dbNotification: DbNotification, crypto: CompositeSymmetricCrypto): Notification = {
-    println(dbNotification.boxId)
-
     Notification(
       dbNotification.notificationId,
       dbNotification.boxId,
