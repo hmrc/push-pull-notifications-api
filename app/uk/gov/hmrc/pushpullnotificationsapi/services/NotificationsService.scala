@@ -28,6 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
+
 @Singleton
 class NotificationsService @Inject() (
     boxRepository: BoxRepository,

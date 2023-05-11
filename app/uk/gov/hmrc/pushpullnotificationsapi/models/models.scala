@@ -28,6 +28,10 @@ case class BoxId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
+object BoxId {
+  def random = BoxId(UUID.randomUUID())
+}
+
 case class ConfirmationId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
