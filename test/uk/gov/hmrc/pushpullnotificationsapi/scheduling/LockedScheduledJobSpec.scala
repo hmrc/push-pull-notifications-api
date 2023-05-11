@@ -76,7 +76,7 @@ class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutur
       val job = new SimpleJob("job1")
       when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true))
       when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true))
-      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))
+      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(()))
 
       job.continueExecution()
       Await.result(job.execute, 1.minute).message shouldBe "Job with job1 run and completed with result 1"
@@ -87,7 +87,7 @@ class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutur
       val job = new SimpleJob("job2")
       when(job.lockRepository.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
       when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
-      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))
+      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(()))
 
       val pausedExecution = job.execute
       pausedExecution.isCompleted shouldBe false
@@ -106,7 +106,7 @@ class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutur
       }
       when(job.lockRepository.isLocked(*, *)).thenReturn(successful(false))
       when(job.lockRepository.takeLock(*, *, *)).thenReturn(successful(true))
-      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(true))
+      when(job.lockRepository.releaseLock(*, *)).thenReturn(successful(()))
 
       Try(job.execute.futureValue)
 

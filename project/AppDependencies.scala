@@ -16,7 +16,8 @@ object AppDependencies {
     "com.github.blemale"      %% "scaffeine"                  % "3.1.0",
     "com.typesafe.play"       %% "play-json"                  % "2.7.1",
     "com.typesafe.play"       %% "play-json-joda"             % "2.7.1",
-    "com.beachape"            %% "enumeratum-play-json"       % "1.6.0"
+    "com.beachape"            %% "enumeratum-play-json"       % "1.6.0",
+    "com.lihaoyi"             %% "sourcecode"                 % "0.3.0"
   )
 
   lazy val testDependencies = Seq(

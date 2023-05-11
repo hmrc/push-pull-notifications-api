@@ -16,32 +16,42 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
-import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.model.Aggregates.{`match`, lookup, project, unwind}
+import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.{Filters, FindOneAndUpdateOptions, IndexModel, IndexOptions, ReturnDocument}
+import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoClient, MongoCollection}
 
 import play.api.Logger
+import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{applicationIdFormatter, boxIdFormatter, formatSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbRetryableNotification, PlayHmrcMongoFormatters}
 
 @Singleton
-class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionContext)
+class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[Box](
       collectionName = "box",
       mongoComponent = mongo,
-      domainFormat = boxFormats,
+      domainFormat = BoxFormat.boxFormats,
       indexes = Seq(
         IndexModel(
           ascending(List("boxName", "boxCreator.clientId"): _*),
@@ -57,7 +67,8 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
             .unique(true)
         )
       )
-    ) {
+    )
+    with MongoJavatimeFormats.Implicits {
 
   private val logger = Logger(this.getClass)
 
@@ -69,22 +80,29 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
           fromCodecs(
             Codecs.playFormatCodec(domainFormat),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
             Codecs.playFormatCodec(BoxFormat.boxFormats),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePushFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.subscriptionTypePullFormatter)
+            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
           ),
           MongoClient.DEFAULT_CODEC_REGISTRY
         )
       )
 
-  def findByBoxId(boxId: BoxId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
+  def findByBoxId(boxId: BoxId): Future[Option[Box]] = {
     collection.find(equal("boxId", Codecs.toBson(boxId))).headOption()
   }
 
@@ -97,12 +115,12 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
       case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
     }
 
-  def deleteBox(boxId: BoxId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] =
+  def deleteBox(boxId: BoxId): Future[DeleteBoxResult] =
     collection.deleteOne(equal("boxId", Codecs.toBson(boxId))).map(_ => BoxDeleteSuccessfulResult()).head() recoverWith {
       case NonFatal(e) => Future.successful(BoxDeleteFailedResult(e.getMessage))
     }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit executionContext: ExecutionContext): Future[Option[Box]] = {
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Option[Box]] = {
     logger.info(s"Getting box by boxName:$boxName & clientId: ${clientId.value}")
     collection.find(Filters.and(equal("boxName", Codecs.toBson(boxName)), equal("boxCreator.clientId", Codecs.toBson(clientId.value)))).headOption()
   }
@@ -112,7 +130,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
     collection.find(equal("boxCreator.clientId", Codecs.toBson(clientId.value))).toFuture().map(_.toList)
   }
 
-  def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[Option[Box]] = {
+  def updateSubscriber(boxId: BoxId, subscriber: SubscriberContainer[Subscriber]): Future[Option[Box]] = {
     collection.findOneAndUpdate(
       equal("boxId", Codecs.toBson(boxId.value)),
       update = set("subscriber", Codecs.toBson(subscriber.elem)),
@@ -120,7 +138,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
     ).map(_.asInstanceOf[Box]).headOption()
   }
 
-  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId)(implicit ec: ExecutionContext): Future[Box] = {
+  def updateApplicationId(boxId: BoxId, applicationId: ApplicationId): Future[Box] = {
     collection.findOneAndUpdate(
       equal("boxId", Codecs.toBson(boxId.value)),
       update = set("applicationId", Codecs.toBson(applicationId)),
@@ -130,5 +148,38 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
         case Some(box) => Future.successful(box)
         case None      => Future.failed(new RuntimeException(s"Unable to update box $boxId with applicationId"))
       }
+  }
+
+  def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
+    val pipeline = List(
+      `match`(
+        and(
+          equal("subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
+          Filters.exists("subscriber.callBackUrl"),
+          Filters.ne("subscriber.callBackUrl", "")
+        )
+      ),
+      `lookup`("notifications", "boxId", "boxId", "notification"),
+      `match`(
+        and(
+          equal("notification.status", Codecs.toBson(PENDING)),
+          or(
+            Filters.exists("notification.retryAfterDateTime", false),
+            lte("notification.retryAfterDateTime", Codecs.toBson(Instant.now))
+          )
+        )
+      ),
+      unwind("$notification"),
+      project(Document(
+        """{ "notification": "$notification",
+          | "box": { "boxId": "$boxId", "boxName": "$boxName", "subscriber": "$subscriber", "applicationId": "$applicationId", "boxCreator": "$boxCreator" }
+          | }""".stripMargin
+      ))
+    )
+
+    Source.fromPublisher(
+      collection.aggregate[DbRetryableNotification](pipeline)
+        .map(toRetryableNotification(_, crypto))
+    )
   }
 }
