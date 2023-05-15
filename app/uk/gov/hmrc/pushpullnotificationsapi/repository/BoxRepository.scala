@@ -16,16 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Aggregates.{`match`, lookup, project, unwind}
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
@@ -40,11 +35,8 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoReposito
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{applicationIdFormatter, boxIdFormatter, formatSubscriber}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbRetryableNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 
 @Singleton
 class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
@@ -150,36 +142,13 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
       }
   }
 
-  def fetchRetryableNotifications: Source[RetryableNotification, NotUsed] = {
-    val pipeline = List(
-      `match`(
-        and(
-          equal("subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
-          Filters.exists("subscriber.callBackUrl"),
-          Filters.ne("subscriber.callBackUrl", "")
-        )
-      ),
-      `lookup`("notifications", "boxId", "boxId", "notification"),
-      `match`(
-        and(
-          equal("notification.status", Codecs.toBson(PENDING)),
-          or(
-            Filters.exists("notification.retryAfterDateTime", false),
-            lte("notification.retryAfterDateTime", Codecs.toBson(Instant.now))
-          )
-        )
-      ),
-      unwind("$notification"),
-      project(Document(
-        """{ "notification": "$notification",
-          | "box": { "boxId": "$boxId", "boxName": "$boxName", "subscriber": "$subscriber", "applicationId": "$applicationId", "boxCreator": "$boxCreator" }
-          | }""".stripMargin
-      ))
-    )
-
-    Source.fromPublisher(
-      collection.aggregate[DbRetryableNotification](pipeline)
-        .map(toRetryableNotification(_, crypto))
-    )
+  def fetchPushSubscriberBoxes(): Future[List[Box]] = {
+    collection.find(
+      and(
+        equal("subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
+        Filters.exists("subscriber.callBackUrl"),
+        Filters.ne("subscriber.callBackUrl", "")
+      )   
+    ).toFuture().map(_.toList)
   }
 }

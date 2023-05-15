@@ -53,8 +53,6 @@ private[repository] object DbNotification {
   }
 
   def toNotification(dbNotification: DbNotification, crypto: CompositeSymmetricCrypto): Notification = {
-    println(dbNotification.boxId)
-
     Notification(
       dbNotification.notificationId,
       dbNotification.boxId,
@@ -79,5 +77,9 @@ private[repository] object DbRetryableNotification {
 
   def toRetryableNotification(dbRetryableNotification: DbRetryableNotification, crypto: CompositeSymmetricCrypto): RetryableNotification = {
     RetryableNotification(toNotification(dbRetryableNotification.notification, crypto), dbRetryableNotification.box)
+  }
+  
+  def toRetryableNotification(box: Box, crypto: CompositeSymmetricCrypto)(dbNotification: DbNotification): RetryableNotification = {
+    RetryableNotification(toNotification(dbNotification, crypto), box)
   }
 }

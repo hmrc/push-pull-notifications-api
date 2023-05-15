@@ -58,10 +58,12 @@ class RetryPushNotificationsJob @Inject() (
 
     FutureUtils.timeThisFuture(
       {
-        boxRepository
-          .fetchRetryableNotifications
-          .runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
-          .map(_ => RunningOfJobSuccessful)
+        notificationPushService
+          .fetchRetryablePushNotifications
+          .flatMap( source =>
+            source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
+            .map(_ => RunningOfJobSuccessful)
+          )
           .recoverWith {
             case NonFatal(e) =>
               logger.error("Failed to retry failed push pull notifications", e)

@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.stream.Materializer
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
 import org.mongodb.scala.model.Filters._
@@ -31,6 +30,8 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
+import org.mongodb.scala.model.Aggregates.`match`
+import org.mongodb.scala.model.Filters.{equal, _}
 
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
@@ -44,9 +45,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, 
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
+import akka.stream.scaladsl.Source
+import akka.NotUsed
 
 @Singleton
-class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, mat: Materializer)
+class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[DbNotification](
       collectionName = "notifications",
       mongoComponent = mongoComponent,
@@ -193,5 +198,27 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       update = set("retryAfterDateTime", Codecs.toBson(newRetryAfterDateTime)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).map(toNotification(_, crypto)).head()
+  }
+
+  def fetchRetryableNotifications(box: Box): Source[RetryableNotification, NotUsed] = {
+    val boxId = box.boxId
+
+    val pipeline = List(
+      `match`(
+        and(
+          equal("boxId", Codecs.toBson(boxId.value)),
+          equal("status", Codecs.toBson(NotificationStatus.PENDING)),
+          or(
+            Filters.exists("retryAfterDateTime", false),
+            lte("retryAfterDateTime", Codecs.toBson(Instant.now))
+          )
+        )
+      )
+    )
+
+    Source.fromPublisher(
+      collection.aggregate[DbNotification](pipeline)
+        .map(toRetryableNotification(box, crypto)(_))
+    )
   }
 }

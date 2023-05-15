@@ -22,16 +22,17 @@ import scala.util.{Failure, Success}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 object FutureUtils extends ApplicationLogger {
+  // Don't use these but the file is not yet in a library
+  //
+  // def predicate(value: => Boolean)(error: => Throwable): Future[Unit] = {
+  //   if (value) Future.successful((): Unit)
+  //   else Future.failed(error)
+  // }
 
-  def predicate(value: => Boolean)(error: => Throwable): Future[Unit] = {
-    if (value) Future.successful((): Unit)
-    else Future.failed(error)
-  }
-
-  def timeThisFuture[T](f: => Future[T])(implicit file: sourcecode.File, line: sourcecode.Line, enc: sourcecode.Enclosing, ec: ExecutionContext): Future[T] = {
-    val shortFile = file.value.split(java.io.File.separator).toList.lastOption.getOrElse("?")
-    timeThisFuture(f, s"$shortFile-${line.value} in ${enc.value}")
-  }
+  // def timeThisFuture[T](f: => Future[T])(implicit file: sourcecode.File, line: sourcecode.Line, enc: sourcecode.Enclosing, ec: ExecutionContext): Future[T] = {
+  //   val shortFile = file.value.split(java.io.File.separator).toList.lastOption.getOrElse("?")
+  //   timeThisFuture(f, s"$shortFile-${line.value} in ${enc.value}")
+  // }
 
   def timeThisFuture[T](f: => Future[T], msg: => String)(implicit ec: ExecutionContext): Future[T] = {
     val startTime = System.currentTimeMillis()

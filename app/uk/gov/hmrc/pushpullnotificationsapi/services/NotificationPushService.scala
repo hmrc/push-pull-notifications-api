@@ -21,6 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+import akka.stream.scaladsl.Merge
+import akka.stream.scaladsl.Source
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
+import akka.NotUsed
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
@@ -30,14 +34,16 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 @Singleton
 class NotificationPushService @Inject() (
     connector: PushConnector,
     notificationsRepository: NotificationsRepository,
+    boxRepository: BoxRepository,
     clientService: ClientService,
     hmacService: HmacService,
-    confirmationService: ConfirmationService)
+    confirmationService: ConfirmationService)(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
@@ -79,5 +85,19 @@ class NotificationPushService @Inject() (
   private def calculateForwardedHeaders(client: Client, notificationAsJsonString: String): List[ForwardedHeader] = {
     val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)
     List(ForwardedHeader("X-Hub-Signature", payloadSignature))
+  }
+
+
+  def fetchRetryablePushNotifications(): Future[Source[RetryableNotification, NotUsed]] = {
+    boxRepository.fetchPushSubscriberBoxes().map { boxes =>
+      boxes.map(box => notificationsRepository.fetchRetryableNotifications(box)) match {
+        case first :: second :: rest => 
+          Source.combine(first, second, rest: _*)(Merge(_))
+        case first :: Nil =>
+          first
+        case Nil =>
+          Source.empty
+      }
+    }
   }
 }

@@ -34,11 +34,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
   private val mockConnector = mock[PushConnector]
   private val mockNotificationsRepo = mock[NotificationsRepository]
+  private val mockBoxRepo = mock[BoxRepository]
   private val mockClientService = mock[ClientService]
   private val mockHmacService = mock[HmacService]
   private val mockConfirmationService = mock[ConfirmationService]
@@ -50,7 +52,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
   }
 
   trait Setup {
-    val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockClientService, mockHmacService, mockConfirmationService)
+    val serviceToTest = new NotificationPushService(mockConnector, mockNotificationsRepo, mockBoxRepo, mockClientService, mockHmacService, mockConfirmationService)
   }
 
   "handlePushNotification" should {
