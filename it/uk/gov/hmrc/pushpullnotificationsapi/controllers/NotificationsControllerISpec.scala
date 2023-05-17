@@ -19,7 +19,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, Notificat
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 import java.time.Instant
-import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class NotificationsControllerISpec
@@ -125,7 +125,7 @@ class NotificationsControllerISpec
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
-    val notifications: mutable.MutableList[String] = mutable.MutableList[String]()
+    val notifications = ListBuffer[String]()
     for (_ <- 0 until numberToCreate) {
       val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
       result.status shouldBe CREATED

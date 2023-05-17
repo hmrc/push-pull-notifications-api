@@ -26,7 +26,7 @@ import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{Actor, EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.{instantReads, instantWrites}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, NotificationId, OutboundConfirmation, OutboundNotification}
 
 object InstantFormatter {
 
@@ -76,6 +76,8 @@ object ResponseFormatters {
 
 object RequestFormatters {
   implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
+  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
+  implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]

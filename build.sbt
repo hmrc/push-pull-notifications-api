@@ -4,15 +4,11 @@ import uk.gov.hmrc.SbtAutoBuildPlugin
 import bloop.integrations.sbt.BloopDefaults
 import sbt.Keys._
 
-ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+scalaVersion := "2.13.8"
 
-inThisBuild(
-  List(
-    scalaVersion := "2.12.15",
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision
-  )
-)
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
@@ -32,8 +28,6 @@ lazy val root = (project in file("."))
   .settings(
     name := "push-pull-notifications-api",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.15",
-    scalacOptions += "-Ypartial-unification",
     majorVersion := 0,
     PlayKeys.playDefaultPort := 6701,
     resolvers += Resolver.typesafeRepo("releases"),
@@ -63,7 +57,12 @@ lazy val root = (project in file("."))
     )
   )
   .settings(
-    scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification")
+    scalacOptions ++= Seq(
+      "-Wconf:cat=unused&src=views/.*\\.scala:s",
+      "-Wconf:cat=unused&src=.*RoutesPrefix\\.scala:s",
+      "-Wconf:cat=unused&src=.*Routes\\.scala:s",
+      "-Wconf:cat=unused&src=.*ReverseRoutes\\.scala:s"
+    )
   )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {
