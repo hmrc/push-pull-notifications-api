@@ -160,8 +160,8 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     equal("boxId", Codecs.toBson(boxId.value))
   }
 
-  private def notificationIdsQuery(notificationIds: List[String]): Bson = {
-    in("notificationId", notificationIds: _*)
+  private def notificationIdsQuery(notificationIds: List[NotificationId]): Bson = {
+    in("notificationId", notificationIds.map(_.raw): _*)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
@@ -177,7 +177,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     }
   }
 
-  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[NotificationId])(implicit ec: ExecutionContext): Future[Boolean] = {
     val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
 
     collection

@@ -21,6 +21,7 @@ import java.time.Instant
 import play.api.mvc.{Request, WrappedRequest}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import java.util.UUID
 
 case class CreateBoxRequest(boxName: String, clientId: String)
 
@@ -49,7 +50,7 @@ case class WrappedNotificationRequest(notification: WrappedNotification, version
 
 // Notifications
 
-case class AcknowledgeNotificationsRequest(notificationIds: List[String])
+case class AcknowledgeNotificationsRequest(notificationIds: List[NotificationId])
 case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationIds: Set[NotificationId])
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])

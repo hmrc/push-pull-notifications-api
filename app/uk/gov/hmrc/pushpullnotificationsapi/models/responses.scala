@@ -26,7 +26,13 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 
 case class CreateBoxResponse(boxId: String)
 
-case class CreateNotificationResponse(notificationId: String)
+case class CreateNotificationResponse(notificationId: NotificationId)
+
+object CreateNotificationResponse {
+
+  implicit val format = Json.format[CreateNotificationResponse]
+}
+
 case class CreateWrappedNotificationResponse(notificationId: String, confirmationId: String)
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
@@ -44,6 +50,8 @@ case class NotificationResponse(
     pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
+  
+  implicit val format = Json.format[NotificationResponse]
 
   def fromNotification(notification: Notification): NotificationResponse = {
     NotificationResponse(

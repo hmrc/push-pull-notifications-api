@@ -53,6 +53,10 @@ case class NotificationId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
+object NotificationId {
+  implicit val format = Json.valueFormat[NotificationId]
+}
+
 case class Notification(
     notificationId: NotificationId,
     boxId: BoxId,

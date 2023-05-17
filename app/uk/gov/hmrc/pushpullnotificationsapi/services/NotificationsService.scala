@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.time.Instant
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,13 +47,10 @@ class NotificationsService @Inject() (
       .flatMap {
         case None      => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
         case Some(box) =>
-          if (box.boxCreator.clientId.equals(clientId)) {
+          if (box.boxCreator.clientId == clientId) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(result => {
-                request.notificationIds
-                  .map(UUID.fromString)
-                  .map(NotificationId)
-                  .foreach(confirmationService.handleConfirmation)
+                request.notificationIds.foreach(confirmationService.handleConfirmation)
                 result
               })
               .map(AcknowledgeNotificationsSuccessUpdatedResult)

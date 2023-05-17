@@ -23,6 +23,8 @@ import scala.collection.immutable
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
+import play.api.libs.json.Format
+import play.api.libs.json.Json
 
 case class BoxId(value: UUID) extends AnyVal {
   def raw: String = value.toString
@@ -30,6 +32,8 @@ case class BoxId(value: UUID) extends AnyVal {
 
 object BoxId {
   def random = BoxId(UUID.randomUUID())
+
+  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
 }
 
 case class ConfirmationId(value: UUID) extends AnyVal {
@@ -38,7 +42,15 @@ case class ConfirmationId(value: UUID) extends AnyVal {
 
 case class ClientId(value: String) extends AnyVal
 
+object ClientId {
+  implicit val format: Format[ClientId] = Json.valueFormat[ClientId]
+}
+
 case class ApplicationId(value: String) extends AnyVal
+
+object ApplicationId {
+  implicit val format: Format[ApplicationId] = Json.valueFormat[ApplicationId]
+}
 
 case class BoxCreator(clientId: ClientId)
 

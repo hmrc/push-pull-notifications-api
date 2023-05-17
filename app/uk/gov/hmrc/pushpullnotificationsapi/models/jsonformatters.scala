@@ -51,10 +51,7 @@ object InstantFormatter {
 
 object ResponseFormatters {
   implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
+
   implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
@@ -67,7 +64,6 @@ object ResponseFormatters {
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
   implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
   implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
-  implicit val createNotificationResponseFormatter: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
   implicit val createWrappedNotificationResponseFormatter: OFormat[CreateWrappedNotificationResponse] = Json.format[CreateWrappedNotificationResponse]
   implicit val updateCallbackUrlResponseFormatter: OFormat[UpdateCallbackUrlResponse] = Json.format[UpdateCallbackUrlResponse]
   implicit val validateBoxOwnershipResponseFormatter: OFormat[ValidateBoxOwnershipResponse] = Json.format[ValidateBoxOwnershipResponse]
