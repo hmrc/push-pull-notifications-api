@@ -22,6 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
+import scala.concurrent.Future.successful
 
 import play.api.libs.json._
 import play.api.mvc._
@@ -37,6 +38,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 
 @Singleton()
 class NotificationsController @Inject() (
@@ -52,72 +55,61 @@ class NotificationsController @Inject() (
   )(implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 
-  def saveNotification(boxId: BoxId): Action[String] =
-    (Action andThen
-      validateUserAgentHeaderAction)
-      .async(playBodyParsers.tolerantText(appConfig.maxNotificationSize)) { implicit request =>
-        val maybeConvertedType = contentTypeHeaderToNotificationType
-        maybeConvertedType.fold(
-          Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
-        ) { contentType =>
-          if (validateBodyAgainstContentType(contentType)) {
-            val notificationId = NotificationId(UUID.randomUUID())
-            notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
-              case _: NotificationCreateSuccessResult             =>
-                Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
-              case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-              case _: NotificationCreateFailedDuplicateResult     =>
-                InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
-            } recover recovery
-          } else {
-            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
-          }
-        }
-      }
+  val ET = EitherTHelper.make[Result]
 
+  val maxNotificationSize = appConfig.maxNotificationSize
+  val maxWrappedNotificationSize = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
+  
+  def saveNotification(boxId: BoxId): Action[String] =
+    (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.tolerantText(maxNotificationSize)) { implicit request =>
+      
+      val handleNotification = (notificationId: NotificationId) => successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))
+
+      (
+        for {
+          contentType        <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not found")) )
+          messageContentType <- ET.fromOption(contentTypeHeaderToNotificationType(contentType), UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")) )
+          body                = request.body
+          isValidBody         = validateBodyAgainstContentType(messageContentType, body)
+          messageBody        <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+          result             <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
+        }
+        yield result
+      ).merge
+    }
+      
   def saveWrappedNotification(boxId: BoxId): Action[JsValue] =
-    (Action andThen
-      validateUserAgentHeaderAction)
-      .async(playBodyParsers.json(appConfig.maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize)) {
-        implicit request =>
-          withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
-            {
-              val notification = wrappedNotification.notification
-              if (wrappedNotification.version.equals("1")) {
-                contentTypeHeaderToNotificationType(notification.contentType).fold(
-                  Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
-                ) { contentType =>
-                  if (validateBodyAgainstContentType(contentType, notification.body)) {
-                    val notificationId = NotificationId(UUID.randomUUID())
-                    notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) flatMap {
-                      case _: NotificationCreateSuccessResult             =>
-                        if (wrappedNotification.confirmationUrl.isDefined) {
-                          val confirmationId = ConfirmationId(UUID.randomUUID())
-                          confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
-                            case _: ConfirmationCreateServiceSuccessResult =>
-                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
-                            case _: ConfirmationCreateServiceFailedResult  =>
-                              InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
-                          }
-                        } else {
-                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))
-                        }
-                      case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                        Future.successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
-                      case _: NotificationCreateFailedDuplicateResult     =>
-                        Future.successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
-                    } recover recovery
-                  } else {
-                    Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
-                  }
-                }
-              } else {
-                Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
-              }
+    (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.json(maxWrappedNotificationSize)) {
+      implicit request =>
+        withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
+
+        val handleNotification = (notificationId: NotificationId) => {
+          wrappedNotification.confirmationUrl.fold(successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))){
+          confirmationUrl =>     
+            val confirmationId = ConfirmationId(UUID.randomUUID())
+            confirmationService.saveConfirmationRequest(confirmationId, confirmationUrl, notificationId) map {
+              case _: ConfirmationCreateServiceSuccessResult =>
+                Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
+              case _: ConfirmationCreateServiceFailedResult  =>
+                InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
             }
           }
+        }
+        
+        (
+          for {
+            _                  <- ET.cond(wrappedNotification.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+            messageContentType <- ET.fromOption(contentTypeHeaderToNotificationType(wrappedNotification.notification.contentType), UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")) )
+            body                = wrappedNotification.notification.body
+            isValidBody         = validateBodyAgainstContentType(messageContentType, body)
+            messageBody        <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+            result             <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
+          }
+          yield result
+        ).merge
       }
+    }
+  
 
   def getNotificationsByBoxIdAndFilters(boxId: BoxId): Action[AnyContent] =
     (Action andThen
@@ -170,14 +162,6 @@ class NotificationsController @Inject() (
       }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
     }
 
-  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
-    request.contentType match {
-      case Some(MimeTypes.JSON) => Some(APPLICATION_JSON)
-      case Some(MimeTypes.XML)  => Some(APPLICATION_XML)
-      case _                    => None
-    }
-  }
-
   private def contentTypeHeaderToNotificationType(contentType: String): Option[MessageContentType] = {
     contentType match {
       case MimeTypes.JSON => Some(APPLICATION_JSON)
@@ -186,17 +170,20 @@ class NotificationsController @Inject() (
     }
   }
 
-  private def validateBodyAgainstContentType(notificationContentType: MessageContentType, body: String) = {
+  private def processNotification(boxId: BoxId, contentType: MessageContentType, message: String)(fn: (NotificationId) => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    val notificationId = NotificationId(UUID.randomUUID())
+
+    notificationsService.saveNotification(boxId, notificationId, contentType, message) flatMap {
+      case _: NotificationCreateSuccessResult             => fn(notificationId)    
+      case _: NotificationCreateFailedBoxIdNotFoundResult => successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
+      case _: NotificationCreateFailedDuplicateResult     => successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
+    } recover recovery
+  }
+
+  private def validateBodyAgainstContentType(notificationContentType: MessageContentType, body: String): Boolean = {
     notificationContentType match {
       case APPLICATION_JSON => checkValidJson(body)
       case APPLICATION_XML  => checkValidXml(body)
-    }
-  }
-
-  private def validateBodyAgainstContentType(notificationContentType: MessageContentType)(implicit request: Request[String]) = {
-    notificationContentType match {
-      case APPLICATION_JSON => checkValidJson(request.body)
-      case APPLICATION_XML  => checkValidXml(request.body)
     }
   }
 

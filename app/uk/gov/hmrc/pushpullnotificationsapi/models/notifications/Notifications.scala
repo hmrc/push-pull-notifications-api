@@ -71,23 +71,35 @@ object Notification {
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
-case class WrappedNotification(
-    confirmationId: ConfirmationId,
-    confirmationUrl: String,
-    notificationId: NotificationId,
-    status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now,
-    pushedDateTime: Option[Instant] = None,
-    retryAfterDateTime: Option[Instant] = None)
+sealed trait ConfirmationStatus extends EnumEntry
 
-object WrappedNotification {
-  implicit val formatConfirmationId: OFormat[ConfirmationId] = Json.format[ConfirmationId]
-  implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
-  implicit val format: OFormat[WrappedNotification] = Json.format[WrappedNotification]
+object ConfirmationStatus extends Enum[ConfirmationStatus] with PlayJsonEnum[ConfirmationStatus] {
+  val values: immutable.IndexedSeq[ConfirmationStatus] = findValues
+
+  case object PENDING extends ConfirmationStatus
+  case object ACKNOWLEDGED extends ConfirmationStatus
+  case object FAILED extends ConfirmationStatus
 }
 
+// case class WrappedNotification(
+//     confirmationId: ConfirmationId,
+//     confirmationUrl: String,
+//     notificationId: NotificationId,
+//     status: ConfirmationStatus = ConfirmationStatus.PENDING,
+//     createdDateTime: Instant = Instant.now,
+//     pushedDateTime: Option[Instant] = None,
+//     retryAfterDateTime: Option[Instant] = None)
+
+// object WrappedNotification {
+//   implicit val formatConfirmationId: OFormat[ConfirmationId] = Json.format[ConfirmationId]
+//   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
+//   implicit val format: OFormat[WrappedNotification] = Json.format[WrappedNotification]
+// }
+
 case class ForwardedHeader(key: String, value: String)
+
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
-case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: NotificationStatus, dateTime: Option[Instant])
+
+case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: ConfirmationStatus, dateTime: Option[Instant])
 
 case class RetryableNotification(notification: Notification, box: Box)

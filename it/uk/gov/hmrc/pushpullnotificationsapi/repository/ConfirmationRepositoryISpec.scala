@@ -21,6 +21,7 @@ import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 class ConfirmationRepositoryISpec
     extends AsyncHmrcSpec
@@ -94,14 +95,14 @@ class ConfirmationRepositoryISpec
       await(repo.saveConfirmationRequest(defaultRequest))
       val first = await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
       first.head.status shouldBe PENDING
-      val updated = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
+      val updated = await(repo.updateStatus(notificationId, ConfirmationStatus.ACKNOWLEDGED))
       updated.get.status shouldBe ACKNOWLEDGED
-      val updated2 = await(repo.updateStatus(notificationId, FAILED))
+      val updated2 = await(repo.updateStatus(notificationId, ConfirmationStatus.FAILED))
       updated2.get.status shouldBe FAILED
     }
 
     "should return None if no notification to update" in {
-      val updated = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
+      val updated = await(repo.updateStatus(notificationId, ConfirmationStatus.ACKNOWLEDGED))
       updated shouldBe None
     }
   }

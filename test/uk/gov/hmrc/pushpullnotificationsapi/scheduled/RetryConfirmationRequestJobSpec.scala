@@ -49,7 +49,7 @@ import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
@@ -122,12 +122,12 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         ConfirmationRequest(confirmationId = ConfirmationId(UUID.randomUUID()), "URL", notificationId = notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
       when(mockRepo.fetchRetryableConfirmations)
         .thenReturn(Source.future(successful(request)))
-      when(mockRepo.updateStatus(notificationId, FAILED)).thenReturn(successful(Some(request)))
+      when(mockRepo.updateStatus(notificationId, ConfirmationStatus.FAILED)).thenReturn(successful(Some(request)))
       when(mockService.sendConfirmation(*)(*, *)).thenReturn(successful(false))
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockRepo, times(1)).updateStatus(notificationId, FAILED)
+      verify(mockRepo, times(1)).updateStatus(notificationId, ConfirmationStatus.FAILED)
       verify(mockRepo, never).updateRetryAfterDateTime(NotificationId(*), *)
       result.message shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }

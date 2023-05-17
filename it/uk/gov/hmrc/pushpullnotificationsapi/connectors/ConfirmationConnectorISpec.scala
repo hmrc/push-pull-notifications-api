@@ -7,12 +7,12 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult, ConfirmationId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, OutboundConfirmation}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
 import com.github.tomakehurst.wiremock.client.WireMock._
 
 import java.time.Instant
 import java.util.UUID
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -47,7 +47,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ACKNOWLEDGED, Some(Instant.now))
+          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
 
@@ -66,7 +66,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ACKNOWLEDGED, Some(Instant.now))
+          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
 

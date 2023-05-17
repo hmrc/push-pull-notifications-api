@@ -36,9 +36,9 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoReposito
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 @Singleton
 class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent)(implicit ec: ExecutionContext)
@@ -110,7 +110,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
     ).headOption()
   }
 
-  def updateStatus(notificationId: NotificationId, status: NotificationStatus): Future[Option[ConfirmationRequest]] = {
+  def updateStatus(notificationId: NotificationId, status: ConfirmationStatus): Future[Option[ConfirmationRequest]] = {
     collection.findOneAndUpdate(
       filter = equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("status", Codecs.toBson(status)),
@@ -128,7 +128,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
 
   def fetchRetryableConfirmations: Source[ConfirmationRequest, NotUsed] = {
     Source.fromPublisher(
-      collection.find(and(equal("status", Codecs.toBson(PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Instant.now)))).toObservable()
+      collection.find(and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Instant.now)))).toObservable()
     )
   }
 
