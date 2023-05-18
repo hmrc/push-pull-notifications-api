@@ -49,6 +49,7 @@ import akka.NotUsed
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 
 import java.util.UUID
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
@@ -104,7 +105,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(ClientId.JsonFormat),
             Codecs.playFormatCodec(BoxFormat.boxFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),

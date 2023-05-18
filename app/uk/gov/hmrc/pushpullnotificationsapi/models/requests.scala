@@ -21,6 +21,7 @@ import java.time.Instant
 import play.api.mvc.{Request, WrappedRequest}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 case class CreateBoxRequest(boxName: String, clientId: ClientId)
 

@@ -64,7 +64,7 @@ object ResponseFormatters {
   implicit val createWrappedNotificationResponseFormatter: OFormat[CreateWrappedNotificationResponse] = Json.format[CreateWrappedNotificationResponse]
   implicit val updateCallbackUrlResponseFormatter: OFormat[UpdateCallbackUrlResponse] = Json.format[UpdateCallbackUrlResponse]
   implicit val validateBoxOwnershipResponseFormatter: OFormat[ValidateBoxOwnershipResponse] = Json.format[ValidateBoxOwnershipResponse]
-  implicit val clientSecretResponseFormatter: OFormat[ClientSecret] = Json.format[ClientSecret]
+  implicit val clientSecretValueResponseFormatter: OFormat[ClientSecretValue] = Json.format[ClientSecretValue]
 }
 
 object RequestFormatters {

@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.time.Instant
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,7 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class NotificationsService @Inject() (

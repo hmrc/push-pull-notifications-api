@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -26,7 +25,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat

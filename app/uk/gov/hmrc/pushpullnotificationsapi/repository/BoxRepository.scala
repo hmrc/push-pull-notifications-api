@@ -26,7 +26,7 @@ import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoClient, MongoCollection}
 import play.api.Logger
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -73,7 +73,7 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
+            Codecs.playFormatCodec(ClientId.JsonFormat),
             Codecs.playFormatCodec(BoxFormat.boxFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),

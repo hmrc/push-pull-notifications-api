@@ -28,6 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnect
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class BoxService @Inject() (
@@ -78,7 +79,7 @@ class BoxService @Inject() (
       hc: HeaderCarrier
     ): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId) && box.clientManaged == clientManaged) {
+      case Some(box) => if (box.boxCreator.clientId == request.clientId && box.clientManaged == clientManaged) {
           val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
 
           for {

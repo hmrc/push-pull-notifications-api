@@ -21,7 +21,7 @@ import javax.inject.Singleton
 
 import org.apache.commons.codec.binary.Base32
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
 
 @Singleton
 class ClientSecretGenerator {
@@ -29,9 +29,9 @@ class ClientSecretGenerator {
   /**
     * Generates a client secret with 32 random characters (160 bits)
     */
-  def generate: ClientSecret = {
+  def generate: ClientSecretValue = {
     val randomBytes: Array[Byte] = new Array[Byte](20) // scalastyle:off magic.number
     new SecureRandom().nextBytes(randomBytes)
-    ClientSecret(new Base32().encodeAsString(randomBytes))
+    ClientSecretValue(new Base32().encodeAsString(randomBytes))
   }
 }

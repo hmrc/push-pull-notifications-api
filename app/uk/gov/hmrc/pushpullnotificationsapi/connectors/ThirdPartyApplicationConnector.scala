@@ -24,7 +24,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {

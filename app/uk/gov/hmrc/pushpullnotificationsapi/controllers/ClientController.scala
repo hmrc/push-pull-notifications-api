@@ -27,6 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateA
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton()
 class ClientController @Inject() (

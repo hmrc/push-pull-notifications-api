@@ -22,6 +22,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -41,8 +42,8 @@ class NotificationsControllerISpec
   override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
-  val clientId = "someClientId"
-  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val clientId = ClientId.random
+  val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
   val expectedApplicationId: UUID = UUID.randomUUID()
   val tpaResponse: String = raw"""{"id":  "${expectedApplicationId.toString}", "clientId": "$clientId"}"""
@@ -248,7 +249,8 @@ class NotificationsControllerISpec
       }
 
       "respond with 401 on create when clientId returned from auth does not match" in {
-        primeAuthServiceSuccess("UnknownClientId", "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val unknownClientId = ClientId.random
+        primeAuthServiceSuccess(unknownClientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
         val result: WSResponse = doGet(s"$url/box/${box.boxId.value.toString}/notifications?status=PENDING", validHeadersJson)

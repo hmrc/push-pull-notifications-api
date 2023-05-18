@@ -11,6 +11,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
 
@@ -36,15 +38,15 @@ class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSup
   }
 
   "getApplicationDetails" should {
-    val clientId = "someClientId"
+    val clientId = ClientId.random
 
     "retrieve application record based on provided clientId" in new SetUp() {
-      val expectedApplicationId = ApplicationId(UUID.randomUUID().toString)
-      val jsonResponse: String = raw"""{"id":  "${expectedApplicationId.value}", "clientId": "$clientId"}"""
+      val expectedApplicationId = ApplicationId.random
+      val jsonResponse: String = raw"""{"id":  "${expectedApplicationId.value}", "clientId": "${clientId.value}"}"""
 
       primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 
-      val result: ApplicationResponse = await(objInTest.getApplicationDetails(ClientId(clientId)))
+      val result: ApplicationResponse = await(objInTest.getApplicationDetails(clientId))
 
       result.id shouldBe expectedApplicationId
     }
@@ -53,7 +55,7 @@ class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSup
       primeApplicationQueryEndpoint(NOT_FOUND, "", clientId)
 
       intercept[UpstreamErrorResponse] {
-        await(objInTest.getApplicationDetails(ClientId(clientId)))
+        await(objInTest.getApplicationDetails(clientId))
       }.statusCode shouldBe NOT_FOUND
     }
   }

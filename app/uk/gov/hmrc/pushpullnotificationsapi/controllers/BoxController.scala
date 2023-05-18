@@ -29,6 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton()
 class BoxController @Inject() (

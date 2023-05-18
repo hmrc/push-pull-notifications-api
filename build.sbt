@@ -59,7 +59,8 @@ lazy val root = (project in file("."))
   .settings(
     routesImport ++= Seq(
       "uk.gov.hmrc.pushpullnotificationsapi.models._",
-      "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._"
+      "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._",
+      "uk.gov.hmrc.apiplatform.modules.applications.domain.models._"
     )
   )
   .settings(

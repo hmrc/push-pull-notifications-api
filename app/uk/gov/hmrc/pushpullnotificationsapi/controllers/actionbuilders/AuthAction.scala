@@ -25,8 +25,9 @@ import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedF
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationRequest, ClientId, ErrorCode, JsErrorResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationRequest, ErrorCode, JsErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class AuthAction @Inject() (override val authConnector: AuthConnector)(implicit ec: ExecutionContext)

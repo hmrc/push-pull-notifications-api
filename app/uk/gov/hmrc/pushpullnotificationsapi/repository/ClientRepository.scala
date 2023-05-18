@@ -32,6 +32,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient.{fromClient, toClient}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbClientFormatter
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class ClientRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext, val mat: Materializer)

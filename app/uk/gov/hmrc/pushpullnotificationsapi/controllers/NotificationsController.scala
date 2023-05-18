@@ -61,7 +61,7 @@ class NotificationsController @Inject() (
           Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
         ) { contentType =>
           if (validateBodyAgainstContentType(contentType)) {
-            val notificationId = NotificationId(UUID.randomUUID())
+            val notificationId = NotificationId.random
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
               case _: NotificationCreateSuccessResult             =>
                 Created(Json.toJson(CreateNotificationResponse(notificationId)))
@@ -89,11 +89,11 @@ class NotificationsController @Inject() (
                   Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
                 ) { contentType =>
                   if (validateBodyAgainstContentType(contentType, notification.body)) {
-                    val notificationId = NotificationId(UUID.randomUUID())
+                    val notificationId = NotificationId.random
                     notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) flatMap {
                       case _: NotificationCreateSuccessResult             =>
                         if (wrappedNotification.confirmationUrl.isDefined) {
-                          val confirmationId = ConfirmationId(UUID.randomUUID())
+                          val confirmationId = ConfirmationId.random
                           confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
                             case _: ConfirmationCreateServiceSuccessResult =>
                               Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
