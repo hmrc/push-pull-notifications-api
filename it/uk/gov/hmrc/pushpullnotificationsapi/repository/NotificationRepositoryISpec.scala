@@ -85,21 +85,15 @@ class NotificationRepositoryISpec
 
   "saveNotification" should {
 
-    "test notificationId to String" in {
-      val notificationIdStr = UUID.randomUUID().toString
-      val notification = NotificationId(UUID.fromString(notificationIdStr))
-      notification.raw shouldBe notificationIdStr
-    }
-
     "save a Notification" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
+      val notification = Notification(NotificationId.random, boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
 
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
     }
 
     "encrypt the notification message in the database" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
+      val notification = Notification(NotificationId.random, boxId, messageContentType = APPLICATION_JSON, message = "{\"someJsone\": \"someValue\"}", status = PENDING)
 
       await(repo.saveNotification(notification))
 
@@ -109,7 +103,7 @@ class NotificationRepositoryISpec
     }
 
     "not save duplicate Notifications" in {
-      val notification = Notification(NotificationId(UUID.randomUUID()), boxId, messageContentType = APPLICATION_JSON, message = "{", status = PENDING)
+      val notification = Notification(NotificationId.random, boxId, messageContentType = APPLICATION_JSON, message = "{", status = PENDING)
       val result: Unit = await(repo.saveNotification(notification))
       result shouldBe ((): Unit)
 
@@ -120,8 +114,8 @@ class NotificationRepositoryISpec
 
   "updateStatus" should {
     "update the matching notification with a new status" in {
-      val matchingNotificationId = NotificationId(UUID.randomUUID())
-      val nonMatchingNotificationId = NotificationId(UUID.randomUUID())
+      val matchingNotificationId = NotificationId.random
+      val nonMatchingNotificationId = NotificationId.random
       createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
       createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
 
@@ -133,7 +127,7 @@ class NotificationRepositoryISpec
     }
 
     "return the updated notification" in {
-      val notificationId = NotificationId(UUID.randomUUID())
+      val notificationId = NotificationId.random
       createNotificationInDB(status = PENDING, notificationId = notificationId)
 
       val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
@@ -143,8 +137,8 @@ class NotificationRepositoryISpec
 
   "updateRetryAfterDateTime" should {
     "update the matching notification with a new retry after date time" in {
-      val matchingNotificationId = NotificationId(UUID.randomUUID())
-      val nonMatchingNotificationId = NotificationId(UUID.randomUUID())
+      val matchingNotificationId = NotificationId.random
+      val nonMatchingNotificationId = NotificationId.random
       createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
       createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
       val newDateTime = Instant.now.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)
@@ -157,7 +151,7 @@ class NotificationRepositoryISpec
     }
 
     "return the updated notification" in {
-      val notificationId = NotificationId(UUID.randomUUID())
+      val notificationId = NotificationId.random
       createNotificationInDB(status = PENDING, notificationId = notificationId)
 
       val result: Notification = await(repo.updateStatus(notificationId, ACKNOWLEDGED))
@@ -293,15 +287,15 @@ class NotificationRepositoryISpec
 
   "AcknowledgeNotifications" should {
     "update the statuses of ALL created notifications to ACKNOWLEDGED" in {
-      val notificationIdsDoNotUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
-      val notificationIdsToUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
+      val notificationIdsDoNotUpdate = List(NotificationId.random, NotificationId.random, NotificationId.random)
+      val notificationIdsToUpdate = List(NotificationId.random, NotificationId.random, NotificationId.random)
       createNotificationsWithIds(notificationIdsDoNotUpdate)
       createNotificationsWithIds(notificationIdsToUpdate)
 
       val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
       returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
       returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
-      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate.map(_.value.toString)))
+      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate))
       result shouldBe true
 
       val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
@@ -321,7 +315,7 @@ class NotificationRepositoryISpec
   private def createNotificationInDB(
       status: NotificationStatus = PENDING,
       createdDateTime: Instant = Instant.now,
-      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+      notificationId: NotificationId = NotificationId.random,
       retryAfterDateTime: Option[Instant] = None
     ): Notification = {
     val notification = Notification(

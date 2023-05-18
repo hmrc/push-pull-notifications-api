@@ -52,8 +52,6 @@ class NotificationsService @Inject() (
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(result => {
                 request.notificationIds
-                  .map(UUID.fromString)
-                  .map(NotificationId)
                   .foreach(confirmationService.handleConfirmation)
                 result
               })
@@ -75,7 +73,7 @@ class NotificationsService @Inject() (
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None      => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+        case None      => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
         case Some(box) =>
           if (box.boxCreator.clientId.equals(clientId)) {
             notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)

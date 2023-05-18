@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+
 import java.{util => ju}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-
 import uk.gov.hmrc.http.HeaderCarrier
-
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
@@ -104,7 +104,7 @@ class BoxService @Inject() (
 
   def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
       case Some(box) => if (box.boxCreator.clientId.equals(clientId)) {
           Future.successful(ValidateBoxOwnerSuccessResult())
         } else {

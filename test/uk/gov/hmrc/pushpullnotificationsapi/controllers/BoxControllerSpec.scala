@@ -369,7 +369,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return unauthorised if bearer token doesn't contain client ID on a box delete" in {
         when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
 
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
 
         status(result) should be(UNAUTHORIZED)
       }
@@ -379,7 +379,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteSuccessfulResult()))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(NO_CONTENT)
       }
 
@@ -388,7 +388,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteNotFoundResult()))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(NOT_FOUND)
       }
 
@@ -397,7 +397,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(FORBIDDEN)
       }
 
@@ -406,7 +406,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(FORBIDDEN)
       }
 
@@ -415,7 +415,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithInvalidAcceptHeader.toList)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithInvalidAcceptHeader.toList)
         status(result) should be(NOT_ACCEPTABLE)
         (contentAsJson(result) \ "code").as[String] shouldBe "ACCEPT_HEADER_INVALID"
         (contentAsJson(result) \ "message").as[String] shouldBe "The accept header is missing or invalid"
@@ -426,7 +426,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.successful(BoxDeleteFailedResult(s"Box with name :$boxName and clientId: $clientId but unable to delete")))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader.toList)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader.toList)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
         verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)
@@ -437,7 +437,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
           .thenReturn(Future.failed(new RuntimeException("some error")))
-        val result = doDelete(s"/cmb/box/${boxId.raw}", validHeadersWithAcceptHeader.toList)
+        val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader.toList)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)

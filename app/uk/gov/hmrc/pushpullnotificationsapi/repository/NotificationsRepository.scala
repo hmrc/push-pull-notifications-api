@@ -22,7 +22,6 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.bson.conversions.Bson
 import org.mongodb.scala.model.Filters._
@@ -32,12 +31,10 @@ import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
 import org.mongodb.scala.model.Aggregates.`match`
 import org.mongodb.scala.model.Filters.{equal, _}
-
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
-
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
@@ -49,6 +46,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotifi
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import akka.stream.scaladsl.Source
 import akka.NotUsed
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+
+import java.util.UUID
 
 @Singleton
 class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
@@ -115,7 +115,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
+            Codecs.playFormatCodec(ApplicationId.applicationIdJf),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
             Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
           ),
@@ -160,7 +160,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     equal("boxId", Codecs.toBson(boxId.value))
   }
 
-  private def notificationIdsQuery(notificationIds: List[String]): Bson = {
+  private def notificationIdsQuery(notificationIds: List[UUID]): Bson = {
     in("notificationId", notificationIds: _*)
   }
 
@@ -177,8 +177,8 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     }
   }
 
-  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[String])(implicit ec: ExecutionContext): Future[Boolean] = {
-    val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[NotificationId])(implicit ec: ExecutionContext): Future[Boolean] = {
+    val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds.map(_.value)))
 
     collection
       .updateMany(query, set("status", Codecs.toBson(ACKNOWLEDGED))).toFuture().map(_.wasAcknowledged())

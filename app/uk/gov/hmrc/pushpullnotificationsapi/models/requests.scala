@@ -22,7 +22,7 @@ import play.api.mvc.{Request, WrappedRequest}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 
-case class CreateBoxRequest(boxName: String, clientId: String)
+case class CreateBoxRequest(boxName: String, clientId: ClientId)
 
 case class CreateClientManagedBoxRequest(boxName: String)
 
@@ -49,7 +49,7 @@ case class WrappedNotificationRequest(notification: WrappedNotification, version
 
 // Notifications
 
-case class AcknowledgeNotificationsRequest(notificationIds: List[String])
+case class AcknowledgeNotificationsRequest(notificationIds: List[NotificationId])
 case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationIds: Set[NotificationId])
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])

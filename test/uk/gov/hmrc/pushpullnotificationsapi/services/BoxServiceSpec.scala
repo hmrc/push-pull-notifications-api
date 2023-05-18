@@ -20,12 +20,10 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.captor.ArgCaptor
-
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.http.HeaderCarrier
-
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
@@ -72,7 +70,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
   "BoxService" when {
     "createBox" should {
-      val applicationId = ApplicationId("12345")
+      val applicationId = ApplicationId.random
 
       "return BoxCreatedResult and call tpa to get application id when box is created" in new Setup {
         when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
@@ -166,7 +164,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
     }
 
     "updateCallbackUrl" should {
-      val applicationId = ApplicationId("123124")
+      val applicationId = ApplicationId.random
 
       "return CallbackUrlUpdated when process completes successfully" in new Setup {
         val boxWithApplicationId: Box = boxWithExistingSubscriber.copy(applicationId = Some(applicationId))

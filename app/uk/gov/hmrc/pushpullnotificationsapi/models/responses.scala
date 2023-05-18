@@ -24,10 +24,10 @@ import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
-case class CreateBoxResponse(boxId: String)
+case class CreateBoxResponse(boxId: BoxId)
 
-case class CreateNotificationResponse(notificationId: String)
-case class CreateWrappedNotificationResponse(notificationId: String, confirmationId: String)
+case class CreateNotificationResponse(notificationId: NotificationId)
+case class CreateWrappedNotificationResponse(notificationId: NotificationId, confirmationId: ConfirmationId)
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 

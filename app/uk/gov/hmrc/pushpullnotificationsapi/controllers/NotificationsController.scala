@@ -64,7 +64,7 @@ class NotificationsController @Inject() (
             val notificationId = NotificationId(UUID.randomUUID())
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
               case _: NotificationCreateSuccessResult             =>
-                Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+                Created(Json.toJson(CreateNotificationResponse(notificationId)))
               case _: NotificationCreateFailedBoxIdNotFoundResult =>
                 NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: NotificationCreateFailedDuplicateResult     =>
@@ -96,12 +96,12 @@ class NotificationsController @Inject() (
                           val confirmationId = ConfirmationId(UUID.randomUUID())
                           confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
                             case _: ConfirmationCreateServiceSuccessResult =>
-                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
+                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
                             case _: ConfirmationCreateServiceFailedResult  =>
                               InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
                           }
                         } else {
-                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))
+                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))
                         }
                       case _: NotificationCreateFailedBoxIdNotFoundResult =>
                         Future.successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
@@ -134,8 +134,6 @@ class NotificationsController @Inject() (
         } recover recovery
       }
 
-  val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
-
   private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
 
     val notificationIds = request.notificationIds
@@ -143,7 +141,6 @@ class NotificationsController @Inject() (
     if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
       false
     } else {
-      notificationIds.count(UUIDRegex.findFirstIn(_).isDefined) == notificationIds.size &&
       notificationIds.distinct.equals(notificationIds)
     }
 

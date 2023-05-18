@@ -19,11 +19,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.time.{Instant, ZoneId}
-
 import play.api.libs.json._
 import uk.gov.hmrc.play.json.Union
-
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{Actor, EventId, PpnsCallBackUriUpdatedEvent}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.{instantReads, instantWrites}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
@@ -51,10 +48,6 @@ object InstantFormatter {
 
 object ResponseFormatters {
   implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
@@ -76,8 +69,6 @@ object ResponseFormatters {
 
 object RequestFormatters {
   implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
   implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
   implicit val createClientManagedBoxRequestFormatter: OFormat[CreateClientManagedBoxRequest] = Json.format[CreateClientManagedBoxRequest]
   implicit val subscribersRequestFormatter: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
@@ -91,16 +82,9 @@ object RequestFormatters {
 }
 
 object ConnectorFormatters {
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val forwardedHeadersFormatter: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
-  implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
-  implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val updateCallBAckUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
+   implicit val updateCallBAckUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
   implicit val applicationResponseFormatter: OFormat[ApplicationResponse] = Json.format[ApplicationResponse]
-  implicit val eventIdFormat: Format[EventId] = Json.valueFormat[EventId]
-  implicit val actorFormat: Format[Actor] = Json.format[Actor]
-  implicit val ppnsEventFormat: OFormat[PpnsCallBackUriUpdatedEvent] = Json.format[PpnsCallBackUriUpdatedEvent]
   implicit val outboundNotificationFormatter: OFormat[OutboundNotification] = Json.format[OutboundNotification]
   implicit val outboundConfirmationFormatter: OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
 }

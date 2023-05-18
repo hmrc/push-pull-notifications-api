@@ -19,26 +19,33 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import java.time.Instant
 import java.util.UUID
 import scala.collection.immutable
-
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
-
+import play.api.libs.json.Json
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 
-case class BoxId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
-}
+case class BoxId(value: UUID) extends AnyVal
 
 object BoxId {
+  implicit val format = Json.valueFormat[BoxId]
   def random = BoxId(UUID.randomUUID())
 }
 
-case class ConfirmationId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
+case class ConfirmationId(value: UUID) extends AnyVal
+
+object ConfirmationId {
+  implicit val format = Json.valueFormat[ConfirmationId]
+  def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
 
 case class ClientId(value: String) extends AnyVal
 
-case class ApplicationId(value: String) extends AnyVal
+object ClientId {
+  implicit val format = Json.valueFormat[ClientId]
+}
+
+//case class ApplicationId(value: String) extends AnyVal
 
 case class BoxCreator(clientId: ClientId)
 

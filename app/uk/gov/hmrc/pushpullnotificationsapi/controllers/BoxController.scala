@@ -49,13 +49,13 @@ class BoxController @Inject() (
       .async(playBodyParsers.json) { implicit request =>
         withJsonBody[CreateBoxRequest] {
           box: CreateBoxRequest =>
-            if (box.boxName.isEmpty || box.clientId.isEmpty) {
+            if (box.boxName.isEmpty || box.clientId.value.isEmpty) {
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName and clientId in request body")))
             } else {
-              boxService.createBox(ClientId(box.clientId), box.boxName).map {
-                case r: BoxCreatedResult      => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+              boxService.createBox(box.clientId, box.boxName).map {
+                case r: BoxCreatedResult      => Created(Json.toJson(CreateBoxResponse(r.box.boxId)))
                 case r: BoxRetrievedResult    =>
-                  Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+                  Ok(Json.toJson(CreateBoxResponse(r.box.boxId)))
                 case r: BoxCreateFailedResult =>
                   logger.error(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
@@ -76,9 +76,9 @@ class BoxController @Inject() (
             if (box.boxName.isEmpty) {
               Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName in request body")))
             } else {
-              boxService.createBox(request.clientId, box.boxName, true).map {
-                case r: BoxCreatedResult      => Created(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
-                case r: BoxRetrievedResult    => Ok(Json.toJson(CreateBoxResponse(r.box.boxId.raw)))
+              boxService.createBox(request.clientId, box.boxName, clientManaged = true).map {
+                case r: BoxCreatedResult      => Created(Json.toJson(CreateBoxResponse(r.box.boxId)))
+                case r: BoxRetrievedResult    => Ok(Json.toJson(CreateBoxResponse(r.box.boxId)))
                 case r: BoxCreateFailedResult =>
                   logger.info(s"Unable to create Box: ${r.message}")
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
