@@ -27,7 +27,7 @@ import scala.util.Try
 import org.joda.time.Duration
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers}
+import org.scalatest.{BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
 import play.api.Application
@@ -35,6 +35,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import org.scalatest.matchers.should.Matchers
 
 class LockedScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutures with GuiceOneAppPerTest with BeforeAndAfterEach {
 

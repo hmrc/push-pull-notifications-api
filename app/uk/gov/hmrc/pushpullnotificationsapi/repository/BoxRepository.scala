@@ -28,7 +28,6 @@ import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoClient, MongoCollection}
 
 import play.api.Logger
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
@@ -39,7 +38,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoForma
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 
 @Singleton
-class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
+class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[Box](
       collectionName = "box",
       mongoComponent = mongo,

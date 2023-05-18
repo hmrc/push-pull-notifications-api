@@ -78,7 +78,7 @@ class BoxService @Inject() (
       hc: HeaderCarrier
     ): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId.equals(request.clientId) && box.clientManaged == clientManaged) {
+      case Some(box) => if (box.boxCreator.clientId == request.clientId && box.clientManaged == clientManaged) {
           val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
 
           for {

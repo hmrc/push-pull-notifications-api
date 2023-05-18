@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 import scala.concurrent.Future.successful
 
 import play.api.libs.json.{JsValue, Json}
@@ -112,6 +111,7 @@ class NotificationsController @Inject() (
 
     val notificationIds = request.notificationIds
 
-    (notificationIds.nonEmpty && notificationIds.size <= appConfig.numberOfNotificationsToRetrievePerRequest)
+    (notificationIds.nonEmpty && notificationIds.size <= appConfig.numberOfNotificationsToRetrievePerRequest && notificationIds.distinct == notificationIds)
+   
   }
 }

@@ -293,15 +293,15 @@ class NotificationRepositoryISpec
 
   "AcknowledgeNotifications" should {
     "update the statuses of ALL created notifications to ACKNOWLEDGED" in {
-      val notificationIdsDoNotUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
-      val notificationIdsToUpdate = List(NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()))
+      val notificationIdsDoNotUpdate = List(NotificationId.random, NotificationId.random, NotificationId.random)
+      val notificationIdsToUpdate = List(NotificationId.random, NotificationId.random, NotificationId.random)
       createNotificationsWithIds(notificationIdsDoNotUpdate)
       createNotificationsWithIds(notificationIdsToUpdate)
 
       val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
       returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
       returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
-      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate.map(_.value.toString)))
+      val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate))
       result shouldBe true
 
       val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))

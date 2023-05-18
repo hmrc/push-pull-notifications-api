@@ -38,12 +38,12 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   private val mockNotificationsPushService = mock[NotificationPushService]
   private val mockConfirmationService = mock[ConfirmationService]
   val serviceToTest = new NotificationsService(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService, mockConfirmationService)
-
+  
   override def beforeEach(): Unit = {
     super.beforeEach()
     reset(mockBoxRepo, mockNotificationsRepo, mockNotificationsPushService)
   }
-
+  
   trait Setup {
 
     val notificationCaptor: Captor[Notification] = ArgCaptor[Notification]
@@ -180,11 +180,11 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(Future.successful(true))
 
-      private val notificationId: UUID = UUID.randomUUID()
-      private val notificationId2: UUID = UUID.randomUUID()
-      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId.toString, notificationId2.toString))))
-      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId))
-      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId2))
+      private val notificationId: NotificationId = NotificationId.random
+      private val notificationId2: NotificationId = NotificationId.random
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId, notificationId2))))
+      verify(mockConfirmationService).handleConfirmation(notificationId)
+      verify(mockConfirmationService).handleConfirmation(notificationId2)
     }
 
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns false" in new Setup {
@@ -211,7 +211,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
 
     val result: AcknowledgeNotificationsServiceResult =
-      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(UUID.randomUUID().toString))))
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(NotificationId.random))))
 
     result shouldBe expectedResult
   }

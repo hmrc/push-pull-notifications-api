@@ -50,10 +50,12 @@ case class NotificationResponse(
     pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
-  
+  import InstantFormatter.Implicits._
+
   implicit val format = Json.format[NotificationResponse]
 
   def fromNotification(notification: Notification): NotificationResponse = {
+
     NotificationResponse(
       notification.notificationId,
       notification.boxId,

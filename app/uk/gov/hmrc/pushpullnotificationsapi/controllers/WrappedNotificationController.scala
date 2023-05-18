@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future.successful
 
 import play.api.libs.json._

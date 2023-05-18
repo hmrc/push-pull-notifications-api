@@ -21,17 +21,17 @@ import java.time.Instant
 import play.api.libs.json.Json
 
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter._
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter
 
-class JsonFormatterSpec extends HmrcSpec {
+class InstantFormatterSpec extends HmrcSpec {
 
-  "jsonFormatter" should {
+  "InstantFormatter" should {
 
     val dateTime = "2023-02-01T18:18:31.123+0000"
 
     "only have 3 nano values" in {
-      val offsetInstant = lenientFormatter.parse(dateTime, a => Instant.from(a))
+      import InstantFormatter.Implicits._
+      val offsetInstant = InstantFormatter.lenientFormatter.parse(dateTime, a => Instant.from(a))
       val offsetString = Json.toJson(offsetInstant).as[String]
       offsetString shouldBe dateTime
     }

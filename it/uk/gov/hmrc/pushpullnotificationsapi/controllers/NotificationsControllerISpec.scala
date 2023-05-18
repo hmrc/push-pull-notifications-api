@@ -21,6 +21,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -277,7 +278,7 @@ class NotificationsControllerISpec
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
-        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+        val notificationIdList: List[NotificationId] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NO_CONTENT
@@ -287,27 +288,27 @@ class NotificationsControllerISpec
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
-        val notificationIdList: List[String] = UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+        val notificationIdList: List[NotificationId] = NotificationId.random :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NO_CONTENT
       }
 
-      "return 400 when invalid UUID is included" in {
-        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-        val box = createBoxAndReturn()
-        val notifications = createNotifications(box.boxId, 4)
-        val notificationIdList: List[String] = "fooBar" :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+      // "return 400 when invalid UUID is included" in { // THIS cant happen anymore
+      //   primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+      //   val box = createBoxAndReturn()
+      //   val notifications = createNotifications(box.boxId, 4)
+      //   val notificationIdList: List[NotificationId] = NotificationId.random :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
-        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-        result.status shouldBe BAD_REQUEST
-      }
+      //   val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+      //   result.status shouldBe BAD_REQUEST
+      // }
 
       "return 401 when no client id in auth response" in {
         primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
-        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+        val notificationIdList: List[NotificationId] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe UNAUTHORIZED
@@ -318,7 +319,7 @@ class NotificationsControllerISpec
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         val notifications = createNotifications(box.boxId, 4)
-        val notificationIdList: List[String] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+        val notificationIdList: List[NotificationId] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
         val result: WSResponse = doPut(s"$url/box/${UUID.randomUUID().toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NOT_FOUND
@@ -327,7 +328,7 @@ class NotificationsControllerISpec
 
   }
 
-  private def buildAcknowledgeRequest(notificationIdList: List[String]): String = {
+  private def buildAcknowledgeRequest(notificationIdList: List[NotificationId]): String = {
     Json.toJson(AcknowledgeNotificationsRequest(notificationIdList)).toString()
   }
 

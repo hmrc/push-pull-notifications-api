@@ -40,6 +40,10 @@ case class ConfirmationId(value: UUID) extends AnyVal {
   def raw: String = value.toString
 }
 
+object ConfirmationId {
+  implicit val format = Json.valueFormat[ConfirmationId]
+}
+
 case class ClientId(value: String) extends AnyVal
 
 object ClientId {
