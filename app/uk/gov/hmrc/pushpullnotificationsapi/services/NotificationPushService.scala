@@ -80,7 +80,7 @@ class NotificationPushService @Inject() (
   }
 
   private def isValidPushSubscriber(subscriber: Subscriber): Boolean =
-    subscriber.subscriptionType.equals(API_PUSH_SUBSCRIBER) && subscriber.asInstanceOf[PushSubscriber].callBackUrl.nonEmpty
+    subscriber.subscriptionType == API_PUSH_SUBSCRIBER && subscriber.asInstanceOf[PushSubscriber].callBackUrl.nonEmpty
 
   private def calculateForwardedHeaders(client: Client, notificationAsJsonString: String): List[ForwardedHeader] = {
     val payloadSignature = hmacService.sign(client.secrets.head.value, notificationAsJsonString)

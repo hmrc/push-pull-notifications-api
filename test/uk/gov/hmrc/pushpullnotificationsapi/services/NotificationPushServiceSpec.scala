@@ -35,6 +35,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientSecret
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
@@ -59,7 +61,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
     val boxId = BoxId(UUID.randomUUID)
     val boxName: String = "boxName"
     val clientId: ClientId = ClientId(UUID.randomUUID.toString)
-    val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+    val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
     val client: Client = Client(clientId, Seq(clientSecret))
 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {

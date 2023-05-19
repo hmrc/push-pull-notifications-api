@@ -36,6 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -71,7 +72,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with B
 
   val clientIdStr: String = randomUUID.toString
   val clientId: ClientId = ClientId(clientIdStr)
-  val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+  val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
 
   "getClientSecrets" should {
     "return 200 and the array of secrets for the requested client" in {

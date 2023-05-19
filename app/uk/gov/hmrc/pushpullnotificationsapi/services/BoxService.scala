@@ -106,7 +106,7 @@ class BoxService @Inject() (
   def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
     repository.findByBoxId(boxId) flatMap {
       case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
-      case Some(box) => if (box.boxCreator.clientId.equals(clientId)) {
+      case Some(box) => if (box.boxCreator.clientId == clientId) {
           Future.successful(ValidateBoxOwnerSuccessResult())
         } else {
           Future.successful(ValidateBoxOwnerFailedResult("clientId does not match boxCreator"))
@@ -152,9 +152,9 @@ class BoxService @Inject() (
   }
 
   private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
-    if (!box.clientManaged || !box.boxCreator.clientId.equals(clientId)) {
+    if (!box.clientManaged || box.boxCreator.clientId != clientId) {
       successful(BoxDeleteAccessDeniedResult())
-    } else if (box.boxCreator.clientId.equals(clientId)) {
+    } else if (box.boxCreator.clientId == clientId) {
       repository.deleteBox(box.boxId)
     } else {
       successful(BoxDeleteNotFoundResult())

@@ -79,9 +79,9 @@ class BoxControllerISpec
   val clientId2 = ClientId.random
   val createClientManagedBoxJsonBody = raw"""{"boxName": "$boxName"}"""
   val createClientManagedBox2JsonBody = raw"""{"boxName": "bbyybybyb"}"""
-  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
-  val createBox2JsonBody = raw"""{"clientId":  "$clientId2", "boxName": "bbyybybyb"}"""
-  val tpaResponse: String = raw"""{"id":  "someappid", "clientId": "$clientId"}"""
+  val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
+  val createBox2JsonBody = raw"""{"clientId":  "${clientId2.value}", "boxName": "bbyybybyb"}"""
+  val tpaResponse: String = raw"""{"id":  "931cbba3-c2ae-4078-af8a-b7fbcb804758", "clientId": "${clientId.value}"}"""
 
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
@@ -362,7 +362,7 @@ class BoxControllerISpec
 
       val box = Json.parse(result2.body).as[Box]
       box.boxName shouldBe boxName
-      box.boxCreator.clientId.value shouldBe clientId
+      box.boxCreator.clientId shouldBe clientId
 
     }
 

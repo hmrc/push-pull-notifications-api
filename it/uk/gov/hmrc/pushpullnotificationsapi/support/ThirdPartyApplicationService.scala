@@ -8,7 +8,7 @@ trait ThirdPartyApplicationService {
 
   def primeApplicationQueryEndpoint(status: Int, body: String, clientId: ClientId) = {
     stubFor(get(urlPathEqualTo(queryApplicationsUrl))
-      .withQueryParam("clientId", equalTo(clientId.value.toString))
+      .withQueryParam("clientId", equalTo(clientId.value))
       .willReturn(
         aResponse()
           .withBody(body)

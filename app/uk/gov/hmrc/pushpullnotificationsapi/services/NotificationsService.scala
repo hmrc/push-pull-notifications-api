@@ -47,7 +47,7 @@ class NotificationsService @Inject() (
       .flatMap {
         case None      => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
         case Some(box) =>
-          if (box.boxCreator.clientId.equals(clientId)) {
+          if (box.boxCreator.clientId == clientId) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(result => {
                 request.notificationIds
@@ -67,19 +67,15 @@ class NotificationsService @Inject() (
       status: Option[NotificationStatus] = None,
       fromDateTime: Option[Instant] = None,
       toDateTime: Option[Instant] = None
-    )(implicit ec: ExecutionContext
-    ): Future[GetNotificationCreateServiceResult] = {
+    )(implicit ec: ExecutionContext): 
+      Future[Either[GetNotificationsServiceFailedResult, List[Notification]]] = {
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None      => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
+        case None      => Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found")))
         case Some(box) =>
-          if (box.boxCreator.clientId.equals(clientId)) {
-            notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)
-              .map(results => GetNotificationsSuccessRetrievedResult(results))
-          } else {
-            Future.successful(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
-          }
+          if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) } 
+          else  notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
       }
   }
 

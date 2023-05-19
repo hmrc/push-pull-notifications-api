@@ -94,36 +94,6 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
-  override lazy val collection: MongoCollection[DbNotification] =
-    CollectionFactory
-      .collection(mongoComponent.database, collectionName, domainFormat)
-      .withCodecRegistry(
-        fromRegistries(
-          fromCodecs(
-            Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(ClientId.JsonFormat),
-            Codecs.playFormatCodec(BoxFormat.boxFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
-            Codecs.playFormatCodec(ApplicationId.applicationIdJf),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
-          ),
-          MongoClient.DEFAULT_CODEC_REGISTRY
-        )
-      )
-
   override def ensureIndexes: Future[Seq[String]] = {
     super.ensureIndexes
   }
@@ -161,8 +131,9 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     equal("boxId", Codecs.toBson(boxId.value))
   }
 
-  private def notificationIdsQuery(notificationIds: List[UUID]): Bson = {
-    in("notificationId", notificationIds: _*)
+  private def notificationIdsQuery(notificationIds: List[NotificationId]): Bson = {
+    in("notificationId", (notificationIds.map(Codecs.toBson(_))): _*)
+
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {
@@ -179,7 +150,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
   }
 
   def acknowledgeNotifications(boxId: BoxId, notificationIds: List[NotificationId])(implicit ec: ExecutionContext): Future[Boolean] = {
-    val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds.map(_.value)))
+    val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
 
     collection
       .updateMany(query, set("status", Codecs.toBson(ACKNOWLEDGED))).toFuture().map(_.wasAcknowledged())

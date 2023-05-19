@@ -37,6 +37,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 @Singleton()
 class NotificationsController @Inject() (
@@ -84,7 +85,7 @@ class NotificationsController @Inject() (
           withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
             {
               val notification = wrappedNotification.notification
-              if (wrappedNotification.version.equals("1")) {
+              if (wrappedNotification.version == "1") {
                 contentTypeHeaderToNotificationType(notification.contentType).fold(
                   Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
                 ) { contentType =>
@@ -126,11 +127,9 @@ class NotificationsController @Inject() (
       queryParamValidatorAction)
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications.map(fromNotification)))
-          case _: GetNotificationsServiceBoxNotFoundResult     =>
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: GetNotificationsServiceUnauthorisedResult    =>
-            Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          case Right(results: List[Notification]) => Ok(Json.toJson(results.map(fromNotification)))
+          case Left(e: GetNotificationsServiceBoxNotFoundResult)     =>  NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case Left(e: GetNotificationsServiceUnauthorisedResult)    =>  Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
       }
 
@@ -141,7 +140,7 @@ class NotificationsController @Inject() (
     if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
       false
     } else {
-      notificationIds.distinct.equals(notificationIds)
+      notificationIds.distinct == notificationIds
     }
 
   }

@@ -23,6 +23,7 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxFormatSpec extends HmrcSpec {
 

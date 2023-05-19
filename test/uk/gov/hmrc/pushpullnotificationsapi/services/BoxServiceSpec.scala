@@ -29,6 +29,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnect
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxServiceSpec extends AsyncHmrcSpec {
 
@@ -36,7 +37,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
   private val boxId = BoxId(boxIdUUID)
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)
-  private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+  private val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   private val client: Client = Client(clientId, Seq(clientSecret))
   private val boxName: String = "boxName"
 

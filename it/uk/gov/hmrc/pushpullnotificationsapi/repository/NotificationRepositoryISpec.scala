@@ -19,6 +19,7 @@ import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationRepositoryISpec
     extends AsyncHmrcSpec
@@ -281,7 +282,7 @@ class NotificationRepositoryISpec
       val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId))
 
       returnedNotifications.size should be(numberOfNotificationsToRetrievePerRequest)
-      returnedNotifications.filter(n => n.createdDateTime.equals(mostRecentDate)) should be(List.empty)
+      returnedNotifications.filter(n => n.createdDateTime == mostRecentDate) should be(List.empty)
     }
   }
 
@@ -293,14 +294,14 @@ class NotificationRepositoryISpec
       createNotificationsWithIds(notificationIdsToUpdate)
 
       val returnedNotificationsBeforeUpdate = await(repo.getByBoxIdAndFilters(boxId))
-      returnedNotificationsBeforeUpdate.count(_.status.equals(PENDING)) shouldBe 6
-      returnedNotificationsBeforeUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 0
+      returnedNotificationsBeforeUpdate.count(_.status == PENDING) shouldBe 6
+      returnedNotificationsBeforeUpdate.count(_.status == ACKNOWLEDGED) shouldBe 0
       val result = await(repo.acknowledgeNotifications(boxId, notificationIdsToUpdate))
       result shouldBe true
 
       val returnedNotificationsAfterUpdate = await(repo.getByBoxIdAndFilters(boxId))
-      returnedNotificationsAfterUpdate.count(_.status.equals(ACKNOWLEDGED)) shouldBe 3
-      returnedNotificationsAfterUpdate.count(_.status.equals(PENDING)) shouldBe 3
+      returnedNotificationsAfterUpdate.count(_.status == ACKNOWLEDGED) shouldBe 3
+      returnedNotificationsAfterUpdate.count(_.status == PENDING) shouldBe 3
 
     }
 

@@ -44,6 +44,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -348,7 +349,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None)
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification.copy(retryAfterDateTime = Some(Instant.now))))))
+          .thenReturn(Future.successful(Right(List(notification.copy(retryAfterDateTime = Some(Instant.now))))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
 
@@ -364,7 +365,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None)
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification))))
+          .thenReturn(Future.successful(Right(List(notification))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
 
@@ -389,7 +390,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None)
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
+          .thenReturn(Future.successful(Right(List(notification, notification2))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
         status(result) shouldBe OK
@@ -467,7 +468,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
         )(*))
-          .thenReturn(Future.successful(GetNotificationsServiceBoxNotFoundResult("")))
+          .thenReturn(Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe NOT_FOUND
@@ -485,7 +486,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
         )(*))
-          .thenReturn(Future.successful(GetNotificationsServiceUnauthorisedResult("")))
+          .thenReturn(Future.successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe FORBIDDEN
@@ -502,7 +503,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List.empty)))
+          .thenReturn(Future.successful(Right(List.empty)))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe OK
@@ -650,7 +651,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
       maybeFromDateStr: Option[String] = None,
       maybeToDateStr: Option[String] = None
     ): Unit = {
-    if (expectedStatusCode.equals(UNAUTHORIZED)) {
+    if (expectedStatusCode == UNAUTHORIZED) {
       when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
     } else {
       primeAuthAction(clientIdStr)
@@ -666,7 +667,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
         )(*))
-          .thenReturn(Future.successful(GetNotificationsSuccessRetrievedResult(List(notification, notification2))))
+          .thenReturn(Future.successful(Right(List(notification, notification2))))
       case NOT_FOUND   => ()
       case BAD_REQUEST => ()
     }

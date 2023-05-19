@@ -27,6 +27,7 @@ import java.time.Duration
 import akka.stream.scaladsl.Sink
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxRepositoryISpec
     extends AsyncHmrcSpec
@@ -59,8 +60,7 @@ class BoxRepositoryISpec
     await(repo.ensureIndexes)
   }
 
-  val clientIdStr: String = "someCLientId"
-  val clientId: ClientId = ClientId(clientIdStr)
+  val clientId: ClientId = ClientId.random
   val boxName: String = "boxName"
   final val boxId: BoxId = BoxId.random
   val callBackEndpoint = "some/endpoint"
