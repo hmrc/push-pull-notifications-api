@@ -21,7 +21,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 import java.time.Instant
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationsControllerISpec

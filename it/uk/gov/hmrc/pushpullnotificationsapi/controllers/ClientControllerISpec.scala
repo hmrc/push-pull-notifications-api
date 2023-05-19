@@ -6,13 +6,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{FORBIDDEN, NOT_FOUND, OK}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
+import uk.gov.hmrc.pushpullnotificationsapi.models.Client
 
 class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] {
   this: Suite with ServerProvider =>

@@ -18,13 +18,15 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
+
 import com.google.inject.Inject
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {

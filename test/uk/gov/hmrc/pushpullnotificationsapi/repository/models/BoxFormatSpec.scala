@@ -18,12 +18,13 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
 import java.util.UUID
+
 import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxFormatSpec extends HmrcSpec {
 

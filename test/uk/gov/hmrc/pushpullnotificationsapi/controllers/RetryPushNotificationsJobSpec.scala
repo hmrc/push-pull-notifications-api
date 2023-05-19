@@ -44,6 +44,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
@@ -51,9 +52,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -73,14 +73,12 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       6,
       1
     )
-    val mockBoxRepository: BoxRepository = mock[BoxRepository]
     val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
     val mockNotificationPushService: NotificationPushService = mock[NotificationPushService]
 
     val underTest = new RetryPushNotificationsJob(
       mongoLockRepo,
       retryPushNotificationsJobConfig,
-      mockBoxRepository,
       mockNotificationsRepository,
       mockNotificationPushService
     )

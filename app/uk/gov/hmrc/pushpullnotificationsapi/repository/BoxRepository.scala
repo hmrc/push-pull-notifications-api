@@ -19,25 +19,25 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
+
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
-import org.mongodb.scala.{MongoClient, MongoCollection}
+
 import play.api.Logger
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, formatSubscriber}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, PlayHmrcMongoFormatters}
 
 @Singleton
-class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
+class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[Box](
       collectionName = "box",
       mongoComponent = mongo,
@@ -116,7 +116,7 @@ class BoxRepository @Inject() (mongo: MongoComponent, crypto: CompositeSymmetric
         equal("subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
         Filters.exists("subscriber.callBackUrl"),
         Filters.ne("subscriber.callBackUrl", "")
-      )   
+      )
     ).toFuture().map(_.toList)
   }
 }

@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
-
 sealed trait CreateBoxResult
 final case class BoxCreateFailedResult(message: String) extends CreateBoxResult
 sealed trait BoxCreateSuccessResult extends CreateBoxResult

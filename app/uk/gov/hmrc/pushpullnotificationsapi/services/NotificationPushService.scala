@@ -19,22 +19,20 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.NotUsed
+import akka.stream.scaladsl.{Merge, Source}
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
-import akka.stream.scaladsl.Merge
-import akka.stream.scaladsl.Source
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
-import akka.NotUsed
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 @Singleton
 class NotificationPushService @Inject() (
@@ -43,7 +41,8 @@ class NotificationPushService @Inject() (
     boxRepository: BoxRepository,
     clientService: ClientService,
     hmacService: HmacService,
-    confirmationService: ConfirmationService)(implicit ec: ExecutionContext)
+    confirmationService: ConfirmationService
+  )(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
@@ -87,15 +86,14 @@ class NotificationPushService @Inject() (
     List(ForwardedHeader("X-Hub-Signature", payloadSignature))
   }
 
-
   def fetchRetryablePushNotifications(): Future[Source[RetryableNotification, NotUsed]] = {
     boxRepository.fetchPushSubscriberBoxes().map { boxes =>
       boxes.map(box => notificationsRepository.fetchRetryableNotifications(box)) match {
-        case first :: second :: rest => 
+        case first :: second :: rest =>
           Source.combine(first, second, rest: _*)(Merge(_))
-        case first :: Nil =>
+        case first :: Nil            =>
           first
-        case Nil =>
+        case Nil                     =>
           Source.empty
       }
     }

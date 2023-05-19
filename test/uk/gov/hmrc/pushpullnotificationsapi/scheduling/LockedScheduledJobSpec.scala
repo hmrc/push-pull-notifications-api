@@ -25,9 +25,10 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
 
 import org.joda.time.Duration
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{BeforeAndAfterEach, Matchers}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
 import play.api.Application

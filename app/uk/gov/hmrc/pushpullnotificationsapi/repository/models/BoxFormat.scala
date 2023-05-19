@@ -21,6 +21,7 @@ import play.api.libs.json._
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 /**

@@ -33,6 +33,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.Helpers.{BAD_REQUEST, route, _}
 import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -41,7 +42,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -449,14 +449,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 200 and requested box when it exists" in {
 
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId)))
           .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result = doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders)
 
         status(result) should be(OK)
 
-        verify(mockBoxService).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)
+        verify(mockBoxService).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))
         val bodyVal = Helpers.contentAsString(result)
         val box = Json.parse(bodyVal).as[Box]
         box.subscriber.isDefined shouldBe false
@@ -480,7 +480,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
 
       "return 400 when boxName is missing" in {
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId)))
           .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result = doGet(s"/box?clientId=$clientIdStr", validHeaders)
@@ -490,7 +490,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
 
       "return 400 when clientId is missing" in {
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId)))
           .thenReturn(Future.successful(Some(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))))
 
         val result = doGet(s"/box?boxName=$boxName", validHeaders)
@@ -500,14 +500,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
 
       "return NOTFOUND when requested box does not exist" in {
-        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)).thenReturn(Future.successful(None))
+        when(mockBoxService.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
 
         val result = doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders)
 
         status(result) should be(NOT_FOUND)
         Helpers.contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
 
-        verify(mockBoxService).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))(*)
+        verify(mockBoxService).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))
       }
     }
 
@@ -516,37 +516,37 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return empty list when client has no boxes" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(List()))
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(List()))
         val result = doGet(s"/cmb/box", validHeaders)
 
         contentAsString(result) shouldBe "[]"
 
-        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))
       }
 
       "return boxes for client specified in auth token in json format" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.successful(List(box)))
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(List(box)))
         val result = doGet("/cmb/box", validHeaders)
         val expected =
           s"""[{"boxId":"$boxIdStr","boxName":"DEFAULT","boxCreator":{"clientId":"$clientIdStr"},"clientManaged":false}]"""
 
         contentAsString(result) shouldBe expected
 
-        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))
       }
 
       "return a 500 response code if service fails with an exception" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.getBoxesByClientId(eqTo(clientId))(*)).thenReturn(Future.failed(new RuntimeException("some error")))
+        when(mockBoxService.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.failed(new RuntimeException("some error")))
 
         val result = doGet("/cmb/box", validHeaders)
 
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))(*)
+        verify(mockBoxService).getBoxesByClientId(eqTo(clientId))
       }
 
       // All these test cases below should probably be replaced by an assertion that the correct ActionFilters have

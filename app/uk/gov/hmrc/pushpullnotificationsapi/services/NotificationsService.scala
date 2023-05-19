@@ -20,13 +20,13 @@ import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class NotificationsService @Inject() (
@@ -67,15 +67,15 @@ class NotificationsService @Inject() (
       status: Option[NotificationStatus] = None,
       fromDateTime: Option[Instant] = None,
       toDateTime: Option[Instant] = None
-    )(implicit ec: ExecutionContext): 
-      Future[Either[GetNotificationsServiceFailedResult, List[Notification]]] = {
+    )(implicit ec: ExecutionContext
+    ): Future[Either[GetNotificationsServiceFailedResult, List[Notification]]] = {
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
         case None      => Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found")))
         case Some(box) =>
-          if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) } 
-          else  notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
+          if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) }
+          else notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
       }
   }
 

@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fromClientSecret, toClientSecret}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
 

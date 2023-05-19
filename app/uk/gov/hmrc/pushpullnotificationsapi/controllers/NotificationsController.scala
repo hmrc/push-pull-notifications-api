@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
@@ -35,9 +33,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNoti
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 @Singleton()
 class NotificationsController @Inject() (
@@ -127,9 +124,9 @@ class NotificationsController @Inject() (
       queryParamValidatorAction)
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-          case Right(results: List[Notification]) => Ok(Json.toJson(results.map(fromNotification)))
-          case Left(e: GetNotificationsServiceBoxNotFoundResult)     =>  NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case Left(e: GetNotificationsServiceUnauthorisedResult)    =>  Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          case Right(results: List[Notification])                 => Ok(Json.toJson(results.map(fromNotification)))
+          case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
       }
 
@@ -220,7 +217,7 @@ class NotificationsController @Inject() (
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
-      case JsError(errs)         =>
+      case JsError(_)            =>
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }

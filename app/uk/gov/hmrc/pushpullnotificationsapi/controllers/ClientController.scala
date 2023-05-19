@@ -21,13 +21,13 @@ import scala.concurrent.ExecutionContext
 
 import play.api.libs.json._
 import play.api.mvc._
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateAuthorizationHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton()
 class ClientController @Inject() (

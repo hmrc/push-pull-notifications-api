@@ -16,19 +16,19 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
-
 import java.{util => ju}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 @Singleton
 class BoxService @Inject() (
@@ -65,10 +65,10 @@ class BoxService @Inject() (
     }
   }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
 
-  def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
+  def getBoxesByClientId(clientId: ClientId): Future[List[Box]] =
     repository.getBoxesByClientId(clientId)
 
   def updateCallbackUrl(
@@ -151,7 +151,7 @@ class BoxService @Inject() (
       })
   }
 
-  private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+  private def validateAndDeleteBox(box: Box, clientId: ClientId): Future[DeleteBoxResult] = {
     if (!box.clientManaged || box.boxCreator.clientId != clientId) {
       successful(BoxDeleteAccessDeniedResult())
     } else if (box.boxCreator.clientId == clientId) {
