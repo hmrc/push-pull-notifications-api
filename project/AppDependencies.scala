@@ -9,14 +9,12 @@ object AppDependencies {
   lazy val dependencies = Seq(
     ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"        % bootstrapVersion,
-    "uk.gov.hmrc"             %% "play-json-union-formatter"        % "1.15.0-play-28",
     "commons-codec"           %  "commons-codec"                    % "1.15",
     "uk.gov.hmrc"             %% "domain"                           % "6.2.0-play-28",
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"               % mongoVersion,
     "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.16.0",
     "com.github.blemale"      %% "scaffeine"                        % "3.1.0",
     "com.typesafe.play"       %% "play-json"                        % "2.7.1",
-    "com.typesafe.play"       %% "play-json-joda"                   % "2.7.1",
     "com.beachape"            %% "enumeratum-play-json"             % "1.6.0",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0"
   )
