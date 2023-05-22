@@ -13,6 +13,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId, OutboundNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -70,7 +71,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOn
     "return PushConnectorSuccessResult when validate-callback call returns true" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK)
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId.random, "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorSuccessResult] shouldBe true
@@ -79,7 +80,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOn
     "return PushConnectorFailedResult when validate-callback call returns false" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false, Some("someError"))
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId.random, "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
@@ -90,7 +91,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOn
     "return PushConnectorFailedResult when validate-callback call returns false with no error message" in new SetUp() {
       primeGatewayServiceValidateCallBack(Status.OK, successfulResult = false)
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId.random, "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true
@@ -101,7 +102,7 @@ class PushConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOn
     "return summat when validate-callback call returns false" in new SetUp() {
       primeGatewayServiceValidateNoBody(Status.BAD_REQUEST)
 
-      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("clientId"), "calbackUrl")
+      val request: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId.random, "calbackUrl")
       val result = await(objInTest.validateCallbackUrl(request))
 
       result.isInstanceOf[PushConnectorFailedResult] shouldBe true

@@ -27,10 +27,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]

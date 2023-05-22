@@ -17,17 +17,16 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.time.Instant
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-
 
 @Singleton
 class NotificationsService @Inject() (
@@ -48,12 +47,10 @@ class NotificationsService @Inject() (
       .flatMap {
         case None      => Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: $boxId not found"))
         case Some(box) =>
-          if (box.boxCreator.clientId.equals(clientId)) {
+          if (box.boxCreator.clientId == clientId) {
             notificationsRepository.acknowledgeNotifications(boxId, request.notificationIds)
               .map(result => {
                 request.notificationIds
-                  .map(UUID.fromString)
-                  .map(NotificationId)
                   .foreach(confirmationService.handleConfirmation)
                 result
               })
@@ -71,18 +68,14 @@ class NotificationsService @Inject() (
       fromDateTime: Option[Instant] = None,
       toDateTime: Option[Instant] = None
     )(implicit ec: ExecutionContext
-    ): Future[GetNotificationCreateServiceResult] = {
+    ): Future[Either[GetNotificationsServiceFailedResult, List[Notification]]] = {
 
     boxRepository.findByBoxId(boxId)
       .flatMap {
-        case None      => Future.successful(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.raw} not found"))
+        case None      => Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found")))
         case Some(box) =>
-          if (box.boxCreator.clientId.equals(clientId)) {
-            notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime)
-              .map(results => GetNotificationsSuccessRetrievedResult(results))
-          } else {
-            Future.successful(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
-          }
+          if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) }
+          else notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
       }
   }
 

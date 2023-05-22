@@ -26,6 +26,7 @@ import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
 
 import play.api.libs.json.Json
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
@@ -33,8 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
@@ -59,7 +59,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach 
     val boxId = BoxId(UUID.randomUUID)
     val boxName: String = "boxName"
     val clientId: ClientId = ClientId(UUID.randomUUID.toString)
-    val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+    val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
     val client: Client = Client(clientId, Seq(clientSecret))
 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {

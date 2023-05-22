@@ -20,7 +20,6 @@ import javax.inject.{Inject, Singleton}
 
 import controllers.Assets
 
-import play.api.Configuration
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -28,7 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.views.txt
 
 @Singleton
-class DocumentationController @Inject() (appconfig: AppConfig, assets: Assets, cc: ControllerComponents, configuration: Configuration) extends BackendController(cc) {
+class DocumentationController @Inject() (appconfig: AppConfig, assets: Assets, cc: ControllerComponents) extends BackendController(cc) {
 
   def definition(): Action[AnyContent] = Action {
     Ok(txt.definition(appconfig.apiStatus)).as("application/json")

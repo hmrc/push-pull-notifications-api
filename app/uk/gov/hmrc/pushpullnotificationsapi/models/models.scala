@@ -22,25 +22,31 @@ import scala.collection.immutable
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
+import play.api.libs.json.Json
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.play.json.Union
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
-case class BoxId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
-}
+case class BoxId(value: UUID) extends AnyVal
 
 object BoxId {
-  def random = BoxId(UUID.randomUUID())
+  implicit val format = Json.valueFormat[BoxId]
+  def random: BoxId = BoxId(UUID.randomUUID())
 }
 
-case class ConfirmationId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
+case class ConfirmationId(value: UUID) extends AnyVal
+
+object ConfirmationId {
+  implicit val format = Json.valueFormat[ConfirmationId]
+  def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
-
-case class ClientId(value: String) extends AnyVal
-
-case class ApplicationId(value: String) extends AnyVal
 
 case class BoxCreator(clientId: ClientId)
+
+object BoxCreator {
+  implicit val format = Json.format[BoxCreator]
+}
 
 sealed trait SubscriptionType extends EnumEntry
 
@@ -54,6 +60,17 @@ object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[Subscri
 sealed trait Subscriber {
   val subscribedDateTime: Instant
   val subscriptionType: SubscriptionType
+}
+
+object Subscriber {
+  implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
+  implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
+
+  implicit val formatSubscriber = Union
+    .from[Subscriber]("subscriptionType")
+    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
+    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
+    .format
 }
 
 class SubscriberContainer[+A](val elem: A)
@@ -77,5 +94,10 @@ case class Box(
     subscriber: Option[Subscriber] = None,
     clientManaged: Boolean = false)
 
-case class Client(id: ClientId, secrets: Seq[ClientSecret])
-case class ClientSecret(value: String)
+case class Client(id: ClientId, secrets: Seq[ClientSecretValue])
+
+case class ClientSecretValue(value: String)
+
+object ClientSecretValue {
+  implicit val format = Json.format[ClientSecretValue]
+}

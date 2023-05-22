@@ -20,13 +20,15 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 @Singleton
 class ClientService @Inject() (clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)(implicit ec: ExecutionContext) {
 
-  def getClientSecrets(clientId: ClientId): Future[Option[Seq[ClientSecret]]] = {
+  def getClientSecrets(clientId: ClientId): Future[Option[Seq[ClientSecretValue]]] = {
     clientRepository.findByClientId(clientId).map(_.map(_.secrets))
   }
 

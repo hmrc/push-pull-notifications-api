@@ -24,6 +24,7 @@ import scala.concurrent.Future
 import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -79,10 +80,10 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   "SaveNotification" should {
     "return NotificationCreateSuccessResult when box exists , push is called with subscriber & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWithSubscribers)), boxId)
-      primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
+      primeNotificationRepoSave(Future.successful(Some(NotificationId.random)))
       when(mockNotificationsPushService.handlePushNotification(eqTo(BoxObjectWithSubscribers), *)(*, *))
         .thenReturn(Future.successful(true))
-      val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
+      val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
@@ -92,9 +93,9 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
     "return NotificationCreateSuccessResult when box exists, push is called with empty subscriber & notification successfully saved" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
-      primeNotificationRepoSave(Future.successful(Some(NotificationId(UUID.randomUUID()))))
+      primeNotificationRepoSave(Future.successful(Some(NotificationId.random)))
 
-      val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeJson, message))
+      val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
@@ -106,7 +107,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       primeBoxRepo(Future.successful(None), boxId)
 
       val result: NotificationCreateServiceResult =
-        await(serviceToTest.saveNotification(boxId, NotificationId(UUID.randomUUID()), messageContentTypeXml, message))
+        await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeXml, message))
       result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: BoxId($boxIdStr) not found")
 
       verify(mockBoxRepo, times(1)).findByBoxId(eqTo(boxId))
@@ -131,13 +132,15 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(
-        Future.successful(List(Notification(NotificationId(UUID.randomUUID()), boxId, MessageContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
+        Future.successful(List(Notification(NotificationId.random, boxId, MessageContentType.APPLICATION_JSON, "{}", status.head, toDate.head)))
       )
-      val result: GetNotificationCreateServiceResult =
+      val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
         await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = status, fromDateTime = fromDate, toDateTime = toDate))
 
-      val resultsList: GetNotificationsSuccessRetrievedResult = result.asInstanceOf[GetNotificationsSuccessRetrievedResult]
-      resultsList.notifications.isEmpty shouldBe false
+      result match {
+        case Right(g: List[Notification]) => g.size shouldBe 1
+        case _                            => fail()
+      }
 
       verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(*)
 
@@ -148,10 +151,10 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
-      val result: GetNotificationCreateServiceResult =
+      val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
         await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = status, fromDateTime = fromDate, toDateTime = toDate))
 
-      result shouldBe GetNotificationsSuccessRetrievedResult(List.empty)
+      result shouldBe Right(List.empty)
 
       verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(*)
     }
@@ -161,10 +164,10 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       primeNotificationRepoGetNotifications(Future.successful(List.empty))
 
-      val result: GetNotificationCreateServiceResult =
+      val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
         await(serviceToTest.getNotifications(boxId = boxId, clientId = ClientId(UUID.randomUUID().toString), status = status, fromDateTime = fromDate, toDateTime = toDate))
 
-      result shouldBe GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator")
+      result shouldBe Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
 
       verifyNoMoreInteractions(mockNotificationsRepo)
     }
@@ -180,11 +183,11 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
       when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(Future.successful(true))
 
-      private val notificationId: UUID = UUID.randomUUID()
-      private val notificationId2: UUID = UUID.randomUUID()
-      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId.toString, notificationId2.toString))))
-      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId))
-      verify(mockConfirmationService).handleConfirmation(NotificationId(notificationId2))
+      private val notificationId: NotificationId = NotificationId.random
+      private val notificationId2: NotificationId = NotificationId.random
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(notificationId, notificationId2))))
+      verify(mockConfirmationService).handleConfirmation(notificationId)
+      verify(mockConfirmationService).handleConfirmation(notificationId2)
     }
 
     "return AcknowledgeNotificationsSuccessUpdatedResult when repo returns false" in new Setup {
@@ -194,7 +197,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
     "return AcknowledgeNotificationsServiceBoxNotFoundResult when box not found" in new Setup {
       primeBoxRepo(Future.successful(None), boxId)
-      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: BoxId(${boxId.raw}) not found"))
+      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: BoxId(${boxId.value.toString}) not found"))
     }
 
     "return AcknowledgeNotificationsServiceUnauthorisedResult when caller is not owner of box" in new Setup {
@@ -211,7 +214,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
 
     val result: AcknowledgeNotificationsServiceResult =
-      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(UUID.randomUUID().toString))))
+      await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(NotificationId.random))))
 
     result shouldBe expectedResult
   }

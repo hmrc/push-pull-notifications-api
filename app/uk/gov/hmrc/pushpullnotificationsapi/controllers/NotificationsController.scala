@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
@@ -31,11 +29,10 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNotificationRequestFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 
 @Singleton()
@@ -61,10 +58,10 @@ class NotificationsController @Inject() (
           Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
         ) { contentType =>
           if (validateBodyAgainstContentType(contentType)) {
-            val notificationId = NotificationId(UUID.randomUUID())
+            val notificationId = NotificationId.random
             notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
               case _: NotificationCreateSuccessResult             =>
-                Created(Json.toJson(CreateNotificationResponse(notificationId.raw)))
+                Created(Json.toJson(CreateNotificationResponse(notificationId)))
               case _: NotificationCreateFailedBoxIdNotFoundResult =>
                 NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: NotificationCreateFailedDuplicateResult     =>
@@ -84,24 +81,24 @@ class NotificationsController @Inject() (
           withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
             {
               val notification = wrappedNotification.notification
-              if (wrappedNotification.version.equals("1")) {
+              if (wrappedNotification.version == "1") {
                 contentTypeHeaderToNotificationType(notification.contentType).fold(
                   Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
                 ) { contentType =>
                   if (validateBodyAgainstContentType(contentType, notification.body)) {
-                    val notificationId = NotificationId(UUID.randomUUID())
+                    val notificationId = NotificationId.random
                     notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) flatMap {
                       case _: NotificationCreateSuccessResult             =>
                         if (wrappedNotification.confirmationUrl.isDefined) {
-                          val confirmationId = ConfirmationId(UUID.randomUUID())
+                          val confirmationId = ConfirmationId.random
                           confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
                             case _: ConfirmationCreateServiceSuccessResult =>
-                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
+                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
                             case _: ConfirmationCreateServiceFailedResult  =>
                               InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
                           }
                         } else {
-                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId.raw))))
+                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))
                         }
                       case _: NotificationCreateFailedBoxIdNotFoundResult =>
                         Future.successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
@@ -126,15 +123,11 @@ class NotificationsController @Inject() (
       queryParamValidatorAction)
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications.map(fromNotification)))
-          case _: GetNotificationsServiceBoxNotFoundResult     =>
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: GetNotificationsServiceUnauthorisedResult    =>
-            Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          case Right(results: List[Notification])                 => Ok(Json.toJson(results.map(fromNotification)))
+          case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
       }
-
-  val UUIDRegex: Regex = raw"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b".r
 
   private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
 
@@ -143,8 +136,7 @@ class NotificationsController @Inject() (
     if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
       false
     } else {
-      notificationIds.count(UUIDRegex.findFirstIn(_).isDefined) == notificationIds.size &&
-      notificationIds.distinct.equals(notificationIds)
+      notificationIds.distinct == notificationIds
     }
 
   }
@@ -167,7 +159,7 @@ class NotificationsController @Inject() (
           else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
-      }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
+      }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
     }
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
@@ -224,7 +216,7 @@ class NotificationsController @Inject() (
   private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
-      case JsError(errs)         =>
+      case JsError(_)            =>
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
     }
   }

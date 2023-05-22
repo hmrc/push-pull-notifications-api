@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import java.time.LocalDateTime
-import java.util.UUID
-import java.util.UUID.randomUUID
+import java.time.Instant
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -26,13 +24,15 @@ import scala.util.control.NonFatal
 import com.google.inject.Inject
 
 import play.api.http.Status.CREATED
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.Actors
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{EventId, PpnsCallBackUriUpdatedEvent}
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector.{EventId, PpnsCallBackUriUpdatedEvent}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ApplicationId, Box}
+import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
@@ -40,7 +40,7 @@ class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConf
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId.value, LocalDateTime.now(), oldUrl, newUrl, box.boxId.raw, box.boxName)
+    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, Instant.now(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
     http.POST[PpnsCallBackUriUpdatedEvent, HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {
@@ -48,29 +48,5 @@ class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConf
           logger.info("exception calling api platform events", e)
           Future.successful(false)
       }
-  }
-}
-
-object ApiPlatformEventsConnector {
-
-  case class EventId(value: UUID) extends AnyVal
-
-  object EventId {
-    def random: EventId = EventId(randomUUID())
-  }
-
-  //This is hardcoded at the moment as we dont have the details of the user who initiated the callback change
-  case class Actor(id: String = "", actorType: String = "UNKNOWN")
-
-  case class PpnsCallBackUriUpdatedEvent(
-      id: EventId,
-      applicationId: String,
-      eventDateTime: LocalDateTime,
-      oldCallbackUrl: String,
-      newCallbackUrl: String,
-      boxId: String,
-      boxName: String,
-      actor: Actor = Actor()) {
-    val eventType = "PPNS_CALLBACK_URI_UPDATED"
   }
 }
