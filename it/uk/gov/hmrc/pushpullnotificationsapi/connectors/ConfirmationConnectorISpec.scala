@@ -37,7 +37,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
   "Confirmation Connector" should {
     "when it returns 200" in new SetUp() {
 
-      stubFor(post(urlEqualTo("/"))
+      stubFor(post(urlEqualTo("/")).withHeader("Content-Type", equalTo("application/json"))
         .willReturn(
           aResponse()
             .withStatus(200)

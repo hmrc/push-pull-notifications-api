@@ -22,8 +22,8 @@ import scala.util.control.NonFatal
 
 import com.google.inject.Inject
 
-import play.api.libs.json.Writes
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpReads}
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
@@ -33,17 +33,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedR
 class ConfirmationConnector @Inject() (http: HttpClient)(implicit ec: ExecutionContext) {
 
   def sendConfirmation(confirmationUrl: String, confirmation: OutboundConfirmation)(implicit hc: HeaderCarrier): Future[ConfirmationConnectorResult] = {
-    doSend(confirmationUrl, confirmation, hc) map {
-      _ => ConfirmationConnectorSuccessResult()
+    http.POST[OutboundConfirmation, Either[UpstreamErrorResponse, HttpResponse]](confirmationUrl, confirmation, Seq("Content-Type" -> APPLICATION_JSON.value)) map {
+      case Left(e)  => ConfirmationConnectorFailedResult(e.toString())
+      case Right(_) => ConfirmationConnectorSuccessResult()
     } recover {
       case NonFatal(e) => ConfirmationConnectorFailedResult(e.getMessage)
     }
-  }
-
-  private def doSend[T, V](url: String, payload: T, hc: HeaderCarrier)(implicit wr: Writes[T], rd: HttpReads[V]): Future[V] = {
-    implicit val modifiedHeaderCarrier: HeaderCarrier =
-      hc.withExtraHeaders("Content-Type" -> APPLICATION_JSON.value)
-
-    http.POST[T, V](url, payload)
   }
 }
