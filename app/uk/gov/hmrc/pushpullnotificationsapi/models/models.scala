@@ -24,6 +24,7 @@ import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
@@ -41,15 +42,11 @@ object ConfirmationId {
   def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
 
-// case class ClientId(value: String) extends AnyVal
-
-// object ClientId {
-//   implicit val format = Json.valueFormat[ClientId]
-// }
-
-//case class ApplicationId(value: String) extends AnyVal
-
 case class BoxCreator(clientId: ClientId)
+
+object BoxCreator {
+  implicit val format = Json.format[BoxCreator]
+}
 
 sealed trait SubscriptionType extends EnumEntry
 
@@ -63,6 +60,17 @@ object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[Subscri
 sealed trait Subscriber {
   val subscribedDateTime: Instant
   val subscriptionType: SubscriptionType
+}
+
+object Subscriber {
+  implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
+  implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
+
+  implicit val formatSubscriber = Union
+    .from[Subscriber]("subscriptionType")
+    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
+    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
+    .format
 }
 
 class SubscriberContainer[+A](val elem: A)
@@ -87,4 +95,9 @@ case class Box(
     clientManaged: Boolean = false)
 
 case class Client(id: ClientId, secrets: Seq[ClientSecretValue])
+
 case class ClientSecretValue(value: String)
+
+object ClientSecretValue {
+  implicit val format = Json.format[ClientSecretValue]
+}

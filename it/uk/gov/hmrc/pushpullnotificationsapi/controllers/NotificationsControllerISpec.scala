@@ -11,10 +11,9 @@ import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, Client, CreateNotificationResponse}
+
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
@@ -22,6 +21,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.support._
 import java.time.Instant
 import scala.collection.mutable
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
+import uk.gov.hmrc.pushpullnotificationsapi.models.AcknowledgeNotificationsRequest
+import uk.gov.hmrc.pushpullnotificationsapi.models.CreateNotificationResponse
 
 class NotificationsControllerISpec
     extends ServerBaseISpec

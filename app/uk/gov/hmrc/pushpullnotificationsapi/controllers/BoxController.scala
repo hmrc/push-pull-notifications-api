@@ -25,7 +25,6 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
@@ -85,7 +84,7 @@ class BoxController @Inject() (
                   UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
               }
             }
-        }(actualBody, manifest, RequestFormatters.createClientManagedBoxRequestFormatter) recover recovery
+        }(actualBody, manifest, CreateClientManagedBoxRequest.format) recover recovery
       }
 
   def deleteClientManagedBox(boxId: BoxId): Action[AnyContent] =
@@ -164,7 +163,7 @@ class BoxController @Inject() (
               case _: BoxIdNotFound                       => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
               case _: UpdateCallbackUrlUnauthorisedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
             } recover recovery
-          }(actualBody, manifest, RequestFormatters.updateManagedCallbackUrlRequestFormatter)
+          }(actualBody, manifest, UpdateManagedCallbackUrlRequest.format)
       }
 
   def validateBoxOwnership(): Action[JsValue] =

@@ -26,12 +26,33 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 
 case class CreateBoxResponse(boxId: BoxId)
 
+object CreateBoxResponse {
+  implicit val format = Json.format[CreateBoxResponse]
+}
+
 case class CreateNotificationResponse(notificationId: NotificationId)
+
+object CreateNotificationResponse {
+  implicit val format = Json.format[CreateNotificationResponse]
+}
+
 case class CreateWrappedNotificationResponse(notificationId: NotificationId, confirmationId: ConfirmationId)
+
+object CreateWrappedNotificationResponse {
+  implicit val format = Json.format[CreateWrappedNotificationResponse]
+}
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 
+object UpdateCallbackUrlResponse {
+  implicit val format = Json.format[UpdateCallbackUrlResponse]
+}
+
 case class ValidateBoxOwnershipResponse(valid: Boolean)
+
+object ValidateBoxOwnershipResponse {
+  implicit val format = Json.format[ValidateBoxOwnershipResponse]
+}
 
 case class NotificationResponse(
     notificationId: NotificationId,

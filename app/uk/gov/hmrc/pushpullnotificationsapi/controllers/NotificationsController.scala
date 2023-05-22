@@ -29,7 +29,6 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNotificationRequestFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
@@ -160,7 +159,7 @@ class NotificationsController @Inject() (
           else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
-      }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
+      }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
     }
 
   private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {

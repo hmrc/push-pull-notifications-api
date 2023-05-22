@@ -88,7 +88,21 @@ object WrappedNotification {
 }
 
 case class ForwardedHeader(key: String, value: String)
+
+object ForwardedHeader {
+  implicit val format = Json.format[ForwardedHeader]
+}
+
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
+
+object OutboundNotification {
+  implicit val format = Json.format[OutboundNotification]
+}
+
 case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: NotificationStatus, dateTime: Option[Instant])
+
+object OutboundConfirmation {
+  implicit val format = Json.format[OutboundConfirmation]
+}
 
 case class RetryableNotification(notification: Notification, box: Box)

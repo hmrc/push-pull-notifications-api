@@ -26,7 +26,14 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models.ConnectorFormatters._
+
+case class ApplicationResponse(id: ApplicationId)
+
+object ApplicationResponse {
+  import play.api.libs.json.Json
+
+  implicit val format = Json.format[ApplicationResponse]
+}
 
 @Singleton
 class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
@@ -36,5 +43,3 @@ class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: App
     http.GET[ApplicationResponse](url, Seq(("clientId", clientId.value)))
   }
 }
-
-case class ApplicationResponse(id: ApplicationId)
