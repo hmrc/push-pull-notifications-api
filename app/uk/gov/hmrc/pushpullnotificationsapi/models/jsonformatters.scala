@@ -16,78 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField._
-import java.time.{Instant, ZoneId}
-
 import play.api.libs.json._
-import uk.gov.hmrc.play.json.Union
-
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApplicationResponse
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-
-object InstantFormatter {
-  val lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
-    .parseLenient()
-    .parseCaseInsensitive()
-    .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.SSS][Z]['Z']]")
-    .parseDefaulting(NANO_OF_SECOND, 0)
-    .parseDefaulting(SECOND_OF_MINUTE, 0)
-    .parseDefaulting(MINUTE_OF_HOUR, 0)
-    .parseDefaulting(HOUR_OF_DAY, 0)
-    .toFormatter
-    .withZone(ZoneId.of("UTC"))
-
-  val instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
-
-  val instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
-    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
-    .toFormatter
-    .withZone(ZoneId.of("UTC")))
-
-  object Implicits {
-    implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-  }
-}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {
-  import InstantFormatter.Implicits._
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.WithTimeZone._
 
-  implicit val formatBoxCreator: Format[BoxCreator] = Json.format[BoxCreator]
-  implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
-  implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-
-  implicit val formatSubscriber: Format[Subscriber] = Union.from[Subscriber]("subscriptionType")
-    .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
-    .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
-    .format
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
-  implicit val createBoxResponseFormatter: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
-  implicit val createWrappedNotificationResponseFormatter: OFormat[CreateWrappedNotificationResponse] = Json.format[CreateWrappedNotificationResponse]
-  implicit val updateCallbackUrlResponseFormatter: OFormat[UpdateCallbackUrlResponse] = Json.format[UpdateCallbackUrlResponse]
-  implicit val validateBoxOwnershipResponseFormatter: OFormat[ValidateBoxOwnershipResponse] = Json.format[ValidateBoxOwnershipResponse]
-  implicit val clientSecretResponseFormatter: OFormat[ClientSecret] = Json.format[ClientSecret]
-}
-
-object RequestFormatters {
-  implicit val createBoxRequestFormatter: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
-  implicit val createClientManagedBoxRequestFormatter: OFormat[CreateClientManagedBoxRequest] = Json.format[CreateClientManagedBoxRequest]
-  implicit val subscribersRequestFormatter: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
-  implicit val updateSubscribersRequestFormatter: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
-  implicit val acknowledgeRequestFormatter: OFormat[AcknowledgeNotificationsRequest] = Json.format[AcknowledgeNotificationsRequest]
-  implicit val addCallbackUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
-  implicit val updateManagedCallbackUrlRequestFormatter: OFormat[UpdateManagedCallbackUrlRequest] = Json.format[UpdateManagedCallbackUrlRequest]
-  implicit val validateBoxOwnershipRequestFormatter: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
-  implicit val wrappedNotificationFormatter: OFormat[WrappedNotification] = Json.format[WrappedNotification]
-  implicit val wrappedNotificationRequestFormatter: OFormat[WrappedNotificationRequest] = Json.format[WrappedNotificationRequest]
-}
-
-object ConnectorFormatters {
-  implicit val forwardedHeadersFormatter: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
-  implicit val updateCallBAckUrlRequestFormatter: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
-  implicit val applicationResponseFormatter: OFormat[ApplicationResponse] = Json.format[ApplicationResponse]
-
-  implicit val outboundNotificationFormatter: OFormat[OutboundNotification] = Json.format[OutboundNotification]
-  implicit val outboundConfirmationFormatter: OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
 }

@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -33,9 +32,9 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
   private val mockRepo = mock[ConfirmationRepository]
   private val mockConnector = mock[ConfirmationConnector]
   val serviceToTest = new ConfirmationService(mockRepo, mockConnector)
-  val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
+  val confirmationId: ConfirmationId = ConfirmationId.random
   val url = "https://test"
-  val notificationId: NotificationId = NotificationId(UUID.randomUUID())
+  val notificationId: NotificationId = NotificationId.random
 
   override def beforeEach(): Unit = {
     super.beforeEach()

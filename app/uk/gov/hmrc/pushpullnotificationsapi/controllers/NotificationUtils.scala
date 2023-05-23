@@ -25,7 +25,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateSuccessResult
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateFailedBoxIdNotFoundResult
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateFailedDuplicateResult
-import java.util.UUID
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import play.api.libs.json.JsValue
 import scala.xml.NodeSeq
@@ -54,7 +53,7 @@ trait NotificationUtils {
   }
 
   protected def processNotification(boxId: BoxId, contentType: MessageContentType, message: String)(fn: (NotificationId) => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    val notificationId = NotificationId(UUID.randomUUID())
+    val notificationId = NotificationId.random
 
     notificationsService.saveNotification(boxId, notificationId, contentType, message) flatMap {
       case _: NotificationCreateSuccessResult             => fn(notificationId)    

@@ -23,21 +23,37 @@ import play.api.libs.json.{JsObject, Json}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 
-case class CreateBoxResponse(boxId: String)
+case class CreateBoxResponse(boxId: BoxId)
+
+object CreateBoxResponse {
+  implicit val format = Json.format[CreateBoxResponse]
+}
 
 case class CreateNotificationResponse(notificationId: NotificationId)
 
 object CreateNotificationResponse {
-
   implicit val format = Json.format[CreateNotificationResponse]
 }
 
-case class CreateWrappedNotificationResponse(notificationId: String, confirmationId: String)
+case class CreateWrappedNotificationResponse(notificationId: NotificationId, confirmationId: ConfirmationId)
+
+object CreateWrappedNotificationResponse {
+  implicit val format = Json.format[CreateWrappedNotificationResponse]
+}
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 
+object UpdateCallbackUrlResponse {
+  implicit val format = Json.format[UpdateCallbackUrlResponse]
+}
+
 case class ValidateBoxOwnershipResponse(valid: Boolean)
+
+object ValidateBoxOwnershipResponse {
+  implicit val format = Json.format[ValidateBoxOwnershipResponse]
+}
 
 case class NotificationResponse(
     notificationId: NotificationId,
@@ -49,10 +65,13 @@ case class NotificationResponse(
     readDateTime: Option[Instant] = None,
     pushedDateTime: Option[Instant] = None)
 
-object NotificationResponse {
-  import InstantFormatter.Implicits._
 
-  implicit val format = Json.format[NotificationResponse]
+import play.api.libs.json._
+
+object NotificationResponse {
+  import InstantFormatter.WithTimeZone._
+  
+  implicit val nfFormat = Json.format[NotificationResponse]
 
   def fromNotification(notification: Notification): NotificationResponse = {
 

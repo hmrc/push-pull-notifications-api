@@ -11,17 +11,20 @@ import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{ACCEPT, AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, NO_CONTENT, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, Client, CreateNotificationResponse}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
+
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 import java.time.Instant
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
+import uk.gov.hmrc.pushpullnotificationsapi.models.AcknowledgeNotificationsRequest
+import uk.gov.hmrc.pushpullnotificationsapi.models.CreateNotificationResponse
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -41,8 +44,8 @@ class NotificationsControllerISpec
   override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
-  val clientId = "someClientId"
-  val createBoxJsonBody = raw"""{"clientId": "$clientId", "boxName": "$boxName"}"""
+  val clientId = ClientId.random
+  val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
   val expectedApplicationId: UUID = UUID.randomUUID()
   val tpaResponse: String = raw"""{"id":  "${expectedApplicationId.toString}", "clientId": "$clientId"}"""
@@ -128,7 +131,7 @@ class NotificationsControllerISpec
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
     val notifications: mutable.MutableList[String] = mutable.MutableList[String]()
     for (_ <- 0 until numberToCreate) {
-      val result = doPost(s"$url/box/${boxId.raw}/notifications", "{}", validHeadersJson)
+      val result = doPost(s"$url/box/${boxId.value.toString}/notifications", "{}", validHeadersJson)
       result.status shouldBe CREATED
       notifications += result.body
     }
@@ -141,21 +144,21 @@ class NotificationsControllerISpec
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
         primeGatewayServiceWithBody(Status.OK)
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersJson)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
 
       "respond with 201 when notification created for valid xml and xml content type with no subscribers" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
@@ -163,7 +166,7 @@ class NotificationsControllerISpec
       "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
         primeGatewayServiceWithBody(Status.BAD_REQUEST)
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
@@ -171,7 +174,7 @@ class NotificationsControllerISpec
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
         primeGatewayServiceWithBody(Status.INTERNAL_SERVER_ERROR)
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersXml)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
@@ -184,31 +187,31 @@ class NotificationsControllerISpec
 
       "respond with 403 when no useragent sent in request" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain"))
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", List("ContentType" -> "text/plain"))
         result.status shouldBe FORBIDDEN
       }
 
       "respond with 403 when non allowlisted user agent sent in request" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-allowlisted-agent"))
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "non-allowlisted-agent"))
         result.status shouldBe FORBIDDEN
       }
 
       "respond with 400 when for valid xml and but json content type" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "<somNode/>", validHeadersJson)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersJson)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 400 when for valid json and but xml content type" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", validHeadersXml)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", validHeadersXml)
         result.status shouldBe BAD_REQUEST
       }
 
       "respond with 415 when unknown content type sent in request" in {
         val box = createBoxAndReturn()
-        val result = doPost(s"$url/box/${box.boxId.raw}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "api-subscription-fields"))
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", List("ContentType" -> "text/plain", "User-Agent" -> "api-subscription-fields"))
         result.status shouldBe UNSUPPORTED_MEDIA_TYPE
       }
 
@@ -225,7 +228,7 @@ class NotificationsControllerISpec
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.value.toString}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe OK
       }
 
@@ -248,10 +251,11 @@ class NotificationsControllerISpec
       }
 
       "respond with 401 on create when clientId returned from auth does not match" in {
-        primeAuthServiceSuccess("UnknownClientId", "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+        val unknownClientId = ClientId.random
+        primeAuthServiceSuccess(unknownClientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications?status=PENDING", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.value.toString}/notifications?status=PENDING", validHeadersJson)
         result.status shouldBe FORBIDDEN
       }
 
@@ -259,7 +263,7 @@ class NotificationsControllerISpec
         primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.value.toString}/notifications", validHeadersJson)
         result.status shouldBe UNAUTHORIZED
       }
 
@@ -267,7 +271,7 @@ class NotificationsControllerISpec
         primeAuthServiceFail()
         val box = createBoxAndReturn()
         createNotifications(box.boxId, 4)
-        val result: WSResponse = doGet(s"$url/box/${box.boxId.raw}/notifications", validHeadersJson)
+        val result: WSResponse = doGet(s"$url/box/${box.boxId.value.toString}/notifications", validHeadersJson)
         result.status shouldBe UNAUTHORIZED
       }
     }
@@ -280,7 +284,7 @@ class NotificationsControllerISpec
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[NotificationId] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
-        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NO_CONTENT
       }
 
@@ -290,19 +294,19 @@ class NotificationsControllerISpec
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[NotificationId] = NotificationId.random :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
-        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NO_CONTENT
       }
-
-      // "return 400 when invalid UUID is included" in { // THIS cant happen anymore
-      //   primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-      //   val box = createBoxAndReturn()
-      //   val notifications = createNotifications(box.boxId, 4)
-      //   val notificationIdList: List[NotificationId] = NotificationId.random :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
-
-      //   val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-      //   result.status shouldBe BAD_REQUEST
-      // }
+//TODO cant send bad UUID in model anymore need to check JSON instead
+//      "return 400 when invalid UUID is included" in {
+//        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
+//        val box = createBoxAndReturn()
+//        val notifications = createNotifications(box.boxId, 4)
+//        val notificationIdList: List[NotificationId] = "fooBar" :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
+//
+//        val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+//        result.status shouldBe BAD_REQUEST
+//      }
 
       "return 401 when no client id in auth response" in {
         primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
@@ -310,7 +314,7 @@ class NotificationsControllerISpec
         val notifications = createNotifications(box.boxId, 4)
         val notificationIdList: List[NotificationId] = notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
 
-        val result: WSResponse = doPut(s"$url/box/${box.boxId.raw}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
+        val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe UNAUTHORIZED
         result.body shouldBe "{\"code\":\"UNAUTHORISED\",\"message\":\"Unable to retrieve ClientId\"}"
       }

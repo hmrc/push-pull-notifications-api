@@ -23,22 +23,21 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException}
 
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, PlayHmrcMongoFormatters}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
+import com.mongodb.MongoWriteException
 
 @Singleton
 class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent)(implicit ec: ExecutionContext)
@@ -73,25 +72,6 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
       replaceIndexes = true
     )
     with MongoJavatimeFormats.Implicits {
-
-  override lazy val collection: MongoCollection[ConfirmationRequest] =
-    CollectionFactory
-      .collection(mongoComponent.database, collectionName, domainFormat)
-      .withCodecRegistry(
-        fromRegistries(
-          fromCodecs(
-            Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.confirmationRequestFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.confirmationIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter)
-          ),
-          MongoClient.DEFAULT_CODEC_REGISTRY
-        )
-      )
 
   def saveConfirmationRequest(confirmation: ConfirmationRequest)(implicit ec: ExecutionContext): Future[Option[ConfirmationId]] = {
     collection.insertOne(confirmation)

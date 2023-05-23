@@ -22,7 +22,7 @@ lazy val scoverageSettings = {
     ScoverageKeys.coverageMinimumStmtTotal := 95.1,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    parallelExecution in Test := false
+    Test /parallelExecution := false
   )
 }
 
@@ -59,11 +59,12 @@ lazy val root = (project in file("."))
   .settings(
     routesImport ++= Seq(
       "uk.gov.hmrc.pushpullnotificationsapi.models._",
-      "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._"
+      "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._",
+      "uk.gov.hmrc.apiplatform.modules.applications.domain.models._"
     )
   )
   .settings(
-    scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification")
+    scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification", "-Ywarn-unused")
   )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {

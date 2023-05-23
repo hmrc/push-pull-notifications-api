@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import scala.util.matching.Regex
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecret
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
 
 class ClientSecretGeneratorSpec extends AsyncHmrcSpec {
 
@@ -29,7 +29,7 @@ class ClientSecretGeneratorSpec extends AsyncHmrcSpec {
 
   "generate" should {
     "generate a 32 character secret" in new Setup {
-      val secret: ClientSecret = underTest.generate
+      val secret: ClientSecretValue = underTest.generate
 
       secret.value should have size 32
     }
@@ -37,14 +37,14 @@ class ClientSecretGeneratorSpec extends AsyncHmrcSpec {
     "use alphanumeric characters from base-32" in new Setup {
       val hexPattern: Regex = "^[2-7A-Z]+$".r
 
-      val secret: ClientSecret = underTest.generate
+      val secret: ClientSecretValue = underTest.generate
 
       hexPattern.pattern.matcher(secret.value).matches shouldBe true
     }
 
     "generate different values each time it is called" in new Setup {
-      val firstSecret: ClientSecret = underTest.generate
-      val secondSecret: ClientSecret = underTest.generate
+      val firstSecret: ClientSecretValue = underTest.generate
+      val secondSecret: ClientSecretValue = underTest.generate
 
       firstSecret should not be secondSecret
     }

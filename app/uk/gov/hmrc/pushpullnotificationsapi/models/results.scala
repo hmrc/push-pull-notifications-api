@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
-
 sealed trait CreateBoxResult
 final case class BoxCreateFailedResult(message: String) extends CreateBoxResult
 sealed trait BoxCreateSuccessResult extends CreateBoxResult
@@ -44,14 +42,10 @@ sealed trait ConfirmationCreateServiceResult
 final case class ConfirmationCreateServiceFailedResult(message: String) extends ConfirmationCreateServiceResult
 final case class ConfirmationCreateServiceSuccessResult() extends ConfirmationCreateServiceResult
 
-sealed trait GetNotificationCreateServiceResult
-
-sealed trait GetNotificationsServiceFailedResult extends GetNotificationCreateServiceResult
-sealed trait GetNotificationsServiceSuccessResult extends GetNotificationCreateServiceResult
+sealed trait GetNotificationsServiceFailedResult
 
 final case class GetNotificationsServiceBoxNotFoundResult(message: String) extends GetNotificationsServiceFailedResult
 final case class GetNotificationsServiceUnauthorisedResult(message: String) extends GetNotificationsServiceFailedResult
-final case class GetNotificationsSuccessRetrievedResult(notifications: List[Notification]) extends GetNotificationsServiceSuccessResult
 
 sealed trait AcknowledgeNotificationsServiceResult
 

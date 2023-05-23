@@ -8,12 +8,12 @@ trait PushGatewayService {
 
   def primeGatewayServiceValidateCallBack(status: Int, successfulResult: Boolean = true, errorMessage: Option[String] = None) = {
     val errorMessageStr = errorMessage.fold("")(value => raw""","errorMessage":"${value}"""")
-    primeGatewayWithBody(gatewayValidateCalllBackUrl, status, successfulResult, raw"""{"successful":${successfulResult}${errorMessageStr} }""")
+    primeGatewayWithBody(gatewayValidateCalllBackUrl, status, raw"""{"successful":${successfulResult}${errorMessageStr} }""")
   }
 
   def primeGatewayServiceWithBody(status: Int, successfulResult: Boolean = true) = {
     val body = raw"""{"successful": ${successfulResult} }"""
-    primeGatewayWithBody(gatewayPostUrl, status, successfulResult, body)
+    primeGatewayWithBody(gatewayPostUrl, status, body)
   }
 
   def primeGatewayServiceValidateNoBody(status: Int) = {
@@ -34,7 +34,7 @@ trait PushGatewayService {
       ))
   }
 
-  private def primeGatewayWithBody(url: String, status: Int, successfulResult: Boolean, body: String) = {
+  private def primeGatewayWithBody(url: String, status: Int, body: String) = {
 
     stubFor(post(urlEqualTo(url))
       .withHeader("Authorization", equalTo("iampushpullapi"))

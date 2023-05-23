@@ -20,6 +20,8 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
@@ -28,7 +30,7 @@ class ClientServiceSpec extends AsyncHmrcSpec {
 
   private val clientIDUUID = UUID.randomUUID().toString
   private val clientId: ClientId = ClientId(clientIDUUID)
-  private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+  private val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   private val client: Client = Client(clientId, Seq(clientSecret))
 
   trait Setup {
@@ -42,7 +44,7 @@ class ClientServiceSpec extends AsyncHmrcSpec {
     "return ClientSecrets from matching client" in new Setup {
       when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
 
-      val clientSecrets: Option[Seq[ClientSecret]] = await(objInTest.getClientSecrets(clientId))
+      val clientSecrets: Option[Seq[ClientSecretValue]] = await(objInTest.getClientSecrets(clientId))
 
       clientSecrets shouldBe Some(client.secrets)
     }
@@ -50,7 +52,7 @@ class ClientServiceSpec extends AsyncHmrcSpec {
     "return none when no client is found" in new Setup {
       when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(None))
 
-      val clientSecrets: Option[Seq[ClientSecret]] = await(objInTest.getClientSecrets(clientId))
+      val clientSecrets: Option[Seq[ClientSecretValue]] = await(objInTest.getClientSecrets(clientId))
 
       clientSecrets shouldBe None
     }

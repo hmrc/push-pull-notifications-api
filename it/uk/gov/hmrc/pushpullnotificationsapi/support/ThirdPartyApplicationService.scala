@@ -1,13 +1,14 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 trait ThirdPartyApplicationService {
   val queryApplicationsUrl = "/application"
 
-  def primeApplicationQueryEndpoint(status: Int, body: String, clientId: String) = {
+  def primeApplicationQueryEndpoint(status: Int, body: String, clientId: ClientId) = {
     stubFor(get(urlPathEqualTo(queryApplicationsUrl))
-      .withQueryParam("clientId", equalTo(clientId))
+      .withQueryParam("clientId", equalTo(clientId.value))
       .willReturn(
         aResponse()
           .withBody(body)

@@ -38,8 +38,8 @@ class ConfirmationRepositoryISpec
         "mongodb.uri" -> mongoUri
       )
 
-  val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
-  val notificationId: NotificationId = NotificationId(UUID.randomUUID())
+  val confirmationId: ConfirmationId = ConfirmationId.random
+  val notificationId: NotificationId = NotificationId.random
 
   val defaultRequest: ConfirmationRequest = ConfirmationRequest(
     confirmationId,
@@ -68,7 +68,7 @@ class ConfirmationRepositoryISpec
 
     "only save 1 confirmation request per notification" in {
       await(repo.saveConfirmationRequest(defaultRequest))
-      val dupe = await(repo.saveConfirmationRequest(defaultRequest.copy(confirmationId = ConfirmationId(UUID.randomUUID()))))
+      val dupe = await(repo.saveConfirmationRequest(defaultRequest.copy(confirmationId = ConfirmationId.random)))
       dupe shouldBe None
       val result = await(find(mongoEqual("notificationId", Codecs.toBson(notificationId))))
       result.length shouldBe 1
@@ -126,8 +126,8 @@ class ConfirmationRepositoryISpec
   "fetchRetryableConfirmations" should {
 
     def createConfirmationInDb(status: NotificationStatus, retryAfterDateTime: Option[Instant] = None) = {
-      val id = ConfirmationId(UUID.randomUUID())
-      val confirmation = ConfirmationRequest(id, "url", NotificationId(UUID.randomUUID()), status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
+      val id = ConfirmationId.random
+      val confirmation = ConfirmationRequest(id, "url", NotificationId.random, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
       val result = await(repo.saveConfirmationRequest(confirmation))
       result shouldBe Some(id)
       confirmation

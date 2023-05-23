@@ -37,7 +37,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
   "Confirmation Connector" should {
     "when it returns 200" in new SetUp() {
 
-      stubFor(post(urlEqualTo("/"))
+      stubFor(post(urlEqualTo("/")).withHeader("Content-Type", equalTo("application/json"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -47,7 +47,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
 
@@ -66,7 +66,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
 

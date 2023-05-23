@@ -37,12 +37,13 @@ import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 
 class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -82,7 +83,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
   val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
 
   val notification: Notification = Notification(
-    NotificationId(UUID.randomUUID()),
+    NotificationId.random,
     boxId,
     messageContentType = MessageContentType.APPLICATION_JSON,
     message = "{}",
@@ -91,7 +92,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
   )
 
   val notification2: Notification = Notification(
-    NotificationId(UUID.randomUUID()),
+    NotificationId.random,
     boxId,
     messageContentType = MessageContentType.APPLICATION_XML,
     message = "<someXml/>",
@@ -112,7 +113,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           Future.successful(NotificationCreateSuccessResult())
         )
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON))
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
@@ -126,7 +127,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           Future.successful(NotificationCreateSuccessResult())
         )
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(escapedComplicatedJson, MimeTypes.JSON))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(escapedComplicatedJson, MimeTypes.JSON))
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
@@ -137,7 +138,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         val overlyLargeJsonBody: String =
           """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
         status(result) should be(REQUEST_ENTITY_TOO_LARGE)
       }
 
@@ -146,7 +147,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
@@ -154,35 +155,35 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
       }
 
       "return 400 when version number isn't 1" in {
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON, "2"))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON, "2"))
         status(result) should be(BAD_REQUEST)
 
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when json content type header is sent but invalid json" in {
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.JSON))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.JSON))
         status(result) should be(BAD_REQUEST)
 
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when xml content type header is sent but invalid xml" in {
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.XML))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.XML))
         status(result) should be(BAD_REQUEST)
 
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 403 when useragent header is not allowlisted" in {
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", headersWithInValidUserAgent, wrappedBody(jsonBody, MimeTypes.JSON))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", headersWithInValidUserAgent, wrappedBody(jsonBody, MimeTypes.JSON))
         status(result) should be(FORBIDDEN)
 
         verifyNoInteractions(mockNotificationService)
       }
 
       "return 415 when bad contentType header is sent" in {
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), wrappedBody(xmlBody, MimeTypes.CSS))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), wrappedBody(xmlBody, MimeTypes.CSS))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockNotificationService)
@@ -193,7 +194,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(INTERNAL_SERVER_ERROR)
         val bodyVal = contentAsString(result)
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
@@ -207,7 +208,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(NOT_FOUND)
 
         verify(mockNotificationService)
@@ -219,7 +220,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
-        val result = doPost(s"/box/${boxId.raw}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)
@@ -235,7 +236,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
   def stringToDateTimeLenient(dateStr: Option[String]): Option[Instant] = {
     Try[Option[Instant]] {
-      dateStr.map(a => lenientFormatter.parse(a, b => Instant.from(b)))
+      dateStr.map(a => InstantFormatter.lenientFormatter.parse(a, b => Instant.from(b)))
     } match {
       case Success(x) => x
       case Failure(_) => None

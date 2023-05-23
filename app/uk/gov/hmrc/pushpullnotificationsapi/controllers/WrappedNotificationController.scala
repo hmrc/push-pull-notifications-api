@@ -16,19 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.Future.successful
 
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import scala.concurrent.Future.successful
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
-import uk.gov.hmrc.pushpullnotificationsapi.models.RequestFormatters.wrappedNotificationRequestFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{ ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
@@ -39,10 +36,7 @@ class WrappedNotificationsController @Inject() (
     appConfig: AppConfig,
     val notificationsService: NotificationsService,
     confirmationService: ConfirmationService,
-    queryParamValidatorAction: ValidateNotificationQueryParamsAction,
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
-    authAction: AuthAction,
-    validateAcceptHeaderAction: ValidateAcceptHeaderAction,
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
   )(implicit val ec: ExecutionContext)
@@ -61,10 +55,10 @@ class WrappedNotificationsController @Inject() (
         val handleNotification = (notificationId: NotificationId) => {
           wrappedNotification.confirmationUrl.fold(successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))){
           confirmationUrl =>     
-            val confirmationId = ConfirmationId(UUID.randomUUID())
+            val confirmationId = ConfirmationId.random
             confirmationService.saveConfirmationRequest(confirmationId, confirmationUrl, notificationId) map {
               case _: ConfirmationCreateServiceSuccessResult =>
-                Created(Json.toJson(CreateWrappedNotificationResponse(notificationId.raw, confirmationId.raw)))
+                Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
               case _: ConfirmationCreateServiceFailedResult  =>
                 InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
             }

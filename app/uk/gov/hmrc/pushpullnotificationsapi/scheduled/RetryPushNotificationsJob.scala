@@ -33,14 +33,13 @@ import uk.gov.hmrc.thirdpartydelegatedauthority.utils.FutureUtils
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 @Singleton
 class RetryPushNotificationsJob @Inject() (
     mongoLockRepository: MongoLockRepository,
     jobConfig: RetryPushNotificationsJobConfig,
-    boxRepository: BoxRepository,
     notificationsRepository: NotificationsRepository,
     notificationPushService: NotificationPushService
   )(implicit mat: Materializer)
@@ -60,9 +59,9 @@ class RetryPushNotificationsJob @Inject() (
       {
         notificationPushService
           .fetchRetryablePushNotifications
-          .flatMap( source =>
+          .flatMap(source =>
             source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
-            .map(_ => RunningOfJobSuccessful)
+              .map(_ => RunningOfJobSuccessful)
           )
           .recoverWith {
             case NonFatal(e) =>

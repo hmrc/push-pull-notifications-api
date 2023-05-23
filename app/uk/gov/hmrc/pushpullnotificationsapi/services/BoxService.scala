@@ -22,6 +22,7 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
@@ -64,10 +65,10 @@ class BoxService @Inject() (
     }
   }
 
-  def getBoxByNameAndClientId(boxName: String, clientId: ClientId)(implicit ec: ExecutionContext): Future[Option[Box]] =
+  def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
 
-  def getBoxesByClientId(clientId: ClientId)(implicit ec: ExecutionContext): Future[List[Box]] =
+  def getBoxesByClientId(clientId: ClientId): Future[List[Box]] =
     repository.getBoxesByClientId(clientId)
 
   def updateCallbackUrl(
@@ -104,8 +105,8 @@ class BoxService @Inject() (
 
   def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.raw} not found"))
-      case Some(box) => if (box.boxCreator.clientId.equals(clientId)) {
+      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
+      case Some(box) => if (box.boxCreator.clientId == clientId) {
           Future.successful(ValidateBoxOwnerSuccessResult())
         } else {
           Future.successful(ValidateBoxOwnerFailedResult("clientId does not match boxCreator"))
@@ -150,10 +151,10 @@ class BoxService @Inject() (
       })
   }
 
-  private def validateAndDeleteBox(box: Box, clientId: ClientId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
-    if (!box.clientManaged || !box.boxCreator.clientId.equals(clientId)) {
+  private def validateAndDeleteBox(box: Box, clientId: ClientId): Future[DeleteBoxResult] = {
+    if (!box.clientManaged || box.boxCreator.clientId != clientId) {
       successful(BoxDeleteAccessDeniedResult())
-    } else if (box.boxCreator.clientId.equals(clientId)) {
+    } else if (box.boxCreator.clientId == clientId) {
       repository.deleteBox(box.boxId)
     } else {
       successful(BoxDeleteNotFoundResult())

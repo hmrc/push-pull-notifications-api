@@ -1,18 +1,18 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{FORBIDDEN, NOT_FOUND, OK}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, Client, ClientId, ClientSecret}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
+import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
+import uk.gov.hmrc.pushpullnotificationsapi.models.Client
 
 class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] {
   this: Suite with ServerProvider =>
@@ -28,8 +28,8 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   override protected def repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
 
-  private val clientId: ClientId = ClientId(UUID.randomUUID().toString)
-  private val clientSecret: ClientSecret = ClientSecret("someRandomSecret")
+  private val clientId: ClientId = ClientId.random
+  private val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   private val client: Client = Client(clientId, Seq(clientSecret))
   private val authToken: String = "authtoken"
 

@@ -23,14 +23,12 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 
 private[repository] object PlayHmrcMongoFormatters {
-  implicit val clientIdFormatter: Format[ClientId] = Json.valueFormat[ClientId]
   implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   implicit val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit val applicationIdFormatter: Format[ApplicationId] = Json.valueFormat[ApplicationId]
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val pullSubscriberFormats: OFormat[PullSubscriber] = Json.format[PullSubscriber]
   implicit val pushSubscriberFormats: OFormat[PushSubscriber] = Json.format[PushSubscriber]
@@ -41,9 +39,6 @@ private[repository] object PlayHmrcMongoFormatters {
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
     .format
   implicit val notificationIdFormatter: Format[NotificationId] = Json.valueFormat[NotificationId]
-  implicit val notificationPendingStatusFormatter: OFormat[NotificationStatus.PENDING.type] = Json.format[NotificationStatus.PENDING.type]
-  implicit val notificationFailedStatusFormatter: OFormat[NotificationStatus.FAILED.type] = Json.format[NotificationStatus.FAILED.type]
-  implicit val notificationAckStatusFormatter: OFormat[NotificationStatus.ACKNOWLEDGED.type] = Json.format[NotificationStatus.ACKNOWLEDGED.type]
 
   implicit val dbClientSecretFormatter: OFormat[DbClientSecret] = Json.format[DbClientSecret]
   implicit val dbClientFormatter: OFormat[DbClient] = Json.format[DbClient]

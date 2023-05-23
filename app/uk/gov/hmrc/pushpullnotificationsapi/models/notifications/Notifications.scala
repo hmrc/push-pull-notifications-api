@@ -49,13 +49,11 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
   case object FAILED extends NotificationStatus
 }
 
-case class NotificationId(value: UUID) extends AnyVal {
-  def raw: String = value.toString
-}
+case class NotificationId(value: UUID) extends AnyVal
 
 object NotificationId {
-  def random = NotificationId(UUID.randomUUID())
   implicit val format = Json.valueFormat[NotificationId]
+  def random: NotificationId = NotificationId.random
 }
 
 case class Notification(
@@ -71,8 +69,6 @@ case class Notification(
 
 object Notification {
   implicit val dateFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
-  implicit val formatBoxID: OFormat[BoxId] = Json.format[BoxId]
-  implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
@@ -86,25 +82,22 @@ object ConfirmationStatus extends Enum[ConfirmationStatus] with PlayJsonEnum[Con
   case object FAILED extends ConfirmationStatus
 }
 
-// case class WrappedNotification(
-//     confirmationId: ConfirmationId,
-//     confirmationUrl: String,
-//     notificationId: NotificationId,
-//     status: ConfirmationStatus = ConfirmationStatus.PENDING,
-//     createdDateTime: Instant = Instant.now,
-//     pushedDateTime: Option[Instant] = None,
-//     retryAfterDateTime: Option[Instant] = None)
-
-// object WrappedNotification {
-//   implicit val formatConfirmationId: OFormat[ConfirmationId] = Json.format[ConfirmationId]
-//   implicit val formatNotificationID: OFormat[NotificationId] = Json.format[NotificationId]
-//   implicit val format: OFormat[WrappedNotification] = Json.format[WrappedNotification]
-// }
-
 case class ForwardedHeader(key: String, value: String)
+
+object ForwardedHeader {
+  implicit val format = Json.format[ForwardedHeader]
+}
 
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
 
+object OutboundNotification {
+  implicit val format = Json.format[OutboundNotification]
+}
+
 case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: ConfirmationStatus, dateTime: Option[Instant])
+
+object OutboundConfirmation {
+  implicit val format = Json.format[OutboundConfirmation]
+}
 
 case class RetryableNotification(notification: Notification, box: Box)

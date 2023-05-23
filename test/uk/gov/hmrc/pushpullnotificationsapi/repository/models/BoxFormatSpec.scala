@@ -20,6 +20,7 @@ import java.time.Instant
 import java.util.UUID
 
 import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 
 import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -71,7 +72,7 @@ class BoxFormatSpec extends HmrcSpec {
 
       "correctly assign the applicationId value" in {
         box.applicationId shouldBe Some(
-          ApplicationId("71ef5626-2f75-429c-b8b3-23bbdf5f0084")
+          ApplicationId(UUID.fromString("71ef5626-2f75-429c-b8b3-23bbdf5f0084"))
         )
       }
 
@@ -203,7 +204,7 @@ class BoxFormatSpec extends HmrcSpec {
           BoxId(UUID.fromString("ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8")),
           "boxName",
           BoxCreator(ClientId("someClientId")),
-          Some(ApplicationId("1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8")),
+          Some(ApplicationId(UUID.fromString("c11aafb0-eb89-4827-b0fa-c5e9eee82c18"))),
           Some(
             PullSubscriber("callback", Instant.parse("2010-06-29T23:20:00Z"))
           ),
@@ -215,7 +216,7 @@ class BoxFormatSpec extends HmrcSpec {
             | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
             | "boxName":"boxName",
             | "boxCreator":{"clientId":"someClientId"},
-            | "applicationId":"1ld6sj4k-1a2b-3c4d-5e6f-1e651bbb49a8",
+            | "applicationId":"c11aafb0-eb89-4827-b0fa-c5e9eee82c18",
             | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":{"$numberLong":"1277853600000"}},"subscriptionType":"API_PULL_SUBSCRIBER"},
             | "clientManaged":true
             |}""".stripMargin

@@ -27,7 +27,9 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.services.{NotificationsService}
 import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -37,7 +39,6 @@ import play.api.libs.json.JsValue
 class NotificationsController @Inject() (
     appConfig: AppConfig,
     val notificationsService: NotificationsService,
-    confirmationService: ConfirmationService,
     queryParamValidatorAction: ValidateNotificationQueryParamsAction,
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
     authAction: AuthAction,
@@ -77,11 +78,9 @@ class NotificationsController @Inject() (
       queryParamValidatorAction)
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
-          case results: GetNotificationsSuccessRetrievedResult => Ok(Json.toJson(results.notifications.map(fromNotification)))
-          case _: GetNotificationsServiceBoxNotFoundResult     =>
-            NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: GetNotificationsServiceUnauthorisedResult    =>
-            Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          case Right(results: List[Notification])                 => Ok(Json.toJson(results.map(fromNotification)))
+          case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+          case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
   }
 
@@ -103,7 +102,7 @@ class NotificationsController @Inject() (
           else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
-      }(actualBody, manifest, RequestFormatters.acknowledgeRequestFormatter)
+      }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
     }
 
 

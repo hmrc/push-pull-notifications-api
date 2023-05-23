@@ -23,32 +23,29 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromRegistries}
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import org.bson.conversions.Bson
-import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.model.Aggregates.`match`
+import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoWriteException, ReadPreference}
-import org.mongodb.scala.model.Aggregates.`match`
-import org.mongodb.scala.model.Filters.{equal, _}
+import org.mongodb.scala.{MongoWriteException, ReadPreference}
 
 import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-import uk.gov.hmrc.mongo.play.json.{Codecs, CollectionFactory, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{BoxFormat, DbNotification, PlayHmrcMongoFormatters}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
-import akka.stream.scaladsl.Source
-import akka.NotUsed
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 
 @Singleton
 class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
@@ -93,36 +90,6 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
-  override lazy val collection: MongoCollection[DbNotification] =
-    CollectionFactory
-      .collection(mongoComponent.database, collectionName, domainFormat)
-      .withCodecRegistry(
-        fromRegistries(
-          fromCodecs(
-            Codecs.playFormatCodec(domainFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.instantFormat),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatBoxCreator),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.boxIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.clientIdFormatter),
-            Codecs.playFormatCodec(BoxFormat.boxFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbRetryableNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.retryableNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientSecretFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbClientFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.dbNotificationFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationPendingStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationFailedStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.notificationAckStatusFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.formatSubscriber),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.applicationIdFormatter),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pushSubscriberFormats),
-            Codecs.playFormatCodec(PlayHmrcMongoFormatters.pullSubscriberFormats)
-          ),
-          MongoClient.DEFAULT_CODEC_REGISTRY
-        )
-      )
-
   override def ensureIndexes: Future[Seq[String]] = {
     super.ensureIndexes
   }
@@ -161,7 +128,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
   }
 
   private def notificationIdsQuery(notificationIds: List[NotificationId]): Bson = {
-    in("notificationId", notificationIds.map(_.raw): _*)
+    in("notificationId", (notificationIds.map(Codecs.toBson(_))): _*)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {

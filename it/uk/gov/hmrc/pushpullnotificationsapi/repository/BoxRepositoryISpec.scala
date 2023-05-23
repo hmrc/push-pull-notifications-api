@@ -11,18 +11,23 @@ import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositoryS
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
-import java.time.{Instant}
+
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
+
 import java.time.temporal.ChronoUnit
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
+
 import java.time.Duration
 import akka.stream.scaladsl.Sink
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxRepositoryISpec
     extends AsyncHmrcSpec
@@ -55,8 +60,7 @@ class BoxRepositoryISpec
     await(repo.ensureIndexes)
   }
 
-  val clientIdStr: String = "someCLientId"
-  val clientId: ClientId = ClientId(clientIdStr)
+  val clientId: ClientId = ClientId.random
   val boxName: String = "boxName"
   final val boxId: BoxId = BoxId.random
   val callBackEndpoint = "some/endpoint"
@@ -65,7 +69,7 @@ class BoxRepositoryISpec
   def createNotificationInDB(
       status: NotificationStatus = PENDING,
       createdDateTime: Instant = Instant.now,
-      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+      notificationId: NotificationId = NotificationId.random,
       retryAfterDateTime: Option[Instant] = None,
       boxId: BoxId = boxId
     ): Notification = {
@@ -100,7 +104,7 @@ class BoxRepositoryISpec
     "create a Box should allow boxes for same clientId but different BoxNames" in {
       val result = await(repo.createBox(box)).asInstanceOf[BoxCreatedResult]
       result.box.boxId shouldBe boxId
-      val newBoxId = BoxId(UUID.randomUUID())
+      val newBoxId = BoxId.random
       val newbox = box.copy(newBoxId, boxName = "someNewName")
       val result2 = await(repo.createBox(newbox)).asInstanceOf[BoxCreatedResult]
       result2.box shouldBe newbox
@@ -111,7 +115,7 @@ class BoxRepositoryISpec
     "create a Box should allow a box for different clientId but same BoxNames" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      val newBoxId = BoxId(UUID.randomUUID())
+      val newBoxId = BoxId.random
       val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))
       val result2: Unit = await(repo.createBox(newBox))
       result2 shouldBe ((): Unit)
@@ -122,7 +126,7 @@ class BoxRepositoryISpec
     "create a Box should return BoxCreateFailedResult and only create a box once when box with same name and client id called twice" in {
       await(repo.createBox(box))
 
-      val result2 = await(repo.createBox(Box(BoxId(UUID.randomUUID()), boxName, BoxCreator(clientId))))
+      val result2 = await(repo.createBox(Box(BoxId.random, boxName, BoxCreator(clientId))))
       result2.isInstanceOf[BoxCreateFailedResult] shouldBe true
       val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
@@ -157,7 +161,7 @@ class BoxRepositoryISpec
       val fetchedRecordsOne = await(repo.collection.find().toFuture())
       fetchedRecordsOne.size shouldBe 1
 
-      await(repo.deleteBox(BoxId(UUID.randomUUID())))
+      await(repo.deleteBox(BoxId.random))
       val fetchedRecords = await(repo.collection.find().toFuture())
       fetchedRecords.size shouldBe 1
     }
@@ -195,7 +199,7 @@ class BoxRepositoryISpec
 
   "getBoxesByClientId" should {
 
-    val aBoxWithADifferentClientId = Box(boxName = "Another box", boxId = BoxId(UUID.randomUUID()), boxCreator = BoxCreator(ClientId("Another client")))
+    val aBoxWithADifferentClientId = Box(boxName = "Another box", boxId = BoxId.random, boxCreator = BoxCreator(ClientId("Another client")))
 
     "return an empty list when no boxes match" in {
       await(repo.createBox(aBoxWithADifferentClientId))
@@ -206,7 +210,7 @@ class BoxRepositoryISpec
     }
 
     "return only the boxes that match the clientID" in {
-      val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
+      val anotherBox = box.copy(BoxId.random, boxName = "someNewName")
       await(repo.createBox(box))
       await(repo.createBox(anotherBox))
       await(repo.createBox(aBoxWithADifferentClientId))
@@ -220,7 +224,7 @@ class BoxRepositoryISpec
   }
 
   "get all boxes" in {
-    val anotherBox = box.copy(BoxId(UUID.randomUUID()), boxName = "someNewName")
+    val anotherBox = box.copy(BoxId.random, boxName = "someNewName")
 
     await(repo.createBox(box))
     await(repo.createBox(anotherBox))
@@ -252,7 +256,7 @@ class BoxRepositoryISpec
     }
 
     "return None when the box doesn't exist" in {
-      val updated = await(repo.updateSubscriber(BoxId(UUID.randomUUID()), new SubscriberContainer(PushSubscriber(callBackEndpoint))))
+      val updated = await(repo.updateSubscriber(BoxId.random, new SubscriberContainer(PushSubscriber(callBackEndpoint))))
       updated shouldBe None
     }
   }
@@ -267,7 +271,7 @@ class BoxRepositoryISpec
       val createdBox = fetchedRecords.head
       createdBox.applicationId.isDefined shouldBe false
 
-      val appId = ApplicationId("12345")
+      val appId = ApplicationId.random
 
       val updatedBox = await(repo.updateApplicationId(createdBox.boxId, appId))
       updatedBox.applicationId shouldBe Some(appId)
@@ -275,7 +279,7 @@ class BoxRepositoryISpec
 
     "return None when the box doesn't exist" in {
       intercept[RuntimeException] {
-        await(repo.updateApplicationId(BoxId(UUID.randomUUID()), ApplicationId("123")))
+        await(repo.updateApplicationId(BoxId.random, ApplicationId.random))
       }
     }
   }
@@ -292,7 +296,7 @@ class BoxRepositoryISpec
     "return empty list when box does not exist" in {
       await(repo.createBox(box))
 
-      val result = await(repo.findByBoxId(BoxId(UUID.randomUUID())))
+      val result = await(repo.findByBoxId(BoxId.random))
 
       result shouldBe None
     }
