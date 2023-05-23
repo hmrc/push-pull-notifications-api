@@ -53,11 +53,11 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     when(mockNotificationsRepo.numberOfNotificationsToReturn).thenReturn(100)
 
     def primeNotificationRepoSave(result: Future[Option[NotificationId]]) = {
-      when(mockNotificationsRepo.saveNotification(*)(*)).thenReturn(result)
+      when(mockNotificationsRepo.saveNotification(*)).thenReturn(result)
     }
 
     def primeNotificationRepoGetNotifications(result: Future[List[Notification]]) = {
-      when(mockNotificationsRepo.getByBoxIdAndFilters(eqTo(boxId), *, *, *, *)(*)).thenReturn(result)
+      when(mockNotificationsRepo.getByBoxIdAndFilters(eqTo(boxId), *, *, *, *)).thenReturn(result)
     }
 
     def primeBoxRepo(result: Future[Option[Box]], boxId: BoxId) = {
@@ -115,7 +115,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
     }
 
     def validateNotificationSaved(notificationCaptor: Captor[Notification]): Unit = {
-      verify(mockNotificationsRepo).saveNotification(notificationCaptor)(*)
+      verify(mockNotificationsRepo).saveNotification(notificationCaptor)
       notificationCaptor.value.boxId shouldBe boxId
       notificationCaptor.value.messageContentType shouldBe messageContentTypeJson
       notificationCaptor.value.message shouldBe message
@@ -142,7 +142,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
         case _                            => fail()
       }
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(*)
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)
 
     }
 
@@ -156,7 +156,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
       result shouldBe Right(List.empty)
 
-      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)(*)
+      verify(mockNotificationsRepo).getByBoxIdAndFilters(eqTo(boxId), eqTo(status), eqTo(fromDate), eqTo(toDate), anyInt)
     }
 
     "return notfound exception when client id is different from box creator client id" in new Setup {
@@ -181,7 +181,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
     "should call confirmations on all ids after ACKNOWLEDGING notifications" in new Setup {
       primeBoxRepo(Future.successful(Some(BoxObjectWithNoSubscribers)), boxId)
-      when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(Future.successful(true))
+      when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)).thenReturn(Future.successful(true))
 
       private val notificationId: NotificationId = NotificationId.random
       private val notificationId2: NotificationId = NotificationId.random
@@ -211,7 +211,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
       clientId: ClientId = clientId,
       repoResult: Future[Boolean] = Future.successful(false)
     ): Unit = {
-    when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
+    when(mockNotificationsRepo.acknowledgeNotifications(*[BoxId], *)).thenReturn(repoResult)
 
     val result: AcknowledgeNotificationsServiceResult =
       await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(NotificationId.random))))

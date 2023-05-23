@@ -100,7 +100,6 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       fromDateTime: Option[Instant] = None,
       toDateTime: Option[Instant] = None,
       numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn
-    )(implicit ec: ExecutionContext
     ): Future[List[Notification]] = {
 
     val query: Bson =
@@ -135,16 +134,16 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     maybeStatus.fold(Filters.empty())(status => equal("status", Codecs.toBson(status)))
   }
 
-  def getAllByBoxId(boxId: BoxId)(implicit ec: ExecutionContext): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
+  def getAllByBoxId(boxId: BoxId): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
 
-  def saveNotification(notification: Notification)(implicit ec: ExecutionContext): Future[Option[NotificationId]] = {
+  def saveNotification(notification: Notification): Future[Option[NotificationId]] = {
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {
       case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
         Future.successful(None)
     }
   }
 
-  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[NotificationId])(implicit ec: ExecutionContext): Future[Boolean] = {
+  def acknowledgeNotifications(boxId: BoxId, notificationIds: List[NotificationId]): Future[Boolean] = {
     val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
 
     collection

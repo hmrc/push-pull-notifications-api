@@ -73,7 +73,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
     )
     with MongoJavatimeFormats.Implicits {
 
-  def saveConfirmationRequest(confirmation: ConfirmationRequest)(implicit ec: ExecutionContext): Future[Option[ConfirmationId]] = {
+  def saveConfirmationRequest(confirmation: ConfirmationRequest): Future[Option[ConfirmationId]] = {
     collection.insertOne(confirmation)
       .toFuture()
       .map(_ => Some(confirmation.confirmationId)).recoverWith {

@@ -110,7 +110,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
   "NotificationController" when {
     "saveNotification" should {
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
-        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)).thenReturn(
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)).thenReturn(
           Future.successful(NotificationCreateSuccessResult())
         )
 
@@ -118,7 +118,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)
       }
 
       "fail when payload is too large" in {
@@ -131,14 +131,14 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.value.toString}/notifications", validHeadersXml, xmlBody)
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 400 when json content type header is sent but invalid json" in {
@@ -171,7 +171,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 500 when save notification throws Duplicate Notification Exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
 
         val result = doPost(s"/box/${boxId.value.toString}/notifications", validHeadersXml, xmlBody)
@@ -180,31 +180,31 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 404 when save notification throws Box not found Exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
 
         val result = doPost(s"/box/${boxId.value.toString}/notifications", validHeadersXml, xmlBody)
         status(result) should be(NOT_FOUND)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/box/${boxId.value.toString}/notifications", validHeadersXml, xmlBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
     }
 
@@ -221,7 +221,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None),
           eqTo(None)
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List(notification.copy(retryAfterDateTime = Some(Instant.now))))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
@@ -237,7 +237,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None),
           eqTo(None)
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List(notification))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
@@ -264,7 +264,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(None),
           eqTo(None),
           eqTo(None)
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List(notification, notification2))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
@@ -342,7 +342,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
-        )(*))
+        ))
           .thenReturn(Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -360,7 +360,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
-        )(*))
+        ))
           .thenReturn(Future.successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -377,7 +377,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(Some(PENDING)),
           eqTo(stringToDateTimeLenient(Some(fromdatStr))),
           eqTo(stringToDateTimeLenient(Some(toDateStr)))
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List.empty)))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
@@ -421,7 +421,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 200 when acknowledge request is valid " in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.value.toString}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -430,7 +430,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 403 when service returns unauthorised result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.value.toString}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -439,7 +439,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 404 when service returns box not found result" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.value.toString}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -448,7 +448,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 403 when acknowledge request is valid but service return unauthorised" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.value.toString}/notifications/acknowledge", validHeadersJson, validatedAcknowledgeRequest)
@@ -457,7 +457,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
 
       "return 406 when invalid accept header is provided" in {
         primeAuthAction(clientIdStr)
-        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(mockNotificationService.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
         val validatedAcknowledgeRequest = "{\"notificationIds\": [\"2e0cf493-0d3e-4dae-a200-b17e76ff547f\", \"de396b71-55c7-4a24-954a-df6bd4a85795\"]}"
         val result = doPut(s"/box/${boxId.value.toString}/notifications/acknowledge", validHeadersJson - ACCEPT + invalidAcceptHeader, validatedAcknowledgeRequest)
@@ -541,7 +541,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List(notification, notification2))))
       case NOT_FOUND   => ()
       case BAD_REQUEST => ()
@@ -563,7 +563,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
           eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
-        )(*)
+        )
     }
   }
 

@@ -109,7 +109,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
       }
 
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
-        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)).thenReturn(
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)).thenReturn(
           Future.successful(NotificationCreateSuccessResult())
         )
 
@@ -117,13 +117,13 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)
       }
 
       "return 201 when valid complicated json, json content type header are provided and notification successfully saved" in {
         val complicatedJson = "{\"foo\":\"bar\"}"
         val escapedComplicatedJson = "{\\\"foo\\\":\\\"bar\\\"}"
-        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*, *)).thenReturn(
+        when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*)).thenReturn(
           Future.successful(NotificationCreateSuccessResult())
         )
 
@@ -131,7 +131,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(complicatedJson))(*)
       }
 
       "return 413 when payload is too large" in {
@@ -144,14 +144,14 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
       "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateSuccessResult()))
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(CREATED)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 400 when version number isn't 1" in {
@@ -191,7 +191,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
       "return 500 when save notification throws Duplicate Notification Exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateFailedDuplicateResult("error")))
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
@@ -200,31 +200,31 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 404 when save notification throws Box not found Exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(NOT_FOUND)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {
         when(mockNotificationService
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
           .thenReturn(Future.failed(new RuntimeException("some Exception")))
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(INTERNAL_SERVER_ERROR)
 
         verify(mockNotificationService)
-          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
       }
     }
   }

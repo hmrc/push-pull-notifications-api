@@ -79,14 +79,14 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*))
           .thenReturn(Future.successful(ApplicationResponse(applicationId)))
-        when(mockRepository.createBox(*)(*)).thenReturn(Future.successful(BoxCreatedResult(box)))
+        when(mockRepository.createBox(*)).thenReturn(Future.successful(BoxCreatedResult(box)))
         when(mockClientService.findOrCreateClient(eqTo(clientId))).thenReturn(Future.successful(client))
 
         val result: CreateBoxResult = await(objInTest.createBox(clientId, boxName))
 
         result.isInstanceOf[BoxCreatedResult] shouldBe true
 
-        verify(mockRepository, times(1)).createBox(argumentCaptor)(*)
+        verify(mockRepository, times(1)).createBox(argumentCaptor)
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockClientService, times(1)).findOrCreateClient(eqTo(clientId))
 
@@ -102,7 +102,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
         result.isInstanceOf[BoxRetrievedResult] shouldBe true
 
-        verify(mockRepository, times(0)).createBox(argumentCaptor)(*)
+        verify(mockRepository, times(0)).createBox(argumentCaptor)
         verify(mockThirdPartyApplicationConnector, times(0)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockClientService, times(0)).findOrCreateClient(eqTo(clientId))
 
@@ -110,7 +110,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
       "return BoxCreateFailedResult when attempt to get applicationId fails during box creation" in new Setup {
         when(mockRepository.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(Future.successful(None))
-        when(mockRepository.createBox(*)(*)).thenReturn(Future.successful(BoxCreatedResult(box)))
+        when(mockRepository.createBox(*) ).thenReturn(Future.successful(BoxCreatedResult(box)))
 
         when(mockClientService.findOrCreateClient(clientId)).thenReturn(Future.successful(client))
         when(mockThirdPartyApplicationConnector.getApplicationDetails(eqTo(clientId))(*)).thenReturn(Future.failed(new RuntimeException("")))
@@ -119,7 +119,7 @@ class BoxServiceSpec extends AsyncHmrcSpec {
         result.isInstanceOf[BoxCreateFailedResult] shouldBe true
 
         verify(mockRepository, times(1)).getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))
-        verify(mockRepository, times(0)).createBox(argumentCaptor)(*)
+        verify(mockRepository, times(0)).createBox(argumentCaptor) 
         verify(mockThirdPartyApplicationConnector, times(1)).getApplicationDetails(eqTo(clientId))(*)
         verify(mockClientService, times(1)).findOrCreateClient(eqTo(clientId))
       }
@@ -157,13 +157,13 @@ class BoxServiceSpec extends AsyncHmrcSpec {
 
     "getAllBoxes" in new Setup {
       val boxes: List[Box] = List()
-      when(mockRepository.getAllBoxes()(*)).thenReturn(Future.successful(boxes))
+      when(mockRepository.getAllBoxes()).thenReturn(Future.successful(boxes))
 
       val result = await(objInTest.getAllBoxes())
 
       result should be theSameInstanceAs boxes
 
-      verify(mockRepository, times(1)).getAllBoxes()(*)
+      verify(mockRepository, times(1)).getAllBoxes() 
     }
 
     "updateCallbackUrl" should {

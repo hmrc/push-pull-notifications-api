@@ -101,31 +101,31 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
     "createBox" should {
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*)
       }
 
       "return 200 and boxId when box already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxRetrievedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(OK)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, "{\"someOtherJson\":\"value\"}")
         status(result) should be(BAD_REQUEST)
@@ -137,7 +137,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 400 when request payload is missing boxName" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/box", validHeadersWithValidUserAgent, emptyJsonBody(boxNameVal = ""))
         status(result) should be(BAD_REQUEST)
@@ -149,7 +149,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 415 when content type header is invalid" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/box", validHeadersWithInValidContentType, jsonBody)
@@ -160,7 +160,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 415 when content type header is empty" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/box", validHeadersWithEmptyContentType, jsonBody)
@@ -171,12 +171,12 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 422 when Left returned from Box Service" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreateFailedResult(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*)
       }
 
       "return 400 when useragent config is empty" in {
@@ -205,12 +205,12 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 500 when service fails with any runtime exception" in {
         setUpAppConfig(List("api-subscription-fields"))
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doPut("/box", validHeadersWithValidUserAgent, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*)
       }
 
       "return 400 when non JSon payload sent" in {
@@ -241,33 +241,33 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 201 and boxId when box successfully created" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*)
       }
 
       "return 200 and boxId when box already exists" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxRetrievedResult(box)))
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(OK)
         val expectedBodyStr = s"""{"boxId":"${boxId.value}"}"""
         contentAsJson(result) should be(Json.parse(expectedBodyStr))
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/cmb/box", validHeadersJson, "{\"someOtherJson\":\"value\"}")
         status(result) should be(BAD_REQUEST)
@@ -280,7 +280,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 400 when request payload is missing boxName" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
         val result = doPut("/cmb/box", validHeadersJson, s"""{"boxName":""}""")
         status(result) should be(BAD_REQUEST)
@@ -293,7 +293,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 406 when accept header is invalid" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/cmb/box", validHeadersWithInvalidAcceptHeader, jsonBody)
@@ -305,7 +305,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 415 when content type header is invalid" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/cmb/box", validHeadersWithInValidContentType, jsonBody)
@@ -317,7 +317,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 415 when content type header is empty" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreatedResult(box)))
 
         val result = doPut("/cmb/box", validHeadersWithEmptyContentType, jsonBody)
@@ -329,23 +329,23 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 422 when Left returned from Box Service" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.successful(BoxCreateFailedResult(s"Box with name :$boxName already exists for clientId: $clientId but unable to retrieve")))
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*)
       }
 
       "return 500 when service fails with any runtime exception" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.createBox(*[ClientId], *, *)(*, *))
+        when(mockBoxService.createBox(*[ClientId], *, *)(*))
           .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doPut("/cmb/box", validHeadersJson, jsonBody)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*, *)
+        verify(mockBoxService).createBox(eqTo(clientId), eqTo(boxName), eqTo(true))(*)
       }
 
       "return 400 when non JSon payload sent" in {
@@ -378,7 +378,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 201 and boxId when box successfully deleted" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteSuccessfulResult()))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(NO_CONTENT)
@@ -387,7 +387,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 404(NOT FOUND) when attempting to delete a box with an ID that does not exist" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteNotFoundResult()))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(NOT_FOUND)
@@ -396,7 +396,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 403(FORBIDDEN) when Attempt to delete a box which for a different client ID" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(FORBIDDEN)
@@ -405,7 +405,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 403(FORBIDDEN) Attempt to delete a default box should not be allowed" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader)
         status(result) should be(FORBIDDEN)
@@ -414,7 +414,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 406 when a Incorrect Accept Header Version" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteAccessDeniedResult()))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithInvalidAcceptHeader.toList)
         status(result) should be(NOT_ACCEPTABLE)
@@ -425,23 +425,23 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       "return 422 when Left returned from Box Service" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.successful(BoxDeleteFailedResult(s"Box with name :$boxName and clientId: $clientId but unable to delete")))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader.toList)
         status(result) should be(UNPROCESSABLE_ENTITY)
 
-        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)
+        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))
       }
 
       "return 500 when service fails with any runtime exception" in {
         primeAuthAction(clientIdStr)
 
-        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId))(*))
+        when(mockBoxService.deleteBox(eqTo(clientId), eqTo(boxId)))
           .thenReturn(Future.failed(new RuntimeException("some error")))
         val result = doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader.toList)
         status(result) should be(INTERNAL_SERVER_ERROR)
 
-        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))(*)
+        verify(mockBoxService).deleteBox(eqTo(clientId), eqTo(boxId))
       }
     }
 
@@ -464,7 +464,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
       "return 200 and all boxes when no parameters provided" in {
         val expectedBoxes = List(Box(boxId = BoxId(UUID.randomUUID()), boxName = boxName, BoxCreator(clientId)))
-        when(mockBoxService.getAllBoxes()(*))
+        when(mockBoxService.getAllBoxes())
           .thenReturn(Future.successful(expectedBoxes))
 
         val result = doGet(s"/box", validHeaders)
@@ -476,7 +476,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
 
         actualBoxes shouldBe expectedBoxes
 
-        verify(mockBoxService).getAllBoxes()(*)
+        verify(mockBoxService).getAllBoxes()
       }
 
       "return 400 when boxName is missing" in {
@@ -834,7 +834,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       def validateBody(boxId: String, clientId: String): String = s"""{"boxId":"$boxId","clientId":"$clientId"}"""
 
       "return 200 and valid when ownership confirmed" in {
-        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId)))
           .thenReturn(Future.successful(ValidateBoxOwnerSuccessResult()))
 
         val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))
@@ -844,7 +844,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
 
       "return 200 and invalid when ownership not confirmed" in {
-        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId)))
           .thenReturn(Future.successful(ValidateBoxOwnerFailedResult("Ownership doesn't match")))
 
         val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))
@@ -854,7 +854,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with Befo
       }
 
       "return 404 when box not found" in {
-        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*))
+        when(mockBoxService.validateBoxOwner(eqTo(boxId), eqTo(clientId)))
           .thenReturn(Future.successful(ValidateBoxOwnerNotFoundResult("Box not found")))
 
         val result = doPost("/cmb/validate", validHeaders, validateBody(boxIdStr, clientIdStr))

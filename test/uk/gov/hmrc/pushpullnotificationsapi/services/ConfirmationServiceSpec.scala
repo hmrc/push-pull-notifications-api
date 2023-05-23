@@ -43,13 +43,13 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with BeforeAndAfterEach {
 
   "save Confirmation" should {
     "indicate when successful" in {
-      when(mockRepo.saveConfirmationRequest(*)(*)).thenReturn(Future.successful(Some(confirmationId)))
+      when(mockRepo.saveConfirmationRequest(*)).thenReturn(Future.successful(Some(confirmationId)))
       val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
       result shouldBe ConfirmationCreateServiceSuccessResult()
     }
 
     "indicate when failure" in {
-      when(mockRepo.saveConfirmationRequest(*)(*)).thenReturn(Future.successful(None))
+      when(mockRepo.saveConfirmationRequest(*)).thenReturn(Future.successful(None))
       val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
       result shouldBe ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
