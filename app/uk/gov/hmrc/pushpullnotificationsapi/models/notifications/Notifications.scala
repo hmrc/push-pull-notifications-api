@@ -53,7 +53,7 @@ case class NotificationId(value: UUID) extends AnyVal
 
 object NotificationId {
   implicit val format = Json.valueFormat[NotificationId]
-  def random: NotificationId = NotificationId.random
+  def random: NotificationId = NotificationId(UUID.randomUUID())
 }
 
 case class Notification(

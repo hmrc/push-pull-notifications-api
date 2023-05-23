@@ -40,7 +40,7 @@ case class ConfirmationId(value: UUID) extends AnyVal
 
 object ConfirmationId {
   implicit val format = Json.valueFormat[ConfirmationId]
-  def random: ConfirmationId = ConfirmationId.random
+  def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
 
 case class BoxCreator(clientId: ClientId)
