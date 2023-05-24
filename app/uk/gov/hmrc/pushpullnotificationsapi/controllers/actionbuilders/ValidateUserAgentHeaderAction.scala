@@ -36,7 +36,7 @@ class ValidateUserAgentHeaderAction @Inject() (appConfig: AppConfig)(implicit ec
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     val userAgent = request.headers.get(HeaderNames.USER_AGENT).getOrElse("")
     appConfig.allowlistedUserAgentList match {
-      case Nil             => Future.successful(Some(BadRequest))
+      case Nil             => Future.successful(Some(InternalServerError))
       case x: List[String] =>
         if (x.contains(userAgent)) {
           Future.successful(None)
