@@ -16,13 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import java.util.UUID.randomUUID
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
-
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -31,26 +26,28 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 
-class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
+import java.util.UUID.randomUUID
+import scala.concurrent.Future
+
+class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
 
-  val mockClientService: ClientService = mock[ClientService]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
   override lazy val app: Application = GuiceApplicationBuilder()
-    .overrides(bind[ClientService].to(mockClientService))
+    .overrides(bind[ClientService].to(ClientServiceMock.aMock))
     .overrides(bind[AppConfig].to(mockAppConfig))
     .build()
 
   override def beforeEach(): Unit = {
-    reset(mockClientService, mockAppConfig)
+    reset(ClientServiceMock.aMock, mockAppConfig)
   }
 
   val authToken = randomUUID.toString
@@ -76,7 +73,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with B
   "getClientSecrets" should {
     "return 200 and the array of secrets for the requested client" in {
       setUpAppConfig(Some(authToken))
-      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(Some(Seq(clientSecret))))
+      ClientServiceMock.GetClientSecrets.succeedsWith(clientId, clientSecret)
 
       val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
 
@@ -86,7 +83,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with B
 
     "return 404 when there is no matching client for the given client ID" in {
       setUpAppConfig(Some(authToken))
-      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+      ClientServiceMock.GetClientSecrets.findsNoneFor(clientId)
 
       val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> authToken))
 
@@ -97,7 +94,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with B
 
     "return 403 when the authorization header does not match the token from the app config" in {
       setUpAppConfig(Some(authToken))
-      when(mockClientService.getClientSecrets(clientId)).thenReturn(successful(None))
+      ClientServiceMock.GetClientSecrets.findsNoneFor(clientId)
 
       val result = doGet(s"/client/${clientId.value}/secrets", Map("Authorization" -> "wrongToken"))
 

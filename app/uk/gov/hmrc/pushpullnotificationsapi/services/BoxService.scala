@@ -74,7 +74,7 @@ class BoxService @Inject() (
   def updateCallbackUrl(
       boxId: BoxId,
       request: UpdateCallbackUrlRequest,
-      clientManaged: Boolean = false
+      clientManaged: Boolean
     )(implicit ec: ExecutionContext,
       hc: HeaderCarrier
     ): Future[UpdateCallbackUrlResult] = {
