@@ -37,23 +37,23 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.duration.FiniteDuration
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
-
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{MongoLockRepositoryMockModule, NotificationsRepositoryMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -62,7 +62,10 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     .configure("metrics.enabled" -> false).build()
   implicit lazy val materializer: Materializer = app.materializer
 
-  trait Setup {
+  trait Setup extends NotificationsRepositoryMockModule
+  with NotificationPushServiceMockModule
+  with MongoLockRepositoryMockModule
+  with TestData {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     val mongoLockRepo: MongoLockRepository = mock[MongoLockRepository]
 
@@ -73,39 +76,33 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       6,
       1
     )
-    val mockNotificationsRepository: NotificationsRepository = mock[NotificationsRepository]
-    val mockNotificationPushService: NotificationPushService = mock[NotificationPushService]
 
     val underTest = new RetryPushNotificationsJob(
-      mongoLockRepo,
+      MongoLockRepositoryMock.aMock,
       retryPushNotificationsJobConfig,
-      mockNotificationsRepository,
-      mockNotificationPushService
+      NotificationsRepositoryMock.aMock,
+      NotificationPushServiceMock.aMock
     )
-    when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true))
-    when(mongoLockRepo.takeLock(*, *, *)).thenReturn(successful(true))
-    when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(()))
+
+    MongoLockRepositoryMock.IsLocked.theSuccess(true)
+    MongoLockRepositoryMock.TakeLock.thenSuccess(true)
+    MongoLockRepositoryMock.ReleaseLock.thenSuccess
   }
 
   "RetryPushNotificationsJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
-    val boxId = BoxId(UUID.randomUUID)
-    val boxName: String = "boxName"
-    val clientId: ClientId = ClientId(UUID.randomUUID.toString)
-    val subscriber: PushSubscriber = PushSubscriber("somecallbackUrl", Instant.now)
-    val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
+
 
     "retry pushing the notifications" in new Setup {
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.FAILED)
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
-      when(mockNotificationPushService.fetchRetryablePushNotifications)
-        .thenReturn(successful(Source.future(successful(retryableNotification))))
-      when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
+      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
+      NotificationPushServiceMock.HandlePushNotification.returnsTrue()
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, times(1)).handlePushNotification(eqTo(box), eqTo(notification))(*, *)
+      NotificationPushServiceMock.HandlePushNotification.verifyCalledWith(box, notification)
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
@@ -119,14 +116,13 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
         Instant.now.minus(Duration.ofHours(5))
       )
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
-      when(mockNotificationPushService.fetchRetryablePushNotifications)
-        .thenReturn(successful(Source.future(successful(retryableNotification))))
-      when(mockNotificationsRepository.updateRetryAfterDateTime(NotificationId(*), *)).thenReturn(successful(notification))
-      when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
+      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
+      NotificationsRepositoryMock.UpdateRetryAfterDateTime.returnsSuccessWith(notification)
+      NotificationPushServiceMock.HandlePushNotification.returnsFalse()
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationsRepository, times(1)).updateRetryAfterDateTime(NotificationId(*), *)
+      NotificationsRepositoryMock.UpdateRetryAfterDateTime.verifyCalled()
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
@@ -140,15 +136,15 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
         Instant.now.minus(Duration.ofHours(7))
       )
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
-      when(mockNotificationPushService.fetchRetryablePushNotifications)
-        .thenReturn(successful(Source.future(successful(retryableNotification))))
-      when(mockNotificationsRepository.updateStatus(notification.notificationId, FAILED)).thenReturn(successful(notification))
-      when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
+      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
+      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, FAILED)
+
+       NotificationPushServiceMock.HandlePushNotification.returnsFalse()
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationsRepository, times(1)).updateStatus(notification.notificationId, FAILED)
-      verify(mockNotificationsRepository, never).updateRetryAfterDateTime(NotificationId(*), *)
+      NotificationsRepositoryMock.UpdateStatus.verifyCalled()
+      NotificationsRepositoryMock.UpdateRetryAfterDateTime.verifyNeverCalled()
       result.message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
@@ -162,28 +158,27 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
         Instant.now.minus(Duration.ofHours(7))
       )
       val retryableNotification: RetryableNotification = RetryableNotification(notification, box)
-      when(mockNotificationPushService.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
-      when(mockNotificationPushService.fetchRetryablePushNotifications)
-        .thenReturn(successful(Source.future(successful(retryableNotification))))
-      when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
-      when(mongoLockRepo.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
-      when(mongoLockRepo.releaseLock(*, *)).thenReturn(successful(()))
+      NotificationPushServiceMock.HandlePushNotification.returnsTrue()
+      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
+
+      MongoLockRepositoryMock.IsLocked.thenTrueTrueFalse()
+      MongoLockRepositoryMock.TakeLock.thenTrueFalse()
+      MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
       val _ = await(underTest.execute)
       val result2: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, times(1)).fetchRetryablePushNotifications()
-      verify(mockNotificationPushService, times(1)).handlePushNotification(*, *)(*, *)
+      NotificationPushServiceMock.FetchRetryablePushNotifications.verifyCalled()
+      NotificationPushServiceMock.HandlePushNotification.verifyCalled()
       result2.message shouldBe "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
     }
 
     "handle error when something fails" in new Setup {
-      when(mockNotificationPushService.fetchRetryablePushNotifications)
-        .thenReturn(failed(new RuntimeException("Failed")))
+      NotificationPushServiceMock.FetchRetryablePushNotifications.failsWithException()
 
       val result: underTest.Result = await(underTest.execute)
 
-      verify(mockNotificationPushService, never).handlePushNotification(*, *)(*, *)
+      NotificationPushServiceMock.HandlePushNotification.verifyNeverCalled()
       result.message shouldBe "The execution of scheduled job RetryPushNotificationsJob failed with error 'Failed'. " +
         "The next execution of the job will do retry."
     }

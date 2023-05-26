@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import org.mockito.Mockito.verifyNoInteractions
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
+import play.api.http.HeaderNames.ACCEPT
 import play.api.http.Status.NO_CONTENT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -33,6 +33,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.BoxServiceMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
@@ -42,22 +43,21 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with AuthConnectorMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val mockAppConfig: AppConfig = mock[AppConfig]
-  val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[BoxService].to(BoxServiceMock.aMock))
     .overrides(bind[AppConfig].to(mockAppConfig))
-    .overrides(bind[AuthConnector].to(mockAuthConnector))
+    .overrides(bind[AuthConnector].to(AuthConnectorMock.aMock))
     .build()
 
   override def beforeEach(): Unit = {
-    reset(BoxServiceMock.aMock, mockAppConfig, mockAuthConnector)
+    reset(BoxServiceMock.aMock, mockAppConfig, AuthConnectorMock.aMock)
   }
 
   private def setUpAppConfig(userAgents: List[String]): Unit = {
@@ -228,7 +228,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Tes
     "createClientManagedBox" should {
 
       "return unauthorised if bearer token doesn't contain client ID" in {
-        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+        AuthConnectorMock.Authorise.succeedsWith(None)
 
         validateResult(
           doPut("/cmb/box", validHeadersJson, jsonBody),
@@ -370,7 +370,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Tes
     "deleteClientManagedBox" should {
 
       "return unauthorised if bearer token doesn't contain client ID on a box delete" in {
-        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+        AuthConnectorMock.Authorise.succeedsWith(None)
 
         validateResult(
           doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
@@ -553,7 +553,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Tes
       // All these test cases below should probably be replaced by an assertion that the correct ActionFilters have
       // been called.
       "return unauthorised if bearer token doesn't contain client ID" in {
-        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+        AuthConnectorMock.Authorise.succeedsWith(None)
 
         validateResult(doGet(s"/cmb/box", validHeaders), UNAUTHORIZED, """{"code":"UNAUTHORISED","message":"Unable to retrieve ClientId"}""")
 
@@ -909,7 +909,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Tes
   }
 
   private def primeAuthAction(clientId: String): Unit = {
-    when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(Some(clientId)))
+    AuthConnectorMock.Authorise.succeedsWith(Some(clientId))
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {

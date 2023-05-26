@@ -38,27 +38,27 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
-class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
-  val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
     .configure(Map("notifications.envelopeSize" -> "256B"))
     .overrides(bind[NotificationsService].to(NotificationsServiceMock.aMock))
-    .overrides(bind[AuthConnector].to(mockAuthConnector))
+    .overrides(bind[AuthConnector].to(AuthConnectorMock.aMock))
     .build()
 
   lazy implicit val mat: Materializer = app.materializer
 
   override def beforeEach(): Unit = {
-    reset(NotificationsServiceMock.aMock, mockAuthConnector)
+    reset(NotificationsServiceMock.aMock, AuthConnectorMock.aMock)
   }
 
   val clientIdStr: String = UUID.randomUUID().toString
@@ -444,16 +444,15 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       }
 
       "return 401 when no clientId is returned from auth" in {
-        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *))
-          .thenReturn(Future.successful(None))
+        AuthConnectorMock.Authorise.succeedsWith(None)
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
         status(result) shouldBe UNAUTHORIZED
       }
 
       "return 401 when authorisation fails" in {
-        when(mockAuthConnector.authorise[Option[String]](*, *)(*, *))
-          .thenReturn(Future.failed(SessionRecordNotFound()))
+
+        AuthConnectorMock.Authorise.failsWith(SessionRecordNotFound())
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
         status(result) shouldBe UNAUTHORIZED
@@ -572,7 +571,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
   }
 
   private def primeAuthAction(clientId: String): Unit = {
-    when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(Some(clientId)))
+   AuthConnectorMock.Authorise.succeedsWith(Some(clientId))
 
   }
 
@@ -584,7 +583,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       maybeToDateStr: Option[String] = None
     ): Unit = {
     if (expectedStatusCode == UNAUTHORIZED) {
-      when(mockAuthConnector.authorise[Option[String]](*, *)(*, *)).thenReturn(Future.successful(None))
+      AuthConnectorMock.Authorise.succeedsWith(None)
     } else {
       primeAuthAction(clientIdStr)
     }

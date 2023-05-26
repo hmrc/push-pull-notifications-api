@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.mocks
+package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import org.mockito.stubbing.ScalaOngoingStubbing
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreatedResult, BoxDeleteAccessDeniedResult, BoxDeleteSuccessfulResult, BoxId, CreateBoxResult, DeleteBoxResult, Subscriber, SubscriberContainer}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 
 import scala.concurrent.Future
@@ -133,7 +133,7 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
   }
 
   object BoxRepositoryMock extends BaseBoxRepositoryMock {
-    val aMock = mock[BoxRepository]
+    val aMock = mock[BoxRepository](withSettings.lenient())
 
   }
 }

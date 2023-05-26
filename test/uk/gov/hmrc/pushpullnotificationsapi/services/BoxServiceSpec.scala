@@ -26,8 +26,9 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.{BoxRepositoryMockModule, ClientServiceMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.{ApiPlatformEventsConnectorMockModule, PushConnectorMockModule, ThirdPartyApplicationConnectorMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.BoxRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
