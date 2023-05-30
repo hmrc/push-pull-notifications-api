@@ -22,6 +22,8 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import scala.concurrent.Future.{failed, successful}
+import org.mockito.captor.ArgCaptor
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
 trait PushConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -46,11 +48,24 @@ trait PushConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
         verify(atLeastOnce).validateCallbackUrl(eqTo(request))
       }
     }
+
+    object Send {
+      def fails() = {
+        val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+        when(aMock.send(outboundNotificationCaptor)(*))
+          .thenReturn(successful(PushConnectorFailedResult("some error")))
+        outboundNotificationCaptor
+      }
+
+      def succeedsFor() = {
+        val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+        when(aMock.send(outboundNotificationCaptor)(*)).thenReturn(successful(PushConnectorSuccessResult()))
+        outboundNotificationCaptor
+      }
+    }
   }
 
   object PushConnectorMock extends BasePushConnectorMock {
-
-
     val aMock = mock[PushConnector](withSettings.lenient())
   }
 }

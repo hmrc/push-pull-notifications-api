@@ -16,23 +16,21 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.time.Instant
-import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.captor.ArgCaptor
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ApplicationResponse, PushConnector, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.{ApiPlatformEventsConnectorMockModule, PushConnectorMockModule, ThirdPartyApplicationConnectorMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.BoxRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+
+import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
@@ -66,7 +64,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       "return BoxCreatedResult and call tpa to get application id when box is created" in new Setup {
         BoxRepositoryMock.GetBoxByNameAndClientId.returnsNone()
-        BoxRepositoryMock.CreateBox.succeedsWithCreated(box)
+        BoxRepositoryMock.CreateBox.succeedsWithCreated(BoxObjectWithNoSubscribers)
         ThirdPartyApplicationConnectorMock.GetApplicationDetails.isSuccessWith(clientId, applicationId)
         ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
@@ -84,7 +82,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       "return BoxRetrievedResult when box is already exists and verify no attempt to call tpa" in new Setup {
 
-        BoxRepositoryMock.GetBoxByNameAndClientId.succeedsWithOptionalBox(boxName, clientId, Some(box))
+        BoxRepositoryMock.GetBoxByNameAndClientId.succeedsWithOptionalBox(boxName, clientId, Some(BoxObjectWithNoSubscribers))
 
         await(objInTest.createBox(clientId, boxName)) match {
           case BoxRetrievedResult(_) =>
@@ -99,7 +97,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       "return BoxCreateFailedResult when attempt to get applicationId fails during box creation" in new Setup {
         BoxRepositoryMock.GetBoxByNameAndClientId.succeedsWithOptionalBox(boxName, clientId, None)
-        BoxRepositoryMock.CreateBox.succeedsWithCreated(box)
+        BoxRepositoryMock.CreateBox.succeedsWithCreated(BoxObjectWithNoSubscribers)
         ThirdPartyApplicationConnectorMock.GetApplicationDetails.failsWith(clientId)
         ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
@@ -118,7 +116,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       "getByBoxNameAndClientId" should {
         "call repository correctly" in new Setup {
 
-          BoxRepositoryMock.GetBoxByNameAndClientId.succeedsWithOptionalBox(boxName, clientId, Some(box))
+          BoxRepositoryMock.GetBoxByNameAndClientId.succeedsWithOptionalBox(boxName, clientId, Some(BoxObjectWithNoSubscribers))
           await(objInTest.getBoxByNameAndClientId(boxName, clientId))
 
          BoxRepositoryMock.GetBoxByNameAndClientId.verifyCalledWith(boxName, clientId)
@@ -179,7 +177,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         "return CallbackUrlUpdated when box has application id added and callback url is validated" in new Setup {
           BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(boxWithExistingPushSubscriber))
           BoxRepositoryMock.UpdateApplicationId.succeedsWith(boxId, applicationId, boxWithExistingPushSubscriber.copy(applicationId = Some(applicationId)))
-          BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, Some(box))
+          BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
           ThirdPartyApplicationConnectorMock.GetApplicationDetails.isSuccessWith(clientId, applicationId)
 
 
@@ -198,8 +196,8 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return CallbackUrlUpdated when callbackUrl is empty, applicationId exists, and dont call callBackUrl in connector" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box.copy(applicationId = Some(applicationId))))
-          BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, Some(box))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers.copy(applicationId = Some(applicationId))))
+          BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
 
           ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.succeeds()
 
@@ -214,7 +212,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return UnableToUpdateCallbackUrl when update of box with applicationId with callback fails" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box.copy(applicationId = Some(applicationId))))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers.copy(applicationId = Some(applicationId))))
           BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, None)
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
@@ -230,7 +228,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return UnableToUpdateCallbackUrl box has no application id and call to tpa fails" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
           ThirdPartyApplicationConnectorMock.GetApplicationDetails.failsWith(clientId)
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
@@ -245,7 +243,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return UpdateCallbackUrlUnauthorisedResult when clientId of box is different from request clientId" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("someotherId"), "callbackUrl")
            await(objInTest.updateCallbackUrl(boxId, validRequest, false)) match {
@@ -257,7 +255,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return CallbackValidationFailed when connector call returns false" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box.copy(applicationId = Some(applicationId))))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers.copy(applicationId = Some(applicationId))))
 
           val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
           PushConnectorMock.ValidateCallbackUrl.failsFor(validRequest)
@@ -284,7 +282,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       "validateBoxOwner" should {
 
         "return ValidateBoxOwnerSuccessResult when boxId is found and clientId matches" in new Setup {
-          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box))
+          BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
 
           await(objInTest.validateBoxOwner(boxId, clientId)) match {
             case _: ValidateBoxOwnerSuccessResult => succeed
@@ -294,7 +292,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         }
 
         "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
-          when( BoxRepositoryMock.aMock.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(box)))
+          when( BoxRepositoryMock.aMock.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(BoxObjectWithNoSubscribers)))
           val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, ClientId(UUID.randomUUID().toString)))
           result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
         }
@@ -311,7 +309,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
     "deleteBox" should {
 
       "return BoxDeleteSuccessfulResult when a box is found by boxId" in new Setup {
-        val clientManagedBox: Box = box.copy(clientManaged = true)
+        val clientManagedBox: Box = BoxObjectWithNoSubscribers.copy(clientManaged = true)
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(clientManagedBox))
         BoxRepositoryMock.DeleteBox.succeeds()
 
@@ -319,7 +317,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       }
 
       "return BoxDeleteAccessDeniedResult when clientManaged is false" in new Setup {
-        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(box))
+        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
         BoxRepositoryMock.DeleteBox.failsWith(BoxDeleteAccessDeniedResult())
 
         await(objInTest.deleteBox(clientId, boxId)) shouldBe BoxDeleteAccessDeniedResult()
@@ -327,7 +325,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       "return BoxDeleteAccessDeniedResult when the given clientId does not match the box's clientId" in new Setup {
         val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
-        val clientManagedBox: Box = box.copy(clientManaged = true)
+        val clientManagedBox: Box = BoxObjectWithNoSubscribers.copy(clientManaged = true)
 
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(clientManagedBox))
         BoxRepositoryMock.DeleteBox.verifyNeverCalled()

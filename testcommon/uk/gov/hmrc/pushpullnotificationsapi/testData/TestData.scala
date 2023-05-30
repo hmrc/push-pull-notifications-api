@@ -18,9 +18,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.testData
 
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, Client, ClientSecretValue, PushSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, Client, ClientSecretValue, ConfirmationId, PullSubscriber, PushSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.UUID
 
 trait TestData {
@@ -34,9 +37,9 @@ trait TestData {
   val boxName: String = "boxName"
   val endpoint = "/iam/a/callbackurl"
 
-  val box: Box = Box(boxId, boxName, BoxCreator(clientId))
+  val BoxObjectWithNoSubscribers = Box(boxId, boxName, BoxCreator(clientId))
 
-  val boxWithExistingPushSubscriber: Box = box.copy(subscriber = Some(PushSubscriber(endpoint, Instant.now)))
+  val boxWithExistingPushSubscriber: Box = BoxObjectWithNoSubscribers.copy(subscriber = Some(PushSubscriber(endpoint, Instant.now)))
 
   val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
   val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
@@ -52,5 +55,46 @@ trait TestData {
   val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader)
   val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
   val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
+
+
+  val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
+  val url = "https://test"
+  val notificationId: NotificationId = NotificationId(UUID.randomUUID())
+  val pushedTime = Instant.now()
+  val acknowledgedStatus = NotificationStatus.ACKNOWLEDGED
+  val pendingStatus = NotificationStatus.PENDING
+
+  val messageContentTypeJson = MessageContentType.APPLICATION_JSON
+  val messageContentTypeXml = MessageContentType.APPLICATION_XML
+
+  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, pushedDateTime = Some(pushedTime))
+
+  val pushSubscriber = PushSubscriber("mycallbackUrl")
+  val pullSubscriber = PullSubscriber("")
+
+  val BoxObjectWithPushSubscribers = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(pushSubscriber))
+  val BoxObjectWithPullSubscribers = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(pullSubscriber))
+
+  val message = "message"
+
+  val notification: Notification =
+    Notification(
+      notificationId,
+      BoxId(UUID.randomUUID()),
+      MessageContentType.APPLICATION_JSON,
+      """{ "foo": "bar" }""",
+      NotificationStatus.PENDING
+    )
+
+  val failedNotification = notification.copy(status = FAILED)
+  def notificationWithRetryAfter(retryAfter: Instant): Notification = Notification(
+    NotificationId(UUID.randomUUID()),
+    BoxId(UUID.randomUUID()),
+    MessageContentType.APPLICATION_JSON,
+    "{}",
+    NotificationStatus.FAILED,
+    retryAfter
+  )
+
 
 }

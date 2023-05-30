@@ -88,7 +88,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
       "return 201 and boxId when box successfully created" in {
         setUpAppConfig(List("api-subscription-fields"))
-        BoxServiceMock.CreateBox.thenSucceedCreated(box)
+        BoxServiceMock.CreateBox.thenSucceedCreated(BoxObjectWithNoSubscribers)
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), CREATED, s"""{"boxId":"${boxId.value.toString}"}""")
 
@@ -98,7 +98,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200 and boxId when box already exists" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.CreateBox.thenSucceedRetrieved(box)
+        BoxServiceMock.CreateBox.thenSucceedRetrieved(BoxObjectWithNoSubscribers)
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), OK, s"""{"boxId":"${boxId.value.toString}"}""")
 
@@ -241,7 +241,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 201 and boxId when box successfully created" in {
         primeAuthAction(clientId.value)
 
-        BoxServiceMock.CreateBox.thenSucceedCreated(box)
+        BoxServiceMock.CreateBox.thenSucceedCreated(BoxObjectWithNoSubscribers)
 
         validateResult(doPut("/cmb/box", validHeadersJson, jsonBody), expectedStatus = CREATED, expectedBodyStr = s"""{"boxId":"${boxId.value.toString}"}""")
 
@@ -250,7 +250,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
       "return 200 and boxId when box already exists" in {
         primeAuthAction(clientId.value)
-        BoxServiceMock.CreateBox.thenSucceedRetrieved(box)
+        BoxServiceMock.CreateBox.thenSucceedRetrieved(BoxObjectWithNoSubscribers)
 
         validateResult(doPut("/cmb/box", validHeadersJson, jsonBody), expectedStatus = OK, expectedBodyStr = s"""{"boxId":"${boxId.value.toString}"}""")
 
@@ -481,7 +481,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200 and requested box when it exists" in {
         BoxServiceMock.GetBoxByNameAndClientId.thenSuccess(Some(Box(boxId, boxName, BoxCreator(clientId))))
 
-        validateResult(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders), OK, Json.toJson(box).toString())
+        validateResult(doGet(s"/box?boxName=$boxName&clientId=${clientId.value}", validHeaders), OK, Json.toJson(BoxObjectWithNoSubscribers).toString())
 
         BoxServiceMock.GetBoxByNameAndClientId.verifyCalledWith(boxName, clientId)
       }
@@ -533,9 +533,9 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return boxes for client specified in auth token in json format" in {
         primeAuthAction(clientId.value)
 
-        BoxServiceMock.GetBoxesByClientId.thenSuccessWith(clientId, List(box))
+        BoxServiceMock.GetBoxesByClientId.thenSuccessWith(clientId, List(BoxObjectWithNoSubscribers))
 
-        validateResult(doGet(s"/cmb/box", validHeaders), OK, Json.toJson(List(box.copy(boxName = "DEFAULT"))).toString())
+        validateResult(doGet(s"/cmb/box", validHeaders), OK, Json.toJson(List(BoxObjectWithNoSubscribers.copy(boxName = "DEFAULT"))).toString())
 
         BoxServiceMock.GetBoxesByClientId.verifyCalledWith(clientId)
       }

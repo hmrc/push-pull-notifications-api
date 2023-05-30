@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.verification.VerificationMode
+import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
 
@@ -49,6 +50,10 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     }
 
     object UpdateStatus {
+      def verifyCalledWith(notificationId: NotificationId, status: NotificationStatus) = {
+        verify.updateStatus(eqTo(notificationId), eqTo(status))
+      }
+
       def verifyCalled() = {
         verify(atLeastOnce).updateStatus(*[NotificationId], *)
       }
@@ -58,10 +63,46 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
       }
 
     }
+
+    object NumberOfNotificationsToReturn {
+      def thenReturn(numberToReturn: Int) = {
+        when(aMock.numberOfNotificationsToReturn).thenReturn(numberToReturn)
+
+      }
+
+    }
+    object SaveNotification {
+      def verifyCalled() = {
+        verify.saveNotification(*)(*)
+      }
+
+      def thenSucceedsWith(result: Option[NotificationId]) = {
+        when(aMock.saveNotification(*[Notification])(*)).thenReturn(successful(result))
+      }
+
+    }
+    object GetByBoxIdAndFilters {
+      def verifyCalled() = {
+        verify.getByBoxIdAndFilters(*[BoxId], *, *, *, *)(*)
+      }
+
+      def succeedsWith(boxId: BoxId, result: List[Notification]) = {
+        when(aMock.getByBoxIdAndFilters(eqTo(boxId), *, *, *, *)(*)).thenReturn(successful(result))
+      }
+
+    }
+    object AcknowledgeNotifications{
+      def succeeds() = {
+        when(aMock.acknowledgeNotifications(*[BoxId],*)(*)).thenReturn(successful(true))
+      }
+
+    }
+
   }
 
   object NotificationsRepositoryMock extends BaseNotificationsRepositoryMock {
     val aMock = mock[NotificationsRepository](withSettings.lenient())
+
   }
 
 }

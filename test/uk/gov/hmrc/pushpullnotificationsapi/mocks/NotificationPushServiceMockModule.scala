@@ -76,6 +76,6 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
   }
 
   object NotificationPushServiceMock extends BaseNotificationPushServiceMock {
-    val aMock = mock[NotificationPushService]
+    val aMock = mock[NotificationPushService](withSettings.lenient())
   }
 }
