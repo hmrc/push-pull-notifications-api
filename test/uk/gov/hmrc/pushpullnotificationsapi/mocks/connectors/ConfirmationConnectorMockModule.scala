@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors
 
+import scala.concurrent.Future.successful
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 
-import scala.concurrent.Future.successful
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult}
 
 trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -36,8 +37,8 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
 
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
-
     object SendConfirmation {
+
       def returnsFailure() = {
         when(aMock.sendConfirmation(*, *)(*)).thenReturn(successful(ConfirmationConnectorFailedResult("bang boom splat")))
       }
@@ -51,7 +52,7 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
       }
 
       def isSuccessWith(url: String, expectedOutBoundConfirmation: OutboundConfirmation) = {
-       when(aMock.sendConfirmation(eqTo(url), eqTo(expectedOutBoundConfirmation))(*)).thenReturn(successful(ConfirmationConnectorSuccessResult()))
+        when(aMock.sendConfirmation(eqTo(url), eqTo(expectedOutBoundConfirmation))(*)).thenReturn(successful(ConfirmationConnectorSuccessResult()))
       }
 
     }

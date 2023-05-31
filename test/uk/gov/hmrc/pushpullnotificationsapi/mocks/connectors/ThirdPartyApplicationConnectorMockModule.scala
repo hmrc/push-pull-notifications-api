@@ -16,12 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors
 
+import scala.concurrent.Future.{failed, successful}
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApplicationResponse, ThirdPartyApplicationConnector}
 
-import scala.concurrent.Future.{failed, successful}
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApplicationResponse, ThirdPartyApplicationConnector}
 
 trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -36,6 +38,7 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object GetApplicationDetails {
+
       def failsWith(clientId: ClientId) = {
         when(aMock.getApplicationDetails(eqTo(clientId))(*)).thenReturn(failed(new RuntimeException("bang")))
       }

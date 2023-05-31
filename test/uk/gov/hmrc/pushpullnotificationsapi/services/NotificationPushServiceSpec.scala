@@ -16,36 +16,45 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import play.api.libs.json.Json
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.PushConnectorMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
-import uk.gov.hmrc.pushpullnotificationsapi.mocks._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
 import java.time.format.DateTimeFormatterBuilder
 import java.time.{Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.mocks._
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.PushConnectorMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+
 class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  trait Setup extends PushConnectorMockModule
-    with ConfirmationServiceMockModule
-    with BoxRepositoryMockModule
-    with NotificationsRepositoryMockModule
-    with ClientServiceMockModule
-    with HmacServiceMockModule {
-    val serviceToTest = new NotificationPushService(PushConnectorMock.aMock, NotificationsRepositoryMock.aMock, BoxRepositoryMock.aMock, ClientServiceMock.aMock, HmacServiceMock.aMock, ConfirmationServiceMock.aMock)
+  trait Setup
+      extends PushConnectorMockModule
+      with ConfirmationServiceMockModule
+      with BoxRepositoryMockModule
+      with NotificationsRepositoryMockModule
+      with ClientServiceMockModule
+      with HmacServiceMockModule {
+
+    val serviceToTest = new NotificationPushService(
+      PushConnectorMock.aMock,
+      NotificationsRepositoryMock.aMock,
+      BoxRepositoryMock.aMock,
+      ClientServiceMock.aMock,
+      HmacServiceMock.aMock,
+      ConfirmationServiceMock.aMock
+    )
   }
 
   "handlePushNotification" should {
-
 
     def checkOutboundNotificationIsCorrect(originalNotification: Notification, subscriber: PushSubscriber, sentOutboundNotification: OutboundNotification) = {
       sentOutboundNotification.destinationUrl shouldBe subscriber.callBackUrl
@@ -65,7 +74,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
 
-      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification,  acknowledgedStatus)
+      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedStatus)
       val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
@@ -83,7 +92,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
       HmacServiceMock.Sign.succeedsWith(expectedSignature)
       val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
-      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification,  acknowledgedStatus)
+      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedStatus)
 
       await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, notification))
 
@@ -93,7 +102,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
     "return false when connector returns failed result due to exception" in new Setup {
 
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
-      val outboundNotificationCaptor =   PushConnectorMock.Send.fails()
+      val outboundNotificationCaptor = PushConnectorMock.Send.fails()
 
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, notification))
 
@@ -104,7 +113,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
-      val outboundNotificationCaptor =  PushConnectorMock.Send.fails()
+      val outboundNotificationCaptor = PushConnectorMock.Send.fails()
 
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, failedNotification))
 

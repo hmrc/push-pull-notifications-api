@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import scala.concurrent.Future.successful
+
 import org.mockito.verification.VerificationMode
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
-
-import scala.concurrent.Future.successful
 
 trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -36,6 +37,7 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object UpdateRetryAfterDateTime {
+
       def verifyNeverCalled() = {
         verify(never).updateRetryAfterDateTime(*[NotificationId], *)
       }
@@ -50,6 +52,7 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     }
 
     object UpdateStatus {
+
       def verifyCalledWith(notificationId: NotificationId, status: NotificationStatus) = {
         verify.updateStatus(eqTo(notificationId), eqTo(status))
       }
@@ -65,13 +68,16 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     }
 
     object NumberOfNotificationsToReturn {
+
       def thenReturn(numberToReturn: Int) = {
         when(aMock.numberOfNotificationsToReturn).thenReturn(numberToReturn)
 
       }
 
     }
+
     object SaveNotification {
+
       def verifyCalled() = {
         verify.saveNotification(*)(*)
       }
@@ -81,7 +87,9 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
       }
 
     }
+
     object GetByBoxIdAndFilters {
+
       def verifyCalled() = {
         verify.getByBoxIdAndFilters(*[BoxId], *, *, *, *)(*)
       }
@@ -91,9 +99,11 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
       }
 
     }
-    object AcknowledgeNotifications{
+
+    object AcknowledgeNotifications {
+
       def succeeds() = {
-        when(aMock.acknowledgeNotifications(*[BoxId],*)(*)).thenReturn(successful(true))
+        when(aMock.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(successful(true))
       }
 
     }

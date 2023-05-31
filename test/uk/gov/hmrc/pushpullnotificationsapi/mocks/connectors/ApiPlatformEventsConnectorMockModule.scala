@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors
 
+import scala.concurrent.Future.successful
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-
-import scala.concurrent.Future
-import scala.concurrent.Future.{failed, successful}
 
 trait ApiPlatformEventsConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -38,6 +39,7 @@ trait ApiPlatformEventsConnectorMockModule extends MockitoSugar with ArgumentMat
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object SendCallBackUpdatedEvent {
+
       def verifyCalledWith(applicationId: ApplicationId, endpoint: String, newUrl: String, box: Box) = {
         verify.sendCallBackUpdatedEvent(eqTo(applicationId), eqTo(endpoint), eqTo(newUrl), eqTo(box))(*)
       }

@@ -16,16 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
-import org.mockito.verification.VerificationMode
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
-
 import java.time.Instant
 import scala.concurrent.Future.{failed, successful}
 
+import org.mockito.verification.VerificationMode
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -40,7 +41,9 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object SaveNotification {
+
       object XML {
+
         def succeedsFor(boxId: BoxId, xmlBody: String) = {
           when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
             .thenReturn(successful(NotificationCreateSuccessResult()))
@@ -80,10 +83,12 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     }
 
     object GetNotifications {
+
       def succeedsWith(boxId: BoxId, clientId: ClientId, notifications: Notification*) = {
         when(aMock.getNotifications(eqTo(boxId), eqTo(clientId), eqTo(None), eqTo(None), eqTo(None))(*))
           .thenReturn(successful(Right(notifications.toList)))
       }
+
       def succeedsWith(boxId: BoxId, status: NotificationStatus, list: List[Notification]) = {
         when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *)(*))
           .thenReturn(successful(Right(list)))
@@ -111,6 +116,7 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     }
 
     object AcknowledgeNotifications {
+
       def succeeds() = {
         when(NotificationsServiceMock.aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
           .thenReturn(successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))

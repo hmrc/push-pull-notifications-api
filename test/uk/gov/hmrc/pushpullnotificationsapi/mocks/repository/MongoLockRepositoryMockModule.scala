@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.mockito.verification.VerificationMode
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-
 import scala.concurrent.Future.successful
+
+import org.mockito.verification.VerificationMode
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -35,6 +35,7 @@ trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSu
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object IsLocked {
+
       def thenTrueTrueFalse() = {
         when(aMock.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))
       }
@@ -44,7 +45,9 @@ trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSu
       }
 
     }
+
     object TakeLock {
+
       def thenTrueFalse() = {
         when(aMock.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
       }
@@ -54,7 +57,9 @@ trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSu
       }
 
     }
+
     object ReleaseLock {
+
       def thenSuccess() = {
         when(aMock.releaseLock(*, *)).thenReturn(successful(()))
       }
@@ -63,9 +68,8 @@ trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSu
 
   }
 
-  object MongoLockRepositoryMock extends BaseMongoLockRepositoryMock{
+  object MongoLockRepositoryMock extends BaseMongoLockRepositoryMock {
     val aMock = mock[MongoLockRepository](withSettings.lenient())
   }
-
 
 }

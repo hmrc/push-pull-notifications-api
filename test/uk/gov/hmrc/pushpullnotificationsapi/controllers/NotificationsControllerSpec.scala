@@ -21,10 +21,11 @@ import java.time.{Duration, Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+
 import akka.stream.Materializer
-import org.mockito.Mockito.verifyNoInteractions
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
@@ -36,6 +37,7 @@ import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
@@ -46,7 +48,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContent
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
-
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
@@ -113,7 +114,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
         val result = doPost(s"/box/${boxId.value.toString}/notifications", validHeadersJson, jsonBody)
         status(result) should be(CREATED)
 
-        NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId,jsonBody)
+        NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId, jsonBody)
       }
 
       "fail when payload is too large" in {
@@ -410,7 +411,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
         primeAuthAction(UUID.randomUUID().toString)
         NotificationsServiceMock.GetNotifications.failsWithNotFoundFor(boxId, PENDING, stringToDateTimeLenient(Some(fromdatStr)), stringToDateTimeLenient(Some(toDateStr)))
 
-
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
         status(result) shouldBe NOT_FOUND
         contentAsString(result) shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
@@ -571,7 +571,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
   }
 
   private def primeAuthAction(clientId: String): Unit = {
-   AuthConnectorMock.Authorise.succeedsWith(Some(clientId))
+    AuthConnectorMock.Authorise.succeedsWith(Some(clientId))
 
   }
 

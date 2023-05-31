@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
+import scala.concurrent.Future
+import scala.concurrent.Future.successful
+
 import org.mockito.stubbing.ScalaOngoingStubbing
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
 
 trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -38,29 +40,26 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object CreateBox {
-      def verifyNeverCalled() = {
-
-      }
+      def verifyNeverCalled() = {}
 
       def verifyCalledWith() = {
         verify.createBox(*)(*)
       }
 
-      def succeedsWithCreated(box: Box): ScalaOngoingStubbing[Future[CreateBoxResult]] ={
+      def succeedsWithCreated(box: Box): ScalaOngoingStubbing[Future[CreateBoxResult]] = {
         when(aMock.createBox(*[Box])(*)).thenReturn(successful(BoxCreatedResult(box)))
       }
     }
 
     object GetBoxByNameAndClientId {
+
       def verifyCalledWith(boxName: String, clientId: ClientId) = {
         verify.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))
       }
 
-
       def returnsNone(): ScalaOngoingStubbing[Future[Option[Box]]] = {
         when(aMock.getBoxByNameAndClientId(*, *[ClientId])).thenReturn(successful(None))
       }
-
 
       def succeedsWithOptionalBox(boxName: String, clientId: ClientId, optionalBox: Option[Box]): ScalaOngoingStubbing[Future[Option[Box]]] = {
         when(aMock.getBoxByNameAndClientId(eqTo(boxName), eqTo(clientId))).thenReturn(successful(optionalBox))
@@ -75,6 +74,7 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
     }
 
     object GetBoxesByClientId {
+
       def verifyCalledWith(clientId: ClientId) = {
         verify.getBoxesByClientId(eqTo(clientId))
       }
@@ -86,12 +86,15 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
     }
 
     object FindByBoxId {
+
       def succeedsWith(boxId: BoxId, maybeBox: Option[Box]) = {
         when(aMock.findByBoxId(eqTo(boxId))).thenReturn(successful(maybeBox))
       }
 
     }
+
     object GetAllBoxes {
+
       def succeedsWith(boxes: List[Box]) = {
         when(aMock.getAllBoxes()(*)).thenReturn(successful(boxes))
       }
@@ -100,7 +103,9 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
         verify.getAllBoxes()(*)
       }
     }
+
     object DeleteBox {
+
       def verifyNeverCalled() = {
         verify(never).deleteBox(*[BoxId])
       }
@@ -114,7 +119,9 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
 
     }
+
     object UpdateApplicationId {
+
       def verifyCalledWith(boxId: BoxId, applicationId: ApplicationId) = {
         verify.updateApplicationId(eqTo(boxId), eqTo(applicationId))
       }
@@ -128,7 +135,6 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
 
     }
-
 
   }
 

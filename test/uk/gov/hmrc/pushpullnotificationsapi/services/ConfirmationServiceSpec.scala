@@ -16,40 +16,37 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors.ConfirmationConnectorMockModule
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ConfirmationRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationStatus, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationCreateServiceFailedResult, ConfirmationCreateServiceSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
-
-
 
   trait SetUp extends ConfirmationRepositoryMockModule with ConfirmationConnectorMockModule {
     val serviceToTest = new ConfirmationService(ConfirmationRepositoryMock.aMock, ConfirmationConnectorMock.aMock)
     implicit val hc = new HeaderCarrier()
   }
 
-
-  "save Confirmation" should  {
-    "indicate when successful" in new SetUp  {
-     ConfirmationRepositoryMock.SaveConfirmationRequest.thenSuccessfulWith(confirmationId)
+  "save Confirmation" should {
+    "indicate when successful" in new SetUp {
+      ConfirmationRepositoryMock.SaveConfirmationRequest.thenSuccessfulWith(confirmationId)
       val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
       result shouldBe ConfirmationCreateServiceSuccessResult()
     }
 
-    "indicate when failure" in  new SetUp  {
+    "indicate when failure" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.returnsNone()
       val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
       result shouldBe ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
   }
-
 
   "handleConfirmation" should {
     "send Confirmation when update successful" in new SetUp {
@@ -63,7 +60,6 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
     }
-
 
     "do nothing when update fails" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsNone()

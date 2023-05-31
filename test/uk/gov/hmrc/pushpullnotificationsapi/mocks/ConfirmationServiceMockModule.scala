@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.verification.VerificationMode
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
 
@@ -34,18 +35,17 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object HandleConfirmation {
+
       def verifyCalledWith(notificationId: NotificationId) = {
-        verify.handleConfirmation(eqTo(notificationId))(*,*)
+        verify.handleConfirmation(eqTo(notificationId))(*, *)
       }
 
     }
 
   }
 
-
   object ConfirmationServiceMock extends BaseConfirmationServiceMock {
     val aMock = mock[ConfirmationService](withSettings.lenient())
   }
-
 
 }

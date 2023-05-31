@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
+import scala.concurrent.Future.{failed, successful}
+
+import akka.stream.scaladsl.Source
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
-import scala.concurrent.Future.{failed, successful}
-import akka.stream.scaladsl.Source
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -38,6 +39,7 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object FetchRetryablePushNotifications {
+
       def succeedsFor(retryableNotification: RetryableNotification) = {
         when(aMock.fetchRetryablePushNotifications).thenReturn(successful(Source.future(successful(retryableNotification))))
       }
@@ -53,6 +55,7 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
     }
 
     object HandlePushNotification {
+
       def returnsTrue() = {
         when(aMock.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
       }

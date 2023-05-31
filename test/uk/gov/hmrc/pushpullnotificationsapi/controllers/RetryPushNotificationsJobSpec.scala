@@ -32,21 +32,23 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
+import java.time.{Duration, Instant}
+import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
+import scala.concurrent.duration.FiniteDuration
+
 import akka.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{MongoLockRepositoryMockModule, NotificationsRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
-import java.time.{Duration, Instant}
-import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
-import scala.concurrent.duration.FiniteDuration
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -55,11 +57,9 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     .configure("metrics.enabled" -> false).build()
   implicit lazy val materializer: Materializer = app.materializer
 
-  trait Setup extends NotificationsRepositoryMockModule
-  with NotificationPushServiceMockModule
-  with MongoLockRepositoryMockModule
-  with TestData {
+  trait Setup extends NotificationsRepositoryMockModule with NotificationPushServiceMockModule with MongoLockRepositoryMockModule with TestData {
     implicit val hc: HeaderCarrier = HeaderCarrier()
+
     val retryPushNotificationsJobConfig: RetryPushNotificationsJobConfig = RetryPushNotificationsJobConfig(
       FiniteDuration(60, SECONDS),
       FiniteDuration(24, HOURS),
@@ -82,7 +82,6 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
 
   "RetryPushNotificationsJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
-
 
     "retry pushing the notifications" in new Setup {
       val retryableNotification: RetryableNotification = RetryableNotification(notification, BoxObjectWithNoSubscribers)
@@ -115,7 +114,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification1, FAILED)
 
-       NotificationPushServiceMock.HandlePushNotification.returnsFalse()
+      NotificationPushServiceMock.HandlePushNotification.returnsFalse()
 
       val result: underTest.Result = await(underTest.execute)
 

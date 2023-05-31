@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ClientRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ClientServiceSpec extends AsyncHmrcSpec with TestData {
 

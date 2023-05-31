@@ -16,34 +16,31 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import org.mockito.captor.{ArgCaptor, Captor}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ConfirmationServiceMockModule, NotificationPushServiceMockModule}
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
 import java.time.{Duration, Instant}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import org.mockito.captor.Captor
+
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.http.HeaderCarrier
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ConfirmationServiceMockModule, NotificationPushServiceMockModule}
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+
 class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
-
-  trait Setup extends BoxRepositoryMockModule
-    with NotificationPushServiceMockModule
-    with NotificationsRepositoryMockModule
-    with ConfirmationServiceMockModule {
+  trait Setup extends BoxRepositoryMockModule with NotificationPushServiceMockModule with NotificationsRepositoryMockModule with ConfirmationServiceMockModule {
 
     val serviceToTest = new NotificationsService(BoxRepositoryMock.aMock, NotificationsRepositoryMock.aMock, NotificationPushServiceMock.aMock, ConfirmationServiceMock.aMock)
 
     // API-4417: Default the number of notifications
     NotificationsRepositoryMock.NumberOfNotificationsToReturn.thenReturn(100)
-
 
     def primeNotificationRepoSave(result: Option[NotificationId]) = {
       NotificationsRepositoryMock.SaveNotification.thenSucceedsWith(result)
@@ -65,9 +62,11 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
       notificationCaptor.value.message shouldBe message
     }
 
-    def runAcknowledgeScenarioAndAssert(expectedResult: AcknowledgeNotificationsServiceResult,
-                                        clientId: ClientId = clientId,
-                                        repoResult: Future[Boolean] = Future.successful(false)): Unit = {
+    def runAcknowledgeScenarioAndAssert(
+        expectedResult: AcknowledgeNotificationsServiceResult,
+        clientId: ClientId = clientId,
+        repoResult: Future[Boolean] = Future.successful(false)
+      ): Unit = {
       when(NotificationsRepositoryMock.aMock.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
 
       val result: AcknowledgeNotificationsServiceResult =
@@ -77,9 +76,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
     }
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
-    
-  }
 
+  }
 
   "SaveNotification" should {
     "return NotificationCreateSuccessResult when box exists , push is called with subscriber & notification successfully saved" in new Setup {
@@ -118,11 +116,9 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
       NotificationsRepositoryMock.verifyZeroInteractions()
     }
 
-
   }
 
   "getNotifications" should {
-
 
     val fromDate = Some(Instant.now.minus(Duration.ofHours(2)))
     val toDate = Some(Instant.now)
@@ -163,7 +159,13 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
       primeBoxRepo(Some(BoxObjectWithNoSubscribers), boxId)
 
       val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
-        await(serviceToTest.getNotifications(boxId = boxId, clientId = ClientId(UUID.randomUUID().toString), status = Some(pendingStatus), fromDateTime = fromDate, toDateTime = toDate))
+        await(serviceToTest.getNotifications(
+          boxId = boxId,
+          clientId = ClientId(UUID.randomUUID().toString),
+          status = Some(pendingStatus),
+          fromDateTime = fromDate,
+          toDateTime = toDate
+        ))
 
       result shouldBe Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
 
@@ -179,7 +181,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
     "should call confirmations on all ids after ACKNOWLEDGING notifications" in new Setup {
       primeBoxRepo(Some(BoxObjectWithNoSubscribers), boxId)
-     NotificationsRepositoryMock.AcknowledgeNotifications.succeeds()
+      NotificationsRepositoryMock.AcknowledgeNotifications.succeeds()
 
       private val notificationId: NotificationId = NotificationId.random
       private val notificationId2: NotificationId = NotificationId.random
@@ -203,6 +205,5 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
       runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"), ClientId("notTheCLientID"))
     }
   }
-
 
 }

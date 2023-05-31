@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
-import org.mockito.stubbing.ScalaOngoingStubbing
+import scala.concurrent.Future.successful
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, ClientRepository}
 
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -38,6 +38,7 @@ trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object FindByClientId {
+
       def verifyCalledWith(clientId: ClientId) = {
         verify.findByClientId(eqTo(clientId))
       }
@@ -51,7 +52,9 @@ trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar
       }
 
     }
+
     object InsertClient {
+
       def verifyCalledWith(client: Client) = {
         verify.insertClient(eqTo(client))
       }
@@ -65,7 +68,6 @@ trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar
       }
 
     }
-
 
   }
 

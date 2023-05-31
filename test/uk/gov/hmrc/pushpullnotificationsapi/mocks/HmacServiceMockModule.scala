@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.verification.VerificationMode
-import uk.gov.hmrc.pushpullnotificationsapi.services.{HmacService, NotificationsService}
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
+import uk.gov.hmrc.pushpullnotificationsapi.services.HmacService
 
 trait HmacServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -33,6 +34,7 @@ trait HmacServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object Sign {
+
       def succeedsWith(expectedSignature: String) =
         when(aMock.sign(any, any)).thenReturn(expectedSignature)
     }

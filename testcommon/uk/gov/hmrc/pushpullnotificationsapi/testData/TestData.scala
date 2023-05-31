@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.testData
 
+import java.time.Instant
+import java.util.UUID
+
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, Client, ClientSecretValue, ConfirmationId, PullSubscriber, PushSubscriber}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
-
-import java.time.{Duration, Instant}
-import java.util.UUID
 
 trait TestData {
 
@@ -56,7 +57,6 @@ trait TestData {
   val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
   val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
-
   val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
   val url = "https://test"
   val notificationId: NotificationId = NotificationId(UUID.randomUUID())
@@ -87,6 +87,7 @@ trait TestData {
     )
 
   val failedNotification = notification.copy(status = FAILED)
+
   def notificationWithRetryAfter(retryAfter: Instant): Notification = Notification(
     NotificationId(UUID.randomUUID()),
     BoxId(UUID.randomUUID()),
@@ -95,6 +96,5 @@ trait TestData {
     NotificationStatus.FAILED,
     retryAfter
   )
-
 
 }

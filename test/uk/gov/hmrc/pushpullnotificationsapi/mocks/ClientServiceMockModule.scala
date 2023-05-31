@@ -16,13 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
+import scala.concurrent.Future.successful
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
-
-import scala.concurrent.Future.successful
 
 trait ClientServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -37,6 +39,7 @@ trait ClientServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object GetClientSecrets {
+
       def succeedsWith(clientId: ClientId, clientSecret: ClientSecretValue) = {
         when(aMock.getClientSecrets(eqTo(clientId))).thenReturn(successful(Some(Seq(clientSecret))))
       }
@@ -45,7 +48,9 @@ trait ClientServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
         when(aMock.getClientSecrets(eqTo(clientId))).thenReturn(successful(None))
       }
     }
+
     object FindOrCreateClient {
+
       def verifyNeverCalled() = {
         verify(never).findOrCreateClient(*[ClientId])
       }

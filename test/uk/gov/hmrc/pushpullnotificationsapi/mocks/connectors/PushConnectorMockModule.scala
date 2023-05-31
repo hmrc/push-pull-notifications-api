@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors
 
+import scala.concurrent.Future.successful
+
+import org.mockito.captor.ArgCaptor
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import scala.concurrent.Future.{failed, successful}
-import org.mockito.captor.ArgCaptor
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 
 trait PushConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
@@ -38,10 +39,11 @@ trait PushConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object ValidateCallbackUrl {
+
       def succeedsFor(request: UpdateCallbackUrlRequest) =
         when(aMock.validateCallbackUrl(eqTo(request))).thenReturn(successful(PushConnectorSuccessResult()))
 
-      def failsFor(request: UpdateCallbackUrlRequest)=
+      def failsFor(request: UpdateCallbackUrlRequest) =
         when(aMock.validateCallbackUrl(eqTo(request))).thenReturn(successful(PushConnectorFailedResult("")))
 
       def verifyCalled(request: UpdateCallbackUrlRequest): Unit = {
@@ -50,6 +52,7 @@ trait PushConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
     }
 
     object Send {
+
       def fails() = {
         val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
         when(aMock.send(outboundNotificationCaptor)(*))

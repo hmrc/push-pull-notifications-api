@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors
 
+import scala.concurrent.Future.{failed, successful}
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, SessionRecordNotFound}
 
-import scala.concurrent.Future.{failed, successful}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException}
 
 trait AuthConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
-  trait BaseAuthConnectorMock{
+  trait BaseAuthConnectorMock {
     def aMock: AuthConnector
 
     def verify = MockitoSugar.verify(aMock)
@@ -34,6 +35,7 @@ trait AuthConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
     def verifyZeroInteractions() = MockitoSugar.verifyZeroInteractions(aMock)
 
     object Authorise {
+
       def failsWith(result: AuthorisationException) = {
         when(aMock.authorise[Option[String]](*, *)(*, *)).thenReturn(failed(result))
       }

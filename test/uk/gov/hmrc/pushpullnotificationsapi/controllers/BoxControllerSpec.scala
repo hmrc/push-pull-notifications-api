@@ -16,9 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.http.Status.NO_CONTENT
@@ -30,6 +34,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, route, status, _}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.BoxServiceMockModule
@@ -38,10 +43,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
-import java.util.UUID
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
 
 class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with AuthConnectorMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -71,7 +72,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
   def emptyJsonBody(boxNameVal: String = boxName, clientIdVal: String = clientId.value): String =
     raw"""{"boxName": "$boxNameVal",
          |"clientId": "$clientIdVal" }""".stripMargin
-
 
   "BoxController" when {
     def validateResult(result: Future[Result], expectedStatus: Int, expectedBodyStr: String) = {
@@ -114,7 +114,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 400 when request payload is missing boxName" in {
@@ -126,7 +126,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName and clientId in request body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 415 when content type header is invalid" in {
@@ -138,7 +138,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 415 when content type header is empty" in {
@@ -150,7 +150,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 422 when Left returned from Box Service" in {
@@ -171,7 +171,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), INTERNAL_SERVER_ERROR, s"""{}""")
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 403 when invalid useragent provided" in {
@@ -179,7 +179,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doPut("/box", validHeadersWithInValidUserAgent, jsonBody), FORBIDDEN, s"""{"code":"FORBIDDEN","message":"Authorisation failed"}""")
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 403 when no useragent header provided" in {
@@ -209,7 +209,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 400 when invalid JSon payload sent" in {
@@ -221,7 +221,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
     }
 
@@ -266,7 +266,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 400 when request payload is missing boxName" in {
@@ -278,7 +278,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName in request body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 406 when accept header is invalid" in {
@@ -290,7 +290,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = s"""{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 415 when content type header is invalid" in {
@@ -302,7 +302,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 415 when content type header is empty" in {
@@ -314,7 +314,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 422 when Left returned from Box Service" in {
@@ -327,7 +327,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedStatus = UNPROCESSABLE_ENTITY,
           expectedBodyStr = s"""{"code":"UNKNOWN_ERROR","message":"unable to createBox:some error"}"""
         )
-
 
         BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, true)
       }
@@ -351,7 +350,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
 
       "return 400 when invalid JSon payload sent" in {
@@ -363,7 +362,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           expectedBodyStr = """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
         )
 
-         BoxServiceMock.verifyZeroInteractions()
+        BoxServiceMock.verifyZeroInteractions()
       }
     }
 
@@ -599,7 +598,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           OK,
           """{"successful":true}"""
         )
@@ -616,7 +616,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "")),
+            createRequest("clientId", "")
+          ),
           OK,
           """{"successful":true}"""
         )
@@ -631,7 +632,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeaders,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           FORBIDDEN,
           """{"code":"FORBIDDEN","message":"Authorisation failed"}"""
         )
@@ -648,7 +650,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           NOT_FOUND,
           """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
         )
@@ -665,7 +668,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           OK,
           s"""{"successful":false,"errorMessage":"$errorMessage"}"""
         )
@@ -677,13 +681,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
         setUpAppConfig(List("api-subscription-fields"))
         val errorMessage = "Unable to update"
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged,  CallbackValidationFailed(errorMessage))
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, CallbackValidationFailed(errorMessage))
 
         validateResult(
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           OK,
           s"""{"successful":false,"errorMessage":"$errorMessage"}"""
         )
@@ -694,13 +699,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 401 if client id does not match that on the box" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged,  UpdateCallbackUrlUnauthorisedResult())
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UpdateCallbackUrlUnauthorisedResult())
 
         validateResult(
           doPut(
             s"/box/${boxId.value.toString}/callback",
             validHeadersWithValidUserAgent,
-            createRequest("clientId", "callbackUrl")),
+            createRequest("clientId", "callbackUrl")
+          ),
           UNAUTHORIZED,
           s"""{"code":"UNAUTHORISED","message":"Client Id did not match"}"""
         )
@@ -721,11 +727,10 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 400 when payload is missing the clientId value" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-
         validateResult(
-            doPut(s"/box/${boxId.value.toString}/callback", validHeadersWithValidUserAgent, createRequest("", "callbackUrl")),
-            BAD_REQUEST,
-        s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId is required"}"""
+          doPut(s"/box/${boxId.value.toString}/callback", validHeadersWithValidUserAgent, createRequest("", "callbackUrl")),
+          BAD_REQUEST,
+          s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"clientId is required"}"""
         )
 
         BoxServiceMock.UpdateCallbackUrl.verifyNoInteractions()
@@ -743,13 +748,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
 
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
             createRequest("callbackUrl")
-        ),
-            OK,
-        """{"successful":true}""")
+          ),
+          OK,
+          """{"successful":true}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
@@ -759,11 +766,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
 
-        validateResult(doPut(
-          s"/cmb/box/${boxId.value.toString}/callback",
-          validHeadersJson,
-          createRequest("")),
-          OK,"""{"successful":true}""")
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
+            validHeadersJson,
+            createRequest("")
+          ),
+          OK,
+          """{"successful":true}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
@@ -773,13 +784,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, BoxIdNotFound())
 
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
             createRequest("callbackUrl")
-        ),
-            NOT_FOUND,
-        """{"code":"BOX_NOT_FOUND","message":"Box not found"}""")
+          ),
+          NOT_FOUND,
+          """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
@@ -790,13 +803,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UnableToUpdateCallbackUrl(errorMessage))
 
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
             createRequest("callbackUrl")
-        ),
-            OK,
-        s"""{"successful":false,"errorMessage":"$errorMessage"}""")
+          ),
+          OK,
+          s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
@@ -807,13 +822,15 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UnableToUpdateCallbackUrl(errorMessage))
 
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
             createRequest("callbackUrl")
-        ),
-            OK,
-        s"""{"successful":false,"errorMessage":"$errorMessage"}""")
+          ),
+          OK,
+          s"""{"successful":false,"errorMessage":"$errorMessage"}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
@@ -823,23 +840,29 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UpdateCallbackUrlUnauthorisedResult())
 
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
             createRequest("callbackUrl")
-        ),
-            FORBIDDEN,
-        """{"code":"FORBIDDEN","message":"Access denied"}""")
+          ),
+          FORBIDDEN,
+          """{"code":"FORBIDDEN","message":"Access denied"}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
       }
 
       "return 400 when payload is non JSON" in {
-        validateResult(doPut(
-        s"/cmb/box/${boxId.value.toString}/callback",
+        validateResult(
+          doPut(
+            s"/cmb/box/${boxId.value.toString}/callback",
             validHeadersJson,
-        "someBody"),
-            BAD_REQUEST,"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}""")
+            "someBody"
+          ),
+          BAD_REQUEST,
+          """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
+        )
 
         BoxServiceMock.UpdateCallbackUrl.verifyNoInteractions()
       }
@@ -851,8 +874,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200 and valid when ownership confirmed" in {
         BoxServiceMock.ValidateBoxOwner.thenSucceedsWith(boxId, clientId)
 
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)),
-          OK, """{"valid":true}""")
+        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)), OK, """{"valid":true}""")
 
         BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
       }
@@ -860,8 +882,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200 and invalid when ownership not confirmed" in {
         BoxServiceMock.ValidateBoxOwner.thenFailsWith(boxId, clientId, ValidateBoxOwnerFailedResult("Ownership doesn't match"))
 
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)),
-          OK, """{"valid":false}""")
+        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)), OK, """{"valid":false}""")
 
         BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
       }
@@ -869,22 +890,31 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 404 when box not found" in {
         BoxServiceMock.ValidateBoxOwner.thenFailsWith(boxId, clientId, ValidateBoxOwnerNotFoundResult("Box not found"))
 
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)),
-          NOT_FOUND, """{"code":"BOX_NOT_FOUND","message":"Box not found"}""")
+        validateResult(
+          doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)),
+          NOT_FOUND,
+          """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
+        )
 
         BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
       }
 
       "return 400 when clientId is empty" in {
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, "")),
-          BAD_REQUEST, """{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxId and clientId in request body"}""")
+        validateResult(
+          doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, "")),
+          BAD_REQUEST,
+          """{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxId and clientId in request body"}"""
+        )
 
         BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
       }
 
       "return 400 when format is wrong" in {
-        validateResult(doPost("/cmb/validate", validHeaders, s"""{"boxId":"${boxId.value.toString}"}"""),
-          BAD_REQUEST, """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}""")
+        validateResult(
+          doPost("/cmb/validate", validHeaders, s"""{"boxId":"${boxId.value.toString}"}"""),
+          BAD_REQUEST,
+          """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
+        )
 
         BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
 
@@ -892,16 +922,22 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
       "return 406 when accept header is missing" in {
 
-        validateResult(doPost("/cmb/validate", validHeaders - ACCEPT, validateBody(boxId.value.toString, clientId.value)),
-          NOT_ACCEPTABLE, """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}""")
+        validateResult(
+          doPost("/cmb/validate", validHeaders - ACCEPT, validateBody(boxId.value.toString, clientId.value)),
+          NOT_ACCEPTABLE,
+          """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
+        )
 
         BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
 
       }
 
       "return 406 when accept header is invalid" in {
-        validateResult(doPost("/cmb/validate", validHeaders + (ACCEPT -> "XYZAccept"), validateBody(boxId.value.toString, clientId.value)),
-          NOT_ACCEPTABLE, """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}""")
+        validateResult(
+          doPost("/cmb/validate", validHeaders + (ACCEPT -> "XYZAccept"), validateBody(boxId.value.toString, clientId.value)),
+          NOT_ACCEPTABLE,
+          """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
+        )
 
         BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
       }
