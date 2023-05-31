@@ -101,11 +101,11 @@ class BoxController @Inject() (
       }
 
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
-    (boxName, clientId) match {
+    ((boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
       case (None, None)                    => boxService.getAllBoxes().map(boxes => Ok(Json.toJson(boxes)))
       case _                               => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, s"Must specify both boxName and clientId query parameters or neither")))
-    }
+    }) recover recovery
   }
 
   private def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Result] = {
@@ -136,7 +136,7 @@ class BoxController @Inject() (
           if (addCallbackUrlRequest.isInvalid()) {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId is required")))
           } else {
-            boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
+            boxService.updateCallbackUrl(boxId, addCallbackUrlRequest, clientManaged = false) map {
               case _: CallbackUrlUpdated                  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
               case c: CallbackValidationFailed            => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
               case u: UnableToUpdateCallbackUrl           => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))

@@ -49,7 +49,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
         sendConfirmation(confirmationRequest)
         true
       case None                      =>
-        logger.trace(s"No confirmation needed for ${notificationId}")
+        logger.trace(s"No confirmation needed for notificationId: ${notificationId.value}")
         false
     }
   }
@@ -63,7 +63,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
         repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)
         true
       case _: ConfirmationConnectorFailedResult  =>
-        logger.info(s"Confirmation not sent for notificationId: ${request.notificationId}")
+        logger.info(s"Confirmation not sent for notificationId: ${request.notificationId.value}")
         false
     }
   }
