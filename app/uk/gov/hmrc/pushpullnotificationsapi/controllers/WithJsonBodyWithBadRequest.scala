@@ -16,18 +16,14 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-
-import play.api.mvc.Request
-import play.api.libs.json.Reads
-import play.api.libs.json._
-import play.api.mvc.Results.BadRequest
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsError
-import uk.gov.hmrc.play.bootstrap.controller.WithJsonBody
 import scala.concurrent.Future
-import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode
-import play.api.mvc.Result
+
+import play.api.libs.json.{JsError, JsSuccess, Reads, _}
+import play.api.mvc.Results.BadRequest
+import play.api.mvc.{Request, Result}
+import uk.gov.hmrc.play.bootstrap.controller.WithJsonBody
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 trait WithJsonBodyWithBadRequest {
   self: WithJsonBody =>

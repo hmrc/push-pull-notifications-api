@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import play.api.libs.json._
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {

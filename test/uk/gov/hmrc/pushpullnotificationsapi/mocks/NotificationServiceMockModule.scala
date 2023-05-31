@@ -45,26 +45,26 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       object XML {
 
         def succeedsFor(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
             .thenReturn(successful(NotificationCreateSuccessResult()))
         }
 
         def verifyCalledWith(boxId: BoxId, xmlBody: String) = {
-          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *)
+          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
         }
 
         def failsWithDuplicate(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
             .thenReturn(successful(NotificationCreateFailedDuplicateResult("bang")))
         }
 
         def failsWithBoxNotFound(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
             .thenReturn(successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
         }
 
         def throwsFor(boxId: BoxId, xmlBody: String, e: Exception) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*, *))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
             .thenReturn(failed(e))
         }
       }
@@ -72,12 +72,12 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       object Json {
 
         def succeedsFor(boxId: BoxId, jsonBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*))
             .thenReturn(successful(NotificationCreateSuccessResult()))
         }
 
         def verifyCalledWith(boxId: BoxId, jsonBody: String) = {
-          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*, *)
+          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)
         }
       }
     }
@@ -85,32 +85,32 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     object GetNotifications {
 
       def succeedsWith(boxId: BoxId, clientId: ClientId, notifications: Notification*) = {
-        when(aMock.getNotifications(eqTo(boxId), eqTo(clientId), eqTo(None), eqTo(None), eqTo(None))(*))
+        when(aMock.getNotifications(eqTo(boxId), eqTo(clientId), eqTo(None), eqTo(None), eqTo(None)))
           .thenReturn(successful(Right(notifications.toList)))
       }
 
       def succeedsWith(boxId: BoxId, status: NotificationStatus, list: List[Notification]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *)(*))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
           .thenReturn(successful(Right(list)))
       }
 
       def failsWithNotFoundFor(boxId: BoxId, status: NotificationStatus, from: Option[Instant], to: Option[Instant]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to))(*))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to)))
           .thenReturn(successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
       }
 
       def failsWithNotFoundFor(boxId: BoxId, status: NotificationStatus) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *)(*))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
           .thenReturn(successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
       }
 
       def failsWithUnauthorisedFor(boxId: BoxId, status: NotificationStatus) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *)(*))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
           .thenReturn(successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
       }
 
       def failsWithUnauthorisedFor(boxId: BoxId, status: NotificationStatus, from: Option[Instant], to: Option[Instant]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to))(*))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to)))
           .thenReturn(successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
       }
     }
@@ -118,16 +118,16 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     object AcknowledgeNotifications {
 
       def succeeds() = {
-        when(NotificationsServiceMock.aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *))
+        when(NotificationsServiceMock.aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
           .thenReturn(successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
       }
 
       def findsNothing() = {
-        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *)).thenReturn(successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
+        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*)).thenReturn(successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
       }
 
       def isUnauthorised() = {
-        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*, *)).thenReturn(successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
+        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*)).thenReturn(successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
       }
     }
   }

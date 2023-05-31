@@ -48,8 +48,7 @@ import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, _}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService

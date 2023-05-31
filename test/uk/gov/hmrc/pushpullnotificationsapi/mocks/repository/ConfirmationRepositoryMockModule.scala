@@ -17,10 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.{failed, successful}
+
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 

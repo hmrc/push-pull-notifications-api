@@ -26,16 +26,14 @@ import com.google.inject.Inject
 import play.api.http.Status.CREATED
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.Actors
-import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.EventId
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{ApplicationEvents, EventId}
 import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.ApplicationEvents
-
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
 class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {

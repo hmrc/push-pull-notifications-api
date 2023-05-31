@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 

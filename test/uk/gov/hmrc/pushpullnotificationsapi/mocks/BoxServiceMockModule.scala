@@ -42,57 +42,57 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object CreateBox {
 
       def thenFailsWithException(error: String) = {
-        when(aMock.createBox(*[ClientId], *, *)(*, *))
+        when(aMock.createBox(*[ClientId], *, *)(*))
           .thenReturn(failed(new RuntimeException(error)))
       }
 
       def thenSucceedCreated(box: Box) = {
-        when(aMock.createBox(*[ClientId], *, *)(*, *)).thenReturn(successful(BoxCreatedResult(box)))
+        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxCreatedResult(box)))
       }
 
       def thenSucceedRetrieved(box: Box) = {
-        when(aMock.createBox(*[ClientId], *, *)(*, *)).thenReturn(successful(BoxRetrievedResult(box)))
+        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxRetrievedResult(box)))
       }
 
       def thenFailsWithBoxName(boxName: String, clientId: ClientId) = {
-        when(aMock.createBox(eqTo(clientId), eqTo(boxName), *)(*, *)).thenReturn(successful(
+        when(aMock.createBox(eqTo(clientId), eqTo(boxName), *)(*)).thenReturn(successful(
           BoxCreateFailedResult(s"Box with name :$boxName already exists for clientId: ${clientId.value} but unable to retrieve")
         ))
       }
 
       def thenFailsWithCreateFailedResult(error: String) = {
-        when(aMock.createBox(*[ClientId], *, *)(*, *)).thenReturn(successful(BoxCreateFailedResult(error)))
+        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxCreateFailedResult(error)))
       }
 
       def verifyCalledWith(clientId: ClientId, boxName: String, isClientManaged: Boolean) = {
-        verify.createBox(eqTo(clientId), eqTo(boxName), eqTo(isClientManaged))(*, *)
+        verify.createBox(eqTo(clientId), eqTo(boxName), eqTo(isClientManaged))(*)
       }
     }
 
     object DeleteBox {
 
       def failsWithException(msg: String) = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])(*)).thenReturn(failed(new RuntimeException(msg)))
+        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(failed(new RuntimeException(msg)))
       }
 
       def failedResultWithText(errorText: String) = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])(*)).thenReturn(successful(BoxDeleteFailedResult(errorText)))
+        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteFailedResult(errorText)))
       }
 
       def failsNotFound() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])(*)).thenReturn(successful(BoxDeleteNotFoundResult()))
+        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteNotFoundResult()))
       }
 
       def failsAccessDenied() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])(*)).thenReturn(successful(BoxDeleteAccessDeniedResult()))
+        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteAccessDeniedResult()))
       }
 
       def isSuccessful() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])(*)).thenReturn(successful(BoxDeleteSuccessfulResult()))
+        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteSuccessfulResult()))
       }
 
       def verifyCalledWith(clientId: ClientId, boxId: BoxId) = {
-        verify.deleteBox(eqTo(clientId), eqTo(boxId))(*)
+        verify.deleteBox(eqTo(clientId), eqTo(boxId))
       }
 
     }
@@ -117,15 +117,15 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object GetAllBoxes {
 
       def fails(msg: String) = {
-        when(aMock.getAllBoxes()(*)).thenReturn(failed(new RuntimeException(msg)))
+        when(aMock.getAllBoxes()).thenReturn(failed(new RuntimeException(msg)))
       }
 
       def thenSuccess(boxes: List[Box]) = {
-        when(aMock.getAllBoxes()(*)).thenReturn(successful(boxes))
+        when(aMock.getAllBoxes()).thenReturn(successful(boxes))
       }
 
       def verifyCalled() {
-        verify.getAllBoxes()(*)
+        verify.getAllBoxes()
       }
     }
 
@@ -176,15 +176,15 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
 
       def thenFailsWith(boxId: BoxId, clientId: ClientId, result: ValidateBoxOwnerResult) = {
-        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*)).thenReturn(successful(result))
+        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))).thenReturn(successful(result))
       }
 
       def verifyCalledWith(boxId: BoxId, clientId: ClientId) = {
-        verify.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*)
+        verify.validateBoxOwner(eqTo(boxId), eqTo(clientId))
       }
 
       def thenSucceedsWith(boxId: BoxId, clientId: ClientId) = {
-        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))(*)).thenReturn(successful(ValidateBoxOwnerSuccessResult()))
+        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))).thenReturn(successful(ValidateBoxOwnerSuccessResult()))
       }
 
     }

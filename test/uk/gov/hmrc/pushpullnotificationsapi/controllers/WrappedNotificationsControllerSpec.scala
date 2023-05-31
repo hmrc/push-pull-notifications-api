@@ -35,15 +35,15 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
+import uk.gov.hmrc.auth.core.AuthConnector
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 
 class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -183,7 +183,8 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
       }
 
       "return 415 when bad contentType header is sent" in {
-        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), wrappedBody(xmlBody, MimeTypes.CSS))
+        val result =
+          doPost(s"/box/${boxId.value}/wrapped-notifications", Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"), wrappedBody(xmlBody, MimeTypes.CSS))
         status(result) should be(UNSUPPORTED_MEDIA_TYPE)
 
         verifyNoInteractions(mockNotificationService)
@@ -228,7 +229,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
       }
     }
   }
-
 
   def stringToDateTime(dateStr: String): Instant = {
     Instant.parse(dateStr)

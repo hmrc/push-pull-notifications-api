@@ -163,7 +163,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"UNKNOWN_ERROR","message":"unable to createBox:Box with name :$boxName already exists for clientId: ${clientId.value} but unable to retrieve" }"""
         )
 
-        verify(BoxServiceMock.aMock).createBox(eqTo(clientId), eqTo(boxName), eqTo(false))(*, *)
+        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, false)
       }
 
       "return 400 when useragent config is empty" in {

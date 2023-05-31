@@ -17,11 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import scala.concurrent.ExecutionContext.Implicits.global
+
 import uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors.ConfirmationConnectorMockModule
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ConfirmationRepositoryMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationStatus, OutboundConfirmation}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationCreateServiceFailedResult, ConfirmationCreateServiceSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 

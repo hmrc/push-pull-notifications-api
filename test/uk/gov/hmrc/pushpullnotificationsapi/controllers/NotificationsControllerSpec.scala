@@ -21,9 +21,11 @@ import java.time.{Duration, Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+
 import akka.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.http.HeaderNames.ACCEPT
 import play.api.inject.bind
@@ -36,6 +38,7 @@ import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule

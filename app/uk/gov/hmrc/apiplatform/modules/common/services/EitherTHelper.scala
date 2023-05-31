@@ -26,12 +26,12 @@ trait EitherTHelper[E] {
 
   // def pure[A](in: A)                                                            = EitherT.pure[Future, E](in)
   // def leftT[R](err: E)                                                          = EitherT.leftT[Future, R](err)
-  def liftF[A](in: Future[A]): EitherT[Future, E, A]                            = EitherT.liftF[Future, E, A](in)
-  def fromOption[A](in: Option[A], error: => E): EitherT[Future, E, A]          = EitherT.fromOption(in, error)
+  def liftF[A](in: Future[A]): EitherT[Future, E, A] = EitherT.liftF[Future, E, A](in)
+  def fromOption[A](in: Option[A], error: => E): EitherT[Future, E, A] = EitherT.fromOption(in, error)
   // def fromOptionF[A](in: Future[Option[A]], error: => E): EitherT[Future, E, A] = EitherT.fromOptionF(in, error)
   // def fromEither[A](in: Either[E, A]): EitherT[Future, E, A]                    = EitherT.fromEither(in)
   // def fromEitherF[A](in: Future[Either[E, A]]): EitherT[Future, E, A]           = EitherT.apply(in)
-  def cond[A](in: => Boolean, right: => A, left: => E)                          = EitherT.cond[Future](in, right, left)
+  def cond[A](in: => Boolean, right: => A, left: => E) = EitherT.cond[Future](in, right, left)
 
   // def fromValidatedF[A](in: Future[Validated[E, A]]): EitherT[Future, E, A] = EitherT(in.map(_.toEither))
   // def fromValidated[A](in: Validated[E, A]): EitherT[Future, E, A]          = EitherT.fromEither(in.toEither)

@@ -23,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import com.mongodb.MongoWriteException
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
@@ -34,10 +35,8 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, PlayHmrcMongoFormatters}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
-import com.mongodb.MongoWriteException
 
 @Singleton
 class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent)(implicit ec: ExecutionContext)
@@ -108,7 +107,9 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
 
   def fetchRetryableConfirmations: Source[ConfirmationRequest, NotUsed] = {
     Source.fromPublisher(
-      collection.find(and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Instant.now)))).toObservable()
+      collection.find(
+        and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Instant.now)))
+      ).toObservable()
     )
   }
 

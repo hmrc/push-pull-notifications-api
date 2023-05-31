@@ -33,14 +33,15 @@ class NotificationsService @Inject() (
     boxRepository: BoxRepository,
     notificationsRepository: NotificationsRepository,
     pushService: NotificationPushService,
-    confirmationService: ConfirmationService)(implicit ec: ExecutionContext)
+    confirmationService: ConfirmationService
+  )(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   def acknowledgeNotifications(
       boxId: BoxId,
       clientId: ClientId,
       request: AcknowledgeNotificationsRequest
-    )(implicit  hc: HeaderCarrier
+    )(implicit hc: HeaderCarrier
     ): Future[AcknowledgeNotificationsServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {

@@ -23,9 +23,9 @@ import scala.util.{Failure, Success, Try}
 
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.{ActionRefiner, Result}
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.http.HttpErrorFunctions
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger

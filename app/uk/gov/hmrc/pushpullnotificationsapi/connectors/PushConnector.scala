@@ -27,7 +27,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HttpClient, HttpReads}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{fromUpdateCallbackUrlRequest, PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector.{PushConnectorResponse, VerifyCallbackUrlRequest, VerifyCallbackUrlResponse, fromUpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushConnectorFailedResult, PushConnectorResult, PushConnectorSuccessResult, UpdateCallbackUrlRequest}

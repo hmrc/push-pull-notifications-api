@@ -36,7 +36,8 @@ class BoxService @Inject() (
     pushConnector: PushConnector,
     applicationConnector: ThirdPartyApplicationConnector,
     eventsConnector: ApiPlatformEventsConnector,
-    clientService: ClientService)(implicit ec: ExecutionContext)
+    clientService: ClientService
+  )(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)(implicit hc: HeaderCarrier): Future[CreateBoxResult] = {

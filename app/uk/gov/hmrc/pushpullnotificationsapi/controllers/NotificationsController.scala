@@ -17,23 +17,20 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.Future.successful
+import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.services.{NotificationsService}
-import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import play.api.libs.json.JsValue
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, _}
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 @Singleton()
 class NotificationsController @Inject() (
@@ -46,28 +43,31 @@ class NotificationsController @Inject() (
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
   )(implicit val ec: ExecutionContext)
-    extends BackendController(cc) with NotificationUtils with WithJsonBodyWithBadRequest {
+    extends BackendController(cc)
+    with NotificationUtils
+    with WithJsonBodyWithBadRequest {
 
   val ET = EitherTHelper.make[Result]
 
   val maxNotificationSize = appConfig.maxNotificationSize
   val maxWrappedNotificationSize = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
-  
+
   def saveNotification(boxId: BoxId): Action[String] =
     (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.tolerantText(maxNotificationSize)) { implicit request =>
-      
       val handleNotification = (notificationId: NotificationId) => successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))
 
       (
         for {
-          contentType        <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not found")) )
-          messageContentType <- ET.fromOption(contentTypeHeaderToNotificationType(contentType), UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")) )
-          body                = request.body
-          isValidBody         = validateBodyAgainstContentType(messageContentType, body)
-          messageBody        <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
-          result             <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
-        }
-        yield result
+          contentType <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not found")))
+          messageContentType <- ET.fromOption(
+                                  contentTypeHeaderToNotificationType(contentType),
+                                  UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))
+                                )
+          body = request.body
+          isValidBody = validateBodyAgainstContentType(messageContentType, body)
+          messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+          result <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
+        } yield result
       ).merge
     }
 
@@ -82,7 +82,7 @@ class NotificationsController @Inject() (
           case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
-  }
+      }
 
   def acknowledgeNotifications(boxId: BoxId): Action[JsValue] =
     (Action andThen
@@ -105,12 +105,11 @@ class NotificationsController @Inject() (
       }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
     }
 
-
   private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
 
     val notificationIds = request.notificationIds
 
     (notificationIds.nonEmpty && notificationIds.size <= appConfig.numberOfNotificationsToRetrievePerRequest && notificationIds.distinct == notificationIds)
-   
+
   }
 }

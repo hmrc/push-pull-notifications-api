@@ -16,34 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
-import play.mvc.Http.MimeTypes
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
-import scala.concurrent.Future
 import scala.concurrent.Future.successful
-import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
-import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateSuccessResult
-import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateFailedBoxIdNotFoundResult
-import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationCreateFailedDuplicateResult
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
-import play.api.libs.json.JsValue
-import scala.xml.NodeSeq
-import play.api.libs.json.Json
-import play.api.mvc.Result
-import play.api.mvc.Results.{NotFound, InternalServerError}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import scala.concurrent.ExecutionContext
+import scala.xml.NodeSeq
+
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.Result
+import play.api.mvc.Results.{InternalServerError, NotFound}
+import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.http.HeaderCarrier
 
-
-
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 trait NotificationUtils {
   implicit val ec: ExecutionContext
   def notificationsService: NotificationsService
- 
+
   protected def contentTypeHeaderToNotificationType(contentType: String): Option[MessageContentType] = {
     contentType match {
       case MimeTypes.JSON => Some(MessageContentType.APPLICATION_JSON)
@@ -52,13 +43,20 @@ trait NotificationUtils {
     }
   }
 
-  protected def processNotification(boxId: BoxId, contentType: MessageContentType, message: String)(fn: (NotificationId) => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+  protected def processNotification(
+      boxId: BoxId,
+      contentType: MessageContentType,
+      message: String
+    )(fn: (NotificationId) => Future[Result]
+    )(implicit hc: HeaderCarrier
+    ): Future[Result] = {
     val notificationId = NotificationId.random
 
     notificationsService.saveNotification(boxId, notificationId, contentType, message) flatMap {
-      case _: NotificationCreateSuccessResult             => fn(notificationId)    
+      case _: NotificationCreateSuccessResult             => fn(notificationId)
       case _: NotificationCreateFailedBoxIdNotFoundResult => successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
-      case _: NotificationCreateFailedDuplicateResult     => successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
+      case _: NotificationCreateFailedDuplicateResult     =>
+        successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
     } recover recovery
   }
 
@@ -72,12 +70,11 @@ trait NotificationUtils {
       }
     }
     def checkValidJson(body: String) = validateBody[JsValue](body, body => Json.parse(body))
-    def checkValidXml(body: String)  = validateBody[NodeSeq](body, body => scala.xml.XML.loadString(body))
-    
+    def checkValidXml(body: String) = validateBody[NodeSeq](body, body => scala.xml.XML.loadString(body))
+
     notificationContentType match {
       case MessageContentType.APPLICATION_JSON => checkValidJson(body)
       case MessageContentType.APPLICATION_XML  => checkValidXml(body)
     }
   }
 }
-
