@@ -101,11 +101,11 @@ class BoxController @Inject() (
       }
 
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
-    (boxName, clientId) match {
+    ((boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
-      case (None, None)                    => boxService.getAllBoxes().map(boxes => Ok(Json.toJson(boxes))) recover recovery
+      case (None, None)                    => boxService.getAllBoxes().map(boxes => Ok(Json.toJson(boxes)))
       case _                               => Future.successful(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, s"Must specify both boxName and clientId query parameters or neither")))
-    }
+    }) recover recovery
   }
 
   private def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Result] = {
