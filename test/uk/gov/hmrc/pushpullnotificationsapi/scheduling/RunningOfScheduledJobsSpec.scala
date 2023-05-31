@@ -29,8 +29,10 @@ import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
+import play.api.test.DefaultAwaitTimeout
+import play.api.test.Helpers.await
 
-class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventually with MockitoSugar with GuiceOneAppPerTest {
+class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventually with MockitoSugar with GuiceOneAppPerTest with DefaultAwaitTimeout {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = 5.seconds)
@@ -114,7 +116,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
       runner.cancellables = Seq(new StubCancellable, new StubCancellable)
 
       every(runner.cancellables) should not be 'cancelled
-      testApp.stop()
+      await(testApp.stop())
       every(runner.cancellables) should be('cancelled)
     }
     "block while a scheduled jobs are still running" in new TestCase {

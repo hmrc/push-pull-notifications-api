@@ -16,33 +16,25 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ClientRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class ClientServiceSpec extends AsyncHmrcSpec {
+class ClientServiceSpec extends AsyncHmrcSpec with TestData {
 
-  private val clientIDUUID = UUID.randomUUID().toString
-  private val clientId: ClientId = ClientId(clientIDUUID)
-  private val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
-  private val client: Client = Client(clientId, Seq(clientSecret))
+  trait Setup extends ClientRepositoryMockModule {
 
-  trait Setup {
-    val mockClientRepository: ClientRepository = mock[ClientRepository]
     val mockClientSecretGenerator: ClientSecretGenerator = mock[ClientSecretGenerator]
-    val objInTest = new ClientService(mockClientRepository, mockClientSecretGenerator)
+    val objInTest = new ClientService(ClientRepositoryMock.aMock, mockClientSecretGenerator)
   }
 
   "getClientSecrets" should {
 
     "return ClientSecrets from matching client" in new Setup {
-      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
+      ClientRepositoryMock.FindByClientId.thenSuccessWith(clientId, Some(client))
 
       val clientSecrets: Option[Seq[ClientSecretValue]] = await(objInTest.getClientSecrets(clientId))
 
@@ -50,7 +42,7 @@ class ClientServiceSpec extends AsyncHmrcSpec {
     }
 
     "return none when no client is found" in new Setup {
-      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(None))
+      ClientRepositoryMock.FindByClientId.thenClientNotFound(clientId)
 
       val clientSecrets: Option[Seq[ClientSecretValue]] = await(objInTest.getClientSecrets(clientId))
 
@@ -60,25 +52,28 @@ class ClientServiceSpec extends AsyncHmrcSpec {
 
   "findOrCreateClient" should {
     "not insert a new client into the client repository when one already exists" in new Setup {
-      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(Some(client)))
+      ClientRepositoryMock.FindByClientId.thenSuccessWith(clientId, Some(client))
 
       val result: Client = await(objInTest.findOrCreateClient(clientId))
 
       result shouldBe client
-      verify(mockClientRepository).findByClientId(clientId)
-      verifyNoMoreInteractions(mockClientRepository)
+      ClientRepositoryMock.FindByClientId.verifyCalledWith(clientId)
+
+      ClientRepositoryMock.InsertClient.neverCalled()
     }
 
     "insert a new client into the client repository when none already exist" in new Setup {
-      when(mockClientRepository.findByClientId(clientId)).thenReturn(Future.successful(None))
-      when(mockClientRepository.insertClient(client)).thenReturn(Future.successful(client))
+      ClientRepositoryMock.FindByClientId.thenClientNotFound(clientId)
+
+      ClientRepositoryMock.InsertClient.thenSuccessfulWith(client)
+
       when(mockClientSecretGenerator.generate).thenReturn(clientSecret)
 
       val result: Client = await(objInTest.findOrCreateClient(clientId))
 
       result shouldBe client
-      verify(mockClientRepository).findByClientId(clientId)
-      verify(mockClientRepository).insertClient(client)
+      ClientRepositoryMock.FindByClientId.verifyCalledWith(clientId)
+      ClientRepositoryMock.InsertClient.verifyCalledWith(client)
     }
   }
 }

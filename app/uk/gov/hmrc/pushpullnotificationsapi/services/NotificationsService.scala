@@ -96,7 +96,7 @@ class NotificationsService @Inject() (
             case Some(_) =>
               pushService.handlePushNotification(box, notification)
               NotificationCreateSuccessResult()
-            case None    => NotificationCreateFailedDuplicateResult(s"unable to create notification Duplicate found")
+            case None    => NotificationCreateFailedDuplicateResult("unable to create notification Duplicate found")
           }
       }
   }
