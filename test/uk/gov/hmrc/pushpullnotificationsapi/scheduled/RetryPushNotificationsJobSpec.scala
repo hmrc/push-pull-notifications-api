@@ -34,6 +34,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.time.{Duration, Instant}
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 import akka.stream.Materializer
@@ -49,7 +50,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{MongoLockRepositor
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import scala.concurrent.ExecutionContext
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -80,7 +80,6 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)
     MongoLockRepositoryMock.ReleaseLock.thenSuccess
 
-    
     def setUpSuccessMocksForNotification(retryNotification: RetryableNotification) = {
       NotificationPushServiceMock.HandlePushNotification.returnsTrueFor(retryNotification.box, retryNotification.notification)
     }
@@ -95,16 +94,16 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
         setUpSuccessMocksForNotification(retryableNotification)
         retryableNotification
       })
-      .toList
+        .toList
     }
 
     def buildFailed(i: Int): List[RetryableNotification] = {
-    Range.inclusive(1, i).map(_ => {
+      Range.inclusive(1, i).map(_ => {
         val retryableNotification: RetryableNotification = RetryableNotification(notification.copy(notificationId = NotificationId.random), BoxObjectWithPushSubscribers)
         setUpFailureMocksForNotification(retryableNotification)
         retryableNotification
       })
-      .toList
+        .toList
     }
 
     def runBatchTest(numberBad: Int, numberGood: Int)(implicit ec: ExecutionContext) = {
@@ -192,7 +191,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       result.message shouldBe "The execution of scheduled job RetryPushNotificationsJob failed with error 'Failed'. " +
         "The next execution of the job will do retry."
     }
-    
+
     "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
       runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
