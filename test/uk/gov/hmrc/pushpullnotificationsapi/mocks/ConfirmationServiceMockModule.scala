@@ -65,9 +65,6 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
 
       def thenSuccessWithDelayFor(confirmationRequest: ConfirmationRequest, result: Boolean = true) = {
         when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenReturn(slowFuture().map(_ => result))
-//
-//        doAnswer(AdditionalAnswers.answersWithDelay(1000, AdditionalAnswers.answer(_ => { successful(result)}))).when(aMock).sendConfirmation(eqTo(confirmationRequest))(*, *)
-//        when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenAnswer(_ => AdditionalAnswers.answersWithDelay(1000, AdditionalAnswers.answer( _ => successful(result))))
       }
       /*
 

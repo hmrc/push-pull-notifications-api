@@ -116,9 +116,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       val bad = buildFailed(numberBad)
       val good = buildSuccess(numberGood)
 
-//      bad.foreach(x => println(s"Bad ConfirmationId: ${x.confirmationId.value}"))
-//      good.foreach(x => println(s"Good ConfirmationId: ${x.confirmationId.value}"))
-
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(bad ++ good)
 
       val result: underTest.Result = await(underTest.execute)
@@ -197,9 +194,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         "The next execution of the job will do retry."
     }
 
-    // " scenarios
-    // 1). failure in batch stops 2nd batch and job <- replicated
-    // 2). 1st failure in a batch kills rest of batch and job
+
 
     "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
       runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
