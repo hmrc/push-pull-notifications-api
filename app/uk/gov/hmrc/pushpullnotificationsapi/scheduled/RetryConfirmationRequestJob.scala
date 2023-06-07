@@ -61,7 +61,7 @@ class RetryConfirmationRequestJob @Inject() (
       .recoverWith {
         case NonFatal(e) =>
           logger.error("Failed to retry failed push pull confirmation", e)
-          Future.failed(RunningOfJobFailed(name, e))
+          Future.failed(RunningOfJobFailed(name, e))// ??? is this also breaking it?
       }
   }
 
@@ -72,7 +72,7 @@ class RetryConfirmationRequestJob @Inject() (
       .recover {
         case NonFatal(e) =>
           logger.error(s"Unexpected error retrying confirmation ${confirmation.confirmationId} with exception: $e")
-          throw e
+          successful(())
       }
   }
 
