@@ -16,13 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
-
+import scala.concurrent.Future.{failed, successful}
 
 import akka.stream.scaladsl.Source
-
-import scala.concurrent.Future.{failed, successful}
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
@@ -90,7 +89,9 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
       }
 
     }
+
     object FetchRetryableConfirmations {
+
       def thenFails() = {
         when(aMock.fetchRetryableConfirmations)
           .thenReturn(Source.future(failed(new RuntimeException("Failed"))))
@@ -105,9 +106,11 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
       }
 
     }
+
     object UpdateRetryAfterDateTime {
+
       def neverCalled() = {
-        verify(never).updateRetryAfterDateTime(*[NotificationId], * )
+        verify(never).updateRetryAfterDateTime(*[NotificationId], *)
       }
 
       def verifyCalled() = {

@@ -34,12 +34,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+
 import akka.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ConfirmationServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{ConfirmationRepositoryMockModule, MongoLockRepositoryMockModule}
@@ -49,8 +53,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-import scala.concurrent.ExecutionContext
-
 class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
@@ -58,9 +60,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     .configure("metrics.enabled" -> false).build()
   implicit lazy val materializer: Materializer = app.materializer
 
-  class Setup(val batch: Int = 5) extends MongoLockRepositoryMockModule
-  with ConfirmationServiceMockModule
-  with ConfirmationRepositoryMockModule with TestData {
+  class Setup(val batch: Int = 5) extends MongoLockRepositoryMockModule with ConfirmationServiceMockModule with ConfirmationRepositoryMockModule with TestData {
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     val jobConfig: RetryConfirmationRequestJobConfig = RetryConfirmationRequestJobConfig(
@@ -81,7 +81,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)
     MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
-
     def setUpSuccessMocksForRequest(confirmationRequest: ConfirmationRequest) = {
       ConfirmationServiceMock.SendConfirmation.thenSuccessWithDelayFor(confirmationRequest)
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.thenSuccessWith(Some(confirmationRequest))
@@ -92,14 +91,14 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     }
 
     def buildSuccess(i: Int): List[ConfirmationRequest] = {
-      Range.inclusive(1,i).map(_ => {
+      Range.inclusive(1, i).map(_ => {
         val notificationId = NotificationId.random
         val confirmationId = ConfirmationId.random
         val request = confirmationRequest.copy(confirmationId = confirmationId, notificationId = notificationId)
         setUpSuccessMocksForRequest(request)
         request
       })
-      .toList
+        .toList
     }
 
     def buildFailed(i: Int): List[ConfirmationRequest] = {
@@ -110,10 +109,10 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         setupFailureSendConfirmationMock(request)
         request
       })
-      .toList
+        .toList
     }
 
-    def runBatchTest(numberBad: Int, numberGood: Int)(implicit ec: ExecutionContext) ={
+    def runBatchTest(numberBad: Int, numberGood: Int)(implicit ec: ExecutionContext) = {
       val bad = buildFailed(numberBad)
       val good = buildSuccess(numberGood)
 
@@ -147,7 +146,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
 
-
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(confirmationRequest))
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.thenSuccessWith(Some(confirmationRequest))
       ConfirmationServiceMock.SendConfirmation.thenSuccess(false)
@@ -159,7 +157,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     }
 
     "set confirmation status to failed when it fails to push and the confirmation is too old for further retries" in new Setup {
-
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(outOfDateConfirmationRequest))
       ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, FAILED, outOfDateConfirmationRequest)
@@ -200,14 +197,12 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         "The next execution of the job will do retry."
     }
 
-
     // " scenarios
     // 1). failure in batch stops 2nd batch and job <- replicated
     // 2). 1st failure in a batch kills rest of batch and job
 
-
     "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
-      runBatchTest(numberBad = 2,numberGood = 3).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
     "attempt to send all even if 1st fails with more than one batch worth of requests" in new Setup(5) {

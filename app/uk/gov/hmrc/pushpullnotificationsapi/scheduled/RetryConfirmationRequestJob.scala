@@ -61,7 +61,7 @@ class RetryConfirmationRequestJob @Inject() (
       .recoverWith {
         case NonFatal(e) =>
           logger.error("Failed to retry failed push pull confirmation", e)
-          Future.failed(RunningOfJobFailed(name, e))// ??? is this also breaking it?
+          Future.failed(RunningOfJobFailed(name, e))
       }
   }
 

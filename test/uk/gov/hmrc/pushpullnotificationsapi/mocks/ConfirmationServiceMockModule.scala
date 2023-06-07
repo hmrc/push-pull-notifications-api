@@ -16,15 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
-import org.mockito.verification.VerificationMode
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
-import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
+
+import org.mockito.verification.VerificationMode
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
 
 trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -45,7 +46,9 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
       }
 
     }
+
     object SendConfirmation {
+
       def thenfailsFor(confirmationRequest: ConfirmationRequest) = {
         when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenReturn(failed(new RuntimeException("Boom!!!")))
       }
@@ -54,10 +57,11 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
         when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenReturn(successful(result))
       }
 
-      val slowFuture = () => Future {
-        Thread.sleep(100)
-        ()
-      }
+      val slowFuture = () =>
+        Future {
+          Thread.sleep(100)
+          ()
+        }
 
       def thenSuccessWithDelayFor(confirmationRequest: ConfirmationRequest, result: Boolean = true) = {
         when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenReturn(slowFuture().map(_ => result))
@@ -65,9 +69,9 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
 //        doAnswer(AdditionalAnswers.answersWithDelay(1000, AdditionalAnswers.answer(_ => { successful(result)}))).when(aMock).sendConfirmation(eqTo(confirmationRequest))(*, *)
 //        when(aMock.sendConfirmation(eqTo(confirmationRequest))(*, *)).thenAnswer(_ => AdditionalAnswers.answersWithDelay(1000, AdditionalAnswers.answer( _ => successful(result))))
       }
-/*
+      /*
 
- */
+       */
 
       def neverCalled() = {
         verify(never).sendConfirmation(*)(*, *)
@@ -84,7 +88,6 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
       def verifyCalled() = {
         verify(atMost(1)).sendConfirmation(*)(*, *)
       }
-
 
       def thenSuccess(result: Boolean) = {
         when(aMock.sendConfirmation(*)(*, *)).thenReturn(successful(result))
