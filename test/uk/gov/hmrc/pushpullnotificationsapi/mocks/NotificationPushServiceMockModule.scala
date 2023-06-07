@@ -44,6 +44,10 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
         when(aMock.fetchRetryablePushNotifications).thenReturn(successful(Source.future(successful(retryableNotification))))
       }
 
+      def succeedsFor(retryableNotifications: List[RetryableNotification]) = {
+        when(aMock.fetchRetryablePushNotifications).thenReturn(successful(Source(retryableNotifications)))
+      }
+
       def failsWithException() = {
         when(aMock.fetchRetryablePushNotifications)
           .thenReturn(failed(new RuntimeException("Failed")))
@@ -56,10 +60,19 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
 
     object HandlePushNotification {
 
+
+      def thenThrowsFor(box: Box, notification: Notification)  = 
+         when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(*, *)).thenReturn(failed(new RuntimeException("BOOM!!!")))
+
+      
       def returnsTrue() = {
         when(aMock.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
       }
 
+      def returnsTrueFor(box: Box, notification: Notification)= {
+        when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(*, *)).thenReturn(successful(true))
+      }
+      
       def returnsFalse() = {
         when(aMock.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
       }

@@ -49,6 +49,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{MongoLockRepositor
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+import scala.concurrent.ExecutionContext
 
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -57,7 +58,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     .configure("metrics.enabled" -> false).build()
   implicit lazy val materializer: Materializer = app.materializer
 
-  trait Setup extends NotificationsRepositoryMockModule with NotificationPushServiceMockModule with MongoLockRepositoryMockModule with TestData {
+  class Setup(val batch: Int = 5) extends NotificationsRepositoryMockModule with NotificationPushServiceMockModule with MongoLockRepositoryMockModule with TestData {
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     val retryPushNotificationsJobConfig: RetryPushNotificationsJobConfig = RetryPushNotificationsJobConfig(
@@ -65,7 +66,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       FiniteDuration(24, HOURS),
       enabled = true,
       6,
-      1
+      parallelism = batch
     )
 
     val underTest = new RetryPushNotificationsJob(
@@ -78,6 +79,47 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     MongoLockRepositoryMock.IsLocked.theSuccess(true)
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)
     MongoLockRepositoryMock.ReleaseLock.thenSuccess
+
+    
+    def setUpSuccessMocksForNotification(retryNotification: RetryableNotification) = {
+      NotificationPushServiceMock.HandlePushNotification.returnsTrueFor(retryNotification.box, retryNotification.notification)
+    }
+
+    def setUpFailureMocksForNotification(retryNotification: RetryableNotification) = {
+      NotificationPushServiceMock.HandlePushNotification.thenThrowsFor(retryNotification.box, retryNotification.notification)
+    }
+
+    def buildSuccess(i: Int): List[RetryableNotification] = {
+      Range.inclusive(1, i).map(_ => {
+        val retryableNotification: RetryableNotification = RetryableNotification(notification.copy(notificationId = NotificationId.random), BoxObjectWithPushSubscribers)
+        setUpSuccessMocksForNotification(retryableNotification)
+        retryableNotification
+      })
+      .toList
+    }
+
+    def buildFailed(i: Int): List[RetryableNotification] = {
+    Range.inclusive(1, i).map(_ => {
+        val retryableNotification: RetryableNotification = RetryableNotification(notification.copy(notificationId = NotificationId.random), BoxObjectWithPushSubscribers)
+        setUpFailureMocksForNotification(retryableNotification)
+        retryableNotification
+      })
+      .toList
+    }
+
+    def runBatchTest(numberBad: Int, numberGood: Int)(implicit ec: ExecutionContext) = {
+      val bad = buildFailed(numberBad)
+      val good = buildSuccess(numberGood)
+
+      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(bad ++ good)
+
+      val result: underTest.Result = await(underTest.execute)
+
+      bad.foreach(x => NotificationPushServiceMock.HandlePushNotification.verifyCalledWith(x.box, x.notification))
+      good.foreach(x => NotificationPushServiceMock.HandlePushNotification.verifyCalledWith(x.box, x.notification))
+
+      result
+    }
   }
 
   "RetryPushNotificationsJob" should {
@@ -149,6 +191,14 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       NotificationPushServiceMock.HandlePushNotification.verifyNeverCalled()
       result.message shouldBe "The execution of scheduled job RetryPushNotificationsJob failed with error 'Failed'. " +
         "The next execution of the job will do retry."
+    }
+    
+    "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
+      runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryPushNotificationsJob Job ran successfully."
+    }
+
+    "attempt to send all even if 1st fails with more than one batch worth of requests" in new Setup(5) {
+      runBatchTest(numberBad = 1, numberGood = 15).message shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
   }
 }

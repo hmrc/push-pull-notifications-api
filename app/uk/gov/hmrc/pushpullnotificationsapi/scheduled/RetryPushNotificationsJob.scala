@@ -80,7 +80,7 @@ class RetryPushNotificationsJob @Inject() (
       .recover {
         case NonFatal(e) =>
           logger.error(s"Unexpected error retrying notification ${retryableNotification.notification.notificationId} with exception: $e")
-          throw e
+          successful(())
       }
   }
 
