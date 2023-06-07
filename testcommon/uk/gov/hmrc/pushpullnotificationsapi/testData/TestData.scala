@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.testData
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.UUID
 
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
@@ -68,6 +68,9 @@ trait TestData {
   val messageContentTypeXml = MessageContentType.APPLICATION_XML
 
   val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, pushedDateTime = Some(pushedTime))
+
+  val outOfDateConfirmationRequest: ConfirmationRequest =
+    ConfirmationRequest(confirmationId = confirmationId, "URL", notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")
