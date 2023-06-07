@@ -194,8 +194,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         "The next execution of the job will do retry."
     }
 
-
-
     "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
       runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
