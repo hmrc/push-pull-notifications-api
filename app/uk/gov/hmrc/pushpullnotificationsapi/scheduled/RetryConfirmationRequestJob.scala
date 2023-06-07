@@ -72,7 +72,7 @@ class RetryConfirmationRequestJob @Inject() (
       .recover {
         case NonFatal(e) =>
           logger.error(s"Unexpected error retrying confirmation ${confirmation.confirmationId} with exception: $e")
-          throw e
+          Future.successful(()) // throw e
       }
   }
 

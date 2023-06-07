@@ -27,13 +27,14 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationSt
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import java.net.URL
 
 @Singleton
 class ConfirmationService @Inject() (repository: ConfirmationRepository, connector: ConfirmationConnector) extends ApplicationLogger {
 
   def saveConfirmationRequest(
       confirmationId: ConfirmationId,
-      confirmationUrl: String,
+      confirmationUrl: URL,
       notificationId: NotificationId
     )(implicit ec: ExecutionContext
     ): Future[ConfirmationCreateServiceResult] = {

@@ -23,6 +23,10 @@ import play.api.mvc.{Request, WrappedRequest}
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import java.net.URL
+import play.api.libs.json.Reads
+import scala.util.Try
+import play.api.libs.json.JsError
 
 case class CreateBoxRequest(boxName: String, clientId: ClientId)
 
@@ -71,16 +75,54 @@ object ValidateBoxOwnershipRequest {
   implicit val format = Json.format[ValidateBoxOwnershipRequest]
 }
 
-case class WrappedNotification(body: String, contentType: String)
+case class PrivateHeader(name: String, value: String)
 
-object WrappedNotification {
-  implicit val format = Json.format[WrappedNotification]
+object PrivateHeader {
+  implicit val format = Json.format[PrivateHeader]
 }
 
-case class WrappedNotificationRequest(notification: WrappedNotification, version: String, confirmationUrl: Option[String])
+case class WrappedNotificationBody(body: String, contentType: String)
+
+object WrappedNotificationBody {
+  import play.api.libs.json._
+
+  implicit val format = Json.format[WrappedNotificationBody]  
+}
+
+case class WrappedNotificationRequest(notification: WrappedNotificationBody, version: String, confirmationUrl: Option[URL], privateHeaders: List[PrivateHeader])
+
+trait URLFormatter {
+  import play.api.libs.json._
+  import scala.util.{Failure,Success}
+
+  val fromString: String => JsResult[URL] = rawText => {
+      Try[URL] {
+        new URL(rawText);
+      } match {
+        case Success(v: URL) => JsSuccess(v)
+        case Failure(_) => JsError("some error")
+      }
+  }
+
+  implicit val readsURL: Reads[URL] = implicitly[Reads[String]].flatMapResult(fromString)
+  implicit val writesURL: Writes[URL] = implicitly[Writes[String]].contramap(url => url.toString)
+}
+
+object URLFormatter extends URLFormatter
 
 object WrappedNotificationRequest {
-  implicit val format = Json.format[WrappedNotificationRequest]
+  import play.api.libs.json._
+  import play.api.libs.functional.syntax._
+  import URLFormatter._
+
+  implicit val reads: Reads[WrappedNotificationRequest] = (
+    (__ \ "notification").read[WrappedNotificationBody] and
+    (__ \ "version").read[String] and
+    (__ \ "confirmationUrl").readNullable[URL] and
+    (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
+  )(WrappedNotificationRequest.apply(_,_,_,_))
+
+  implicit val writes = Json.writes[WrappedNotificationRequest]  
 }
 // Notifications
 

@@ -28,11 +28,12 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorR
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorResult, ConfirmationConnectorSuccessResult}
+import java.net.URL
 
 @Singleton
 class ConfirmationConnector @Inject() (http: HttpClient)(implicit ec: ExecutionContext) {
 
-  def sendConfirmation(confirmationUrl: String, confirmation: OutboundConfirmation)(implicit hc: HeaderCarrier): Future[ConfirmationConnectorResult] = {
+  def sendConfirmation(confirmationUrl: URL, confirmation: OutboundConfirmation)(implicit hc: HeaderCarrier): Future[ConfirmationConnectorResult] = {
     http.POST[OutboundConfirmation, Either[UpstreamErrorResponse, HttpResponse]](confirmationUrl, confirmation, Seq("Content-Type" -> APPLICATION_JSON.value)) map {
       case Left(e)  => ConfirmationConnectorFailedResult(e.toString())
       case Right(_) => ConfirmationConnectorSuccessResult()

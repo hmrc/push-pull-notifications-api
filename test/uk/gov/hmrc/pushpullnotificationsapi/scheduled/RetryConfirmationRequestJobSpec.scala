@@ -52,6 +52,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationSt
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
+import java.net.URL
 
 class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -87,10 +88,11 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
   "RetryConfirmationRequestJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
+    val confirmationUrl = new URL("http://example.com")
 
     val notificationId = NotificationId.random
     "retry pushing the notifications" in new Setup {
-      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, "URL", notificationId = notificationId)
+      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, confirmationUrl, notificationId = notificationId)
       when(mockRepo.fetchRetryableConfirmations).thenReturn(Source.future(successful(request)))
       when(mockService.sendConfirmation(*)(*, *)).thenReturn(successful(true))
 
@@ -102,7 +104,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
 
-      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, "URL", notificationId = notificationId)
+      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, confirmationUrl, notificationId = notificationId)
       when(mockRepo.fetchRetryableConfirmations)
         .thenReturn(Source.future(successful(request)))
       when(mockRepo.updateRetryAfterDateTime(NotificationId(*), *)).thenReturn(successful(Some(request)))
@@ -117,7 +119,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
     "set notification status to failed when it fails to push and the notification is too old for further retries" in new Setup {
 
       val request: ConfirmationRequest =
-        ConfirmationRequest(confirmationId = ConfirmationId.random, "URL", notificationId = notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
+        ConfirmationRequest(confirmationId = ConfirmationId.random, confirmationUrl, notificationId = notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
       when(mockRepo.fetchRetryableConfirmations)
         .thenReturn(Source.future(successful(request)))
       when(mockRepo.updateStatus(notificationId, ConfirmationStatus.FAILED)).thenReturn(successful(Some(request)))
@@ -132,7 +134,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
     "not execute if the job is already running" in new Setup {
       when(mockService.sendConfirmation(*)(*, *)).thenReturn(successful(true))
-      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, "URL", notificationId = notificationId)
+      val request: ConfirmationRequest = ConfirmationRequest(confirmationId = ConfirmationId.random, confirmationUrl, notificationId = notificationId)
       when(mockRepo.fetchRetryableConfirmations)
         .thenReturn(Source.future(successful(request)))
       when(mongoLockRepo.isLocked(*, *)).thenReturn(successful(true)).andThenAnswer(successful(true)).andThenAnswer(successful(false))

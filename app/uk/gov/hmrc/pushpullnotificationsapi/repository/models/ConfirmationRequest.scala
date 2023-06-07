@@ -21,10 +21,11 @@ import java.time.Instant
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import java.net.URL
 
 case class ConfirmationRequest(
     confirmationId: ConfirmationId,
-    confirmationUrl: String,
+    confirmationUrl: URL,
     notificationId: NotificationId,
     status: NotificationStatus = PENDING,
     createdDateTime: Instant = Instant.now,

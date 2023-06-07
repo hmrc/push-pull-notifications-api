@@ -19,9 +19,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoForma
 
 import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
-import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
+import java.net.URL
+import com.mongodb.client.result.InsertOneResult
 
 class ConfirmationRepositoryISpec
     extends AsyncHmrcSpec
@@ -38,12 +38,13 @@ class ConfirmationRepositoryISpec
         "mongodb.uri" -> mongoUri
       )
 
+  val url = new URL("http://testurl.com/")
   val confirmationId: ConfirmationId = ConfirmationId.random
   val notificationId: NotificationId = NotificationId.random
 
   val defaultRequest: ConfirmationRequest = ConfirmationRequest(
     confirmationId,
-    "http://testurl.com/",
+    url,
     notificationId,
     PENDING,
     Instant.now.truncatedTo(ChronoUnit.MILLIS)
@@ -58,6 +59,18 @@ class ConfirmationRepositoryISpec
 
   def repo: ConfirmationRepository = repository.asInstanceOf[ConfirmationRepository]
 
+  // def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
+  //   val rawJson = (
+      
+  //   )
+  //   await(mongoDatabase.getCollection("user").insertOne(Document(userAsRawJson.toString())).toFuture())
+  // }
+  //
+  // "handle a bad URL accordingly" should {
+  //   "go bang" in {
+
+  //   }
+  // }
   "saveConfirmationRequest" should {
     "Save a confirmation request" in {
       await(repo.saveConfirmationRequest(defaultRequest))
@@ -127,7 +140,7 @@ class ConfirmationRepositoryISpec
 
     def createConfirmationInDb(status: NotificationStatus, retryAfterDateTime: Option[Instant] = None) = {
       val id = ConfirmationId.random
-      val confirmation = ConfirmationRequest(id, "url", NotificationId.random, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
+      val confirmation = ConfirmationRequest(id, url, NotificationId.random, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
       val result = await(repo.saveConfirmationRequest(confirmation))
       result shouldBe Some(id)
       confirmation

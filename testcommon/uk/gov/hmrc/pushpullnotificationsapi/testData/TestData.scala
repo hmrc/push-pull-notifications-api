@@ -26,6 +26,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import java.net.URL
 
 trait TestData {
 
@@ -58,7 +59,7 @@ trait TestData {
   val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
-  val url = "https://test"
+  val url = new URL("https://test")
   val notificationId: NotificationId = NotificationId(UUID.randomUUID())
   val pushedTime = Instant.now()
   val acknowledgedNotificationStatus = NotificationStatus.ACKNOWLEDGED

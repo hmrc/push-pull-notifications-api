@@ -44,6 +44,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
+import java.nio.charset.Charset
 
 class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
@@ -58,6 +59,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
     .build()
 
   lazy implicit val mat: Materializer = app.materializer
+  lazy implicit val ec = mat.executionContext
 
   override def beforeEach(): Unit = {
     reset(mockNotificationService, mockAuthConnector)
@@ -108,6 +110,10 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version"}"""
       }
 
+      def badURL(): String = {
+        s"""{"notification":{"body":"{}","contentType":"application/json"}, "version": "1", "confirmationUrl": "not-valid"}"""
+      }
+
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
         when(mockNotificationService.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)).thenReturn(
           Future.successful(NotificationCreateSuccessResult())
@@ -152,6 +158,21 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
         verify(mockNotificationService)
           .saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
+      }
+
+      "return 400 when invalid URL" in {
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, badURL)
+        status(result) should be(BAD_REQUEST)
+
+        await(
+          result.flatMap { entity =>
+            entity.body.consumeData
+          }
+          .map(_.decodeString(Charset.defaultCharset()))
+          .map(s => println(s))
+        )
+
+        verifyNoInteractions(mockNotificationService)
       }
 
       "return 400 when version number isn't 1" in {

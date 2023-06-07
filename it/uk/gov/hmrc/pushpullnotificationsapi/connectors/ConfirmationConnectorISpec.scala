@@ -11,7 +11,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGat
 import com.github.tomakehurst.wiremock.client.WireMock._
 
 import java.time.Instant
-import java.util.UUID
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
@@ -46,7 +45,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
         ))
       val result = await(
         objInTest.sendConfirmation(
-          wireMockBaseUrlAsString,
+          wireMockBaseUrl,
           OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
@@ -65,7 +64,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
         ))
       val result = await(
         objInTest.sendConfirmation(
-          wireMockBaseUrlAsString,
+          wireMockBaseUrl,
           OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", ConfirmationStatus.ACKNOWLEDGED, Some(Instant.now))
         )
       )
