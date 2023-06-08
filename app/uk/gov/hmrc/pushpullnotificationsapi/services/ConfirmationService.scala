@@ -28,6 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 import java.net.URL
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 
 @Singleton
 class ConfirmationService @Inject() (repository: ConfirmationRepository, connector: ConfirmationConnector) extends ApplicationLogger {
@@ -59,7 +60,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
   def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     connector.sendConfirmation(
       request.confirmationUrl,
-      OutboundConfirmation(request.confirmationId, request.notificationId, "1", ConfirmationStatus.ACKNOWLEDGED, request.pushedDateTime)
+      OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime, request.privateHeaders)
     ) map {
       case _: ConfirmationConnectorSuccessResult =>
         repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)

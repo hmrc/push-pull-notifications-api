@@ -34,8 +34,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-import java.net.URL
-
 
 class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -113,9 +111,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
   "RetryConfirmationRequestJob" should {
     import scala.concurrent.ExecutionContext.Implicits.global
-    val confirmationUrl = new URL("http://example.com")
-
-    val notificationId = NotificationId.random
     "retry pushing the notifications" in new Setup {
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(confirmationRequest))

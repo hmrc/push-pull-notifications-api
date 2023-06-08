@@ -28,14 +28,18 @@ import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
-case class BoxId(value: UUID) extends AnyVal
+case class BoxId(value: UUID) extends AnyVal {
+  override def toString() = value.toString()
+}
 
 object BoxId {
   implicit val format = Json.valueFormat[BoxId]
   def random: BoxId = BoxId(UUID.randomUUID())
 }
 
-case class ConfirmationId(value: UUID) extends AnyVal
+case class ConfirmationId(value: UUID) extends AnyVal {
+  override def toString() = value.toString()
+}
 
 object ConfirmationId {
   implicit val format = Json.valueFormat[ConfirmationId]

@@ -34,7 +34,6 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}

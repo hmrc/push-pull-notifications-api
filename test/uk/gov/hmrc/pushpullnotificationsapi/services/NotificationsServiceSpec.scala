@@ -110,7 +110,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
       val result: NotificationCreateServiceResult =
         await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeXml, message))
-      result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: BoxId(${boxId.value}) not found")
+      result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: ${boxId} not found")
 
       verify(BoxRepositoryMock.aMock, times(1)).findByBoxId(eqTo(boxId))
       NotificationsRepositoryMock.verifyZeroInteractions()
@@ -197,7 +197,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
     "return AcknowledgeNotificationsServiceBoxNotFoundResult when box not found" in new Setup {
       primeBoxRepo(None, boxId)
-      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: BoxId(${boxId.value.toString}) not found"))
+      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId} not found"))
     }
 
     "return AcknowledgeNotificationsServiceUnauthorisedResult when caller is not owner of box" in new Setup {

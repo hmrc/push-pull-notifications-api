@@ -28,6 +28,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.PrivateHeader
 
 sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 
@@ -49,7 +50,9 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
   case object FAILED extends NotificationStatus
 }
 
-case class NotificationId(value: UUID) extends AnyVal
+case class NotificationId(value: UUID) extends AnyVal {
+  override def toString() = value.toString()
+}
 
 object NotificationId {
   implicit val format = Json.valueFormat[NotificationId]
@@ -94,7 +97,7 @@ object OutboundNotification {
   implicit val format = Json.format[OutboundNotification]
 }
 
-case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: ConfirmationStatus, dateTime: Option[Instant])
+case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: NotificationStatus, dateTime: Option[Instant], privateHeaders: List[PrivateHeader])
 
 object OutboundConfirmation {
   implicit val format = Json.format[OutboundConfirmation]
