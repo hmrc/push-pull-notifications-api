@@ -74,7 +74,7 @@ trait TestData {
   val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, pushedDateTime = Some(pushedTime))
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
-    ConfirmationRequest(confirmationId = confirmationId, "URL", notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
+    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")

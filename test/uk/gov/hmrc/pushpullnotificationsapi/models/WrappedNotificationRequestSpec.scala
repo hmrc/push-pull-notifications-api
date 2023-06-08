@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import uk.gov.hmrc.apiplatform.modules.common.utils.JsonFormattersSpec
+import uk.gov.hmrc.apiplatform.modules.utils.JsonFormattersSpec
+
 import java.net.URL
 
 class WrappedNotificationRequestSpec extends JsonFormattersSpec{
@@ -61,7 +62,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec{
           "privateHeaders": []
           }"""
         )(wrappedNotificationRequestWithHeaders.copy(privateHeaders = List.empty))
-      }    
+      }
 
       "there are no private headers" in {
         testFromJson(s"""{
@@ -72,7 +73,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec{
           "version": "1"
           }"""
         )(wrappedNotificationRequestWithHeaders.copy(confirmationUrl = None, privateHeaders = List.empty))
-      }   
+      }
     }
   }
 }

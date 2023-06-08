@@ -17,15 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.{failed, successful}
-
 import akka.stream.scaladsl.Source
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 
 trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -80,7 +78,7 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
         verify(never).updateStatus(*[NotificationId], *)
       }
 
-      def verifyCalledWith(notificationId: NotificationId, status: NotificationStatus) = {
+      def verifyCalledWith(notificationId: NotificationId, status: ConfirmationStatus) = {
         verify(atMost(1)).updateStatus(eqTo(notificationId), eqTo(status))
       }
 

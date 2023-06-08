@@ -10,7 +10,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.Play.materializer
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
@@ -20,14 +20,16 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoForma
 import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
+
 import java.net.URL
 import com.mongodb.client.result.InsertOneResult
+import org.mongodb.scala.bson.collection.immutable.Document
 
 class ConfirmationRepositoryISpec
     extends AsyncHmrcSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
-    with PlayMongoRepositorySupport[ConfirmationRequest]
+    with PlayMongoRepositorySupport[ConfirmationRequestDB]
     with CleanMongoCollectionSupport
     with IntegrationPatience
     with GuiceOneAppPerSuite {
@@ -55,28 +57,32 @@ class ConfirmationRepositoryISpec
     prepareDatabase()
   }
 
-  override protected def repository: PlayMongoRepository[ConfirmationRequest] = app.injector.instanceOf[ConfirmationRepository]
+  override protected def repository: PlayMongoRepository[ConfirmationRequestDB] = app.injector.instanceOf[ConfirmationRepository]
 
   def repo: ConfirmationRepository = repository.asInstanceOf[ConfirmationRepository]
 
-  // def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
-  //   val rawJson = (
-      
-  //   )
-  //   await(mongoDatabase.getCollection("user").insertOne(Document(userAsRawJson.toString())).toFuture())
-  // }
-  //
-  // "handle a bad URL accordingly" should {
-  //   "go bang" in {
+   def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
+     import play.api.libs.json._
 
-  //   }
-  // }
+     val rawJson = Json.toJson(input.toDB).as[JsObject]
+     val editedJson: JsObject = rawJson + ("confirmationUrl" -> JsString("BOB"))
+
+     await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+   }
+
+   "handle a bad URL accordingly" should {
+     "don't break when reading bad URLS with raw mongo driver" in {
+       saveMongoJsonWithBadUrl(defaultRequest)
+       await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
+     }
+   }
+
   "saveConfirmationRequest" should {
     "Save a confirmation request" in {
       await(repo.saveConfirmationRequest(defaultRequest))
       val result = await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
       result.length shouldBe 1
-      result.head shouldBe defaultRequest
+      result.head shouldBe defaultRequest.toDB
     }
 
     "only save 1 confirmation request per notification" in {
@@ -85,7 +91,7 @@ class ConfirmationRepositoryISpec
       dupe shouldBe None
       val result = await(find(mongoEqual("notificationId", Codecs.toBson(notificationId))))
       result.length shouldBe 1
-      result.head shouldBe defaultRequest
+      result.head shouldBe defaultRequest.toDB
     }
   }
   "updateConfirmationNeed" should {
@@ -149,10 +155,21 @@ class ConfirmationRepositoryISpec
     "return matching confirmations" in {
       val expectedNotification1 = createConfirmationInDb(status = PENDING)
       val expectedNotification2 = createConfirmationInDb(status = PENDING)
+
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
 
       retryableConfirmations should have size 2
       retryableConfirmations.map(_.notificationId) should contain only (expectedNotification1.notificationId, expectedNotification2.notificationId)
+    }
+
+    "return matching confirmations ignoring bad URL records" in {
+      createConfirmationInDb(status = PENDING)
+      createConfirmationInDb(status = PENDING)
+      saveMongoJsonWithBadUrl(defaultRequest) // This bad record should be ignored
+
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+
+      retryableConfirmations should have size 2
     }
 
     "not return confirmations that are not pending" in {

@@ -45,5 +45,5 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
   implicit val retryableNotificationFormatter: OFormat[RetryableNotification] = Json.format[RetryableNotification]
   implicit val dbRetryableNotificationFormatter: OFormat[DbRetryableNotification] = Json.format[DbRetryableNotification]
-  implicit val confirmationRequestFormatter: OFormat[ConfirmationRequest] = Json.format[ConfirmationRequest]
+  implicit val confirmationRequestFormatter: OFormat[ConfirmationRequestDB] = Json.format[ConfirmationRequestDB]
 }

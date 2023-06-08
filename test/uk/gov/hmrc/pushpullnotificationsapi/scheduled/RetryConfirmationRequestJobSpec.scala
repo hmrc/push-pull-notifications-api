@@ -17,27 +17,24 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.util.UUID
-
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-
 import akka.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
-
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ConfirmationServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{ConfirmationRepositoryMockModule, MongoLockRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+
+import java.net.URL
 
 
 class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {

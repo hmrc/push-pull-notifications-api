@@ -36,11 +36,11 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, PlayHmrcMongoFormatters}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB, PlayHmrcMongoFormatters}
 
 @Singleton
 class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent)(implicit ec: ExecutionContext)
-    extends PlayMongoRepository[ConfirmationRequest](
+    extends PlayMongoRepository[ConfirmationRequestDB](
       collectionName = "confirmations",
       mongoComponent = mongoComponent,
       domainFormat = PlayHmrcMongoFormatters.confirmationRequestFormatter,
@@ -73,7 +73,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
     with MongoJavatimeFormats.Implicits {
 
   def saveConfirmationRequest(confirmation: ConfirmationRequest): Future[Option[ConfirmationId]] = {
-    collection.insertOne(confirmation)
+    collection.insertOne(confirmation.toDB)
       .toFuture()
       .map(_ => Some(confirmation.confirmationId)).recoverWith {
         case e: MongoWriteException if e.getCode == MongoErrorCodes.DuplicateKey =>
@@ -86,7 +86,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
       filter = equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("pushedDateTime", Instant.now),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
-    ).headOption()
+    ).headOption().map(o => o.flatMap(_.toNonDb))
   }
 
   def updateStatus(notificationId: NotificationId, status: ConfirmationStatus): Future[Option[ConfirmationRequest]] = {
@@ -94,7 +94,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
       filter = equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("status", Codecs.toBson(status)),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
-    ).headOption()
+    ).headOption().map(o => o.flatMap(_.toNonDb))
   }
 
   def updateRetryAfterDateTime(notificationId: NotificationId, retryAfterDateTime: Instant): Future[Option[ConfirmationRequest]] = {
@@ -102,7 +102,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
       equal("notificationId", Codecs.toBson(notificationId.value)),
       update = set("retryAfterDateTime", retryAfterDateTime),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
-    ).headOption()
+    ).headOption().map(o => o.flatMap(_.toNonDb))
   }
 
   def fetchRetryableConfirmations: Source[ConfirmationRequest, NotUsed] = {
@@ -111,6 +111,10 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
         and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", Instant.now)))
       ).toObservable()
     )
+      .map(_.toNonDb)
+      .collect {
+        case Some(c) => c
+      }
   }
 
 }

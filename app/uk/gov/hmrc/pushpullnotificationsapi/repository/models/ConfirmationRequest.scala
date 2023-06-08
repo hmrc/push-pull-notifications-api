@@ -17,11 +17,12 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
-
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+
 import java.net.URL
+import scala.util.Try
 
 case class ConfirmationRequest(
     confirmationId: ConfirmationId,
@@ -30,4 +31,27 @@ case class ConfirmationRequest(
     status: NotificationStatus = PENDING,
     createdDateTime: Instant = Instant.now,
     pushedDateTime: Option[Instant] = None,
-    retryAfterDateTime: Option[Instant] = None)
+    retryAfterDateTime: Option[Instant] = None) {
+
+  def toDB: ConfirmationRequestDB =
+    ConfirmationRequestDB(this.confirmationId, this.confirmationUrl.toString, this.notificationId, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime)
+}
+
+// TODO - remove this and replace with above AFTER all bad URLs are expired from DB
+case class ConfirmationRequestDB(
+                                confirmationId: ConfirmationId,
+                                confirmationUrl: String,
+                                notificationId: NotificationId,
+                                status: NotificationStatus = PENDING,
+                                createdDateTime: Instant = Instant.now,
+                                pushedDateTime: Option[Instant] = None,
+                                retryAfterDateTime: Option[Instant] = None) {
+  def toNonDb: Option[ConfirmationRequest] = {
+    Try {
+      new URL(this.confirmationUrl)
+    }
+    .toOption
+      .map(url => ConfirmationRequest(this.confirmationId, url, this.notificationId, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime))
+  }
+
+}
