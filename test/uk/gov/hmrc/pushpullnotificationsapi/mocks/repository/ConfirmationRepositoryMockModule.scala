@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.{failed, successful}
 
+import akka.stream.scaladsl.Source
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -79,12 +80,45 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
         verify(never).updateStatus(*[NotificationId], *)
       }
 
-      def verifyCalledWith(notificationId: NotificationId, status: ConfirmationStatus) = {
-        verify.updateStatus(eqTo(notificationId), eqTo(status))
+      def verifyCalledWith(notificationId: NotificationId, status: NotificationStatus) = {
+        verify(atMost(1)).updateStatus(eqTo(notificationId), eqTo(status))
       }
 
       def isSuccessWith(notificationId: NotificationId, status: ConfirmationStatus, confirmationRequest: ConfirmationRequest) = {
         when(aMock.updateStatus(eqTo(notificationId), eqTo(status))).thenReturn(successful(Some(confirmationRequest)))
+      }
+
+    }
+
+    object FetchRetryableConfirmations {
+
+      def thenFails() = {
+        when(aMock.fetchRetryableConfirmations)
+          .thenReturn(Source.future(failed(new RuntimeException("Failed"))))
+      }
+
+      def verifyCalledOnce() = {
+        verify(atMost(1)).fetchRetryableConfirmations
+      }
+
+      def thenSuccessWith(requests: List[ConfirmationRequest]) = {
+        when(aMock.fetchRetryableConfirmations).thenReturn(Source(requests))
+      }
+
+    }
+
+    object UpdateRetryAfterDateTime {
+
+      def neverCalled() = {
+        verify(never).updateRetryAfterDateTime(*[NotificationId], *)
+      }
+
+      def verifyCalled() = {
+        verify.updateRetryAfterDateTime(*[NotificationId], *)
+      }
+
+      def thenSuccessWith(maybeRequest: Option[ConfirmationRequest]) = {
+        when(aMock.updateRetryAfterDateTime(*[NotificationId], *)).thenReturn(successful(maybeRequest))
       }
 
     }
