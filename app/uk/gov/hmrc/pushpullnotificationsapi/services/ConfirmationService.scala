@@ -35,10 +35,11 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
   def saveConfirmationRequest(
       confirmationId: ConfirmationId,
       confirmationUrl: URL,
-      notificationId: NotificationId
+      notificationId: NotificationId,
+      privateHeaders: List[PrivateHeader]
     )(implicit ec: ExecutionContext
     ): Future[ConfirmationCreateServiceResult] = {
-    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId)).map {
+    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId, privateHeaders)).map {
       case Some(_) => ConfirmationCreateServiceSuccessResult()
       case None    => ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }

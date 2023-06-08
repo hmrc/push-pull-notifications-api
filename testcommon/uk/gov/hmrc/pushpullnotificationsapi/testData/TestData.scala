@@ -71,10 +71,10 @@ trait TestData {
   val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   val messageContentTypeXml = MessageContentType.APPLICATION_XML
 
-  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, pushedDateTime = Some(pushedTime))
+  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, List.empty, pushedDateTime = Some(pushedTime))
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
-    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
+    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")

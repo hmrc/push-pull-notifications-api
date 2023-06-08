@@ -37,13 +37,13 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
   "save Confirmation" should {
     "indicate when successful" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.thenSuccessfulWith(confirmationId)
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceSuccessResult()
     }
 
     "indicate when failure" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.returnsNone()
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
   }

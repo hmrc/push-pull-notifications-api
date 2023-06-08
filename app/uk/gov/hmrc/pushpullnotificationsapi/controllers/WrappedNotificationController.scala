@@ -51,13 +51,14 @@ class WrappedNotificationsController @Inject() (
 
   def saveWrappedNotification(boxId: BoxId): Action[JsValue] =
     (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.json(maxWrappedNotificationSize)) {
-      implicit request =>
-        withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
+      implicit rawrequest =>
+        withJsonBody[WrappedNotificationRequest] { request =>
+          
           val handleNotification = (notificationId: NotificationId) => {
-            wrappedNotification.confirmationUrl.fold(successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))) {
+            request.confirmationUrl.fold(successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))) {
               confirmationUrl =>
                 val confirmationId = ConfirmationId.random
-                confirmationService.saveConfirmationRequest(confirmationId, confirmationUrl, notificationId) map {
+                confirmationService.saveConfirmationRequest(confirmationId, confirmationUrl, notificationId, request.privateHeaders) map {
                   case _: ConfirmationCreateServiceSuccessResult =>
                     Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
                   case _: ConfirmationCreateServiceFailedResult  =>
@@ -68,12 +69,12 @@ class WrappedNotificationsController @Inject() (
 
           (
             for {
-              _ <- ET.cond(wrappedNotification.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+              _ <- ET.cond(request.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
               messageContentType <- ET.fromOption(
-                                      contentTypeHeaderToNotificationType(wrappedNotification.notification.contentType),
+                                      contentTypeHeaderToNotificationType(request.notification.contentType),
                                       UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))
                                     )
-              body = wrappedNotification.notification.body
+              body = request.notification.body
               isValidBody = validateBodyAgainstContentType(messageContentType, body)
               messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
               result <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))

@@ -13,13 +13,13 @@ import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositoryS
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.{ACKNOWLEDGED, FAILED, PENDING}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
 import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus._
 
 import java.net.URL
 import com.mongodb.client.result.InsertOneResult
@@ -48,7 +48,8 @@ class ConfirmationRepositoryISpec
     confirmationId,
     url,
     notificationId,
-    PENDING,
+    List.empty,
+    ConfirmationStatus.PENDING,
     Instant.now.truncatedTo(ChronoUnit.MILLIS)
   )
   override implicit lazy val app: Application = appBuilder.build()
@@ -113,7 +114,7 @@ class ConfirmationRepositoryISpec
     "update to match status passed in" in {
       await(repo.saveConfirmationRequest(defaultRequest))
       val first = await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
-      first.head.status shouldBe PENDING
+      first.head.status shouldBe ConfirmationStatus.PENDING
       val updated = await(repo.updateStatus(notificationId, ConfirmationStatus.ACKNOWLEDGED))
       updated.get.status shouldBe ACKNOWLEDGED
       val updated2 = await(repo.updateStatus(notificationId, ConfirmationStatus.FAILED))
@@ -144,16 +145,16 @@ class ConfirmationRepositoryISpec
 
   "fetchRetryableConfirmations" should {
 
-    def createConfirmationInDb(status: NotificationStatus, retryAfterDateTime: Option[Instant] = None) = {
+    def createConfirmationInDb(status: ConfirmationStatus, retryAfterDateTime: Option[Instant] = None) = {
       val id = ConfirmationId.random
-      val confirmation = ConfirmationRequest(id, url, NotificationId.random, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
+      val confirmation = ConfirmationRequest(id, url, NotificationId.random, List.empty, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
       val result = await(repo.saveConfirmationRequest(confirmation))
       result shouldBe Some(id)
       confirmation
     }
 
     "return matching confirmations" in {
-      val expectedNotification1 = createConfirmationInDb(status = PENDING)
+      val expectedNotification1 = createConfirmationInDb(status = ConfirmationStatus.PENDING)
       val expectedNotification2 = createConfirmationInDb(status = PENDING)
 
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))

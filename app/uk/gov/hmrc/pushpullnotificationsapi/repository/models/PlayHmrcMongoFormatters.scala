@@ -18,13 +18,14 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
 
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
   implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
@@ -45,5 +46,19 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
   implicit val dbNotificationFormatter: OFormat[DbNotification] = Json.format[DbNotification]
   implicit val retryableNotificationFormatter: OFormat[RetryableNotification] = Json.format[RetryableNotification]
   implicit val dbRetryableNotificationFormatter: OFormat[DbRetryableNotification] = Json.format[DbRetryableNotification]
+
+  import play.api.libs.functional.syntax._
+
+  implicit val confirmationRequestDBReads: Reads[ConfirmationRequestDB] = (
+    (__ \ "confirmationId").read[ConfirmationId] and
+    (__ \ "confirmationUrl").read[String] and
+    (__ \ "notificationId").read[NotificationId] and
+    (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty)) and
+    (__ \ "status").read[ConfirmationStatus] and
+    (__ \ "createdDateTime").read[Instant] and
+    (__ \ "pushedDateTime").readNullable[Instant] and
+    (__ \ "retryAfterDateTime").readNullable[Instant]
+  )(ConfirmationRequestDB.apply _)
+
   implicit val confirmationRequestFormatter: OFormat[ConfirmationRequestDB] = Json.format[ConfirmationRequestDB]
 }
