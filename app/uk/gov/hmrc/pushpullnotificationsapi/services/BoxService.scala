@@ -22,9 +22,9 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
@@ -89,7 +89,8 @@ class BoxService @Inject() (
             _ = result match {
                   case successfulUpdate: CallbackUrlUpdated =>
                     eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box) recoverWith {
-                      case NonFatal(e) => logger.warn(s"Unable to send CallbackUrlUpdated event", e)
+                      case NonFatal(e) =>
+                        logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                         successful(successfulUpdate)
                     }
                   case _                                    => logger.warn("Updating callback URL failed - not sending event")

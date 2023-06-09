@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import org.scalatest.concurrent.IntegrationPatience
@@ -27,14 +28,11 @@ import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse, ValidateBoxOwnershipResponse}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse, ValidateBoxOwnershipResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxControllerISpec
@@ -137,21 +135,21 @@ class BoxControllerISpec
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=${clientId.value}")
       .withHttpHeaders(headers: _*)
-      .get
+      .get()
       .futureValue
 
   def callGetBoxByNameAndEmptyClientIdEndpoint(boxName: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=")
       .withHttpHeaders(headers: _*)
-      .get
+      .get()
       .futureValue
 
   def callGetBoxesByClientIdEndpoint(headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/cmb/box")
       .withHttpHeaders(headers: _*)
-      .get
+      .get()
       .futureValue
 
   def callValidateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
@@ -167,7 +165,7 @@ class BoxControllerISpec
     wsClient
       .url(s"$url/cmb/box/${boxId.value.toString}")
       .withHttpHeaders(headers: _*)
-      .delete
+      .delete()
       .futureValue
 
   "BoxController" when {
@@ -273,7 +271,7 @@ class BoxControllerISpec
         val result = wsClient
           .url(s"$url/box/unKnownPath")
           .withHttpHeaders(validHeaders: _*)
-          .get
+          .get()
           .futureValue
 
         result.status shouldBe NOT_FOUND
@@ -340,7 +338,7 @@ class BoxControllerISpec
         val result = wsClient
           .url(s"$url/box/unKnownPath")
           .withHttpHeaders(validHeaders: _*)
-          .get
+          .get()
           .futureValue
 
         result.status shouldBe NOT_FOUND
@@ -624,7 +622,7 @@ class BoxControllerISpec
       updateResult.status shouldBe NOT_FOUND
       updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
-    //TODO check JSON as cant have invalid UUID
+    // TODO check JSON as cant have invalid UUID
 //    "return 400 when boxId is not a UUID" in {
 //
 //      primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId.value)

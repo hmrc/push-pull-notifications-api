@@ -23,9 +23,9 @@ import scala.concurrent.Future
 
 import org.mockito.captor.Captor
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ConfirmationServiceMockModule, NotificationPushServiceMockModule}

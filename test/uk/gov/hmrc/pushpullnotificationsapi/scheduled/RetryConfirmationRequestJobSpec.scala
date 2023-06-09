@@ -16,15 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import java.util.UUID
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+
 import akka.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ConfirmationServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{ConfirmationRepositoryMockModule, MongoLockRepositoryMockModule}
@@ -33,7 +35,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-
 
 class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
 
@@ -127,7 +128,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.thenSuccessWith(Some(confirmationRequest))
       ConfirmationServiceMock.SendConfirmation.thenSuccess(false)
 
-
       val result: underTest.Result = await(underTest.execute)
 
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.verifyCalled()
@@ -143,7 +143,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
       val result: underTest.Result = await(underTest.execute)
 
-      ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce
+      ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, FAILED)
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.neverCalled()
 
@@ -158,7 +158,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       MongoLockRepositoryMock.TakeLock.thenTrueFalse()
       MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
-      val _: underTest.Result = await(underTest.execute)
+      await(underTest.execute)
       val result2: underTest.Result = await(underTest.execute)
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()

@@ -23,9 +23,9 @@ import scala.collection.immutable
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 import play.api.libs.json.Json
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.play.json.Union
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
 case class BoxId(value: UUID) extends AnyVal {

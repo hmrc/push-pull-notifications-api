@@ -23,9 +23,9 @@ import scala.util.{Failure, Success, Try}
 
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.{ActionRefiner, Result}
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.http.HttpErrorFunctions
 
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
@@ -77,7 +77,8 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
           NotificationStatus.withName(statusVal)
         } match {
           case Success(x) => Right(Some(x))
-          case Failure(_) => logger.info(s"Invalid Status Param provided: $statusVal")
+          case Failure(_) =>
+            logger.info(s"Invalid Status Param provided: $statusVal")
             Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
         }
       case None            => Right(None)
@@ -91,7 +92,8 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
           lenientFormatter.parse(stringVal, inst => Instant.from(inst))
         } match {
           case Success(parseDate) => Right(Some(parseDate))
-          case Failure(_)         => logger.info(s"Unparsable DateValue Param provided: $stringVal")
+          case Failure(_)         =>
+            logger.info(s"Unparsable DateValue Param provided: $stringVal")
             Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Unparsable DateValue Param provided")))
         }
       case None            => Right(None)

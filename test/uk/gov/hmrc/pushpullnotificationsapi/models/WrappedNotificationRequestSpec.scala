@@ -16,17 +16,18 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import uk.gov.hmrc.apiplatform.modules.utils.JsonFormattersSpec
-
 import java.net.URL
 
-class WrappedNotificationRequestSpec extends JsonFormattersSpec{
-  
+import uk.gov.hmrc.apiplatform.modules.utils.JsonFormattersSpec
+
+class WrappedNotificationRequestSpec extends JsonFormattersSpec {
+
   "WrappedNotificationRequest" should {
     val aBody = """some text that would be json"""
     val confirmationUrl = new URL("http://example.com")
 
-    val wrappedNotificationRequestWithHeaders = WrappedNotificationRequest(WrappedNotificationBody(aBody, "application/json"), "1", Some(confirmationUrl), List(PrivateHeader("n1", "v1"), PrivateHeader("n2","v2")))
+    val wrappedNotificationRequestWithHeaders =
+      WrappedNotificationRequest(WrappedNotificationBody(aBody, "application/json"), "1", Some(confirmationUrl), List(PrivateHeader("n1", "v1"), PrivateHeader("n2", "v2")))
 
     "read json" when {
       "there are private headers" in {
@@ -47,8 +48,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec{
               "value": "v2"
             }
             ]
-          }"""
-        )(wrappedNotificationRequestWithHeaders)
+          }""")(wrappedNotificationRequestWithHeaders)
       }
 
       "there are empty private headers" in {
@@ -60,8 +60,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec{
           "version": "1",
           "confirmationUrl": "http://example.com",
           "privateHeaders": []
-          }"""
-        )(wrappedNotificationRequestWithHeaders.copy(privateHeaders = List.empty))
+          }""")(wrappedNotificationRequestWithHeaders.copy(privateHeaders = List.empty))
       }
 
       "there are no private headers" in {
@@ -71,8 +70,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec{
             "contentType": "application/json"
           },
           "version": "1"
-          }"""
-        )(wrappedNotificationRequestWithHeaders.copy(confirmationUrl = None, privateHeaders = List.empty))
+          }""")(wrappedNotificationRequestWithHeaders.copy(confirmationUrl = None, privateHeaders = List.empty))
       }
     }
   }

@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors
 
+import java.net.URL
 import scala.concurrent.Future.successful
 
 import org.mockito.verification.VerificationMode
@@ -24,7 +25,6 @@ import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult}
-import java.net.URL
 
 trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 

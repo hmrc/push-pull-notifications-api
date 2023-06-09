@@ -22,14 +22,17 @@ import scala.concurrent.Future.successful
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.google.inject.Singleton
+
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
+
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
 
 @Singleton

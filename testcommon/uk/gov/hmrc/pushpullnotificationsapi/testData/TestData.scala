@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.testData
 
+import java.net.URL
 import java.time.{Duration, Instant}
 import java.util.UUID
 
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
-import java.net.URL
 
 trait TestData {
 

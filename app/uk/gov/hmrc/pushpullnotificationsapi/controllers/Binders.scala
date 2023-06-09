@@ -21,8 +21,8 @@ import scala.util.Try
 
 import play.api.Logger
 import play.api.mvc.{PathBindable, QueryStringBindable}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 
 object Binders {

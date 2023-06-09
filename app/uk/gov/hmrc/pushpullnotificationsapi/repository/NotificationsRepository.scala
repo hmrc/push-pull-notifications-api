@@ -106,7 +106,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       Filters.and(boxIdQuery(boxId), statusQuery(status), dateRange("createdDateTime", fromDateTime, toDateTime))
 
     collection
-      .withReadPreference(ReadPreference.primaryPreferred)
+      .withReadPreference(ReadPreference.primaryPreferred())
       .find(query)
       .sort(Sorts.ascending("createdDateTime"))
       .limit(numberOfNotificationsToReturn)

@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.net.URL
+import java.nio.charset.Charset
 import java.time.{Duration, Instant}
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -32,22 +34,20 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 import uk.gov.hmrc.auth.core.AuthConnector
 
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
-import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import java.nio.charset.Charset
-import java.net.URL
-import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with
- BeforeAndAfterEach with ConfirmationServiceMockModule with NotificationsServiceMockModule with AuthConnectorMockModule with TestData {
+class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach with ConfirmationServiceMockModule
+    with NotificationsServiceMockModule with AuthConnectorMockModule with TestData {
+
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
     .configure(Map("notifications.envelopeSize" -> "256B"))
@@ -74,7 +74,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
   val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
 
-
   val notification2: Notification = Notification(
     NotificationId.random,
     boxId,
@@ -94,12 +93,12 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version"}"""
       }
 
-      def wrappedBodyWithConfirmation(body: String, contentType: String, version: String = "1", confirmationUrl: URL, privateHeaders: List[PrivateHeader] = List.empty): String = {
+      def wrappedBodyWithConfirmation(body: String, contentType: String, version: String, confirmationUrl: URL, privateHeaders: List[PrivateHeader]): String = {
         val privateHeadersText = privateHeaders.map(h => s"""{"name":"${h.name}","value":"${h.value}"}""").mkString(",")
         s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version", "confirmationUrl":"${confirmationUrl.toString}", "privateHeaders":[ ${privateHeadersText} ]}"""
       }
 
-      def badURL(): String = {
+      def badURL: String = {
         s"""{"notification":{"body":"{}","contentType":"application/json"}, "version": "1", "confirmationUrl": "not-valid"}"""
       }
 
@@ -133,26 +132,24 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
       "return 201 when there are five private headers" in {
         NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, jsonBody)
         ConfirmationServiceMock.SaveConfirmationRequest.succeeds()
-        
-        val privateHeaders = Range.inclusive(1,5).map(i => PrivateHeader(s"n$i",s"v$i")).toList
+
+        val privateHeaders = Range.inclusive(1, 5).map(i => PrivateHeader(s"n$i", s"v$i")).toList
         val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"), privateHeaders)
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(CREATED)
-
 
         NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId, jsonBody)
         ConfirmationServiceMock.SaveConfirmationRequest.verifyCalled()
       }
 
       "return 400 when there are too many private headers" in {
-        val privateHeaders = Range.inclusive(1,6).map(i => PrivateHeader(s"n$i",s"v$i")).toList
+        val privateHeaders = Range.inclusive(1, 6).map(i => PrivateHeader(s"n$i", s"v$i")).toList
         val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"), privateHeaders)
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(BAD_REQUEST)
 
-     
         val expectedErrorBody = "Request contains more then 5 private headers"
         contentAsString(result) should include(expectedErrorBody)
 
@@ -177,11 +174,11 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
           result.flatMap { entity =>
             entity.body.consumeData
           }
-          .map(_.decodeString(Charset.defaultCharset()))
-          .map(s => println(s))
+            .map(_.decodeString(Charset.defaultCharset()))
+            .map(s => println(s))
         )
 
-       NotificationsServiceMock.verifyZeroInteractions()
+        NotificationsServiceMock.verifyZeroInteractions()
       }
 
       "return 400 when version number isn't 1" in {
@@ -222,7 +219,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
       "return 500 when save notification throws Duplicate Notification Exception" in {
         NotificationsServiceMock.SaveNotification.XML.failsWithDuplicate(boxId, xmlBody)
-          
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(INTERNAL_SERVER_ERROR)
@@ -238,7 +234,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
         status(result) should be(NOT_FOUND)
 
-         NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
+        NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
       }
 
       "return 500 when save notification throws Any non handled Non fatal exception" in {

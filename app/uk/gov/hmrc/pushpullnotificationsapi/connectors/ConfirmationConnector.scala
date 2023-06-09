@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
+import java.net.URL
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -28,7 +29,6 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorR
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorResult, ConfirmationConnectorSuccessResult}
-import java.net.URL
 
 @Singleton
 class ConfirmationConnector @Inject() (http: HttpClient)(implicit ec: ExecutionContext) {

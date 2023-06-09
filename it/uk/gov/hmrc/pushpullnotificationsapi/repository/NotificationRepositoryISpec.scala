@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import org.mongodb.scala.Document
@@ -18,7 +34,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import java.time.{Duration, Instant}
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationRepositoryISpec
@@ -50,7 +65,7 @@ class NotificationRepositoryISpec
   def boxRepo: BoxRepository = app.injector.instanceOf[BoxRepository]
   override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     prepareDatabase()
     await(repo.ensureIndexes)
     await(boxRepo.ensureIndexes)

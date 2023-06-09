@@ -465,7 +465,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doGet(s"/box", validHeaders), OK, Json.toJson(expectedBoxes).toString())
 
-        BoxServiceMock.GetAllBoxes.verifyCalled
+        BoxServiceMock.GetAllBoxes.verifyCalled()
       }
 
       "return 500 when  getAllBoxes fails when no parameters provided" in {
@@ -474,7 +474,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doGet(s"/box", validHeaders), INTERNAL_SERVER_ERROR, "")
 
-        BoxServiceMock.GetAllBoxes.verifyCalled
+        BoxServiceMock.GetAllBoxes.verifyCalled()
       }
 
       "return 200 and requested box when it exists" in {

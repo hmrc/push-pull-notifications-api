@@ -27,8 +27,7 @@ import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.PrivateHeader
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId, PrivateHeader}
 
 sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
 
@@ -97,7 +96,13 @@ object OutboundNotification {
   implicit val format = Json.format[OutboundNotification]
 }
 
-case class OutboundConfirmation(confirmationId: ConfirmationId, notificationId: NotificationId, version: String, status: NotificationStatus, dateTime: Option[Instant], privateHeaders: List[PrivateHeader])
+case class OutboundConfirmation(
+    confirmationId: ConfirmationId,
+    notificationId: NotificationId,
+    version: String,
+    status: NotificationStatus,
+    dateTime: Option[Instant],
+    privateHeaders: List[PrivateHeader])
 
 object OutboundConfirmation {
   implicit val format = Json.format[OutboundConfirmation]

@@ -20,8 +20,8 @@ import java.time.Instant
 
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
@@ -64,8 +64,6 @@ case class NotificationResponse(
     createdDateTime: Instant = Instant.now,
     readDateTime: Option[Instant] = None,
     pushedDateTime: Option[Instant] = None)
-
-import play.api.libs.json._
 
 object NotificationResponse {
   import InstantFormatter.WithTimeZone._

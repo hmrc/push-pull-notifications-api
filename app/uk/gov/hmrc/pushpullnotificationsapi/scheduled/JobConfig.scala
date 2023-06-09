@@ -37,7 +37,7 @@ object JobConfig {
   }
 
   def fromConfig(config: Config): JobConfig = {
-    new JobConfig(config.getDuration("initialDelay").finite, config.getDuration("interval").finite, config.getBoolean("enabled"))
+    new JobConfig(config.getDuration("initialDelay").finite(), config.getDuration("interval").finite(), config.getBoolean("enabled"))
   }
 }
 

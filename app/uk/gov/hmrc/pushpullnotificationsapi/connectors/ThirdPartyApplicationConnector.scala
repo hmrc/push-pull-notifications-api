@@ -21,10 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.google.inject.Inject
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 case class ApplicationResponse(id: ApplicationId)
