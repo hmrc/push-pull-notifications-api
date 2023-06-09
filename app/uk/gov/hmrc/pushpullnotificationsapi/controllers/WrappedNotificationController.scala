@@ -70,6 +70,7 @@ class WrappedNotificationsController @Inject() (
           (
             for {
               _ <- ET.cond(request.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+              _ <- ET.cond(request.privateHeaders.length <= 5, (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request contains more then 5 private headers")))
               messageContentType <- ET.fromOption(
                                       contentTypeHeaderToNotificationType(request.notification.contentType),
                                       UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))

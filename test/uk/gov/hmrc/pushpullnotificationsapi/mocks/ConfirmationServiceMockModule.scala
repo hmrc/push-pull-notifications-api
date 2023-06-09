@@ -26,6 +26,9 @@ import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.services.ConfirmationService
+import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
+import java.net.URL
+import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationCreateServiceSuccessResult
 
 trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -45,6 +48,17 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
         verify.handleConfirmation(eqTo(notificationId))(*, *)
       }
 
+    }
+
+    object SaveConfirmationRequest {
+    
+      def succeeds() = {
+        when(aMock.saveConfirmationRequest(*[ConfirmationId], *, *[NotificationId], *)(*)).thenReturn(successful(ConfirmationCreateServiceSuccessResult()))
+      }
+
+      def verifyCalled() = {
+        verify.saveConfirmationRequest(*[ConfirmationId], *, *[NotificationId], *)(*)
+      }
     }
 
     object SendConfirmation {

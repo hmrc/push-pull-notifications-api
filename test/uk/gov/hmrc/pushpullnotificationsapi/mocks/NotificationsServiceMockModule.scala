@@ -70,7 +70,6 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       }
 
       object Json {
-
         def succeedsFor(boxId: BoxId, jsonBody: String) = {
           when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*))
             .thenReturn(successful(NotificationCreateSuccessResult()))
