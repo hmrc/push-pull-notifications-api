@@ -23,21 +23,24 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, OutboundConfirmation}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import java.net.URL
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 
 @Singleton
 class ConfirmationService @Inject() (repository: ConfirmationRepository, connector: ConfirmationConnector) extends ApplicationLogger {
 
   def saveConfirmationRequest(
       confirmationId: ConfirmationId,
-      confirmationUrl: String,
-      notificationId: NotificationId
+      confirmationUrl: URL,
+      notificationId: NotificationId,
+      privateHeaders: List[PrivateHeader]
     )(implicit ec: ExecutionContext
     ): Future[ConfirmationCreateServiceResult] = {
-    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId)).map {
+    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId, privateHeaders)).map {
       case Some(_) => ConfirmationCreateServiceSuccessResult()
       case None    => ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
@@ -57,10 +60,10 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
   def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     connector.sendConfirmation(
       request.confirmationUrl,
-      OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime)
+      OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime, request.privateHeaders)
     ) map {
       case _: ConfirmationConnectorSuccessResult =>
-        repository.updateStatus(request.notificationId, NotificationStatus.ACKNOWLEDGED)
+        repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)
         true
       case _: ConfirmationConnectorFailedResult  =>
         logger.info(s"Confirmation not sent for notificationId: ${request.notificationId.value}")

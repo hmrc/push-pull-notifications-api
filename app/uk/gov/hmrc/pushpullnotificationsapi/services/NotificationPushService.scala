@@ -26,7 +26,6 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED

@@ -16,43 +16,13 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField._
-import java.time.{Instant, ZoneId}
-
 import play.api.libs.json._
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
-
-object InstantFormatter {
-
-  val lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
-    .parseLenient()
-    .parseCaseInsensitive()
-    .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.SSS][Z]['Z']]")
-    .parseDefaulting(NANO_OF_SECOND, 0)
-    .parseDefaulting(SECOND_OF_MINUTE, 0)
-    .parseDefaulting(MINUTE_OF_HOUR, 0)
-    .parseDefaulting(HOUR_OF_DAY, 0)
-    .toFormatter
-    .withZone(ZoneId.of("UTC"))
-
-  val instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
-
-  val instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
-    .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
-    .toFormatter
-    .withZone(ZoneId.of("UTC")))
-
-  object Implicits {
-    implicit val instantFormat: Format[Instant] = Format(instantReads, instantWrites)
-  }
-}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {
-  import InstantFormatter.Implicits._
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.WithTimeZone._
 
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]
-  implicit val notificationResponseFormatter: OFormat[NotificationResponse] = Json.format[NotificationResponse]
 }

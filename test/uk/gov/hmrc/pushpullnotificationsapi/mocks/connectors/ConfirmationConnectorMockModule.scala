@@ -24,6 +24,7 @@ import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult}
+import java.net.URL
 
 trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -47,11 +48,11 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
         verify(never).sendConfirmation(*, *)(*)
       }
 
-      def verifyCalledWith(url: String) = {
+      def verifyCalledWith(url: URL) = {
         verify.sendConfirmation(eqTo(url), *[OutboundConfirmation])(*)
       }
 
-      def isSuccessWith(url: String, expectedOutBoundConfirmation: OutboundConfirmation) = {
+      def isSuccessWith(url: URL, expectedOutBoundConfirmation: OutboundConfirmation) = {
         when(aMock.sendConfirmation(eqTo(url), eqTo(expectedOutBoundConfirmation))(*)).thenReturn(successful(ConfirmationConnectorSuccessResult()))
       }
 

@@ -12,11 +12,11 @@ object AppDependencies {
     "commons-codec"           %  "commons-codec"                    % "1.15",
     "uk.gov.hmrc"             %% "domain"                           % "6.2.0-play-28",
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"               % mongoVersion,
-    "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.16.0",
+    "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.20.0",
     "com.github.blemale"      %% "scaffeine"                        % "3.1.0",
-    "com.typesafe.play"       %% "play-json"                        % "2.7.1",
     "com.beachape"            %% "enumeratum-play-json"             % "1.6.0",
-    "com.lihaoyi"             %% "sourcecode"                       % "0.3.0"
+    "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
+    "org.typelevel"           %% "cats-core"                        % "2.9.0"
   )
 
   lazy val testDependencies = Seq(

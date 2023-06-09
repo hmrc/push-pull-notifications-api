@@ -43,11 +43,11 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
       def verifyNeverCalled() = {}
 
       def verifyCalledWith() = {
-        verify.createBox(*)(*)
+        verify.createBox(*)
       }
 
       def succeedsWithCreated(box: Box): ScalaOngoingStubbing[Future[CreateBoxResult]] = {
-        when(aMock.createBox(*[Box])(*)).thenReturn(successful(BoxCreatedResult(box)))
+        when(aMock.createBox(*[Box])).thenReturn(successful(BoxCreatedResult(box)))
       }
     }
 
@@ -96,11 +96,11 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object GetAllBoxes {
 
       def succeedsWith(boxes: List[Box]) = {
-        when(aMock.getAllBoxes()(*)).thenReturn(successful(boxes))
+        when(aMock.getAllBoxes()).thenReturn(successful(boxes))
       }
 
       def verifyCalled() = {
-        verify.getAllBoxes()(*)
+        verify.getAllBoxes()
       }
     }
 

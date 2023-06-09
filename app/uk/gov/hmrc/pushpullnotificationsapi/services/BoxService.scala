@@ -36,10 +36,11 @@ class BoxService @Inject() (
     pushConnector: PushConnector,
     applicationConnector: ThirdPartyApplicationConnector,
     eventsConnector: ApiPlatformEventsConnector,
-    clientService: ClientService)
+    clientService: ClientService
+  )(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
-  def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[CreateBoxResult] = {
+  def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)(implicit hc: HeaderCarrier): Future[CreateBoxResult] = {
 
     repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
       case Some(x) => successful(BoxRetrievedResult(x))
@@ -54,11 +55,11 @@ class BoxService @Inject() (
     }
   }
 
-  def getAllBoxes()(implicit ec: ExecutionContext): Future[List[Box]] = {
+  def getAllBoxes(): Future[List[Box]] = {
     repository.getAllBoxes()
   }
 
-  def deleteBox(clientId: ClientId, boxId: BoxId)(implicit ec: ExecutionContext): Future[DeleteBoxResult] = {
+  def deleteBox(clientId: ClientId, boxId: BoxId): Future[DeleteBoxResult] = {
     repository.findByBoxId(boxId) flatMap {
       case Some(box) => validateAndDeleteBox(box, clientId)
       case None      => successful(BoxDeleteNotFoundResult())
@@ -103,7 +104,7 @@ class BoxService @Inject() (
 
   }
 
-  def validateBoxOwner(boxId: BoxId, clientId: ClientId)(implicit ec: ExecutionContext): Future[ValidateBoxOwnerResult] = {
+  def validateBoxOwner(boxId: BoxId, clientId: ClientId): Future[ValidateBoxOwnerResult] = {
     repository.findByBoxId(boxId) flatMap {
       case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
       case Some(box) => if (box.boxCreator.clientId == clientId) {
@@ -114,7 +115,7 @@ class BoxService @Inject() (
     }
   }
 
-  private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest)(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] = {
+  private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest): Future[UpdateCallbackUrlResult] = {
     if (request.callbackUrl.nonEmpty) {
       pushConnector.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult     =>
@@ -130,7 +131,7 @@ class BoxService @Inject() (
     }
   }
 
-  private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber])(implicit ec: ExecutionContext): Future[UpdateCallbackUrlResult] =
+  private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber]): Future[UpdateCallbackUrlResult] =
     repository.updateSubscriber(boxId, subscriber).map {
       case Some(_) => CallbackUrlUpdated()
       case _       => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
@@ -143,7 +144,7 @@ class BoxService @Inject() (
     }
   }
 
-  private def updateBoxWithApplicationId(box: Box)(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[ApplicationId] = {
+  private def updateBoxWithApplicationId(box: Box)(implicit hc: HeaderCarrier): Future[ApplicationId] = {
     applicationConnector.getApplicationDetails(box.boxCreator.clientId)
       .flatMap(appDetails => {
         repository.updateApplicationId(box.boxId, appDetails.id)

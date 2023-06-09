@@ -24,8 +24,9 @@ import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import java.net.URL
 
 trait TestData {
 
@@ -58,19 +59,22 @@ trait TestData {
   val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
-  val url = "https://test"
+  val url = new URL("https://test")
   val notificationId: NotificationId = NotificationId(UUID.randomUUID())
   val pushedTime = Instant.now()
-  val acknowledgedStatus = NotificationStatus.ACKNOWLEDGED
-  val pendingStatus = NotificationStatus.PENDING
+  val acknowledgedNotificationStatus = NotificationStatus.ACKNOWLEDGED
+  val pendingNotificationStatus = NotificationStatus.PENDING
+
+  val acknowledgedConfirmationStatus = ConfirmationStatus.ACKNOWLEDGED
+  val pendingConfirmationStatus = ConfirmationStatus.PENDING
 
   val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   val messageContentTypeXml = MessageContentType.APPLICATION_XML
 
-  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, pushedDateTime = Some(pushedTime))
+  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, List.empty, pushedDateTime = Some(pushedTime))
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
-    ConfirmationRequest(confirmationId = confirmationId, "URL", notificationId, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
+    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")

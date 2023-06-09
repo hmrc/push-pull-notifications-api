@@ -66,11 +66,11 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
     collection.find(equal("boxId", Codecs.toBson(boxId))).headOption()
   }
 
-  def getAllBoxes()(implicit ec: ExecutionContext): Future[List[Box]] = {
+  def getAllBoxes(): Future[List[Box]] = {
     collection.find().toFuture().map(_.toList)
   }
 
-  def createBox(box: Box)(implicit ec: ExecutionContext): Future[CreateBoxResult] =
+  def createBox(box: Box): Future[CreateBoxResult] =
     collection.insertOne(box).map(_ => BoxCreatedResult(box)).head() recoverWith {
       case NonFatal(e) => Future.successful(BoxCreateFailedResult(e.getMessage))
     }

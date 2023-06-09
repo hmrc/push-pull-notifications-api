@@ -34,14 +34,13 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models.InstantFormatter.lenientFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
@@ -192,118 +191,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       }
     }
 
-    "saveWrappedNotification" should {
-
-      def wrappedBody(body: String, contentType: String, version: String = "1"): String = {
-        s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version"}"""
-      }
-
-      "return 201 when valid json, json content type header are provided and notification successfully saved" in {
-        NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, jsonBody)
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON))
-        status(result) should be(CREATED)
-
-        NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId, jsonBody)
-      }
-
-      "return 201 when valid complicated json, json content type header are provided and notification successfully saved" in {
-        val complicatedJson = "{\"foo\":\"bar\"}"
-        val escapedComplicatedJson = "{\\\"foo\\\":\\\"bar\\\"}"
-        NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, complicatedJson)
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(escapedComplicatedJson, MimeTypes.JSON))
-        status(result) should be(CREATED)
-
-        NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId, complicatedJson)
-      }
-
-      "return 413 when payload is too large" in {
-        val overlyLargeJsonBody: String =
-          """{ "averylonglabel": "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"}"""
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
-        status(result) should be(REQUEST_ENTITY_TOO_LARGE)
-      }
-
-      "return 201 when valid xml, xml content type header are provided and notification successfully saved" in {
-        NotificationsServiceMock.SaveNotification.XML.succeedsFor(boxId, xmlBody)
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
-        status(result) should be(CREATED)
-
-        NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
-      }
-
-      "return 400 when version number isn't 1" in {
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.JSON, "2"))
-        status(result) should be(BAD_REQUEST)
-
-        NotificationsServiceMock.verifyZeroInteractions()
-      }
-
-      "return 400 when json content type header is sent but invalid json" in {
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.JSON))
-        status(result) should be(BAD_REQUEST)
-
-        NotificationsServiceMock.verifyZeroInteractions()
-      }
-
-      "return 400 when xml content type header is sent but invalid xml" in {
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(jsonBody, MimeTypes.XML))
-        status(result) should be(BAD_REQUEST)
-
-        NotificationsServiceMock.verifyZeroInteractions()
-      }
-
-      "return 403 when useragent header is not allowlisted" in {
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", headersWithInValidUserAgent, wrappedBody(jsonBody, MimeTypes.JSON))
-        status(result) should be(FORBIDDEN)
-
-        NotificationsServiceMock.verifyZeroInteractions()
-      }
-
-      "return 415 when bad contentType header is sent" in {
-        val result = doPost(
-          s"/box/${boxId.value.toString}/wrapped-notifications",
-          Map("user-Agent" -> "api-subscription-fields", "Content-Type" -> "foo"),
-          wrappedBody(xmlBody, MimeTypes.CSS)
-        )
-        status(result) should be(UNSUPPORTED_MEDIA_TYPE)
-
-        NotificationsServiceMock.verifyZeroInteractions()
-      }
-
-      "return 500 when save notification throws Duplicate Notification Exception" in {
-        NotificationsServiceMock.SaveNotification.XML.failsWithDuplicate(boxId, xmlBody)
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
-        status(result) should be(INTERNAL_SERVER_ERROR)
-        val bodyVal = contentAsString(result)
-        bodyVal shouldBe "{\"code\":\"DUPLICATE_NOTIFICATION\",\"message\":\"Unable to save Notification: duplicate found\"}"
-
-        NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
-      }
-
-      "return 404 when save notification throws Box not found Exception" in {
-        NotificationsServiceMock.SaveNotification.XML.failsWithBoxNotFound(boxId, xmlBody)
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
-        status(result) should be(NOT_FOUND)
-
-        NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
-      }
-
-      "return 500 when save notification throws Any non handled Non fatal exception" in {
-        NotificationsServiceMock.SaveNotification.XML.throwsFor(boxId, xmlBody, new RuntimeException("some Exception"))
-
-        val result = doPost(s"/box/${boxId.value.toString}/wrapped-notifications", validHeadersJson, wrappedBody(xmlBody, MimeTypes.XML))
-        status(result) should be(INTERNAL_SERVER_ERROR)
-
-        NotificationsServiceMock.SaveNotification.XML.verifyCalledWith(boxId, xmlBody)
-      }
-    }
-
     "getNotificationsByBoxIdAndFilters" should {
       "return 200 and list of matching notifications when status filter provided" in {
         testAndValidateGetByQueryParams(boxId, OK, Some("ACKNOWLEDGED"))
@@ -430,16 +317,10 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
         val fromdatStr = "2020-02-02T00:54:00Z"
         val toDateStr = "2020-02-03T00:54:00Z"
         primeAuthAction(clientIdStr)
-        when(NotificationsServiceMock.aMock.getNotifications(
-          eqTo(boxId),
-          eqTo(clientId),
-          eqTo(Some(PENDING)),
-          eqTo(stringToDateTimeLenient(Some(fromdatStr))),
-          eqTo(stringToDateTimeLenient(Some(toDateStr)))
-        )(*))
-          .thenReturn(Future.successful(Right(List.empty)))
+        NotificationsServiceMock.GetNotifications.succeedsWith(boxId, PENDING, List.empty)
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications?status=PENDING&fromDate=$fromdatStr&toDate=$toDateStr", validHeadersJson)
+
         status(result) shouldBe OK
       }
 
@@ -597,7 +478,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
           eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
-        )(*))
+        ))
           .thenReturn(Future.successful(Right(List(notification, notification2))))
       case NOT_FOUND   => ()
       case BAD_REQUEST => ()
@@ -619,7 +500,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
           eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
-        )(*)
+        )
     }
   }
 

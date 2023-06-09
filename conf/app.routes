@@ -1,32 +1,33 @@
 # microservice specific routes
 
 # Box
-PUT       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
+PUT       /box                                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
 
-GET       /box                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId])
+GET       /box                                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId])
 
-PUT       /box/:boxId/callback          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
+PUT       /box/:boxId/callback                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
 
 # Notifications
-POST      /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)
+POST      /box/:boxId/notifications               uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveNotification(boxId: BoxId)
 
-POST      /box/:boxId/wrapped-notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.saveWrappedNotification(boxId: BoxId)
+GET       /box/:boxId/notifications               uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
 
-GET       /box/:boxId/notifications     uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.getNotificationsByBoxIdAndFilters(boxId: BoxId)
+PUT       /box/:boxId/notifications/acknowledge   uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.acknowledgeNotifications(boxId: BoxId)
 
-PUT       /box/:boxId/notifications/acknowledge  uk.gov.hmrc.pushpullnotificationsapi.controllers.NotificationsController.acknowledgeNotifications(boxId: BoxId)
+# Wrapped Notifications
+POST      /box/:boxId/wrapped-notifications       uk.gov.hmrc.pushpullnotificationsapi.controllers.WrappedNotificationsController.saveWrappedNotification(boxId: BoxId)
 
 # Client
 
-GET      /client/:clientId/secrets      uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
+GET      /client/:clientId/secrets                uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
 
 # Client Managed Boxes
-PUT      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
+PUT      /cmb/box                                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
 
-POST     /cmb/validate                  uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.validateBoxOwnership()
+POST     /cmb/validate                            uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.validateBoxOwnership()
 
-GET      /cmb/box                       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
+GET      /cmb/box                                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
 
-DELETE   /cmb/box/:boxId                uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.deleteClientManagedBox(boxId: BoxId)
+DELETE   /cmb/box/:boxId                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.deleteClientManagedBox(boxId: BoxId)
 
-PUT      /cmb/box/:boxId/callback       uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)
+PUT      /cmb/box/:boxId/callback                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)

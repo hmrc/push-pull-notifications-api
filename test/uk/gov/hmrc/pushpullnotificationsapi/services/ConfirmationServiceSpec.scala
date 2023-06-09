@@ -23,7 +23,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ConfirmationRepositoryMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationStatus, OutboundConfirmation}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationCreateServiceFailedResult, ConfirmationCreateServiceSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
@@ -37,13 +37,13 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
   "save Confirmation" should {
     "indicate when successful" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.thenSuccessfulWith(confirmationId)
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceSuccessResult()
     }
 
     "indicate when failure" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.returnsNone()
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
   }
@@ -51,14 +51,14 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
   "handleConfirmation" should {
     "send Confirmation when update successful" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
-      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedStatus, Some(pushedTime)))
-      ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, NotificationStatus.ACKNOWLEDGED, confirmationRequest)
+      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty))
+      ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, ConfirmationStatus.ACKNOWLEDGED, confirmationRequest)
 
       await(serviceToTest.handleConfirmation(notificationId)) shouldBe true
 
       ConfirmationRepositoryMock.UpdateConfirmationNeed.verifyCalled(notificationId)
       ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
-      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
+      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
 
     "do nothing when update fails" in new SetUp {
@@ -86,26 +86,26 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
     //TODO handle the futures in the service correctly, this should return false
     "return true when update status fails" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
-      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedStatus, Some(pushedTime)))
+      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty))
       ConfirmationRepositoryMock.UpdateStatus.returnsNone()
 
       await(serviceToTest.handleConfirmation(notificationId)) shouldBe true
 
       ConfirmationRepositoryMock.UpdateConfirmationNeed.verifyCalled(notificationId)
       ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
-      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
+      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
   }
 
   "handleConfirmation" should {
     "return true and call update status on repo when connector successful" in new SetUp {
-      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedStatus, Some(pushedTime)))
-      ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, NotificationStatus.ACKNOWLEDGED, confirmationRequest)
+      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty))
+      ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, acknowledgedConfirmationStatus, confirmationRequest)
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe true
 
       ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
-      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
+      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
 
     "return false and do not call update status on repo when connector fails" in new SetUp {
@@ -119,13 +119,13 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
 
     //TODO handle the future failures in the service correctly, this should return false
     "return true and do not call update status on repo when connector fails" in new SetUp {
-      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedStatus, Some(pushedTime)))
+      ConfirmationConnectorMock.SendConfirmation.isSuccessWith(url, OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty))
       ConfirmationRepositoryMock.UpdateStatus.failswithException()
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe true
 
       ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
-      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
+      ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
   }
 }

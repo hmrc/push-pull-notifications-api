@@ -45,7 +45,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         var interval: FiniteDuration = _
       }
       private val testApp = fakeApplication()
-      val runner = new RunningOfScheduledJobs {
+      new RunningOfScheduledJobs {
         override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
         override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
         override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
@@ -124,7 +124,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
       val stoppableJob = new TestScheduledJob() {
         override def name: String = "StoppableJob"
       }
-      private val runner = new RunningOfScheduledJobs {
+      new RunningOfScheduledJobs {
         override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
         override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
         override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(stoppableJob)

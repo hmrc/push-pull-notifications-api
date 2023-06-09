@@ -7,12 +7,12 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult, ConfirmationId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, OutboundConfirmation}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
 import com.github.tomakehurst.wiremock.client.WireMock._
-
+import uk.gov.hmrc.pushpullnotificationsapi.models.PrivateHeader
 import java.time.Instant
-import java.util.UUID
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
+import play.api.libs.json.Json
 
 class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -35,6 +35,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
   }
 
   "Confirmation Connector" should {
+
     "when it returns 200" in new SetUp() {
 
       stubFor(post(urlEqualTo("/")).withHeader("Content-Type", equalTo("application/json"))
@@ -46,8 +47,36 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
         ))
       val result = await(
         objInTest.sendConfirmation(
-          wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ACKNOWLEDGED, Some(Instant.now))
+          wireMockBaseUrl,
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(Instant.now), List.empty)
+        )
+      )
+
+      result shouldBe ConfirmationConnectorSuccessResult()
+    }
+
+    "get sent the correct json payload" in new SetUp() {
+
+      val confirmationId = ConfirmationId.random
+      val notificationId = NotificationId.random
+      val instant = Instant.now()
+      val instantAsText = Json.toJson(instant).toString
+      val rawText = s"""{"confirmationId":"$confirmationId","notificationId":"${notificationId}","version":"1","status":"ACKNOWLEDGED","dateTime":$instantAsText,"privateHeaders":[{"name":"f1","value":"v1"}]}"""
+
+      stubFor(
+        post(urlEqualTo("/"))
+        .withHeader("Content-Type", equalTo("application/json"))
+        .withRequestBody(equalTo(rawText))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody("{}")
+        ))
+      val result = await(
+        objInTest.sendConfirmation(
+          wireMockBaseUrl,
+          OutboundConfirmation(confirmationId, notificationId, "1", NotificationStatus.ACKNOWLEDGED, Some(instant), List(PrivateHeader("f1","v1")))
         )
       )
 
@@ -65,8 +94,8 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
         ))
       val result = await(
         objInTest.sendConfirmation(
-          wireMockBaseUrlAsString,
-          OutboundConfirmation(ConfirmationId(UUID.randomUUID()), NotificationId(UUID.randomUUID()), "1", ACKNOWLEDGED, Some(Instant.now))
+          wireMockBaseUrl,
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(Instant.now), List.empty)
         )
       )
 

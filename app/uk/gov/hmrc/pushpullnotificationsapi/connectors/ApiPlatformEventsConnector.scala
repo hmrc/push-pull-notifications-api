@@ -26,7 +26,7 @@ import com.google.inject.Inject
 import play.api.http.Status.CREATED
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.Actors
-import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{EventId, PpnsCallBackUriUpdatedEvent}
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{ApplicationEvents, EventId}
 import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
@@ -40,8 +40,8 @@ class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConf
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, Instant.now(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
-    http.POST[PpnsCallBackUriUpdatedEvent, HttpResponse](url, event)
+    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, Instant.now(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
+    http.POST[ApplicationEvents.PpnsCallBackUriUpdatedEvent, HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {
         case NonFatal(e) =>

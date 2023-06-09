@@ -17,16 +17,43 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
-
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId}
+
+import java.net.URL
+import scala.util.Try
+import uk.gov.hmrc.pushpullnotificationsapi.models.PrivateHeader
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 case class ConfirmationRequest(
     confirmationId: ConfirmationId,
-    confirmationUrl: String,
+    confirmationUrl: URL,
     notificationId: NotificationId,
-    status: NotificationStatus = PENDING,
+    privateHeaders: List[PrivateHeader],
+    status: ConfirmationStatus = ConfirmationStatus.PENDING,
     createdDateTime: Instant = Instant.now,
     pushedDateTime: Option[Instant] = None,
-    retryAfterDateTime: Option[Instant] = None)
+    retryAfterDateTime: Option[Instant] = None) {
+
+  def toDB: ConfirmationRequestDB =
+    ConfirmationRequestDB(this.confirmationId, this.confirmationUrl.toString, this.notificationId, this.privateHeaders, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime)
+}
+
+// TODO - remove this and replace with above AFTER all bad URLs are expired from DB
+case class ConfirmationRequestDB(
+                                confirmationId: ConfirmationId,
+                                confirmationUrl: String,
+                                notificationId: NotificationId,
+                                privateHeaders: List[PrivateHeader],
+                                status: ConfirmationStatus = ConfirmationStatus.PENDING,
+                                createdDateTime: Instant = Instant.now,
+                                pushedDateTime: Option[Instant] = None,
+                                retryAfterDateTime: Option[Instant] = None) {
+  def toNonDb: Option[ConfirmationRequest] = {
+    Try {
+      new URL(this.confirmationUrl)
+    }
+    .toOption
+      .map(url => ConfirmationRequest(this.confirmationId, url, this.notificationId, this.privateHeaders, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime))
+  }
+}

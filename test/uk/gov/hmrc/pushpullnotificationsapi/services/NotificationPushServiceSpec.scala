@@ -74,7 +74,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
 
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
 
-      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedStatus)
+      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)
       val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
@@ -83,7 +83,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
       checkOutboundNotificationIsCorrect(notification, pushSubscriber, outboundNotificationCaptor.value)
       result shouldBe true
 
-      NotificationsRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedStatus)
+      NotificationsRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedNotificationStatus)
       ConfirmationServiceMock.HandleConfirmation.verifyCalledWith(notificationId)
     }
 
@@ -92,7 +92,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
       HmacServiceMock.Sign.succeedsWith(expectedSignature)
       val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
-      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedStatus)
+      NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)
 
       await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, notification))
 

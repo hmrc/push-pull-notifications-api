@@ -17,29 +17,25 @@
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
 
-import play.api.libs.json._
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import play.mvc.Http.MimeTypes
+import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, _}
+import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 @Singleton()
 class NotificationsController @Inject() (
     appConfig: AppConfig,
-    notificationsService: NotificationsService,
-    confirmationService: ConfirmationService,
+    val notificationsService: NotificationsService,
     queryParamValidatorAction: ValidateNotificationQueryParamsAction,
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
     authAction: AuthAction,
@@ -47,74 +43,33 @@ class NotificationsController @Inject() (
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
   )(implicit val ec: ExecutionContext)
-    extends BackendController(cc) {
+    extends BackendController(cc)
+    with NotificationUtils
+    with WithJsonBodyWithBadRequest {
+
+  val ET = EitherTHelper.make[Result]
+
+  val maxNotificationSize = appConfig.maxNotificationSize
+  val maxWrappedNotificationSize = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
 
   def saveNotification(boxId: BoxId): Action[String] =
-    (Action andThen
-      validateUserAgentHeaderAction)
-      .async(playBodyParsers.tolerantText(appConfig.maxNotificationSize)) { implicit request =>
-        val maybeConvertedType = contentTypeHeaderToNotificationType
-        maybeConvertedType.fold(
-          Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
-        ) { contentType =>
-          if (validateBodyAgainstContentType(contentType)) {
-            val notificationId = NotificationId.random
-            notificationsService.saveNotification(boxId, notificationId, contentType, request.body) map {
-              case _: NotificationCreateSuccessResult             =>
-                Created(Json.toJson(CreateNotificationResponse(notificationId)))
-              case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-              case _: NotificationCreateFailedDuplicateResult     =>
-                InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found"))
-            } recover recovery
-          } else {
-            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
-          }
-        }
-      }
+    (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.tolerantText(maxNotificationSize)) { implicit request =>
+      val handleNotification = (notificationId: NotificationId) => successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))
 
-  def saveWrappedNotification(boxId: BoxId): Action[JsValue] =
-    (Action andThen
-      validateUserAgentHeaderAction)
-      .async(playBodyParsers.json(appConfig.maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize)) {
-        implicit request =>
-          withJsonBody[WrappedNotificationRequest] { wrappedNotification =>
-            {
-              val notification = wrappedNotification.notification
-              if (wrappedNotification.version == "1") {
-                contentTypeHeaderToNotificationType(notification.contentType).fold(
-                  Future.successful(UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported")))
-                ) { contentType =>
-                  if (validateBodyAgainstContentType(contentType, notification.body)) {
-                    val notificationId = NotificationId.random
-                    notificationsService.saveNotification(boxId, notificationId, contentType, notification.body) flatMap {
-                      case _: NotificationCreateSuccessResult             =>
-                        if (wrappedNotification.confirmationUrl.isDefined) {
-                          val confirmationId = ConfirmationId.random
-                          confirmationService.saveConfirmationRequest(confirmationId, wrappedNotification.confirmationUrl.get, notificationId) map {
-                            case _: ConfirmationCreateServiceSuccessResult =>
-                              Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
-                            case _: ConfirmationCreateServiceFailedResult  =>
-                              InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
-                          }
-                        } else {
-                          Future.successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))
-                        }
-                      case _: NotificationCreateFailedBoxIdNotFoundResult =>
-                        Future.successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
-                      case _: NotificationCreateFailedDuplicateResult     =>
-                        Future.successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
-                    } recover recovery
-                  } else {
-                    Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
-                  }
-                }
-              } else {
-                Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
-              }
-            }
-          }
-      }
+      (
+        for {
+          contentType <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not found")))
+          messageContentType <- ET.fromOption(
+                                  contentTypeHeaderToNotificationType(contentType),
+                                  UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))
+                                )
+          body = request.body
+          isValidBody = validateBodyAgainstContentType(messageContentType, body)
+          messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+          result <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
+        } yield result
+      ).merge
+    }
 
   def getNotificationsByBoxIdAndFilters(boxId: BoxId): Action[AnyContent] =
     (Action andThen
@@ -128,18 +83,6 @@ class NotificationsController @Inject() (
           case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
         } recover recovery
       }
-
-  private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
-
-    val notificationIds = request.notificationIds
-
-    if (notificationIds.isEmpty || notificationIds.size > appConfig.numberOfNotificationsToRetrievePerRequest) {
-      false
-    } else {
-      notificationIds.distinct == notificationIds
-    }
-
-  }
 
   def acknowledgeNotifications(boxId: BoxId): Action[JsValue] =
     (Action andThen
@@ -162,62 +105,11 @@ class NotificationsController @Inject() (
       }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
     }
 
-  private def contentTypeHeaderToNotificationType()(implicit request: Request[String]): Option[MessageContentType] = {
-    request.contentType match {
-      case Some(MimeTypes.JSON) => Some(APPLICATION_JSON)
-      case Some(MimeTypes.XML)  => Some(APPLICATION_XML)
-      case _                    => None
-    }
-  }
+  private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {
 
-  private def contentTypeHeaderToNotificationType(contentType: String): Option[MessageContentType] = {
-    contentType match {
-      case MimeTypes.JSON => Some(APPLICATION_JSON)
-      case MimeTypes.XML  => Some(APPLICATION_XML)
-      case _              => None
-    }
-  }
+    val notificationIds = request.notificationIds
 
-  private def validateBodyAgainstContentType(notificationContentType: MessageContentType, body: String) = {
-    notificationContentType match {
-      case APPLICATION_JSON => checkValidJson(body)
-      case APPLICATION_XML  => checkValidXml(body)
-    }
-  }
+    (notificationIds.nonEmpty && notificationIds.size <= appConfig.numberOfNotificationsToRetrievePerRequest && notificationIds.distinct == notificationIds)
 
-  private def validateBodyAgainstContentType(notificationContentType: MessageContentType)(implicit request: Request[String]) = {
-    notificationContentType match {
-      case APPLICATION_JSON => checkValidJson(request.body)
-      case APPLICATION_XML  => checkValidXml(request.body)
-    }
-  }
-
-  private def checkValidJson(body: String) = {
-    validateBody[JsValue](body, body => Json.parse(body))
-  }
-
-  private def checkValidXml(body: String) = {
-    validateBody[NodeSeq](body, body => scala.xml.XML.loadString(body))
-  }
-
-  private def validateBody[T](body: String, f: String => T): Boolean = {
-    Try[T] {
-      f(body)
-    } match {
-      case Success(_) => true
-      case Failure(_) => false
-    }
-  }
-
-  override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] = {
-    withJson(request.body)(f)
-  }
-
-  private def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
-    json.validate[T] match {
-      case JsSuccess(payload, _) => f(payload)
-      case JsError(_)            =>
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
-    }
   }
 }

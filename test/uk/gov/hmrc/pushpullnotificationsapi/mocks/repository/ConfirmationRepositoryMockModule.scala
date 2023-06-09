@@ -17,15 +17,13 @@
 package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.{failed, successful}
-
 import akka.stream.scaladsl.Source
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 
 trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -41,11 +39,11 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
     object SaveConfirmationRequest {
 
       def returnsNone() = {
-        when(aMock.saveConfirmationRequest(*[ConfirmationRequest])(*)).thenReturn(successful(None))
+        when(aMock.saveConfirmationRequest(*[ConfirmationRequest])).thenReturn(successful(None))
       }
 
       def thenSuccessfulWith(confirmationId: ConfirmationId) = {
-        when(aMock.saveConfirmationRequest(*[ConfirmationRequest])(*)).thenReturn(successful(Some(confirmationId)))
+        when(aMock.saveConfirmationRequest(*[ConfirmationRequest])).thenReturn(successful(Some(confirmationId)))
       }
 
     }
@@ -80,11 +78,11 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
         verify(never).updateStatus(*[NotificationId], *)
       }
 
-      def verifyCalledWith(notificationId: NotificationId, status: NotificationStatus) = {
+      def verifyCalledWith(notificationId: NotificationId, status: ConfirmationStatus) = {
         verify(atMost(1)).updateStatus(eqTo(notificationId), eqTo(status))
       }
 
-      def isSuccessWith(notificationId: NotificationId, status: NotificationStatus, confirmationRequest: ConfirmationRequest) = {
+      def isSuccessWith(notificationId: NotificationId, status: ConfirmationStatus, confirmationRequest: ConfirmationRequest) = {
         when(aMock.updateStatus(eqTo(notificationId), eqTo(status))).thenReturn(successful(Some(confirmationRequest)))
       }
 

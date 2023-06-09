@@ -345,5 +345,4 @@ class NotificationRepositoryISpec
       createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofHours(a)).truncatedTo(ChronoUnit.MILLIS), notificationId = notificationIds(a))
     }
   }
-
 }

@@ -69,7 +69,7 @@ class BoxRepositoryISpec
   def createNotificationInDB(
       status: NotificationStatus = PENDING,
       createdDateTime: Instant = Instant.now,
-      notificationId: NotificationId = NotificationId(UUID.randomUUID()),
+      notificationId: NotificationId = NotificationId.random,
       retryAfterDateTime: Option[Instant] = None,
       boxId: BoxId = boxId
     ): Notification = {

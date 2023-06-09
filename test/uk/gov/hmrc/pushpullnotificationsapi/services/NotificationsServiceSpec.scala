@@ -67,7 +67,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
         clientId: ClientId = clientId,
         repoResult: Future[Boolean] = Future.successful(false)
       ): Unit = {
-      when(NotificationsRepositoryMock.aMock.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(repoResult)
+      when(NotificationsRepositoryMock.aMock.acknowledgeNotifications(*[BoxId], *)).thenReturn(repoResult)
 
       val result: AcknowledgeNotificationsServiceResult =
         await(serviceToTest.acknowledgeNotifications(boxId, clientId, AcknowledgeNotificationsRequest(List(NotificationId.random))))
@@ -110,7 +110,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
       val result: NotificationCreateServiceResult =
         await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeXml, message))
-      result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: BoxId(${boxId.value}) not found")
+      result shouldBe NotificationCreateFailedBoxIdNotFoundResult(s"BoxId: ${boxId} not found")
 
       verify(BoxRepositoryMock.aMock, times(1)).findByBoxId(eqTo(boxId))
       NotificationsRepositoryMock.verifyZeroInteractions()
@@ -127,10 +127,10 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
       primeBoxRepo(Some(BoxObjectWithNoSubscribers), boxId)
       primeNotificationRepoGetNotifications(
-        List(Notification(NotificationId.random, boxId, MessageContentType.APPLICATION_JSON, "{}", pendingStatus, toDate.head))
+        List(Notification(NotificationId.random, boxId, MessageContentType.APPLICATION_JSON, "{}", pendingNotificationStatus, toDate.head))
       )
       val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
-        await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = Some(pendingStatus), fromDateTime = fromDate, toDateTime = toDate))
+        await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = Some(pendingNotificationStatus), fromDateTime = fromDate, toDateTime = toDate))
 
       result match {
         case Right(g: List[Notification]) => g.size shouldBe 1
@@ -147,7 +147,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
       primeNotificationRepoGetNotifications(List.empty)
 
       val result: Either[GetNotificationsServiceFailedResult, List[Notification]] =
-        await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = Some(pendingStatus), fromDateTime = fromDate, toDateTime = toDate))
+        await(serviceToTest.getNotifications(boxId = boxId, clientId = clientId, status = Some(pendingNotificationStatus), fromDateTime = fromDate, toDateTime = toDate))
 
       result shouldBe Right(List.empty)
 
@@ -162,7 +162,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
         await(serviceToTest.getNotifications(
           boxId = boxId,
           clientId = ClientId(UUID.randomUUID().toString),
-          status = Some(pendingStatus),
+          status = Some(pendingNotificationStatus),
           fromDateTime = fromDate,
           toDateTime = toDate
         ))
@@ -197,7 +197,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
     "return AcknowledgeNotificationsServiceBoxNotFoundResult when box not found" in new Setup {
       primeBoxRepo(None, boxId)
-      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: BoxId(${boxId.value.toString}) not found"))
+      runAcknowledgeScenarioAndAssert(AcknowledgeNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId} not found"))
     }
 
     "return AcknowledgeNotificationsServiceUnauthorisedResult when caller is not owner of box" in new Setup {

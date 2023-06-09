@@ -79,11 +79,11 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     object SaveNotification {
 
       def verifyCalled() = {
-        verify.saveNotification(*)(*)
+        verify.saveNotification(*)
       }
 
       def thenSucceedsWith(result: Option[NotificationId]) = {
-        when(aMock.saveNotification(*[Notification])(*)).thenReturn(successful(result))
+        when(aMock.saveNotification(*[Notification])).thenReturn(successful(result))
       }
 
     }
@@ -91,11 +91,11 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     object GetByBoxIdAndFilters {
 
       def verifyCalled() = {
-        verify.getByBoxIdAndFilters(*[BoxId], *, *, *, *)(*)
+        verify.getByBoxIdAndFilters(*[BoxId], *, *, *, *)
       }
 
       def succeedsWith(boxId: BoxId, result: List[Notification]) = {
-        when(aMock.getByBoxIdAndFilters(eqTo(boxId), *, *, *, *)(*)).thenReturn(successful(result))
+        when(aMock.getByBoxIdAndFilters(eqTo(boxId), *, *, *, *)).thenReturn(successful(result))
       }
 
     }
@@ -103,7 +103,7 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     object AcknowledgeNotifications {
 
       def succeeds() = {
-        when(aMock.acknowledgeNotifications(*[BoxId], *)(*)).thenReturn(successful(true))
+        when(aMock.acknowledgeNotifications(*[BoxId], *)).thenReturn(successful(true))
       }
 
     }
