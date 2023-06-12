@@ -53,10 +53,11 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
         IndexModel(
           ascending("boxId"),
           IndexOptions()
-            .name("boxid_index")
+            .name("boxidu_index")
             .unique(true)
         )
-      )
+      ),
+      replaceIndexes = true
     )
     with MongoJavatimeFormats.Implicits {
 
