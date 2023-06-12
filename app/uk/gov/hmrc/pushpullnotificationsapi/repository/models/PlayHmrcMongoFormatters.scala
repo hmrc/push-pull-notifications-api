@@ -59,5 +59,6 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
       (__ \ "retryAfterDateTime").readNullable[Instant]
   )(ConfirmationRequestDB.apply _)
 
-  implicit val confirmationRequestFormatter: OFormat[ConfirmationRequestDB] = Json.format[ConfirmationRequestDB]
+  implicit val confirmationRequestWrites: Writes[ConfirmationRequestDB] = Json.writes[ConfirmationRequestDB]
+  implicit val confirmationRequestFormatter = Format(confirmationRequestDBReads, confirmationRequestWrites)
 }

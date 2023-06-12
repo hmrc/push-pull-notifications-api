@@ -98,6 +98,10 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version", "confirmationUrl":"${confirmationUrl.toString}", "privateHeaders":[ ${privateHeadersText} ]}"""
       }
 
+      def wrappedBodyWithConfirmationButNoHeaders(body: String, contentType: String, version: String, confirmationUrl: URL): String = {
+        s"""{"notification":{"body":"$body","contentType":"$contentType"}, "version": "$version", "confirmationUrl":"${confirmationUrl.toString}"}"""
+      }
+
       def badURL: String = {
         s"""{"notification":{"body":"{}","contentType":"application/json"}, "version": "1", "confirmationUrl": "not-valid"}"""
       }
@@ -127,6 +131,19 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, wrappedBody(overlyLargeJsonBody, MimeTypes.JSON))
         status(result) should be(REQUEST_ENTITY_TOO_LARGE)
+      }
+
+      "return 201 when there are zero private headers" in {
+        NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, jsonBody)
+        ConfirmationServiceMock.SaveConfirmationRequest.succeeds()
+
+        val jsonText = wrappedBodyWithConfirmationButNoHeaders(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"))
+
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
+        status(result) should be(CREATED)
+
+        NotificationsServiceMock.SaveNotification.Json.verifyCalledWith(boxId, jsonBody)
+        ConfirmationServiceMock.SaveConfirmationRequest.verifyCalled()
       }
 
       "return 201 when there are five private headers" in {

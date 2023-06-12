@@ -87,6 +87,15 @@ class ConfirmationRepositoryISpec
     await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
   }
 
+  def saveMongoJsonWithNoPrivateHeadersField(input: ConfirmationRequest): InsertOneResult = {
+    import play.api.libs.json._
+
+    val rawJson = Json.toJson(input.toDB).as[JsObject]
+    val editedJson: JsObject = rawJson - "privateHeaders"
+
+    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+  }
+
   "handle a bad URL accordingly" should {
     "don't break when reading bad URLS with raw mongo driver" in {
       saveMongoJsonWithBadUrl(defaultRequest)
@@ -214,6 +223,15 @@ class ConfirmationRepositoryISpec
 
       retryableConfirmations should have size 0
     }
+
+    "read a confirmation request with no private headers" in {
+      saveMongoJsonWithNoPrivateHeadersField(defaultRequest)
+
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      
+      retryableConfirmations should have size 1
+    }
+
   }
 
 }
