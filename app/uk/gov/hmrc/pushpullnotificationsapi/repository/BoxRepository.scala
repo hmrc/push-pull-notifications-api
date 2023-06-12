@@ -56,8 +56,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
             .name("boxidu_index")
             .unique(true)
         )
-      ),
-      replaceIndexes = true
+      )
     )
     with MongoJavatimeFormats.Implicits {
 
