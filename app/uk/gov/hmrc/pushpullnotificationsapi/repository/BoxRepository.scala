@@ -53,7 +53,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
         IndexModel(
           ascending("boxId"),
           IndexOptions()
-            .name("boxidu_index")
+            .name("boxid_index")
             .unique(true)
         )
       )
