@@ -16,17 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
+import java.net.URL
 import java.time.Instant
+import scala.util.Try
 
 import play.api.libs.json.Json
 import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
-import java.net.URL
-import play.api.libs.json.Reads
-import scala.util.Try
-import play.api.libs.json.JsError
 
 case class CreateBoxRequest(boxName: String, clientId: ClientId)
 
@@ -86,22 +84,22 @@ case class WrappedNotificationBody(body: String, contentType: String)
 object WrappedNotificationBody {
   import play.api.libs.json._
 
-  implicit val format = Json.format[WrappedNotificationBody]  
+  implicit val format = Json.format[WrappedNotificationBody]
 }
 
 case class WrappedNotificationRequest(notification: WrappedNotificationBody, version: String, confirmationUrl: Option[URL], privateHeaders: List[PrivateHeader])
 
 trait URLFormatter {
   import play.api.libs.json._
-  import scala.util.{Failure,Success}
+  import scala.util.{Failure, Success}
 
   val fromString: String => JsResult[URL] = rawText => {
-      Try[URL] {
-        new URL(rawText);
-      } match {
-        case Success(v: URL) => JsSuccess(v)
-        case Failure(_) => JsError("some error")
-      }
+    Try[URL] {
+      new URL(rawText);
+    } match {
+      case Success(v: URL) => JsSuccess(v)
+      case Failure(_)      => JsError("some error")
+    }
   }
 
   implicit val readsURL: Reads[URL] = implicitly[Reads[String]].flatMapResult(fromString)
@@ -117,12 +115,12 @@ object WrappedNotificationRequest {
 
   implicit val reads: Reads[WrappedNotificationRequest] = (
     (__ \ "notification").read[WrappedNotificationBody] and
-    (__ \ "version").read[String] and
-    (__ \ "confirmationUrl").readNullable[URL] and
-    (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
-  )(WrappedNotificationRequest.apply(_,_,_,_))
+      (__ \ "version").read[String] and
+      (__ \ "confirmationUrl").readNullable[URL] and
+      (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
+  )(WrappedNotificationRequest.apply(_, _, _, _))
 
-  implicit val writes = Json.writes[WrappedNotificationRequest]  
+  implicit val writes = Json.writes[WrappedNotificationRequest]
 }
 // Notifications
 

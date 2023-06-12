@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -304,7 +320,7 @@ class BoxRepositoryISpec
 
   def runWithSink(): Seq[RetryableNotification] = {
     await(
-      notificationPushService.fetchRetryablePushNotifications.flatMap(_.runWith(Sink.seq))
+      notificationPushService.fetchRetryablePushNotifications().flatMap(_.runWith(Sink.seq))
     )
   }
 
@@ -333,8 +349,8 @@ class BoxRepositoryISpec
       val retryableNotifications: Seq[RetryableNotification] = runWithSink()
 
       retryableNotifications should have size 3
-      retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2, expectedNotification3)
-      retryableNotifications.map(_.box) should contain only (pushBox1, pushBox2)
+      retryableNotifications.map(_.notification) should contain.only(expectedNotification1, expectedNotification2, expectedNotification3)
+      retryableNotifications.map(_.box) should contain.only(pushBox1, pushBox2)
     }
 
     "return matching notifications and box" in {
@@ -347,7 +363,7 @@ class BoxRepositoryISpec
       val retryableNotifications: Seq[RetryableNotification] = runWithSink()
 
       retryableNotifications should have size 2
-      retryableNotifications.map(_.notification) should contain only (expectedNotification1, expectedNotification2)
+      retryableNotifications.map(_.notification) should contain.only(expectedNotification1, expectedNotification2)
       retryableNotifications.map(_.box) should contain only (pushBox1)
     }
 

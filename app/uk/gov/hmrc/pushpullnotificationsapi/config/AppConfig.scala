@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.config
 
 import javax.inject.{Inject, Singleton}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig

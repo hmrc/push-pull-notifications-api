@@ -22,7 +22,6 @@ import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 

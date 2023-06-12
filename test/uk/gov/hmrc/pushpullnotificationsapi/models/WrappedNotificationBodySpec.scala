@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-
 import play.api.libs.json._
+
 import uk.gov.hmrc.apiplatform.modules.utils.JsonFormattersSpec
 
-class WrappedNotificationBodySpec extends JsonFormattersSpec{
+class WrappedNotificationBodySpec extends JsonFormattersSpec {
 
   "WrappedNotification" should {
     val aBody = """some text that would be json"""
@@ -29,14 +29,15 @@ class WrappedNotificationBodySpec extends JsonFormattersSpec{
     "write json" when {
       "there are no private headers" in {
         testToJsonValues(WrappedNotificationBody(aBody, "application/json"))(
-          ("body" -> JsString(aBody)), ("contentType" -> JsString("application/json"))
+          ("body" -> JsString(aBody)),
+          ("contentType" -> JsString("application/json"))
         )
       }
 
-
       "there are private headers" in {
         testToJsonValues(wrappedNotification)(
-          ("body" -> JsString(aBody)), ("contentType" -> JsString("application/json"))
+          ("body" -> JsString(aBody)),
+          ("contentType" -> JsString("application/json"))
         )
       }
     }
@@ -46,8 +47,7 @@ class WrappedNotificationBodySpec extends JsonFormattersSpec{
         testFromJson(s"""{
           "body": "$aBody",
           "contentType": "application/json"
-          }"""
-        )(wrappedNotification)
+          }""")(wrappedNotification)
       }
     }
   }

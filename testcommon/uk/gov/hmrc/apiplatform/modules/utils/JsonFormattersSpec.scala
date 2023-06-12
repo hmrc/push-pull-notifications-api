@@ -33,8 +33,8 @@ package uk.gov.hmrc.apiplatform.modules.utils
  */
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import play.api.libs.json._
-import uk.gov.hmrc.pushpullnotificationsapi.models.WrappedNotificationBody
 
 trait JsonFormattersSpec extends AnyWordSpec with Matchers with JsonTestUtils {}
 
@@ -53,8 +53,8 @@ trait JsonTestUtils {
   def testFromJson[T](text: String)(expected: T)(implicit rdr: Reads[T]) =
     Json.parse(text).validate[T] match {
       case JsSuccess(found, _) if (found == expected) => succeed
-      case JsSuccess(found, _) => fail(s"Did not get $expected (got $found instead)")
-      case _ => fail("Did not succeed")
+      case JsSuccess(found, _)                        => fail(s"Did not get $expected (got $found instead)")
+      case _                                          => fail("Did not succeed")
     }
 
   def asObj(fields: (String, String)*): JsObject = {

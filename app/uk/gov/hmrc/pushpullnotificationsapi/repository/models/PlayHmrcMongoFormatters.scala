@@ -23,9 +23,8 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, RetryableNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 
 private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
   implicit val confirmationIdFormatter: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
@@ -51,14 +50,15 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
 
   implicit val confirmationRequestDBReads: Reads[ConfirmationRequestDB] = (
     (__ \ "confirmationId").read[ConfirmationId] and
-    (__ \ "confirmationUrl").read[String] and
-    (__ \ "notificationId").read[NotificationId] and
-    (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty)) and
-    (__ \ "status").read[ConfirmationStatus] and
-    (__ \ "createdDateTime").read[Instant] and
-    (__ \ "pushedDateTime").readNullable[Instant] and
-    (__ \ "retryAfterDateTime").readNullable[Instant]
+      (__ \ "confirmationUrl").read[String] and
+      (__ \ "notificationId").read[NotificationId] and
+      (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty)) and
+      (__ \ "status").read[ConfirmationStatus] and
+      (__ \ "createdDateTime").read[Instant] and
+      (__ \ "pushedDateTime").readNullable[Instant] and
+      (__ \ "retryAfterDateTime").readNullable[Instant]
   )(ConfirmationRequestDB.apply _)
 
-  implicit val confirmationRequestFormatter: OFormat[ConfirmationRequestDB] = Json.format[ConfirmationRequestDB]
+  implicit val confirmationRequestWrites: Writes[ConfirmationRequestDB] = Json.writes[ConfirmationRequestDB]
+  implicit val confirmationRequestFormatter = Format(confirmationRequestDBReads, confirmationRequestWrites)
 }

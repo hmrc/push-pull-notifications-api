@@ -22,9 +22,9 @@ import scala.concurrent.Future.successful
 
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -53,7 +53,6 @@ class WrappedNotificationsController @Inject() (
     (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.json(maxWrappedNotificationSize)) {
       implicit rawrequest =>
         withJsonBody[WrappedNotificationRequest] { request =>
-          
           val handleNotification = (notificationId: NotificationId) => {
             request.confirmationUrl.fold(successful(Created(Json.toJson(CreateNotificationResponse(notificationId))))) {
               confirmationUrl =>

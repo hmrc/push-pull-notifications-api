@@ -21,11 +21,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.mvc.Results._
 import play.api.mvc.{ActionRefiner, Request, Result}
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
+import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationRequest, ErrorCode, JsErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 

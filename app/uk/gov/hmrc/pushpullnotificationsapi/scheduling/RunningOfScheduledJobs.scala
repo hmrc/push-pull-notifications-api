@@ -28,8 +28,7 @@ import play.api.inject.ApplicationLifecycle
 
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
-/**
-  * All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
+/** All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
   */
 trait RunningOfScheduledJobs extends ApplicationLogger {
 

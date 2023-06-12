@@ -22,14 +22,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, _}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
 @Singleton()

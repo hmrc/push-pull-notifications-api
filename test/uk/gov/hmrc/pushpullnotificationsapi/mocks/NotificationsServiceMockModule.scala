@@ -23,7 +23,6 @@ import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
 import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
@@ -70,6 +69,7 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       }
 
       object Json {
+
         def succeedsFor(boxId: BoxId, jsonBody: String) = {
           when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*))
             .thenReturn(successful(NotificationCreateSuccessResult()))

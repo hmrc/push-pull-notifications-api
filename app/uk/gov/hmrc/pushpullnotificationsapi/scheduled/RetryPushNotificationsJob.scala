@@ -58,7 +58,7 @@ class RetryPushNotificationsJob @Inject() (
     FutureUtils.timeThisFuture(
       {
         notificationPushService
-          .fetchRetryablePushNotifications
+          .fetchRetryablePushNotifications()
           .flatMap(source =>
             source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
               .map(_ => RunningOfJobSuccessful)

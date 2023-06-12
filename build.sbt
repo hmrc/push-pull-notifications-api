@@ -1,18 +1,21 @@
-import sbt.Tests._
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
-import uk.gov.hmrc.SbtAutoBuildPlugin
 import bloop.integrations.sbt.BloopDefaults
 import sbt.Keys._
+import sbt.Tests._
+import uk.gov.hmrc.DefaultBuildSettings
+import uk.gov.hmrc.DefaultBuildSettings._
+import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
+
+lazy val plugins: Seq[Plugins]         = Seq(PlayScala, SbtDistributablesPlugin)
+lazy val playSettings: Seq[Setting[_]] = Seq.empty
+
+lazy val appName = "push-pull-notifications-api"
+
+scalaVersion := "2.13.8"
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-inThisBuild(
-  List(
-    scalaVersion := "2.12.15",
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision
-  )
-)
 
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
@@ -26,35 +29,35 @@ lazy val scoverageSettings = {
   )
 }
 
-lazy val root = (project in file("."))
+lazy val root = Project(appName, file("."))
+  .enablePlugins(plugins: _*)
   .disablePlugins(JUnitXmlReportPlugin)
-  .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtDistributablesPlugin)
+  .settings(playSettings: _*)
+  .settings(scalaSettings: _*)
+  .settings(defaultSettings(): _*)
+  .settings(scoverageSettings)
   .settings(
-    name := "push-pull-notifications-api",
-    organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.15",
-    scalacOptions += "-Ypartial-unification",
-    majorVersion := 0,
-    PlayKeys.playDefaultPort := 6701,
-    resolvers += Resolver.typesafeRepo("releases"),
+    name := appName,
     libraryDependencies ++= AppDependencies(),
-    scoverageSettings,
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "resources"
+    retrieveManaged := true,
+    routesGenerator := InjectedRoutesGenerator,
+    majorVersion    := 0,
+    PlayKeys.playDefaultPort := 6701,
   )
   .configs(IntegrationTest)
-  .settings(inConfig(Test)(BloopDefaults.configSettings))
-  .settings(inConfig(IntegrationTest)(BloopDefaults.configSettings))
+  .settings(DefaultBuildSettings.integrationTestSettings())
   .settings(
-    Defaults.itSettings,
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
+    Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT")
+  )
+  .settings(
     IntegrationTest / fork := false,
     IntegrationTest / unmanagedSourceDirectories += baseDirectory.value / "it",
     IntegrationTest / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
     IntegrationTest / parallelExecution := false,
     IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
-
-    Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
-    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT")
   )
   .settings(
     routesImport ++= Seq(
@@ -64,8 +67,13 @@ lazy val root = (project in file("."))
     )
   )
   .settings(
-    scalacOptions ++= Seq("-deprecation", "-feature", "-Ypartial-unification", "-Ywarn-unused")
+    scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-unused")
   )
+
+  
+  commands += Command.command("testAll") { state =>
+      "test" :: "it:test" :: state
+  }
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {
   tests.map { test =>

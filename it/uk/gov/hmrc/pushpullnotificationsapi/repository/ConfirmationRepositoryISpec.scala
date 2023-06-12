@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import akka.stream.scaladsl.Sink
@@ -13,7 +29,7 @@ import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositoryS
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
 
 import java.time.{Duration, Instant}
@@ -54,7 +70,7 @@ class ConfirmationRepositoryISpec
   )
   override implicit lazy val app: Application = appBuilder.build()
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     prepareDatabase()
   }
 
@@ -62,21 +78,30 @@ class ConfirmationRepositoryISpec
 
   def repo: ConfirmationRepository = repository.asInstanceOf[ConfirmationRepository]
 
-   def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
-     import play.api.libs.json._
+  def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
+    import play.api.libs.json._
 
-     val rawJson = Json.toJson(input.toDB).as[JsObject]
-     val editedJson: JsObject = rawJson + ("confirmationUrl" -> JsString("BOB"))
+    val rawJson = Json.toJson(input.toDB).as[JsObject]
+    val editedJson: JsObject = rawJson + ("confirmationUrl" -> JsString("BOB"))
 
-     await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
-   }
+    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+  }
 
-   "handle a bad URL accordingly" should {
-     "don't break when reading bad URLS with raw mongo driver" in {
-       saveMongoJsonWithBadUrl(defaultRequest)
-       await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
-     }
-   }
+  def saveMongoJsonWithNoPrivateHeadersField(input: ConfirmationRequest): InsertOneResult = {
+    import play.api.libs.json._
+
+    val rawJson = Json.toJson(input.toDB).as[JsObject]
+    val editedJson: JsObject = rawJson - "privateHeaders"
+
+    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+  }
+
+  "handle a bad URL accordingly" should {
+    "don't break when reading bad URLS with raw mongo driver" in {
+      saveMongoJsonWithBadUrl(defaultRequest)
+      await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
+    }
+  }
 
   "saveConfirmationRequest" should {
     "Save a confirmation request" in {
@@ -160,7 +185,7 @@ class ConfirmationRepositoryISpec
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
 
       retryableConfirmations should have size 2
-      retryableConfirmations.map(_.notificationId) should contain only (expectedNotification1.notificationId, expectedNotification2.notificationId)
+      retryableConfirmations.map(_.notificationId) should contain.only(expectedNotification1.notificationId, expectedNotification2.notificationId)
     }
 
     "return matching confirmations ignoring bad URL records" in {
@@ -198,6 +223,15 @@ class ConfirmationRepositoryISpec
 
       retryableConfirmations should have size 0
     }
+
+    "read a confirmation request with no private headers" in {
+      saveMongoJsonWithNoPrivateHeadersField(defaultRequest)
+
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      
+      retryableConfirmations should have size 1
+    }
+
   }
 
 }
