@@ -167,7 +167,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(BAD_REQUEST)
 
-        val expectedErrorBody = "Request contains more then 5 private headers"
+        val expectedErrorBody = "Request contains more than 5 private headers"
         contentAsString(result) should include(expectedErrorBody)
 
         NotificationsServiceMock.verifyZeroInteractions()
