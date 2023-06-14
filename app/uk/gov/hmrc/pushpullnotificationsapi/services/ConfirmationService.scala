@@ -18,7 +18,9 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.net.URL
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -57,16 +59,22 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
   }
 
   def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    connector.sendConfirmation(
-      request.confirmationUrl,
-      OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime, request.privateHeaders)
-    ) map {
-      case _: ConfirmationConnectorSuccessResult =>
-        repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)
-        true
-      case _: ConfirmationConnectorFailedResult  =>
-        logger.info(s"Confirmation not sent for notificationId: ${request.notificationId.value}")
-        false
+    try {
+      connector.sendConfirmation(
+        request.confirmationUrl,
+        OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime, request.privateHeaders)
+      ) map {
+        case _: ConfirmationConnectorSuccessResult =>
+          repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)
+          true
+        case _: ConfirmationConnectorFailedResult  =>
+          logger.info(s"Confirmation not sent for notificationId: ${request.notificationId.value}")
+          false
+      }
+    } catch {
+      case NonFatal(e) =>
+        logger.info(s"sendConfirmation for notificationId: ${request.notificationId.value} failed with: ${e.getMessage}")
+        successful(false) // We need to catch exceptions rather than blowing up the stream
     }
   }
 }

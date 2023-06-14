@@ -52,7 +52,7 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
     (__ \ "confirmationId").read[ConfirmationId] and
       (__ \ "confirmationUrl").read[String] and
       (__ \ "notificationId").read[NotificationId] and
-      (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty)) and
+      (__ \ "privateHeaders").read[List[PrivateHeader]].orElse(Reads.pure(List.empty[PrivateHeader])) and
       (__ \ "status").read[ConfirmationStatus] and
       (__ \ "createdDateTime").read[Instant] and
       (__ \ "pushedDateTime").readNullable[Instant] and

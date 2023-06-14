@@ -44,6 +44,10 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
         when(aMock.sendConfirmation(*, *)(*)).thenReturn(successful(ConfirmationConnectorFailedResult("bang boom splat")))
       }
 
+      def throws() = {
+        when(aMock.sendConfirmation(*, *)(*)).thenThrow(new RuntimeException("Boom"))
+      }
+
       def neverCalled() = {
         verify(never).sendConfirmation(*, *)(*)
       }

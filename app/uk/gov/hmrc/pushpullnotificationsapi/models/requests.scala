@@ -95,7 +95,7 @@ trait URLFormatter {
 
   val fromString: String => JsResult[URL] = rawText => {
     Try[URL] {
-      new URL(rawText);
+      new URL(rawText)
     } match {
       case Success(v: URL) => JsSuccess(v)
       case Failure(_)      => JsError("some error")
@@ -117,7 +117,7 @@ object WrappedNotificationRequest {
     (__ \ "notification").read[WrappedNotificationBody] and
       (__ \ "version").read[String] and
       (__ \ "confirmationUrl").readNullable[URL] and
-      (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
+      (__ \ "privateHeaders").read[List[PrivateHeader]].orElse(Reads.pure(List.empty[PrivateHeader]))
   )(WrappedNotificationRequest.apply(_, _, _, _))
 
   implicit val writes = Json.writes[WrappedNotificationRequest]

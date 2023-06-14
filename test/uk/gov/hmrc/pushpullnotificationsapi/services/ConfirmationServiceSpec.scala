@@ -74,7 +74,6 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
-    // TODO handle the futures in the service correctly this should return false
     "not update the confirmation status when connector fails" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
       ConfirmationConnectorMock.SendConfirmation.returnsFailure()
@@ -86,7 +85,6 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
-    // TODO handle the futures in the service correctly, this should return false
     "return true when update status fails" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
@@ -126,7 +124,15 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
-    // TODO handle the future failures in the service correctly, this should return false
+    "return false and do not call update status on repo when connector throws" in new SetUp {
+      ConfirmationConnectorMock.SendConfirmation.throws()
+
+      await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe false
+
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationRepositoryMock.UpdateStatus.neverCalled()
+    }
+
     "return true and do not call update status on repo when connector fails" in new SetUp {
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
         url,

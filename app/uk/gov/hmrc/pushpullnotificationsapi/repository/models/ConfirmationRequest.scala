@@ -62,6 +62,7 @@ case class ConfirmationRequestDB(
       new URL(this.confirmationUrl)
     }
       .toOption
+      .filter(_.getProtocol().equals("https")) // Discard bad protocol in existing records
       .map(url =>
         ConfirmationRequest(this.confirmationId, url, this.notificationId, this.privateHeaders, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime)
       )
