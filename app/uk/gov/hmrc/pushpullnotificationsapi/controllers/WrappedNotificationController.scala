@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.net.URL
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future.successful
@@ -49,6 +50,8 @@ class WrappedNotificationsController @Inject() (
   val maxNotificationSize = appConfig.maxNotificationSize
   val maxWrappedNotificationSize = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
 
+  def ifConfirmationUrlExistsItMustBeHttps(maybeUrl: Option[URL]): Boolean = maybeUrl.fold(true)(_.getProtocol() == "https")
+
   def saveWrappedNotification(boxId: BoxId): Action[JsValue] =
     (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.json(maxWrappedNotificationSize)) {
       implicit rawrequest =>
@@ -69,6 +72,11 @@ class WrappedNotificationsController @Inject() (
           (
             for {
               _ <- ET.cond(request.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+              _ <- ET.cond(
+                     ifConfirmationUrlExistsItMustBeHttps(request.confirmationUrl),
+                     (),
+                     BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Confirmation URL must have https protocol"))
+                   )
               _ <- ET.cond(request.privateHeaders.length <= 5, (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request contains more than 5 private headers")))
               messageContentType <- ET.fromOption(
                                       contentTypeHeaderToNotificationType(request.notification.contentType),

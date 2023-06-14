@@ -106,6 +106,10 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         s"""{"notification":{"body":"{}","contentType":"application/json"}, "version": "1", "confirmationUrl": "not-valid"}"""
       }
 
+      def badProtocol: String = {
+        s"""{"notification":{"body":"{}","contentType":"application/json"}, "version": "1", "confirmationUrl": "http://example.com"}"""
+      }
+
       "return 201 when valid json, json content type header are provided and notification successfully saved" in {
         NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, jsonBody)
 
@@ -137,7 +141,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         NotificationsServiceMock.SaveNotification.Json.succeedsFor(boxId, jsonBody)
         ConfirmationServiceMock.SaveConfirmationRequest.succeeds()
 
-        val jsonText = wrappedBodyWithConfirmationButNoHeaders(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"))
+        val jsonText = wrappedBodyWithConfirmationButNoHeaders(jsonBody, MimeTypes.JSON, "1", new URL("https://example.com"))
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(CREATED)
@@ -151,7 +155,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
         ConfirmationServiceMock.SaveConfirmationRequest.succeeds()
 
         val privateHeaders = Range.inclusive(1, 5).map(i => PrivateHeader(s"n$i", s"v$i")).toList
-        val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"), privateHeaders)
+        val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("https://example.com"), privateHeaders)
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(CREATED)
@@ -162,7 +166,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
       "return 400 when there are too many private headers" in {
         val privateHeaders = Range.inclusive(1, 6).map(i => PrivateHeader(s"n$i", s"v$i")).toList
-        val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("http://example.com"), privateHeaders)
+        val jsonText = wrappedBodyWithConfirmation(jsonBody, MimeTypes.JSON, "1", new URL("https://example.com"), privateHeaders)
 
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, jsonText)
         status(result) should be(BAD_REQUEST)
@@ -185,6 +189,21 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
       "return 400 when invalid URL" in {
         val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, badURL)
+        status(result) should be(BAD_REQUEST)
+
+        await(
+          result.flatMap { entity =>
+            entity.body.consumeData
+          }
+            .map(_.decodeString(Charset.defaultCharset()))
+            .map(s => println(s))
+        )
+
+        NotificationsServiceMock.verifyZeroInteractions()
+      }
+
+      "return 400 when bad protocol" in {
+        val result = doPost(s"/box/${boxId.value}/wrapped-notifications", validHeadersJson, badProtocol)
         status(result) should be(BAD_REQUEST)
 
         await(

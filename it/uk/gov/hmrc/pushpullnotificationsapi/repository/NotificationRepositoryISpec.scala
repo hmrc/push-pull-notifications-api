@@ -84,7 +84,7 @@ class NotificationRepositoryISpec
     boxName = UUID.randomUUID().toString,
     boxId = boxId,
     boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-    subscriber = Some(PushSubscriber("http://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+    subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
   )
 
   "Indexes" should {

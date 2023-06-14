@@ -56,7 +56,7 @@ class ConfirmationRepositoryISpec
         "mongodb.uri" -> mongoUri
       )
 
-  val url = new URL("http://testurl.com/")
+  val url = new URL("https://testurl.com/")
   val confirmationId: ConfirmationId = ConfirmationId.random
   val notificationId: NotificationId = NotificationId.random
 
@@ -228,7 +228,7 @@ class ConfirmationRepositoryISpec
       saveMongoJsonWithNoPrivateHeadersField(defaultRequest)
 
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
-      
+
       retryableConfirmations should have size 1
     }
 

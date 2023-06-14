@@ -329,13 +329,13 @@ class BoxRepositoryISpec
       boxName = UUID.randomUUID().toString,
       boxId = BoxId.random,
       boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-      subscriber = Some(PushSubscriber("http://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+      subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
     )
     val pushBox2: Box = Box(
       boxName = UUID.randomUUID().toString,
       boxId = BoxId.random,
       boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-      subscriber = Some(PushSubscriber("http://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+      subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
     )
 
     "return matching notifications and boxes" in {
@@ -402,7 +402,7 @@ class BoxRepositoryISpec
         boxName = UUID.randomUUID().toString,
         boxId = boxId,
         boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-        subscriber = Some(PullSubscriber("http://example.com"))
+        subscriber = Some(PullSubscriber("https://example.com"))
       )
       createNotificationInDB(status = PENDING)
       await(repo.createBox(boxForPullSubscriber))

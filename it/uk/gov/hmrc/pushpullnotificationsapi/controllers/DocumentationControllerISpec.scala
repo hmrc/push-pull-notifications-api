@@ -39,7 +39,7 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
     .configure("run.mode" -> "Stub")
     .configure(Map(
       "appName" -> "application-name",
-      "appUrl" -> "http://example.com",
+      "appUrl" -> "https://example.com",
       "auditing.enabled" -> false,
       "Test.microservice.services.service-locator.host" -> stubHost,
       "Test.microservice.services.service-locator.port" -> stubPort,

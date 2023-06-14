@@ -740,7 +740,7 @@ components:
         callbackUrl:
           type: string
           description: Callback URL to update in subscriber
-          example: http://example.com/callbackUrl
+          example: https://example.com/callbackUrl
     listofbox:
       title: listofbox
       required:

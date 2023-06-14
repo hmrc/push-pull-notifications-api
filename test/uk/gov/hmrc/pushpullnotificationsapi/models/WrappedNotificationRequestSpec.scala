@@ -24,7 +24,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec {
 
   "WrappedNotificationRequest" should {
     val aBody = """some text that would be json"""
-    val confirmationUrl = new URL("http://example.com")
+    val confirmationUrl = new URL("https://example.com")
 
     val wrappedNotificationRequestWithHeaders =
       WrappedNotificationRequest(WrappedNotificationBody(aBody, "application/json"), "1", Some(confirmationUrl), List(PrivateHeader("n1", "v1"), PrivateHeader("n2", "v2")))
@@ -37,7 +37,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec {
             "contentType": "application/json"
           },
           "version": "1",
-          "confirmationUrl": "http://example.com",
+          "confirmationUrl": "https://example.com",
           "privateHeaders": [
             {
               "name": "n1",
@@ -58,7 +58,7 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec {
             "contentType": "application/json"
           },
           "version": "1",
-          "confirmationUrl": "http://example.com",
+          "confirmationUrl": "https://example.com",
           "privateHeaders": []
           }""")(wrappedNotificationRequestWithHeaders.copy(privateHeaders = List.empty))
       }
