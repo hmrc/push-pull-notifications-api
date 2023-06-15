@@ -18,6 +18,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.net.URL
 
+import play.api.libs.json.{JsSuccess, Json}
+
 import uk.gov.hmrc.apiplatform.modules.utils.JsonFormattersSpec
 
 class WrappedNotificationRequestSpec extends JsonFormattersSpec {
@@ -71,6 +73,21 @@ class WrappedNotificationRequestSpec extends JsonFormattersSpec {
           },
           "version": "1"
           }""")(wrappedNotificationRequestWithHeaders.copy(confirmationUrl = None, privateHeaders = List.empty))
+      }
+
+      "there are broken private headers" in {
+        Json.parse(s"""{
+          "notification": {
+            "body": "$aBody",
+            "contentType": "application/json"
+          },
+          "version": "1",
+          "confirmationUrl": "https://example.com",
+          "privateHeaders": [ {"name": "bob"} ]
+          }""").validate[WrappedNotificationRequest] match {
+          case JsSuccess(_, _) => fail("Should not have parsed broken request")
+          case _               => succeed
+        }
       }
     }
   }
