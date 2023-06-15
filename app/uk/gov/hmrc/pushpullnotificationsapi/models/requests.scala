@@ -117,7 +117,8 @@ object WrappedNotificationRequest {
     (__ \ "notification").read[WrappedNotificationBody] and
       (__ \ "version").read[String] and
       (__ \ "confirmationUrl").readNullable[URL] and
-      (__ \ "privateHeaders").read[List[PrivateHeader]].orElse(Reads.pure(List.empty[PrivateHeader]))
+      // Read privateHeaders if it's there otherwise empty list
+      (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
   )(WrappedNotificationRequest.apply(_, _, _, _))
 
   implicit val writes = Json.writes[WrappedNotificationRequest]
