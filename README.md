@@ -472,7 +472,7 @@ HTTP Status: `204` if the box is deleted
 
 # Run locally and call the API locally
 
-If you need to call any of the endpoints exposed over the API Platform, you need to pass in an valid bearer token for the application restricted endpoints:
+If you need to call any of the endpoints exposed over the API Platform, you need to pass in an valid authorisation header for the application restricted endpoints:
 
 1. Get an API Platform bearer token
 
@@ -486,7 +486,29 @@ curl --location --request POST 'http://localhost:9613/token' \
 
 (Replacing the ```client_id``` & ```client_secret``` with ones from you local setup)
 
-2. Get the internal bearer token from the API platform's external bearer token:
+2. Get the internal auth header from the API platform's external bearer token:
+
+```
+ mongo localhost/third-party-delegated-authority --eval "db.delegatedAuthority.find({
+    'token.accessToken' : '???????' 
+ },{
+     _id: 0,  
+     internalAuthHeader: 1   
+ })"
+ ```
+ (Replacing the ```accessToken``` with the one obtained in step 1)
+
+3. You can then call application restricted endpoints in the PPNS API:
+
+```
+curl --location --request GET 'http://localhost:6701/box/{box-id}/notifications' \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/vnd.hmrc.1.0+json' \
+--header 'Authorization: ??????????'
+```
+(Replacing the ```box-id``` with a valid local box-id and the ```Authorization: ``` with the internal authorisation header obtained in step 2)
+
+If you fail to find an internalAuthHeader from step 2 this will probably be because the delegated authority was created prior to One Login for Government.  In this case search instead for the authBearerToken.
 
 ```
  mongo localhost/third-party-delegated-authority --eval "db.delegatedAuthority.find({
@@ -498,15 +520,11 @@ curl --location --request POST 'http://localhost:9613/token' \
  ```
  (Replacing the ```accessToken``` with the one obtained in step 1)
 
-3. You can then call application restricted endpoints in the PPNS API:
+ Use this in the authorisation header of step 3 prefixed with the word ```Bearer```
 
 ```
-curl --location --request GET 'http://localhost:6701/box/{box-id}/notifications' \
---header 'Content-Type: application/json' \
---header 'Accept: application/vnd.hmrc.1.0+json' \
+... as above ...
 --header 'Authorization: Bearer ??????????'
 ```
-(Replacing the ```box-id``` with a valid local box-id and the ```Authorization: Bearer``` with the internal bearer token obtained in step 2)
-
 ### License
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
