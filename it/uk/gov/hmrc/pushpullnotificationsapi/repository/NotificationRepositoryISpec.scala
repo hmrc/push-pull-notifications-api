@@ -344,8 +344,8 @@ class NotificationRepositoryISpec
       retryAfterDateTime = retryAfterDateTime
     )
 
-    val result: Unit = await(repo.saveNotification(notification))
-    result shouldBe ((): Unit)
+    val result = await(repo.saveNotification(notification))
+    result.value shouldBe notification.notificationId
     notification
   }
 
