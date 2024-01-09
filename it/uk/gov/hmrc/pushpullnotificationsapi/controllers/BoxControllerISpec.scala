@@ -19,21 +19,22 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.http.Status.NO_CONTENT
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers.{AUTHORIZATION, BAD_REQUEST, CREATED, FORBIDDEN, NOT_FOUND, OK, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE}
+import play.api.test.Helpers._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxCreator, BoxId, PullSubscriber, PushSubscriber, UpdateCallbackUrlResponse, ValidateBoxOwnershipResponse}
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
-
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxControllerISpec
     extends ServerBaseISpec

@@ -32,6 +32,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import play.api.libs.json.OFormat
 
 @Singleton
 class NotificationPushService @Inject() (
@@ -65,6 +66,9 @@ class NotificationPushService @Inject() (
     val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
     clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>
+      import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.WithTimeZone._
+      implicit val nfFormat: OFormat[NotificationResponse] = Json.format[NotificationResponse]
+
       val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
       val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 

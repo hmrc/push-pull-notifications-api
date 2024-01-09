@@ -5,7 +5,6 @@ import uk.gov.hmrc.DefaultBuildSettings
 import uk.gov.hmrc.DefaultBuildSettings._
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
-lazy val plugins: Seq[Plugins]         = Seq(PlayScala, SbtDistributablesPlugin)
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val appName = "push-pull-notifications-api"
@@ -30,8 +29,9 @@ lazy val scoverageSettings = {
 }
 
 lazy val root = Project(appName, file("."))
-  .enablePlugins(plugins: _*)
+  .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
+  .settings(scalafixConfigSettings(IntegrationTest))
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
   .settings(defaultSettings(): _*)
@@ -63,7 +63,7 @@ lazy val root = Project(appName, file("."))
     routesImport ++= Seq(
       "uk.gov.hmrc.pushpullnotificationsapi.models._",
       "uk.gov.hmrc.pushpullnotificationsapi.controllers.Binders._",
-      "uk.gov.hmrc.apiplatform.modules.applications.domain.models._"
+      "uk.gov.hmrc.apiplatform.modules.common.domain.models._"
     )
   )
   .settings(

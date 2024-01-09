@@ -16,25 +16,28 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.time.temporal.ChronoUnit
+import java.time.{Duration, Instant}
+import java.util.UUID
+
 import org.mongodb.scala.Document
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-
-import java.time.{Duration, Instant}
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class NotificationRepositoryISpec
     extends AsyncHmrcSpec
@@ -43,7 +46,8 @@ class NotificationRepositoryISpec
     with PlayMongoRepositorySupport[DbNotification]
     with CleanMongoCollectionSupport
     with IntegrationPatience
-    with GuiceOneAppPerSuite {
+    with GuiceOneAppPerSuite
+    with FixedClock {
 
   private val fourAndHalfHoursInMins = 270
   private val twoAndHalfHoursInMins = 150
@@ -84,7 +88,7 @@ class NotificationRepositoryISpec
     boxName = UUID.randomUUID().toString,
     boxId = boxId,
     boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-    subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+    subscriber = Some(PushSubscriber("https://example.com", instant))
   )
 
   "Indexes" should {
@@ -157,7 +161,7 @@ class NotificationRepositoryISpec
       val nonMatchingNotificationId = NotificationId.random
       createNotificationInDB(status = PENDING, notificationId = matchingNotificationId)
       createNotificationInDB(status = PENDING, notificationId = nonMatchingNotificationId)
-      val newDateTime = Instant.now.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)
+      val newDateTime = instant.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)
 
       await(repo.updateRetryAfterDateTime(matchingNotificationId, newDateTime))
 
@@ -235,8 +239,8 @@ class NotificationRepositoryISpec
       val filteredList = await(repo.getByBoxIdAndFilters(
         boxId,
         Some(PENDING),
-        fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS)),
-        toDateTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+        fromDateTime = Some(instant.minus(Duration.ofMinutes(twoAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS)),
+        toDateTime = Some(instant)
       ))
       filteredList.size shouldBe 3
     }
@@ -249,7 +253,7 @@ class NotificationRepositoryISpec
       validateNotificationsCreated(notificationsToCreate)
 
       val filteredList =
-        await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(fourAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS))))
+        await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), fromDateTime = Some(instant.minus(Duration.ofMinutes(fourAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS))))
       filteredList.size shouldBe 5
     }
 
@@ -261,7 +265,7 @@ class NotificationRepositoryISpec
       validateNotificationsCreated(notificationsToCreate)
 
       val filteredList =
-        await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), toDateTime = Some(Instant.now.minus(Duration.ofMinutes(fourAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS))))
+        await(repo.getByBoxIdAndFilters(boxId, Some(PENDING), toDateTime = Some(instant.minus(Duration.ofMinutes(fourAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS))))
       filteredList.size shouldBe 6
     }
 
@@ -270,13 +274,13 @@ class NotificationRepositoryISpec
       val notificationsToCreate = 7
       createHistoricalNotifications(notificationsToCreate)
       validateNotificationsCreated(notificationsToCreate)
-      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)).truncatedTo(ChronoUnit.MILLIS), status = ACKNOWLEDGED)
-      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)).truncatedTo(ChronoUnit.MILLIS), status = ACKNOWLEDGED)
+      createNotificationInDB(createdDateTime = instant.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)).truncatedTo(ChronoUnit.MILLIS), status = ACKNOWLEDGED)
+      createNotificationInDB(createdDateTime = instant.minus(Duration.ofMinutes(twoAndHalfHoursInMins - 30)).truncatedTo(ChronoUnit.MILLIS), status = ACKNOWLEDGED)
 
       val filteredList = await(repo.getByBoxIdAndFilters(
         boxId,
-        fromDateTime = Some(Instant.now.minus(Duration.ofMinutes(twoAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS)),
-        toDateTime = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+        fromDateTime = Some(instant.minus(Duration.ofMinutes(twoAndHalfHoursInMins)).truncatedTo(ChronoUnit.MILLIS)),
+        toDateTime = Some(instant)
       ))
       filteredList.count(n => n.status == ACKNOWLEDGED) shouldBe 2
       filteredList.count(n => n.status == PENDING) shouldBe 3
@@ -287,11 +291,11 @@ class NotificationRepositoryISpec
 
       // Create enough notifications to be returned in one request
       for (_ <- 0 until numberOfNotificationsToRetrievePerRequest) {
-        createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS))
+        createNotificationInDB(createdDateTime = instant.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS))
       }
 
       // And 1 for today, which should not be returned
-      val mostRecentDate = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val mostRecentDate = instant
       createNotificationInDB(createdDateTime = mostRecentDate)
 
       val returnedNotifications = await(repo.getByBoxIdAndFilters(boxId))
@@ -330,7 +334,7 @@ class NotificationRepositoryISpec
 
   private def createNotificationInDB(
       status: NotificationStatus = PENDING,
-      createdDateTime: Instant = Instant.now,
+      createdDateTime: Instant = instant,
       notificationId: NotificationId = NotificationId.random,
       retryAfterDateTime: Option[Instant] = None
     ): Notification = {
@@ -351,13 +355,13 @@ class NotificationRepositoryISpec
 
   private def createHistoricalNotifications(numberToCreate: Int): Unit = {
     for (a <- 0 until numberToCreate) {
-      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofHours(a)).truncatedTo(ChronoUnit.MILLIS))
+      createNotificationInDB(createdDateTime = instant.minus(Duration.ofHours(a)).truncatedTo(ChronoUnit.MILLIS))
     }
   }
 
   private def createNotificationsWithIds(notificationIds: List[NotificationId]): Unit = {
     for (a <- notificationIds.indices) {
-      createNotificationInDB(createdDateTime = Instant.now.minus(Duration.ofHours(a)).truncatedTo(ChronoUnit.MILLIS), notificationId = notificationIds(a))
+      createNotificationInDB(createdDateTime = instant.minus(Duration.ofHours(a)).truncatedTo(ChronoUnit.MILLIS), notificationId = notificationIds(a))
     }
   }
 }

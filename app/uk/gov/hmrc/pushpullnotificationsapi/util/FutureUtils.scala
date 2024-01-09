@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.thirdpartydelegatedauthority.utils
+package uk.gov.hmrc.thirdpartydelegatedauthority.util
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}

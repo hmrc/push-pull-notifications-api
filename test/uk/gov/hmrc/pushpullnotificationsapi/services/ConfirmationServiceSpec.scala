@@ -31,7 +31,7 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
 
   trait SetUp extends ConfirmationRepositoryMockModule with ConfirmationConnectorMockModule {
     val serviceToTest = new ConfirmationService(ConfirmationRepositoryMock.aMock, ConfirmationConnectorMock.aMock)
-    implicit val hc = new HeaderCarrier()
+    implicit val hc: HeaderCarrier = new HeaderCarrier()
   }
 
   "save Confirmation" should {

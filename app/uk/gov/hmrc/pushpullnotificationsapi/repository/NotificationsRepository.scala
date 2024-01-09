@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 // TODO - Tidy up imports after proving the move to boxes works
 //
-import java.time.Instant
+import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,6 +38,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
@@ -48,7 +49,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotific
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
 
 @Singleton
-class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto)(implicit ec: ExecutionContext)
+class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto, val clock: Clock)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[DbNotification](
       collectionName = "notifications",
       mongoComponent = mongoComponent,
@@ -86,7 +87,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       ),
       replaceIndexes = true
     )
-    with MongoJavatimeFormats.Implicits {
+    with MongoJavatimeFormats.Implicits with ClockNow {
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
@@ -176,7 +177,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
           equal("status", Codecs.toBson(NotificationStatus.PENDING)),
           or(
             Filters.exists("retryAfterDateTime", false),
-            lte("retryAfterDateTime", Codecs.toBson(Instant.now))
+            lte("retryAfterDateTime", Codecs.toBson(instant()))
           )
         )
       )

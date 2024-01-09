@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.ZoneId
 import java.time.format.DateTimeFormatterBuilder
-import java.time.{Instant, ZoneId}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.PushConnectorMockModule
@@ -32,7 +33,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
+class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with FixedClock {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -63,6 +64,8 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
         .toFormatter
         .withZone(ZoneId.of("UTC")).format(originalNotification.createdDateTime)
 
+      println(s"*** $stringCreated ***")
+      
       val jsonPayload = Json.parse(sentOutboundNotification.payload)
       (jsonPayload \ "notificationId").as[String] shouldBe originalNotification.notificationId.value.toString
       (jsonPayload \ "boxId").as[UUID] shouldBe originalNotification.boxId.value
@@ -133,7 +136,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData {
     }
 
     "return true when there are no push subscribers" in new Setup {
-      val subscriber: PullSubscriber = PullSubscriber("", Instant.now)
+      val subscriber: PullSubscriber = PullSubscriber("", instant)
       val box: Box = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(subscriber))
       val notification: Notification =
         Notification(NotificationId(UUID.randomUUID()), BoxId(UUID.randomUUID()), MessageContentType.APPLICATION_JSON, "{}", NotificationStatus.PENDING)

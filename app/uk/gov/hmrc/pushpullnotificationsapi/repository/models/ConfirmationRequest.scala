@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.net.URL
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.util.Try
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
@@ -29,7 +30,7 @@ case class ConfirmationRequest(
     notificationId: NotificationId,
     privateHeaders: List[PrivateHeader],
     status: ConfirmationStatus = ConfirmationStatus.PENDING,
-    createdDateTime: Instant = Instant.now,
+    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     pushedDateTime: Option[Instant] = None,
     retryAfterDateTime: Option[Instant] = None) {
 
@@ -53,7 +54,7 @@ case class ConfirmationRequestDB(
     notificationId: NotificationId,
     privateHeaders: List[PrivateHeader],
     status: ConfirmationStatus = ConfirmationStatus.PENDING,
-    createdDateTime: Instant = Instant.now,
+    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     pushedDateTime: Option[Instant] = None,
     retryAfterDateTime: Option[Instant] = None) {
 
@@ -62,7 +63,7 @@ case class ConfirmationRequestDB(
       new URL(this.confirmationUrl)
     }
       .toOption
-      .filter(_.getProtocol().equals("https")) // Discard bad protocol in existing records
+      .filter(_.getProtocol.equals("https")) // Discard bad protocol in existing records
       .map(url =>
         ConfirmationRequest(this.confirmationId, url, this.notificationId, this.privateHeaders, this.status, this.createdDateTime, this.pushedDateTime, this.retryAfterDateTime)
       )

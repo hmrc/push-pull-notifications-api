@@ -16,30 +16,31 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import akka.stream.scaladsl.Sink
-import org.mongodb.scala.model.Filters.{equal => mongoEqual}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.concurrent.IntegrationPatience
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.Play.materializer
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
-
-import java.time.{Duration, Instant}
-import java.time.temporal.ChronoUnit
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus._
-
 import java.net.URL
+import java.time.temporal.ChronoUnit
+import java.time.{Duration, Instant}
+
+import akka.stream.scaladsl.Sink
 import com.mongodb.client.result.InsertOneResult
 import org.mongodb.scala.bson.collection.immutable.Document
+import org.mongodb.scala.model.Filters.{equal => mongoEqual}
+import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
+import play.api.Application
+import play.api.Play.materializer
+import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
+
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 
 class ConfirmationRepositoryISpec
     extends AsyncHmrcSpec
@@ -48,7 +49,8 @@ class ConfirmationRepositoryISpec
     with PlayMongoRepositorySupport[ConfirmationRequestDB]
     with CleanMongoCollectionSupport
     with IntegrationPatience
-    with GuiceOneAppPerSuite {
+    with GuiceOneAppPerSuite
+    with FixedClock {
 
   protected def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
@@ -66,7 +68,7 @@ class ConfirmationRepositoryISpec
     notificationId,
     List.empty,
     ConfirmationStatus.PENDING,
-    Instant.now.truncatedTo(ChronoUnit.MILLIS)
+    instant
   )
   override implicit lazy val app: Application = appBuilder.build()
 
@@ -154,7 +156,7 @@ class ConfirmationRepositoryISpec
 
   "updateRetryAfterDateTime" should {
     "update to match time passed in" in {
-      val inABit = Instant.now.truncatedTo(ChronoUnit.MILLIS).plus(Duration.ofMinutes(5))
+      val inABit = instant.plus(Duration.ofMinutes(5))
       await(repo.saveConfirmationRequest(defaultRequest))
       val first = await(find(mongoEqual("confirmationId", Codecs.toBson(confirmationId))))
       first.head.retryAfterDateTime shouldBe None
@@ -163,7 +165,7 @@ class ConfirmationRepositoryISpec
     }
 
     "should return None if no notification to update" in {
-      val updated = await(repo.updateRetryAfterDateTime(notificationId, Instant.now))
+      val updated = await(repo.updateRetryAfterDateTime(notificationId, instant))
       updated shouldBe None
     }
   }
@@ -172,7 +174,7 @@ class ConfirmationRepositoryISpec
 
     def createConfirmationInDb(status: ConfirmationStatus, retryAfterDateTime: Option[Instant] = None) = {
       val id = ConfirmationId.random
-      val confirmation = ConfirmationRequest(id, url, NotificationId.random, List.empty, status, pushedDateTime = Some(Instant.now), retryAfterDateTime = retryAfterDateTime)
+      val confirmation = ConfirmationRequest(id, url, NotificationId.random, List.empty, status, pushedDateTime = Some(instant), retryAfterDateTime = retryAfterDateTime)
       val result = await(repo.saveConfirmationRequest(confirmation))
       result shouldBe Some(id)
       confirmation
@@ -208,16 +210,16 @@ class ConfirmationRepositoryISpec
     }
 
     "return pending confirmations that were to be retried in the past" in {
-      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
-      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
+      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
+      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
 
       retryableConfirmations should have size 2
     }
 
     "not return pending confirmations that are not yet to be retried" in {
-      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
-      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
+      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
+      createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
 
       val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
 

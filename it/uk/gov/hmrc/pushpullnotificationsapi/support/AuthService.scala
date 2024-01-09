@@ -18,8 +18,10 @@ package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+
 import play.api.http.Status
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 
 trait AuthService {
   val authUrl = "/auth/authorise"

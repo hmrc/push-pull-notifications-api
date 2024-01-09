@@ -16,24 +16,26 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
+import java.time.Instant
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ApplicationId
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 
 /** */
 object BoxFormat extends OFormat[Box] {
 
-  implicit private val boxIdFormatter = Json.valueFormat[BoxId]
-  implicit private val boxCreatorFormat = Json.format[BoxCreator]
-  implicit private val instantFormat = MongoJavatimeFormats.instantFormat
-  implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
-  implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
+  implicit private val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
+  implicit private val boxCreatorFormat: OFormat[BoxCreator] = Json.format[BoxCreator]
+  implicit private val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
+  implicit private val pushSubscriberFormat: OFormat[PushSubscriber] = Json.format[PushSubscriber]
+  implicit private val pullSubscriberFormat: OFormat[PullSubscriber] = Json.format[PullSubscriber]
 
-  implicit private val formatSubscriber = Union
+  implicit private val formatSubscriber: OFormat[Subscriber] = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
@@ -50,7 +52,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "clientManaged").readWithDefault(false)
   ) { Box }
 
-  implicit val boxFormats = OFormat(boxReads, boxWrites)
+  implicit val boxFormats: OFormat[Box] = OFormat(boxReads, boxWrites)
 
   override def writes(box: Box): JsObject = {
     boxWrites.writes(box)

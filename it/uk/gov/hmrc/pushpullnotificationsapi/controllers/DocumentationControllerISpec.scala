@@ -22,11 +22,13 @@ import com.github.tomakehurst.wiremock.client.WireMock.{status => _, _}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import org.scalatest.{BeforeAndAfterEach, TestData}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
-import play.api.{Application, Mode}
+
 import play.api.http.Status.{NO_CONTENT, OK}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import play.api.{Application, Mode}
+
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest with BeforeAndAfterEach {

@@ -17,15 +17,15 @@
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
-import play.api.test.Helpers._
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
-import uk.gov.hmrc.http.UpstreamErrorResponse
+import play.api.test.Helpers._
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 
 class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
 

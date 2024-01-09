@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.lang
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,8 +50,8 @@ class NotificationsController @Inject() (
 
   val ET = EitherTHelper.make[Result]
 
-  val maxNotificationSize = appConfig.maxNotificationSize
-  val maxWrappedNotificationSize = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
+  val maxNotificationSize: lang.Long = appConfig.maxNotificationSize
+  val maxWrappedNotificationSize: Long = maxNotificationSize + appConfig.wrappedNotificationEnvelopeSize
 
   def saveNotification(boxId: BoxId): Action[String] =
     (Action andThen validateUserAgentHeaderAction).async(playBodyParsers.tolerantText(maxNotificationSize)) { implicit request =>

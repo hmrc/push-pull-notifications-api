@@ -21,8 +21,8 @@ import java.util.UUID
 
 import play.api.libs.json.{JsValue, Json}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.HmrcSpec
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
 
@@ -59,7 +59,7 @@ class BoxFormatSpec extends HmrcSpec {
       }
 
       "correctly assign the boxName value" in {
-        box.boxName shouldBe ("boxName")
+        box.boxName shouldBe "boxName"
       }
 
       "correctly assign the boxCreator value" in {
@@ -208,7 +208,7 @@ class BoxFormatSpec extends HmrcSpec {
           Some(
             PullSubscriber("callback", Instant.parse("2010-06-29T23:20:00Z"))
           ),
-          true
+          clientManaged = true
         )
 
         val expectedJson = Json.parse(

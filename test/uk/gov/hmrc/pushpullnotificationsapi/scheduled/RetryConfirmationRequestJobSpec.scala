@@ -27,6 +27,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ConfirmationServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{ConfirmationRepositoryMockModule, MongoLockRepositoryMockModule}
@@ -58,7 +59,8 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       MongoLockRepositoryMock.aMock,
       jobConfig,
       ConfirmationRepositoryMock.aMock,
-      ConfirmationServiceMock.aMock
+      ConfirmationServiceMock.aMock,
+      FixedClock.clock
     )
     MongoLockRepositoryMock.IsLocked.theSuccess(true)
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)

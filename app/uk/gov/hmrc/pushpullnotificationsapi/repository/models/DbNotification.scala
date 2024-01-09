@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
 
@@ -31,7 +32,7 @@ case class DbNotification(
     messageContentType: MessageContentType,
     encryptedMessage: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now,
+    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     readDateTime: Option[Instant] = None,
     pushedDateTime: Option[Instant] = None,
     retryAfterDateTime: Option[Instant] = None)

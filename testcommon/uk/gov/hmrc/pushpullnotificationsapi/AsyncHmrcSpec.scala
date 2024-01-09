@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.support
+package uk.gov.hmrc.pushpullnotificationsapi
 
-import org.scalatest.{BeforeAndAfterEach, Suite, TestSuite}
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 
-import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
+import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 
-trait MongoApp[A] extends DefaultPlayMongoRepositorySupport[A] with BeforeAndAfterEach {
-  me: Suite with TestSuite =>
-
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-    dropMongoDb()
-  }
-
-  def dropMongoDb(): Unit =
-    mongoDatabase.drop()
-
-}
+abstract class AsyncHmrcSpec extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {}

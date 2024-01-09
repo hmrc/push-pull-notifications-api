@@ -22,11 +22,11 @@ import scala.util.Try
 import play.api.Logger
 import play.api.mvc.{PathBindable, QueryStringBindable}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
 
 object Binders {
-  val logger = Logger("binders")
+  val logger: Logger = Logger("binders")
 
   private def boxIdFromString(text: String): Either[String, BoxId] = {
     Try(UUID.fromString(text))
@@ -38,7 +38,7 @@ object Binders {
       .map(BoxId(_))
   }
 
-  implicit def clientIdQueryStringBindable(implicit textBinder: QueryStringBindable[String]) = new QueryStringBindable[ClientId] {
+  implicit def clientIdQueryStringBindable(implicit textBinder: QueryStringBindable[String]): QueryStringBindable[ClientId] = new QueryStringBindable[ClientId] {
 
     override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, ClientId]] = {
       for {
@@ -63,7 +63,7 @@ object Binders {
     }
 
     override def unbind(key: String, boxId: BoxId): String = {
-      boxId.value.toString()
+      boxId.value.toString
     }
   }
 
