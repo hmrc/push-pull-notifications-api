@@ -184,7 +184,7 @@ class ConfirmationRepositoryISpec
       val expectedNotification1 = createConfirmationInDb(status = ConfirmationStatus.PENDING)
       val expectedNotification2 = createConfirmationInDb(status = PENDING)
 
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 2
       retryableConfirmations.map(_.notificationId) should contain.only(expectedNotification1.notificationId, expectedNotification2.notificationId)
@@ -195,7 +195,7 @@ class ConfirmationRepositoryISpec
       createConfirmationInDb(status = PENDING)
       saveMongoJsonWithBadUrl(defaultRequest) // This bad record should be ignored
 
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 2
     }
@@ -204,7 +204,7 @@ class ConfirmationRepositoryISpec
       createConfirmationInDb(status = FAILED)
       createConfirmationInDb(status = ACKNOWLEDGED)
 
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 0
     }
@@ -212,7 +212,7 @@ class ConfirmationRepositoryISpec
     "return pending confirmations that were to be retried in the past" in {
       createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
       createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 2
     }
@@ -221,7 +221,7 @@ class ConfirmationRepositoryISpec
       createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)))
       createConfirmationInDb(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)))
 
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 0
     }
@@ -229,7 +229,7 @@ class ConfirmationRepositoryISpec
     "read a confirmation request with no private headers" in {
       saveMongoJsonWithNoPrivateHeadersField(defaultRequest)
 
-      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations.runWith(Sink.seq))
+      val retryableConfirmations: Seq[ConfirmationRequest] = await(repo.fetchRetryableConfirmations(instant).runWith(Sink.seq))
 
       retryableConfirmations should have size 1
     }

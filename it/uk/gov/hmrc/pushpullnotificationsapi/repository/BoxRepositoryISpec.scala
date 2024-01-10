@@ -316,7 +316,7 @@ class BoxRepositoryISpec
 
   def runWithSink(): Seq[RetryableNotification] = {
     await(
-      notificationPushService.fetchRetryablePushNotifications().flatMap(_.runWith(Sink.seq))
+      notificationPushService.fetchRetryablePushNotifications(instant).flatMap(_.runWith(Sink.seq))
     )
   }
 

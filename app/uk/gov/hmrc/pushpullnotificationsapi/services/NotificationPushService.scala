@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +33,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import play.api.libs.json.OFormat
 
 @Singleton
 class NotificationPushService @Inject() (
@@ -66,9 +66,6 @@ class NotificationPushService @Inject() (
     val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
     clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>
-      import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.WithTimeZone._
-      implicit val nfFormat: OFormat[NotificationResponse] = Json.format[NotificationResponse]
-
       val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
       val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 
@@ -89,9 +86,9 @@ class NotificationPushService @Inject() (
     List(ForwardedHeader("X-Hub-Signature", payloadSignature))
   }
 
-  def fetchRetryablePushNotifications(): Future[Source[RetryableNotification, NotUsed]] = {
+  def fetchRetryablePushNotifications(retryAfter: Instant): Future[Source[RetryableNotification, NotUsed]] = {
     boxRepository.fetchPushSubscriberBoxes().map { boxes =>
-      boxes.map(box => notificationsRepository.fetchRetryableNotifications(box)) match {
+      boxes.map(box => notificationsRepository.fetchRetryableNotifications(box, retryAfter)) match {
         case first :: second :: rest =>
           Source.combine(first, second, rest: _*)(Merge(_))
         case first :: Nil            =>

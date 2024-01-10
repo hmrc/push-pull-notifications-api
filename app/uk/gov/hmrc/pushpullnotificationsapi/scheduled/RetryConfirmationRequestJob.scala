@@ -57,7 +57,7 @@ class RetryConfirmationRequestJob @Inject() (
     val retryAfterDateTime: Instant = instant()
 
     repo
-      .fetchRetryableConfirmations
+      .fetchRetryableConfirmations(retryAfterDateTime)
       .runWith(Sink.foreachAsync[ConfirmationRequest](jobConfig.parallelism)(retryConfirmation(_, retryAfterDateTime)))
       .map(_ => RunningOfJobSuccessful)
       .recoverWith {
@@ -79,7 +79,7 @@ class RetryConfirmationRequestJob @Inject() (
   }
 
   private def updateFailedNotification(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
-    if (confirmation.createdDateTime.isAfter(instant().minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
+    if (confirmation.createdDateTime.isAfter(retryAfterDateTime.minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
       repo.updateRetryAfterDateTime(confirmation.notificationId, retryAfterDateTime).map(_ => ())
     } else {
       repo.updateStatus(confirmation.notificationId, ConfirmationStatus.FAILED).map(_ => ())

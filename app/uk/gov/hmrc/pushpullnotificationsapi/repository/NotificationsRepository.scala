@@ -167,7 +167,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     ).map(toNotification(_, crypto)).head()
   }
 
-  def fetchRetryableNotifications(box: Box): Source[RetryableNotification, NotUsed] = {
+  def fetchRetryableNotifications(box: Box, retryAfter: Instant): Source[RetryableNotification, NotUsed] = {
     val boxId = box.boxId
 
     val pipeline = List(
@@ -177,7 +177,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
           equal("status", Codecs.toBson(NotificationStatus.PENDING)),
           or(
             Filters.exists("retryAfterDateTime", false),
-            lte("retryAfterDateTime", Codecs.toBson(instant()))
+            lte("retryAfterDateTime", Codecs.toBson(retryAfter))
           )
         )
       )

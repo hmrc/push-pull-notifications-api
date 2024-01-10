@@ -93,16 +93,16 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
     object FetchRetryableConfirmations {
 
       def thenFails() = {
-        when(aMock.fetchRetryableConfirmations)
+        when(aMock.fetchRetryableConfirmations(*))
           .thenReturn(Source.future(failed(new RuntimeException("Failed"))))
       }
 
       def verifyCalledOnce() = {
-        verify(atMost(1)).fetchRetryableConfirmations
+        verify(atMost(1)).fetchRetryableConfirmations(*)
       }
 
       def thenSuccessWith(requests: List[ConfirmationRequest]) = {
-        when(aMock.fetchRetryableConfirmations).thenReturn(Source(requests))
+        when(aMock.fetchRetryableConfirmations(*)).thenReturn(Source(requests))
       }
 
     }

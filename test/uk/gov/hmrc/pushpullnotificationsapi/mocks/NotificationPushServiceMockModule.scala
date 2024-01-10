@@ -41,20 +41,20 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
     object FetchRetryablePushNotifications {
 
       def succeedsFor(retryableNotification: RetryableNotification) = {
-        when(aMock.fetchRetryablePushNotifications()).thenReturn(successful(Source.future(successful(retryableNotification))))
+        when(aMock.fetchRetryablePushNotifications(*)).thenReturn(successful(Source.future(successful(retryableNotification))))
       }
 
       def succeedsFor(retryableNotifications: List[RetryableNotification]) = {
-        when(aMock.fetchRetryablePushNotifications()).thenReturn(successful(Source(retryableNotifications)))
+        when(aMock.fetchRetryablePushNotifications(*)).thenReturn(successful(Source(retryableNotifications)))
       }
 
       def failsWithException() = {
-        when(aMock.fetchRetryablePushNotifications())
+        when(aMock.fetchRetryablePushNotifications(*))
           .thenReturn(failed(new RuntimeException("Failed")))
       }
 
       def verifyCalled() = {
-        verify(times(1)).fetchRetryablePushNotifications()
+        verify(times(1)).fetchRetryablePushNotifications(*)
       }
     }
 

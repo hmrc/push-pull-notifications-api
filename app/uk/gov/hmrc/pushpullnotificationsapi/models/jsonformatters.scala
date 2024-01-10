@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import play.api.libs.json._
+import play.api.libs.json.{Json, OFormat}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.WithTimeZone._
+  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter._
 
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]

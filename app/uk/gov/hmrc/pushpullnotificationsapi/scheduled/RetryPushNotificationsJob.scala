@@ -55,14 +55,15 @@ class RetryPushNotificationsJob @Inject() (
   lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryPushNotificationsJob", ttl = 1.hour)
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
-    val retryAfterDateTime: Instant = instant().plus(Duration.ofMillis(jobConfig.interval.toMillis))
+    val retryAfterDateTime: Instant = instant()
+    val nextRetryAfterDateTime: Instant = retryAfterDateTime.plus(Duration.ofMillis(jobConfig.interval.toMillis))
 
     FutureUtils.timeThisFuture(
       {
         notificationPushService
-          .fetchRetryablePushNotifications()
+          .fetchRetryablePushNotifications(retryAfterDateTime)
           .flatMap(source =>
-            source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, retryAfterDateTime)))
+            source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, nextRetryAfterDateTime)))
               .map(_ => RunningOfJobSuccessful)
           )
           .recoverWith {

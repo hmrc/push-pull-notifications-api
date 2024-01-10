@@ -106,10 +106,10 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
     ).headOption().map(o => o.flatMap(_.toNonDb))
   }
 
-  def fetchRetryableConfirmations: Source[ConfirmationRequest, NotUsed] = {
+  def fetchRetryableConfirmations(retryAfter: Instant): Source[ConfirmationRequest, NotUsed] = {
     Source.fromPublisher(
       collection.find(
-        and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", instant())))
+        and(equal("status", Codecs.toBson(ConfirmationStatus.PENDING)), or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", retryAfter)))
       ).toObservable()
     )
       .map(_.toNonDb)

@@ -66,7 +66,7 @@ case class NotificationResponse(
     pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.WithTimeZone._
+  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter.instantWrites
 
   implicit val nfFormat: OFormat[NotificationResponse] = Json.format[NotificationResponse]
 
