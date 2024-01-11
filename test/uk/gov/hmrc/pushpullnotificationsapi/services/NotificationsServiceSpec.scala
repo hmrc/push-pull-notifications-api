@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.time.{Duration, Instant}
+import java.time.Duration
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -25,7 +25,8 @@ import org.mockito.captor.Captor
 
 import uk.gov.hmrc.http.HeaderCarrier
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ConfirmationServiceMockModule, NotificationPushServiceMockModule}
@@ -33,7 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
+class NotificationsServiceSpec extends AsyncHmrcSpec with TestData with FixedClock {
 
   trait Setup extends BoxRepositoryMockModule with NotificationPushServiceMockModule with NotificationsRepositoryMockModule with ConfirmationServiceMockModule {
 
@@ -120,8 +121,8 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData {
 
   "getNotifications" should {
 
-    val fromDate = Some(Instant.now.minus(Duration.ofHours(2)))
-    val toDate = Some(Instant.now)
+    val fromDate = Some(instant.minus(Duration.ofHours(2)))
+    val toDate = Some(instant)
 
     "return list of matched notifications" in new Setup {
 

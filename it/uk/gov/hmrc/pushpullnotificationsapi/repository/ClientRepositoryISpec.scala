@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
+import java.util.UUID.randomUUID
+
 import org.mongodb.scala.MongoWriteException
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-
-import java.util.UUID.randomUUID
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
-import uk.gov.hmrc.pushpullnotificationsapi.models.Client
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 
 class ClientRepositoryISpec
     extends AsyncHmrcSpec

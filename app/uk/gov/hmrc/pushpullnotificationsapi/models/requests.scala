@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,63 +20,63 @@ import java.net.URL
 import java.time.Instant
 import scala.util.Try
 
-import play.api.libs.json.Json
-import play.api.mvc.{Request, WrappedRequest}
+import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.Request
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus}
 
 case class CreateBoxRequest(boxName: String, clientId: ClientId)
 
 object CreateBoxRequest {
-  implicit val format = Json.format[CreateBoxRequest]
+  implicit val format: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
 }
 
 case class CreateClientManagedBoxRequest(boxName: String)
 
 object CreateClientManagedBoxRequest {
-  implicit val format = Json.format[CreateClientManagedBoxRequest]
+  implicit val format: OFormat[CreateClientManagedBoxRequest] = Json.format[CreateClientManagedBoxRequest]
 }
 
 case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType)
 
 object SubscriberRequest {
-  implicit val format = Json.format[SubscriberRequest]
+  implicit val format: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
 }
 
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
 object UpdateSubscriberRequest {
-  implicit val format = Json.format[UpdateSubscriberRequest]
+  implicit val format: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
 }
 
 case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String) {
 
-  def isInvalid(): Boolean = {
+  def isInvalid: Boolean = {
     this.clientId.value.isEmpty
   }
 }
 
 object UpdateCallbackUrlRequest {
-  implicit val format = Json.format[UpdateCallbackUrlRequest]
+  implicit val format: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
 }
 
 case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
 
 object UpdateManagedCallbackUrlRequest {
-  implicit val format = Json.format[UpdateManagedCallbackUrlRequest]
+  implicit val format: OFormat[UpdateManagedCallbackUrlRequest] = Json.format[UpdateManagedCallbackUrlRequest]
 }
 
 case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
 
 object ValidateBoxOwnershipRequest {
-  implicit val format = Json.format[ValidateBoxOwnershipRequest]
+  implicit val format: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
 }
 
 case class PrivateHeader(name: String, value: String)
 
 object PrivateHeader {
-  implicit val format = Json.format[PrivateHeader]
+  implicit val format: OFormat[PrivateHeader] = Json.format[PrivateHeader]
 }
 
 case class WrappedNotificationBody(body: String, contentType: String)
@@ -84,7 +84,7 @@ case class WrappedNotificationBody(body: String, contentType: String)
 object WrappedNotificationBody {
   import play.api.libs.json._
 
-  implicit val format = Json.format[WrappedNotificationBody]
+  implicit val format: OFormat[WrappedNotificationBody] = Json.format[WrappedNotificationBody]
 }
 
 case class WrappedNotificationRequest(notification: WrappedNotificationBody, version: String, confirmationUrl: Option[URL], privateHeaders: List[PrivateHeader])
@@ -121,24 +121,15 @@ object WrappedNotificationRequest {
       (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
   )(WrappedNotificationRequest.apply(_, _, _, _))
 
-  implicit val writes = Json.writes[WrappedNotificationRequest]
+  implicit val writes: OWrites[WrappedNotificationRequest] = Json.writes[WrappedNotificationRequest]
 }
 // Notifications
 
 case class AcknowledgeNotificationsRequest(notificationIds: List[NotificationId])
 
 object AcknowledgeNotificationsRequest {
-  implicit val format = Json.format[AcknowledgeNotificationsRequest]
+  implicit val format: OFormat[AcknowledgeNotificationsRequest] = Json.format[AcknowledgeNotificationsRequest]
 }
-
-case class ValidatedAcknowledgeNotificationsRequest(boxId: BoxId, notificationIds: Set[NotificationId])
-
-object ValidatedAcknowledgeNotificationsRequest {
-  implicit val format = Json.format[ValidatedAcknowledgeNotificationsRequest]
-}
-
-// internal use only no need for json formats
-case class ValidatedCreateBoxRequest[A](createBoxRequest: CreateBoxRequest, request: Request[A]) extends WrappedRequest[A](request)
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 

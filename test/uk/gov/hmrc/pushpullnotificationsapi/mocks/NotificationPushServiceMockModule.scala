@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks
 import scala.concurrent.Future.{failed, successful}
 
 import akka.stream.scaladsl.Source
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -41,20 +42,20 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
     object FetchRetryablePushNotifications {
 
       def succeedsFor(retryableNotification: RetryableNotification) = {
-        when(aMock.fetchRetryablePushNotifications()).thenReturn(successful(Source.future(successful(retryableNotification))))
+        when(aMock.fetchRetryablePushNotifications(*)).thenReturn(successful(Source.future(successful(retryableNotification))))
       }
 
       def succeedsFor(retryableNotifications: List[RetryableNotification]) = {
-        when(aMock.fetchRetryablePushNotifications()).thenReturn(successful(Source(retryableNotifications)))
+        when(aMock.fetchRetryablePushNotifications(*)).thenReturn(successful(Source(retryableNotifications)))
       }
 
       def failsWithException() = {
-        when(aMock.fetchRetryablePushNotifications())
+        when(aMock.fetchRetryablePushNotifications(*))
           .thenReturn(failed(new RuntimeException("Failed")))
       }
 
       def verifyCalled() = {
-        verify(times(1)).fetchRetryablePushNotifications()
+        verify(times(1)).fetchRetryablePushNotifications(*)
       }
     }
 
@@ -90,6 +91,6 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
   }
 
   object NotificationPushServiceMock extends BaseNotificationPushServiceMock {
-    val aMock = mock[NotificationPushService](withSettings.lenient())
+    val aMock = mock[NotificationPushService](withSettings.strictness(Lenient))
   }
 }

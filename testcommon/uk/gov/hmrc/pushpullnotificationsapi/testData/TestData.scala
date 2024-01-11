@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,14 @@ import java.util.UUID
 
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 
-trait TestData {
+trait TestData extends FixedClock {
 
   val applicationId = ApplicationId.random
 
@@ -41,7 +42,7 @@ trait TestData {
 
   val BoxObjectWithNoSubscribers = Box(boxId, boxName, BoxCreator(clientId))
 
-  val boxWithExistingPushSubscriber: Box = BoxObjectWithNoSubscribers.copy(subscriber = Some(PushSubscriber(endpoint, Instant.now)))
+  val boxWithExistingPushSubscriber: Box = BoxObjectWithNoSubscribers.copy(subscriber = Some(PushSubscriber(endpoint, instant)))
 
   val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
   val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
@@ -61,7 +62,7 @@ trait TestData {
   val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
   val url = new URL("https://test")
   val notificationId: NotificationId = NotificationId(UUID.randomUUID())
-  val pushedTime = Instant.now()
+  val pushedTime = instant
   val acknowledgedNotificationStatus = NotificationStatus.ACKNOWLEDGED
   val pendingNotificationStatus = NotificationStatus.PENDING
 
@@ -74,7 +75,7 @@ trait TestData {
   val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, List.empty, pushedDateTime = Some(pushedTime))
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
-    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = Instant.now.minus(Duration.ofHours(7)))
+    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = instant.minus(Duration.ofHours(7)))
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")

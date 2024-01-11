@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
+import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult, ConfirmationId}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, OutboundConfirmation}
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
-import com.github.tomakehurst.wiremock.client.WireMock._
-import uk.gov.hmrc.pushpullnotificationsapi.models.PrivateHeader
-import java.time.Instant
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import play.api.libs.json.Json
+import uk.gov.hmrc.http.HeaderCarrier
 
-class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport {
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId, NotificationStatus, OutboundConfirmation}
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorSuccessResult, ConfirmationId, PrivateHeader}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, PushGatewayService, WireMockSupport}
+
+class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with PushGatewayService with MetricsTestSupport with FixedClock {
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override def commonStubs(): Unit = givenCleanMetricRegistry()
@@ -64,7 +64,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrl,
-          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(Instant.now), List.empty)
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(instant), List.empty)
         )
       )
 
@@ -75,7 +75,6 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
 
       val confirmationId = ConfirmationId.random
       val notificationId = NotificationId.random
-      val instant = Instant.now()
       val instantAsText = Json.toJson(instant).toString
       val rawText =
         s"""{"confirmationId":"$confirmationId","notificationId":"${notificationId}","version":"1","status":"ACKNOWLEDGED","dateTime":$instantAsText,"privateHeaders":[{"name":"f1","value":"v1"}]}"""
@@ -113,7 +112,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       val result = await(
         objInTest.sendConfirmation(
           wireMockBaseUrl,
-          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(Instant.now), List.empty)
+          OutboundConfirmation(ConfirmationId.random, NotificationId.random, "1", NotificationStatus.ACKNOWLEDGED, Some(instant), List.empty)
         )
       )
 

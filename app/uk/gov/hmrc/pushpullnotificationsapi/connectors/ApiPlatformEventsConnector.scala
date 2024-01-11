@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
-import java.time.Instant
+import java.time.Clock
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -27,8 +27,8 @@ import play.api.http.Status.CREATED
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.Actors
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{Actors, ApplicationId}
+import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{ApplicationEvents, EventId}
 import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -36,11 +36,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) extends ApplicationLogger {
+class ApiPlatformEventsConnector @Inject() (http: HttpClient, appConfig: AppConfig, val clock: Clock)(implicit ec: ExecutionContext) extends ApplicationLogger with ClockNow {
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val url = s"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated"
-    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, Instant.now(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
+    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, instant(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
     http.POST[ApplicationEvents.PpnsCallBackUriUpdatedEvent, HttpResponse](url, event)
       .map(_.status == CREATED)
       .recoverWith {

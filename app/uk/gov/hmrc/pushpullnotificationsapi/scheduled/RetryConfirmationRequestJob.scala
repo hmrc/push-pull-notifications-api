@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import java.time.{Duration, Instant}
+import java.time.{Clock, Duration, Instant}
 import javax.inject.Inject
 import scala.concurrent.Future.successful
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -30,6 +30,7 @@ import com.google.inject.Singleton
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
+import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
@@ -40,9 +41,10 @@ class RetryConfirmationRequestJob @Inject() (
     mongoLockRepository: MongoLockRepository,
     jobConfig: RetryConfirmationRequestJobConfig,
     repo: ConfirmationRepository,
-    service: ConfirmationService
+    service: ConfirmationService,
+    val clock: Clock
   )(implicit mat: Materializer)
-    extends ScheduledMongoJob {
+    extends ScheduledMongoJob with ClockNow {
 
   override def name: String = "RetryConfirmationRequestJob"
   override def interval: FiniteDuration = jobConfig.interval
@@ -52,10 +54,10 @@ class RetryConfirmationRequestJob @Inject() (
   lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryConfirmationRequestJob", ttl = 1.hour)
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
-    val retryAfterDateTime: Instant = Instant.now.plus(Duration.ofMillis(jobConfig.interval.toMillis))
+    val retryAfterDateTime: Instant = instant()
 
     repo
-      .fetchRetryableConfirmations
+      .fetchRetryableConfirmations(retryAfterDateTime)
       .runWith(Sink.foreachAsync[ConfirmationRequest](jobConfig.parallelism)(retryConfirmation(_, retryAfterDateTime)))
       .map(_ => RunningOfJobSuccessful)
       .recoverWith {
@@ -77,7 +79,7 @@ class RetryConfirmationRequestJob @Inject() (
   }
 
   private def updateFailedNotification(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
-    if (confirmation.createdDateTime.isAfter(Instant.now.minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
+    if (confirmation.createdDateTime.isAfter(retryAfterDateTime.minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
       repo.updateRetryAfterDateTime(confirmation.notificationId, retryAfterDateTime).map(_ => ())
     } else {
       repo.updateStatus(confirmation.notificationId, ConfirmationStatus.FAILED).map(_ => ())

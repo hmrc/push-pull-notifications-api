@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
@@ -133,7 +133,7 @@ class BoxController @Inject() (
       validateUserAgentHeaderAction)
       .async(playBodyParsers.json) { implicit request =>
         withJsonBody[UpdateCallbackUrlRequest] { addCallbackUrlRequest =>
-          if (addCallbackUrlRequest.isInvalid()) {
+          if (addCallbackUrlRequest.isInvalid) {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId is required")))
           } else {
             boxService.updateCallbackUrl(boxId, addCallbackUrlRequest, clientManaged = false) map {

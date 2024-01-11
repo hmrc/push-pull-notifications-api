@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import java.util.regex.Pattern
+import scala.concurrent.Future
 
 import akka.stream.Materializer
+
 import play.api.Application
 import play.api.i18n.{Lang, Messages, MessagesApi}
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -27,9 +29,9 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import scala.concurrent.Future
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
+
+import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
 abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with MetricsTestSupport {
 

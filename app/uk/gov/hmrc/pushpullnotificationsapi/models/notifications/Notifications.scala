@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.collection.immutable
 
@@ -50,11 +51,11 @@ object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[Not
 }
 
 case class NotificationId(value: UUID) extends AnyVal {
-  override def toString() = value.toString()
+  override def toString: String = value.toString
 }
 
 object NotificationId {
-  implicit val format = Json.valueFormat[NotificationId]
+  implicit val format: Format[NotificationId] = Json.valueFormat[NotificationId]
   def random: NotificationId = NotificationId(UUID.randomUUID())
 }
 
@@ -64,7 +65,7 @@ case class Notification(
     messageContentType: MessageContentType,
     message: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now,
+    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     readDateTime: Option[Instant] = None,
     pushedDateTime: Option[Instant] = None,
     retryAfterDateTime: Option[Instant] = None)
@@ -87,13 +88,13 @@ object ConfirmationStatus extends Enum[ConfirmationStatus] with PlayJsonEnum[Con
 case class ForwardedHeader(key: String, value: String)
 
 object ForwardedHeader {
-  implicit val format = Json.format[ForwardedHeader]
+  implicit val format: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
 }
 
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
 
 object OutboundNotification {
-  implicit val format = Json.format[OutboundNotification]
+  implicit val format: OFormat[OutboundNotification] = Json.format[OutboundNotification]
 }
 
 case class OutboundConfirmation(
@@ -105,7 +106,7 @@ case class OutboundConfirmation(
     privateHeaders: List[PrivateHeader])
 
 object OutboundConfirmation {
-  implicit val format = Json.format[OutboundConfirmation]
+  implicit val format: OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
 }
 
 case class RetryableNotification(notification: Notification, box: Box)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 
@@ -123,7 +124,7 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
         when(aMock.getAllBoxes()).thenReturn(successful(boxes))
       }
 
-      def verifyCalled() {
+      def verifyCalled(): Unit = {
         verify.getAllBoxes()
       }
     }
@@ -193,7 +194,7 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
   }
 
   object BoxServiceMock extends BaseBoxServiceMock {
-    val aMock = mock[BoxService](withSettings.lenient())
+    val aMock = mock[BoxService](withSettings.strictness(Lenient))
   }
 
 }

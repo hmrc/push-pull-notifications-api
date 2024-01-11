@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,5 +61,5 @@ private[repository] object PlayHmrcMongoFormatters extends URLFormatter {
   )(ConfirmationRequestDB.apply _)
 
   implicit val confirmationRequestWrites: Writes[ConfirmationRequestDB] = Json.writes[ConfirmationRequestDB]
-  implicit val confirmationRequestFormatter = Format(confirmationRequestDBReads, confirmationRequestWrites)
+  implicit val confirmationRequestFormatter: Format[ConfirmationRequestDB] = Format(confirmationRequestDBReads, confirmationRequestWrites)
 }

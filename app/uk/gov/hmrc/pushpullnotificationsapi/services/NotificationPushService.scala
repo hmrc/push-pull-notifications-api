@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
+import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -85,9 +86,9 @@ class NotificationPushService @Inject() (
     List(ForwardedHeader("X-Hub-Signature", payloadSignature))
   }
 
-  def fetchRetryablePushNotifications(): Future[Source[RetryableNotification, NotUsed]] = {
+  def fetchRetryablePushNotifications(retryAfter: Instant): Future[Source[RetryableNotification, NotUsed]] = {
     boxRepository.fetchPushSubscriberBoxes().map { boxes =>
-      boxes.map(box => notificationsRepository.fetchRetryableNotifications(box)) match {
+      boxes.map(box => notificationsRepository.fetchRetryableNotifications(box, retryAfter)) match {
         case first :: second :: rest =>
           Source.combine(first, second, rest: _*)(Merge(_))
         case first :: Nil            =>

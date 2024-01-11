@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,9 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.lenientFormatter
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.lenientFormatter
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
@@ -46,7 +47,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
-class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach
+    with FixedClock {
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
@@ -85,7 +87,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
   private val headersWithInvalidContentType: Map[String, String] =
     Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
-  val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
+  val createdDateTime: Instant = instant.minus(Duration.ofDays(1))
 
   val notification: Notification = Notification(
     NotificationId(UUID.randomUUID()),
@@ -198,7 +200,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
 
       "not return retryAfterDateTime" in {
         primeAuthAction(clientIdStr)
-        NotificationsServiceMock.GetNotifications.succeedsWith(boxId, clientId, notification.copy(retryAfterDateTime = Some(Instant.now)))
+        NotificationsServiceMock.GetNotifications.succeedsWith(boxId, clientId, notification.copy(retryAfterDateTime = Some(instant)))
 
         val result = doGet(s"/box/${boxId.value.toString}/notifications", validHeadersJson)
 

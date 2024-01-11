@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ trait EitherTHelper[E] {
   // def fromOptionF[A](in: Future[Option[A]], error: => E): EitherT[Future, E, A] = EitherT.fromOptionF(in, error)
   // def fromEither[A](in: Either[E, A]): EitherT[Future, E, A]                    = EitherT.fromEither(in)
   // def fromEitherF[A](in: Future[Either[E, A]]): EitherT[Future, E, A]           = EitherT.apply(in)
-  def cond[A](in: => Boolean, right: => A, left: => E) = EitherT.cond[Future](in, right, left)
+  def cond[A](in: => Boolean, right: => A, left: => E): EitherT[Future, E, A] = EitherT.cond[Future](in, right, left)
 
   // def fromValidatedF[A](in: Future[Validated[E, A]]): EitherT[Future, E, A] = EitherT(in.map(_.toEither))
   // def fromValidated[A](in: Validated[E, A]): EitherT[Future, E, A]          = EitherT.fromEither(in.toEither)
@@ -40,7 +40,7 @@ trait EitherTHelper[E] {
 
 object EitherTHelper {
 
-  def make[E](implicit outerEC: ExecutionContext) = new EitherTHelper[E] {
-    implicit val ec = outerEC
+  def make[E](implicit outerEC: ExecutionContext): EitherTHelper[E] = new EitherTHelper[E] {
+    implicit val ec: ExecutionContext = outerEC
   }
 }

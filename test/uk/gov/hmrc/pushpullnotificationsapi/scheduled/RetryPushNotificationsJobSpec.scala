@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-/*
- * Copyright 2022 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http:www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
-import java.time.{Duration, Instant}
+import java.time.Duration
 import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
@@ -44,6 +28,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{MongoLockRepositoryMockModule, NotificationsRepositoryMockModule}
@@ -51,7 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
+class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with FixedClock {
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
     .disable[com.kenshoo.play.metrics.PlayModule]
@@ -73,12 +58,13 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       MongoLockRepositoryMock.aMock,
       retryPushNotificationsJobConfig,
       NotificationsRepositoryMock.aMock,
-      NotificationPushServiceMock.aMock
+      NotificationPushServiceMock.aMock,
+      FixedClock.clock
     )
 
     MongoLockRepositoryMock.IsLocked.theSuccess(true)
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)
-    MongoLockRepositoryMock.ReleaseLock.thenSuccess
+    MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
     def setUpSuccessMocksForNotification(retryNotification: RetryableNotification) = {
       NotificationPushServiceMock.HandlePushNotification.returnsTrueFor(retryNotification.box, retryNotification.notification)
@@ -136,7 +122,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
     }
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
-      val notification1: Notification = notificationWithRetryAfter(Instant.now.minus(Duration.ofHours(5)))
+      val notification1: Notification = notificationWithRetryAfter(instant.minus(Duration.ofHours(5)))
       val retryableNotification: RetryableNotification = RetryableNotification(notification1, BoxObjectWithNoSubscribers)
       NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
       NotificationsRepositoryMock.UpdateRetryAfterDateTime.returnsSuccessWith(notification1)
@@ -150,7 +136,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
 
     "set notification status to failed when it fails to push and the notification is too old for further retries" in new Setup {
 
-      val notification1: Notification = notificationWithRetryAfter(Instant.now.minus(Duration.ofHours(7)))
+      val notification1: Notification = notificationWithRetryAfter(instant.minus(Duration.ofHours(7)))
       val retryableNotification: RetryableNotification = RetryableNotification(notification1, BoxObjectWithNoSubscribers)
       NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification1, FAILED)
@@ -174,7 +160,7 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       MongoLockRepositoryMock.TakeLock.thenTrueFalse()
       MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
-      val _ = await(underTest.execute)
+      await(underTest.execute)
       val result2: underTest.Result = await(underTest.execute)
 
       NotificationPushServiceMock.FetchRetryablePushNotifications.verifyCalled()

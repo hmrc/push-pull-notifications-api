@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ConfirmationServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{ConfirmationRepositoryMockModule, MongoLockRepositoryMockModule}
@@ -58,7 +59,8 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       MongoLockRepositoryMock.aMock,
       jobConfig,
       ConfirmationRepositoryMock.aMock,
-      ConfirmationServiceMock.aMock
+      ConfirmationServiceMock.aMock,
+      FixedClock.clock
     )
     MongoLockRepositoryMock.IsLocked.theSuccess(true)
     MongoLockRepositoryMock.TakeLock.thenSuccess(true)

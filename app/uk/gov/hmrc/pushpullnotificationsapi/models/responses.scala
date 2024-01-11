@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,42 +17,42 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import play.api.libs.json.Json.JsValueWrapper
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
 case class CreateBoxResponse(boxId: BoxId)
 
 object CreateBoxResponse {
-  implicit val format = Json.format[CreateBoxResponse]
+  implicit val format: OFormat[CreateBoxResponse] = Json.format[CreateBoxResponse]
 }
 
 case class CreateNotificationResponse(notificationId: NotificationId)
 
 object CreateNotificationResponse {
-  implicit val format = Json.format[CreateNotificationResponse]
+  implicit val format: OFormat[CreateNotificationResponse] = Json.format[CreateNotificationResponse]
 }
 
 case class CreateWrappedNotificationResponse(notificationId: NotificationId, confirmationId: ConfirmationId)
 
 object CreateWrappedNotificationResponse {
-  implicit val format = Json.format[CreateWrappedNotificationResponse]
+  implicit val format: OFormat[CreateWrappedNotificationResponse] = Json.format[CreateWrappedNotificationResponse]
 }
 
 case class UpdateCallbackUrlResponse(successful: Boolean, errorMessage: Option[String] = None)
 
 object UpdateCallbackUrlResponse {
-  implicit val format = Json.format[UpdateCallbackUrlResponse]
+  implicit val format: OFormat[UpdateCallbackUrlResponse] = Json.format[UpdateCallbackUrlResponse]
 }
 
 case class ValidateBoxOwnershipResponse(valid: Boolean)
 
 object ValidateBoxOwnershipResponse {
-  implicit val format = Json.format[ValidateBoxOwnershipResponse]
+  implicit val format: OFormat[ValidateBoxOwnershipResponse] = Json.format[ValidateBoxOwnershipResponse]
 }
 
 case class NotificationResponse(
@@ -61,14 +61,14 @@ case class NotificationResponse(
     messageContentType: MessageContentType,
     message: String,
     status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now,
+    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     readDateTime: Option[Instant] = None,
     pushedDateTime: Option[Instant] = None)
 
 object NotificationResponse {
-  import InstantFormatter.WithTimeZone._
+  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter.instantWrites
 
-  implicit val nfFormat = Json.format[NotificationResponse]
+  implicit val nfFormat: OFormat[NotificationResponse] = Json.format[NotificationResponse]
 
   def fromNotification(notification: Notification): NotificationResponse = {
 

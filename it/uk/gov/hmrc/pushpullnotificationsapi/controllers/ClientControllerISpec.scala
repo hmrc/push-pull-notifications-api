@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{FORBIDDEN, NOT_FOUND, OK}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
+import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
-
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
-import uk.gov.hmrc.pushpullnotificationsapi.models.ClientSecretValue
-import uk.gov.hmrc.pushpullnotificationsapi.models.Client
 
 class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] {
   this: Suite with ServerProvider =>

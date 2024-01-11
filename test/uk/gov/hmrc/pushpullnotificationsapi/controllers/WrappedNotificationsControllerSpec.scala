@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import java.net.URL
 import java.nio.charset.Charset
 import java.time.{Duration, Instant}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.stream.Materializer
@@ -36,7 +36,8 @@ import play.api.test.Helpers._
 import play.mvc.Http.MimeTypes
 import uk.gov.hmrc.auth.core.AuthConnector
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
@@ -46,7 +47,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, Notif
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach with ConfirmationServiceMockModule
-    with NotificationsServiceMockModule with AuthConnectorMockModule with TestData {
+    with NotificationsServiceMockModule with AuthConnectorMockModule with TestData with FixedClock {
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .configure(Map("notifications.maxSize" -> "50B"))
@@ -57,7 +58,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
     .build()
 
   lazy implicit val mat: Materializer = app.materializer
-  lazy implicit val ec = mat.executionContext
+  lazy implicit val ec: ExecutionContextExecutor = mat.executionContext
 
   override def beforeEach(): Unit = {
     reset(NotificationsServiceMock.aMock, ConfirmationServiceMock.aMock, AuthConnectorMock.aMock)
@@ -72,7 +73,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
   private val headersWithInValidUserAgent: Map[String, String] =
     Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
 
-  val createdDateTime: Instant = Instant.now.minus(Duration.ofDays(1))
+  val createdDateTime: Instant = instant.minus(Duration.ofDays(1))
 
   val notification2: Notification = Notification(
     NotificationId.random,
@@ -290,7 +291,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
 
   def stringToDateTimeLenient(dateStr: Option[String]): Option[Instant] = {
     Try[Option[Instant]] {
-      dateStr.map(a => InstantFormatter.lenientFormatter.parse(a, b => Instant.from(b)))
+      dateStr.map(a => InstantJsonFormatter.lenientFormatter.parse(a, b => Instant.from(b)))
     } match {
       case Success(x) => x
       case Failure(_) => None

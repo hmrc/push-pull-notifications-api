@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.scheduling
+package uk.gov.hmrc.pushpullnotificationsapi.config
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import java.time.Clock
 
-trait ScheduledJob {
-  def name: String
-  def execute(implicit ec: ExecutionContext): Future[Result]
-  def isRunning: Future[Boolean]
+import com.google.inject.AbstractModule
 
-  case class Result(message: String)
+class ClockModule extends AbstractModule {
 
-  def configKey: String = name
-
-  def initialDelay: FiniteDuration
-
-  def interval: FiniteDuration
-
-  override def toString() = s"$name after $initialDelay every $interval"
+  override def configure(): Unit = {
+    bind(classOf[Clock]).toInstance(Clock.systemUTC())
+  }
 }

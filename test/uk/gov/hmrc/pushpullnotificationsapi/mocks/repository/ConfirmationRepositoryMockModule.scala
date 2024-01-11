@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 import scala.concurrent.Future.{failed, successful}
 
 import akka.stream.scaladsl.Source
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -93,16 +94,16 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
     object FetchRetryableConfirmations {
 
       def thenFails() = {
-        when(aMock.fetchRetryableConfirmations)
+        when(aMock.fetchRetryableConfirmations(*))
           .thenReturn(Source.future(failed(new RuntimeException("Failed"))))
       }
 
       def verifyCalledOnce() = {
-        verify(atMost(1)).fetchRetryableConfirmations
+        verify(atMost(1)).fetchRetryableConfirmations(*)
       }
 
       def thenSuccessWith(requests: List[ConfirmationRequest]) = {
-        when(aMock.fetchRetryableConfirmations).thenReturn(Source(requests))
+        when(aMock.fetchRetryableConfirmations(*)).thenReturn(Source(requests))
       }
 
     }
@@ -126,7 +127,7 @@ trait ConfirmationRepositoryMockModule extends MockitoSugar with ArgumentMatcher
   }
 
   object ConfirmationRepositoryMock extends BaseConfirmationRRepositoryMock {
-    val aMock = mock[ConfirmationRepository](withSettings.lenient())
+    val aMock = mock[ConfirmationRepository](withSettings.strictness(Lenient))
 
   }
 }

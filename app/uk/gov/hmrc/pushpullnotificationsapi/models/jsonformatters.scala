@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
-import play.api.libs.json._
+import play.api.libs.json.{Json, OFormat}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantFormatter.WithTimeZone._
+  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter._
 
   implicit val boxFormats: OFormat[Box] = Json.format[Box]
   implicit val notificationFormatter: OFormat[Notification] = Json.format[Notification]

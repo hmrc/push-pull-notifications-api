@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,29 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import java.time.{Duration, Instant}
+import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import akka.stream.scaladsl.Sink
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
+
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
-
-import java.time.Instant
-import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
-
-import java.time.temporal.ChronoUnit
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.RetryableNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
-
-import java.time.Duration
-import akka.stream.scaladsl.Sink
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ApplicationId
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.ClientId
 
 class BoxRepositoryISpec
     extends AsyncHmrcSpec
@@ -53,6 +48,7 @@ class BoxRepositoryISpec
     with GuiceOneAppPerSuite
     with IntegrationPatience
     with Matchers
+    with FixedClock
     with PlayMongoRepositorySupport[Box] {
 
   protected def appBuilder: GuiceApplicationBuilder =
@@ -84,7 +80,7 @@ class BoxRepositoryISpec
 
   def createNotificationInDB(
       status: NotificationStatus = PENDING,
-      createdDateTime: Instant = Instant.now,
+      createdDateTime: Instant = instant,
       notificationId: NotificationId = NotificationId.random,
       retryAfterDateTime: Option[Instant] = None,
       boxId: BoxId = boxId
@@ -268,7 +264,7 @@ class BoxRepositoryISpec
 
       val subscriber = updatedBox.subscriber.get.asInstanceOf[PushSubscriber]
       subscriber.callBackUrl shouldBe callBackEndpoint
-      subscriber.subscribedDateTime.isBefore(Instant.now)
+      subscriber.subscribedDateTime.isBefore(instant)
     }
 
     "return None when the box doesn't exist" in {
@@ -320,7 +316,7 @@ class BoxRepositoryISpec
 
   def runWithSink(): Seq[RetryableNotification] = {
     await(
-      notificationPushService.fetchRetryablePushNotifications().flatMap(_.runWith(Sink.seq))
+      notificationPushService.fetchRetryablePushNotifications(instant).flatMap(_.runWith(Sink.seq))
     )
   }
 
@@ -329,20 +325,20 @@ class BoxRepositoryISpec
       boxName = UUID.randomUUID().toString,
       boxId = BoxId.random,
       boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-      subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+      subscriber = Some(PushSubscriber("https://example.com", instant))
     )
     val pushBox2: Box = Box(
       boxName = UUID.randomUUID().toString,
       boxId = BoxId.random,
       boxCreator = BoxCreator(ClientId(UUID.randomUUID().toString)),
-      subscriber = Some(PushSubscriber("https://example.com", Instant.now.truncatedTo(ChronoUnit.MILLIS)))
+      subscriber = Some(PushSubscriber("https://example.com", instant))
     )
 
     "return matching notifications and boxes" in {
-      val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS), boxId = pushBox1.boxId)
-      val expectedNotification2 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS), boxId = pushBox1.boxId)
-      val expectedNotification3 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS), boxId = pushBox2.boxId)
-      val _ = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS))
+      val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = instant, boxId = pushBox1.boxId)
+      val expectedNotification2 = createNotificationInDB(status = PENDING, createdDateTime = instant, boxId = pushBox1.boxId)
+      val expectedNotification3 = createNotificationInDB(status = PENDING, createdDateTime = instant, boxId = pushBox2.boxId)
+      val _ = createNotificationInDB(status = PENDING, createdDateTime = instant)
       await(repo.createBox(pushBox1))
       await(repo.createBox(pushBox2))
 
@@ -354,9 +350,9 @@ class BoxRepositoryISpec
     }
 
     "return matching notifications and box" in {
-      val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS), boxId = pushBox1.boxId)
-      val expectedNotification2 = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS), boxId = pushBox1.boxId)
-      val _ = createNotificationInDB(status = PENDING, createdDateTime = Instant.now.truncatedTo(ChronoUnit.MILLIS))
+      val expectedNotification1 = createNotificationInDB(status = PENDING, createdDateTime = instant, boxId = pushBox1.boxId)
+      val expectedNotification2 = createNotificationInDB(status = PENDING, createdDateTime = instant, boxId = pushBox1.boxId)
+      val _ = createNotificationInDB(status = PENDING, createdDateTime = instant)
       await(repo.createBox(pushBox1))
       await(repo.createBox(pushBox2))
 
@@ -378,8 +374,8 @@ class BoxRepositoryISpec
     }
 
     "return pending notifications that were to be retried in the past" in {
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)), boxId = pushBox1.boxId)
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.minus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)), boxId = pushBox1.boxId)
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofHours(2))), boxId = pushBox1.boxId)
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(instant.minus(Duration.ofDays(1))), boxId = pushBox1.boxId)
       await(repo.createBox(pushBox1))
 
       val retryableNotifications: Seq[RetryableNotification] = runWithSink()
@@ -388,8 +384,8 @@ class BoxRepositoryISpec
     }
 
     "not return pending notifications that are not yet to be retried" in {
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofHours(2)).truncatedTo(ChronoUnit.MILLIS)), boxId = pushBox1.boxId)
-      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(Instant.now.plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.MILLIS)), boxId = pushBox1.boxId)
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofHours(2))), boxId = pushBox1.boxId)
+      createNotificationInDB(status = PENDING, retryAfterDateTime = Some(instant.plus(Duration.ofDays(1))), boxId = pushBox1.boxId)
       await(repo.createBox(pushBox1))
 
       val retryableNotifications: Seq[RetryableNotification] = runWithSink()

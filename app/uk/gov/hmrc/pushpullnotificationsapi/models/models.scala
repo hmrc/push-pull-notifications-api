@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,40 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.collection.immutable
 
 import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.play.json.Union
 
-import uk.gov.hmrc.apiplatform.modules.applications.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
 
 case class BoxId(value: UUID) extends AnyVal {
-  override def toString() = value.toString()
+  override def toString: String = value.toString
 }
 
 object BoxId {
-  implicit val format = Json.valueFormat[BoxId]
+  implicit val format: Format[BoxId] = Json.valueFormat[BoxId]
   def random: BoxId = BoxId(UUID.randomUUID())
 }
 
 case class ConfirmationId(value: UUID) extends AnyVal {
-  override def toString() = value.toString()
+  override def toString: String = value.toString
 }
 
 object ConfirmationId {
-  implicit val format = Json.valueFormat[ConfirmationId]
+  implicit val format: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
 
 case class BoxCreator(clientId: ClientId)
 
 object BoxCreator {
-  implicit val format = Json.format[BoxCreator]
+  implicit val format: OFormat[BoxCreator] = Json.format[BoxCreator]
 }
 
 sealed trait SubscriptionType extends EnumEntry
@@ -67,10 +68,10 @@ sealed trait Subscriber {
 }
 
 object Subscriber {
-  implicit private val pushSubscriberFormat = Json.format[PushSubscriber]
-  implicit private val pullSubscriberFormat = Json.format[PullSubscriber]
+  implicit private val pushSubscriberFormat: OFormat[PushSubscriber] = Json.format[PushSubscriber]
+  implicit private val pullSubscriberFormat: OFormat[PullSubscriber] = Json.format[PullSubscriber]
 
-  implicit val formatSubscriber = Union
+  implicit val formatSubscriber: OFormat[Subscriber] = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
@@ -79,13 +80,13 @@ object Subscriber {
 
 class SubscriberContainer[+A](val elem: A)
 
-case class PushSubscriber(callBackUrl: String, override val subscribedDateTime: Instant = Instant.now) extends Subscriber {
+case class PushSubscriber(callBackUrl: String, override val subscribedDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PUSH_SUBSCRIBER
 }
 
 case class PullSubscriber(
     callBackUrl: String, // Remove callbackUrl
-    override val subscribedDateTime: Instant = Instant.now)
+    override val subscribedDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS))
     extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PULL_SUBSCRIBER
 }
@@ -103,5 +104,5 @@ case class Client(id: ClientId, secrets: Seq[ClientSecretValue])
 case class ClientSecretValue(value: String)
 
 object ClientSecretValue {
-  implicit val format = Json.format[ClientSecretValue]
+  implicit val format: OFormat[ClientSecretValue] = Json.format[ClientSecretValue]
 }
