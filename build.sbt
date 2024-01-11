@@ -58,7 +58,6 @@ lazy val root = Project(appName, file("."))
     IntegrationTest / parallelExecution := false,
     IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
-    scalacOptions += "-Wconf:src=routes/.*:s",
   )
   .settings(
     routesImport ++= Seq(
@@ -68,7 +67,7 @@ lazy val root = Project(appName, file("."))
     )
   )
   .settings(
-    scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-unused")
+    scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-unused", "-Wconf:src=routes/.*:s")
   )
 
 commands ++= Seq(
