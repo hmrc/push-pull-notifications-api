@@ -58,6 +58,7 @@ lazy val root = Project(appName, file("."))
     IntegrationTest / parallelExecution := false,
     IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
     IntegrationTest / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
+    scalacOptions += "-Wconf:src=routes/.*:s",
   )
   .settings(
     routesImport ++= Seq(

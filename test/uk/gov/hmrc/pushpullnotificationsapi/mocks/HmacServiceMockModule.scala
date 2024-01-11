@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -42,6 +43,6 @@ trait HmacServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
   }
 
   object HmacServiceMock extends BaseHmacServiceMock {
-    val aMock = mock[HmacService](withSettings.lenient())
+    val aMock = mock[HmacService](withSettings.strictness(Lenient))
   }
 }

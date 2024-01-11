@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors
 
 import scala.concurrent.Future.{failed, successful}
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -60,7 +61,7 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
   }
 
   object ThirdPartyApplicationConnectorMock extends BaseThirdPartyApplicationConnectorMock {
-    val aMock = mock[ThirdPartyApplicationConnector](withSettings.lenient())
+    val aMock = mock[ThirdPartyApplicationConnector](withSettings.strictness(Lenient))
 
   }
 

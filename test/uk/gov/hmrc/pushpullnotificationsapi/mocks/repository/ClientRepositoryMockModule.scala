@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.successful
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -71,7 +72,7 @@ trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar
   }
 
   object ClientRepositoryMock extends BaseClientRepositoryMock {
-    val aMock = mock[ClientRepository](withSettings.lenient())
+    val aMock = mock[ClientRepository](withSettings.strictness(Lenient))
 
   }
 }

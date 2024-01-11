@@ -19,6 +19,7 @@ package uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors
 import java.net.URL
 import scala.concurrent.Future.successful
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -64,6 +65,6 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
   }
 
   object ConfirmationConnectorMock extends BaseConfirmationConnectorMock {
-    val aMock = mock[ConfirmationConnector](withSettings.lenient())
+    val aMock = mock[ConfirmationConnector](withSettings.strictness(Lenient))
   }
 }

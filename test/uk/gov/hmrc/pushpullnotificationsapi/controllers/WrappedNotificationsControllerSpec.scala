@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import java.net.URL
 import java.nio.charset.Charset
 import java.time.{Duration, Instant}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.stream.Materializer
@@ -58,7 +58,7 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
     .build()
 
   lazy implicit val mat: Materializer = app.materializer
-  lazy implicit val ec = mat.executionContext
+  lazy implicit val ec: ExecutionContextExecutor = mat.executionContext
 
   override def beforeEach(): Unit = {
     reset(NotificationsServiceMock.aMock, ConfirmationServiceMock.aMock, AuthConnectorMock.aMock)

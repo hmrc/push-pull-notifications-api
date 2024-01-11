@@ -20,6 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -107,7 +108,7 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
   }
 
   object ConfirmationServiceMock extends BaseConfirmationServiceMock {
-    val aMock = mock[ConfirmationService](withSettings.lenient())
+    val aMock = mock[ConfirmationService](withSettings.strictness(Lenient))
 
   }
 

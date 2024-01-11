@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks
 import scala.concurrent.Future.{failed, successful}
 
 import akka.stream.scaladsl.Source
+import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
@@ -90,6 +91,6 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
   }
 
   object NotificationPushServiceMock extends BaseNotificationPushServiceMock {
-    val aMock = mock[NotificationPushService](withSettings.lenient())
+    val aMock = mock[NotificationPushService](withSettings.strictness(Lenient))
   }
 }
