@@ -69,6 +69,19 @@ lazy val root = Project(appName, file("."))
   .settings(
     scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-unused", "-Wconf:src=routes/.*:s")
   )
+  .settings(
+    scalacOptions ++= Seq(
+      "-Xlint:-missing-interpolator,_"
+    )
+  )
+  .settings(
+    scalacOptions ++= Seq(
+    "-Wconf:cat=unused&src=views/.*\\.scala:s",
+    "-Wconf:cat=unused&src=.*RoutesPrefix\\.scala:s",
+    "-Wconf:cat=unused&src=.*Routes\\.scala:s",
+    "-Wconf:cat=unused&src=.*ReverseRoutes\\.scala:s"
+    )
+  )
 
 commands ++= Seq(
   Command.command("run-all-tests") { state => "test" :: "it:test" :: state },

@@ -18,7 +18,8 @@ object AppDependencies {
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
     "com.beachape"            %% "enumeratum-play-json"             % "1.6.0",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
-    "org.typelevel"           %% "cats-core"                        % "2.9.0"
+    "org.typelevel"           %% "cats-core"                        % "2.9.0",
+    "uk.gov.hmrc"             %% "crypto-json-play-28"              % "7.3.0"
   )
 
   lazy val testDependencies = Seq(

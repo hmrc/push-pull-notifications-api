@@ -18,17 +18,17 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
 
-import uk.gov.hmrc.crypto.{AesCrypto, CompositeSymmetricCrypto, Decrypter}
+import uk.gov.hmrc.crypto._
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 @Singleton
-class LocalCrypto @Inject() (appConfig: AppConfig) extends CompositeSymmetricCrypto {
+class LocalCrypto @Inject() (appConfig: AppConfig) extends Encrypter with Decrypter {
+  implicit val aesCrypto: Encrypter with Decrypter = SymmetricCryptoFactory.aesCrypto(appConfig.mongoEncryptionKey)
 
-  override protected lazy val currentCrypto: AesCrypto = new AesCrypto {
-    override protected lazy val encryptionKey: String = appConfig.mongoEncryptionKey
-  }
+  override def encrypt(plain: PlainContent): Crypted = aesCrypto.encrypt(plain)
 
-  override protected val previousCryptos = Seq.empty[Decrypter]
+  override def decryptAsBytes(reversiblyEncrypted: Crypted): PlainBytes = aesCrypto.decryptAsBytes(reversiblyEncrypted)
 
+  override def decrypt(reversiblyEncrypted: Crypted): PlainText = aesCrypto.decrypt(reversiblyEncrypted)
 }

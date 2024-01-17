@@ -25,7 +25,7 @@ import com.typesafe.config.Config
 
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 import uk.gov.hmrc.pushpullnotificationsapi.scheduled.{RetryConfirmationRequestJobConfig, RetryPushNotificationsJobConfig}
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
@@ -34,7 +34,7 @@ class ConfigurationModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
     Seq(
-      bind[CompositeSymmetricCrypto].to[LocalCrypto],
+      bind[Encrypter with Decrypter].to[LocalCrypto],
       bind[RetryPushNotificationsJobConfig].toProvider[RetryPushNotificationsJobConfigProvider],
       bind[RetryConfirmationRequestJobConfig].toProvider[RetryConfirmationRequestJobConfigProvider]
     )

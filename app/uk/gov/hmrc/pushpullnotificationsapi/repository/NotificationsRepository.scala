@@ -33,7 +33,6 @@ import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import org.mongodb.scala.{MongoWriteException, ReadPreference}
 
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -47,9 +46,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbRetryableNotification.toRetryableNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.dbNotificationFormatter
+import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 @Singleton
-class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: CompositeSymmetricCrypto, val clock: Clock)(implicit ec: ExecutionContext)
+class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: LocalCrypto, val clock: Clock)(implicit ec: ExecutionContext)
     extends PlayMongoRepository[DbNotification](
       collectionName = "notifications",
       mongoComponent = mongoComponent,
