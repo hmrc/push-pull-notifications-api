@@ -19,12 +19,13 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
+import uk.gov.hmrc.crypto.{Crypted, PlainText}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
+import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 case class DbNotification(
     notificationId: NotificationId,
@@ -39,7 +40,7 @@ case class DbNotification(
 
 private[repository] object DbNotification {
 
-  def fromNotification(notification: Notification, crypto: CompositeSymmetricCrypto): DbNotification = {
+  def fromNotification(notification: Notification, crypto: LocalCrypto): DbNotification = {
     DbNotification(
       notification.notificationId,
       notification.boxId,
@@ -53,7 +54,7 @@ private[repository] object DbNotification {
     )
   }
 
-  def toNotification(dbNotification: DbNotification, crypto: CompositeSymmetricCrypto): Notification = {
+  def toNotification(dbNotification: DbNotification, crypto: LocalCrypto): Notification = {
     Notification(
       dbNotification.notificationId,
       dbNotification.boxId,
@@ -72,15 +73,15 @@ private[repository] case class DbRetryableNotification(notification: DbNotificat
 
 private[repository] object DbRetryableNotification {
 
-  def fromRetryableNotification(retryableNotification: RetryableNotification, crypto: CompositeSymmetricCrypto): DbRetryableNotification = {
+  def fromRetryableNotification(retryableNotification: RetryableNotification, crypto: LocalCrypto): DbRetryableNotification = {
     DbRetryableNotification(fromNotification(retryableNotification.notification, crypto), retryableNotification.box)
   }
 
-  def toRetryableNotification(dbRetryableNotification: DbRetryableNotification, crypto: CompositeSymmetricCrypto): RetryableNotification = {
+  def toRetryableNotification(dbRetryableNotification: DbRetryableNotification, crypto: LocalCrypto): RetryableNotification = {
     RetryableNotification(toNotification(dbRetryableNotification.notification, crypto), dbRetryableNotification.box)
   }
 
-  def toRetryableNotification(box: Box, crypto: CompositeSymmetricCrypto)(dbNotification: DbNotification): RetryableNotification = {
+  def toRetryableNotification(box: Box, crypto: LocalCrypto)(dbNotification: DbNotification): RetryableNotification = {
     RetryableNotification(toNotification(dbNotification, crypto), box)
   }
 }

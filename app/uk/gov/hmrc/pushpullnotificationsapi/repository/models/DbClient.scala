@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
-import uk.gov.hmrc.crypto.{CompositeSymmetricCrypto, Crypted, PlainText}
+import uk.gov.hmrc.crypto.{Crypted, PlainText}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClientSecret.{fromClientSecret, toClientSecret}
+import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 case class DbClient(id: ClientId, secrets: Seq[DbClientSecret])
 
 private[repository] object DbClient {
 
-  def fromClient(client: Client, crypto: CompositeSymmetricCrypto): DbClient = {
+  def fromClient(client: Client, crypto: LocalCrypto): DbClient = {
     DbClient(client.id, client.secrets.map(fromClientSecret(_, crypto)))
   }
 
-  def toClient(dbClient: DbClient, crypto: CompositeSymmetricCrypto): Client = {
+  def toClient(dbClient: DbClient, crypto: LocalCrypto): Client = {
     Client(dbClient.id, dbClient.secrets.map(toClientSecret(_, crypto)))
   }
 }
@@ -39,11 +40,11 @@ private[repository] case class DbClientSecret(encryptedValue: String)
 
 private[repository] object DbClientSecret {
 
-  def fromClientSecret(clientSecret: ClientSecretValue, crypto: CompositeSymmetricCrypto): DbClientSecret = {
+  def fromClientSecret(clientSecret: ClientSecretValue, crypto: LocalCrypto): DbClientSecret = {
     DbClientSecret(crypto.encrypt(PlainText(clientSecret.value)).value)
   }
 
-  def toClientSecret(dbClientSecret: DbClientSecret, crypto: CompositeSymmetricCrypto): ClientSecretValue = {
+  def toClientSecret(dbClientSecret: DbClientSecret, crypto: LocalCrypto): ClientSecretValue = {
     ClientSecretValue(crypto.decrypt(Crypted(dbClientSecret.encryptedValue)).value)
   }
 }
