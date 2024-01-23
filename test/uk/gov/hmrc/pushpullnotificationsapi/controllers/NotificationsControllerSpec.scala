@@ -477,7 +477,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       case OK          => when(NotificationsServiceMock.aMock.getNotifications(
           eqTo(boxId),
           eqTo(clientId),
-          eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
+          eqTo(maybeNotificationStatus.map(NotificationStatus.unsafeApply)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
         ))
@@ -499,7 +499,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       case OK          => verify(NotificationsServiceMock.aMock).getNotifications(
           eqTo(boxId),
           eqTo(clientId),
-          eqTo(maybeNotificationStatus.map(NotificationStatus.withName)),
+          eqTo(maybeNotificationStatus.map(NotificationStatus.unsafeApply)),
           eqTo(maybeFromDate),
           eqTo(maybeToDate)
         )

@@ -74,7 +74,7 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {
     maybeStatusStr match {
       case Some(statusVal) => Try[NotificationStatus] {
-          NotificationStatus.withName(statusVal)
+          NotificationStatus.unsafeApply(statusVal)
         } match {
           case Success(x) => Right(Some(x))
           case Failure(_) =>

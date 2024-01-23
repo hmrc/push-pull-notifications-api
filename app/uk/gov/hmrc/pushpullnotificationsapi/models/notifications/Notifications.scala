@@ -19,10 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.models.notifications
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import scala.collection.immutable
-
-import enumeratum.values.{StringEnum, StringEnumEntry, StringPlayJsonValueEnum}
-import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
+import scala.collection.immutable.ListSet
 
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -30,24 +27,39 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId, PrivateHeader}
 
-sealed abstract class MessageContentType(val value: String) extends StringEnumEntry
+sealed abstract class MessageContentType(val value: String)
 
-object MessageContentType extends StringEnum[MessageContentType] with StringPlayJsonValueEnum[MessageContentType] {
-  val values: immutable.IndexedSeq[MessageContentType] = findValues
-
+object MessageContentType {
   case object APPLICATION_JSON extends MessageContentType("application/json")
-
   case object APPLICATION_XML extends MessageContentType("application/xml")
+
+  val values: ListSet[MessageContentType] = ListSet[MessageContentType](APPLICATION_JSON, APPLICATION_XML)
+
+  def apply(text: String): Option[MessageContentType] = MessageContentType.values.find(_.value == text)
+  def value(m: MessageContentType): String = m.value
+
+  import play.api.libs.json.Format
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
+
+  implicit val format: Format[MessageContentType] =
+    SealedTraitJsonFormatting.createFormatFor[MessageContentType]("Message content type", MessageContentType.apply, MessageContentType.value)
 }
 
-sealed trait NotificationStatus extends EnumEntry
+sealed trait NotificationStatus
 
-object NotificationStatus extends Enum[NotificationStatus] with PlayJsonEnum[NotificationStatus] {
-  val values: immutable.IndexedSeq[NotificationStatus] = findValues
-
+object NotificationStatus {
   case object PENDING extends NotificationStatus
   case object ACKNOWLEDGED extends NotificationStatus
   case object FAILED extends NotificationStatus
+
+  val values: ListSet[NotificationStatus] = ListSet[NotificationStatus](PENDING, ACKNOWLEDGED, FAILED)
+
+  def apply(text: String): Option[NotificationStatus] = NotificationStatus.values.find(_.toString() == text.toUpperCase)
+  def unsafeApply(text: String): NotificationStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid NotificationStatus"))
+
+  import play.api.libs.json.Format
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
+  implicit val format: Format[NotificationStatus] = SealedTraitJsonFormatting.createFormatFor[NotificationStatus]("Notification status", NotificationStatus.apply)
 }
 
 case class NotificationId(value: UUID) extends AnyVal {
@@ -75,14 +87,20 @@ object Notification {
   implicit val format: OFormat[Notification] = Json.format[Notification]
 }
 
-sealed trait ConfirmationStatus extends EnumEntry
+sealed trait ConfirmationStatus
 
-object ConfirmationStatus extends Enum[ConfirmationStatus] with PlayJsonEnum[ConfirmationStatus] {
-  val values: immutable.IndexedSeq[ConfirmationStatus] = findValues
-
+object ConfirmationStatus {
   case object PENDING extends ConfirmationStatus
   case object ACKNOWLEDGED extends ConfirmationStatus
   case object FAILED extends ConfirmationStatus
+
+  val values: ListSet[ConfirmationStatus] = ListSet[ConfirmationStatus](PENDING, ACKNOWLEDGED, FAILED)
+
+  def apply(text: String): Option[ConfirmationStatus] = ConfirmationStatus.values.find(_.toString() == text.toUpperCase)
+
+  import play.api.libs.json.Format
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
+  implicit val format: Format[ConfirmationStatus] = SealedTraitJsonFormatting.createFormatFor[ConfirmationStatus]("Confirmation status", ConfirmationStatus.apply)
 }
 
 case class ForwardedHeader(key: String, value: String)

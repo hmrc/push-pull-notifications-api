@@ -113,7 +113,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
   def fetchPushSubscriberBoxes(): Future[List[Box]] = {
     collection.find(
       and(
-        equal("subscriber.subscriptionType", Codecs.toBson(API_PUSH_SUBSCRIBER)),
+        equal("subscriber.subscriptionType", Codecs.toBson[SubscriptionType](API_PUSH_SUBSCRIBER)),
         Filters.exists("subscriber.callBackUrl"),
         Filters.ne("subscriber.callBackUrl", "")
       )
