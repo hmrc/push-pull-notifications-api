@@ -73,15 +73,11 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
 
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {
     maybeStatusStr match {
-      case Some(statusVal) => Try[NotificationStatus] {
-          NotificationStatus.unsafeApply(statusVal)
-        } match {
-          case Success(x) => Right(Some(x))
-          case Failure(_) =>
-            logger.info(s"Invalid Status Param provided: $statusVal")
-            Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided")))
-        }
-      case None            => Right(None)
+      case Some(status) => NotificationStatus.apply(status).toRight[Result] {
+          logger.info(s"Invalid Status Param provided: $status")
+          BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided"))
+        }.map(Some(_))
+      case None         => Right(None)
     }
   }
 

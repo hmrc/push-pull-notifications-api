@@ -27,16 +27,22 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId, PrivateHeader}
 
-sealed abstract class MessageContentType(val value: String)
+sealed trait MessageContentType {
+  def value: String = MessageContentType.value(this)
+}
 
 object MessageContentType {
-  case object APPLICATION_JSON extends MessageContentType("application/json")
-  case object APPLICATION_XML extends MessageContentType("application/xml")
+  case object APPLICATION_JSON extends MessageContentType
+  case object APPLICATION_XML extends MessageContentType
 
   val values: ListSet[MessageContentType] = ListSet[MessageContentType](APPLICATION_JSON, APPLICATION_XML)
 
   def apply(text: String): Option[MessageContentType] = MessageContentType.values.find(_.value == text)
-  def value(m: MessageContentType): String = m.value
+
+  def value(m: MessageContentType): String = m match {
+    case APPLICATION_JSON => "application/json"
+    case APPLICATION_XML  => "application/xml"
+  }
 
   import play.api.libs.json.Format
   import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting

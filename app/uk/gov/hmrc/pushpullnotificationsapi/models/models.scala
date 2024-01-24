@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import scala.collection.immutable.ListSet
 
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.play.json.Union
@@ -57,7 +56,7 @@ object SubscriptionType {
   case object API_PUSH_SUBSCRIBER extends SubscriptionType
   case object API_PULL_SUBSCRIBER extends SubscriptionType // Does this need to exist?
 
-  val values: ListSet[SubscriptionType] = ListSet[SubscriptionType](API_PUSH_SUBSCRIBER, API_PULL_SUBSCRIBER)
+  val values: Set[SubscriptionType] = Set[SubscriptionType](API_PUSH_SUBSCRIBER, API_PULL_SUBSCRIBER)
 
   def apply(text: String): Option[SubscriptionType] = SubscriptionType.values.find(_.toString() == text.toUpperCase)
 
