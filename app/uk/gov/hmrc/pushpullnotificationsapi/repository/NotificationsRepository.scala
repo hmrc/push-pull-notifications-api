@@ -148,7 +148,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     val query = and(boxIdQuery(boxId), notificationIdsQuery(notificationIds))
 
     collection
-      .updateMany(query, set("status", Codecs.toBson(ACKNOWLEDGED))).toFuture().map(_.wasAcknowledged())
+      .updateMany(query, set("status", Codecs.toBson[NotificationStatus](ACKNOWLEDGED))).toFuture().map(_.wasAcknowledged())
   }
 
   def updateStatus(notificationId: NotificationId, newStatus: NotificationStatus): Future[Notification] = {
@@ -174,7 +174,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       `match`(
         and(
           equal("boxId", Codecs.toBson(boxId.value)),
-          equal("status", Codecs.toBson(NotificationStatus.PENDING)),
+          equal("status", Codecs.toBson[NotificationStatus](NotificationStatus.PENDING)),
           or(
             Filters.exists("retryAfterDateTime", false),
             lte("retryAfterDateTime", Codecs.toBson(retryAfter))

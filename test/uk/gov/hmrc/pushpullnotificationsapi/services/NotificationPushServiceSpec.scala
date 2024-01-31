@@ -64,8 +64,6 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
         .toFormatter
         .withZone(ZoneId.of("UTC")).format(originalNotification.createdDateTime)
 
-      println(s"*** $stringCreated ***")
-
       val jsonPayload = Json.parse(sentOutboundNotification.payload)
       (jsonPayload \ "notificationId").as[String] shouldBe originalNotification.notificationId.value.toString
       (jsonPayload \ "boxId").as[UUID] shouldBe originalNotification.boxId.value

@@ -16,7 +16,6 @@ object AppDependencies {
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"               % mongoVersion,
     "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.38.0",
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
-    "com.beachape"            %% "enumeratum-play-json"             % "1.6.0",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
     "org.typelevel"           %% "cats-core"                        % "2.9.0",
     "uk.gov.hmrc"             %% "crypto-json-play-28"              % "7.3.0"

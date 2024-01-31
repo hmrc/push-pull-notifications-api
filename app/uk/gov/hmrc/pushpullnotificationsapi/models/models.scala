@@ -19,9 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.models
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import scala.collection.immutable
-
-import enumeratum.{Enum, EnumEntry, PlayJsonEnum}
 
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.play.json.Union
@@ -53,13 +50,19 @@ object BoxCreator {
   implicit val format: OFormat[BoxCreator] = Json.format[BoxCreator]
 }
 
-sealed trait SubscriptionType extends EnumEntry
+sealed trait SubscriptionType
 
-object SubscriptionType extends Enum[SubscriptionType] with PlayJsonEnum[SubscriptionType] {
-  val values: immutable.IndexedSeq[SubscriptionType] = findValues
-
+object SubscriptionType {
   case object API_PUSH_SUBSCRIBER extends SubscriptionType
   case object API_PULL_SUBSCRIBER extends SubscriptionType // Does this need to exist?
+
+  val values: Set[SubscriptionType] = Set[SubscriptionType](API_PUSH_SUBSCRIBER, API_PULL_SUBSCRIBER)
+
+  def apply(text: String): Option[SubscriptionType] = SubscriptionType.values.find(_.toString() == text.toUpperCase)
+
+  import play.api.libs.json.Format
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
+  implicit val format: Format[SubscriptionType] = SealedTraitJsonFormatting.createFormatFor[SubscriptionType]("Subscription Type", SubscriptionType.apply)
 }
 
 sealed trait Subscriber {
