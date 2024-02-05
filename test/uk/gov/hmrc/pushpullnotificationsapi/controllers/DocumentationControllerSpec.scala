@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import scala.concurrent.Future
 
+import org.apache.pekko.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
@@ -33,7 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
-  implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
   override lazy val app: Application = GuiceApplicationBuilder()

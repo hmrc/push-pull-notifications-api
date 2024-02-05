@@ -18,7 +18,7 @@
 
     <logger name="uk.gov.hmrc.mongo" level="ERROR"/>
 
-    <logger name="akka" level="ERROR"/>
+    <logger name="org.apache.pekko" level="ERROR"/>
 
     <logger name="wiremock" level="ERROR"/>
 

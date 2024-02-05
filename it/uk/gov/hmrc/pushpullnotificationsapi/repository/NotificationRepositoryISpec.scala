@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 import java.util.UUID
 
+import org.apache.pekko.stream.Materializer
 import org.mongodb.scala.Document
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -63,16 +64,16 @@ class NotificationRepositoryISpec
       )
 
   override implicit lazy val app: Application = appBuilder.build()
-  implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
 
   def repo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
   def boxRepo: BoxRepository = app.injector.instanceOf[BoxRepository]
-  override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
+  override protected val repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   override def beforeEach(): Unit = {
     prepareDatabase()
-    await(repo.ensureIndexes)
-    await(boxRepo.ensureIndexes)
+    await(repo.ensureIndexes())
+    await(boxRepo.ensureIndexes())
   }
 
   def getIndex(indexName: String): Option[Document] = {

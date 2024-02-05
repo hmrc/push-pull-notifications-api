@@ -39,10 +39,10 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   override def beforeEach(): Unit = {
     super.beforeEach()
     dropMongoDb()
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
-  override protected def repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
+  override protected val repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
 
   private val clientId: ClientId = ClientId.random
   private val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
@@ -56,7 +56,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
         "metrics.enabled" -> true,
         "auditing.enabled" -> false,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
-        "authorizationKey" -> authToken
+        "authorizationKey" -> "authtoken"
       )
 
   val url = s"http://localhost:$port"

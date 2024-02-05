@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.support
 import java.util.regex.Pattern
 import scala.concurrent.Future
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 
 import play.api.Application
 import play.api.i18n.{Lang, Messages, MessagesApi}

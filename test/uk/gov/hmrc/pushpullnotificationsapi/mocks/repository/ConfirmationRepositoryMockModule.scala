@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks.repository
 
 import scala.concurrent.Future.{failed, successful}
 
-import akka.stream.scaladsl.Source
+import org.apache.pekko.stream.scaladsl.Source
 import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}

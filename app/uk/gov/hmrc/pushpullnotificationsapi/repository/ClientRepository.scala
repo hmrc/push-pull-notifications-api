@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
@@ -50,6 +50,7 @@ class ClientRepository @Inject() (mongo: MongoComponent, crypto: LocalCrypto)(im
         )
       )
     ) {
+  override lazy val requiresTtlIndex: Boolean = false
 
   def insertClient(client: Client): Future[Client] = {
     collection.insertOne(fromClient(client, crypto)).map(_ => client).head()

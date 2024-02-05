@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{status => _, _}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
+import org.apache.pekko.stream.Materializer
 import org.scalatest.{BeforeAndAfterEach, TestData}
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
@@ -56,7 +57,7 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
   }
 
   trait Setup {
-    implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+    implicit def mat: Materializer = app.injector.instanceOf[Materializer]
     val documentationController = app.injector.instanceOf[DocumentationController]
     val request = FakeRequest()
   }

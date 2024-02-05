@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.actor.{Cancellable, Scheduler}
+import org.apache.pekko.actor.{Cancellable, Scheduler}
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers

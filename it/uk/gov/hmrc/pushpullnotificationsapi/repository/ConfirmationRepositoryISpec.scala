@@ -20,8 +20,8 @@ import java.net.URL
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 
-import akka.stream.scaladsl.Sink
 import com.mongodb.client.result.InsertOneResult
+import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.model.Filters.{equal => mongoEqual}
 import org.scalatest.concurrent.IntegrationPatience
@@ -76,7 +76,7 @@ class ConfirmationRepositoryISpec
     prepareDatabase()
   }
 
-  override protected def repository: PlayMongoRepository[ConfirmationRequestDB] = app.injector.instanceOf[ConfirmationRepository]
+  override protected val repository: PlayMongoRepository[ConfirmationRequestDB] = app.injector.instanceOf[ConfirmationRepository]
 
   def repo: ConfirmationRepository = repository.asInstanceOf[ConfirmationRepository]
 

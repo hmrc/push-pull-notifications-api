@@ -52,10 +52,10 @@ class BoxControllerISpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
-  override protected def repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
+  override protected val repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
