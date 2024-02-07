@@ -23,9 +23,9 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
 import com.google.inject.Singleton
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Sink
 
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}

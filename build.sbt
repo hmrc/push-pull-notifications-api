@@ -15,27 +15,13 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-
-lazy val scoverageSettings = {
-  import scoverage.ScoverageKeys
-  Seq(
-    // Semicolon-separated list of regexs matching classes to exclude
-    ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimumStmtTotal := 95.1,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true,
-    Test /parallelExecution := false
-  )
-}
-
-lazy val root = Project(appName, file("."))
+lazy val microservice = Project(appName, file("."))
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
-  .settings(scalafixConfigSettings(IntegrationTest))
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
   .settings(defaultSettings(): _*)
-  .settings(scoverageSettings)
+  .settings(CodeCoverageSettings.settings)
   .settings(
     name := appName,
     libraryDependencies ++= AppDependencies(),
@@ -46,6 +32,7 @@ lazy val root = Project(appName, file("."))
   )
   .configs(IntegrationTest)
   .settings(DefaultBuildSettings.integrationTestSettings())
+  .settings(scalafixConfigSettings(IntegrationTest))
   .settings(
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
@@ -89,7 +76,7 @@ commands ++= Seq(
   Command.command("clean-and-test") { state => "clean" :: "compile" :: "run-all-tests" :: state },
 
   // Coverage does not need compile !
-  Command.command("pre-commit") { state => "clean" :: "scalafmtAll" :: "scalafixAll" :: "coverage" :: "run-all-tests" :: "coverageReport" :: "coverageOff" :: state }
+  Command.command("pre-commit") { state => "clean" :: "scalafmtAll" :: "scalafixAll" :: "coverage" :: "run-all-tests" :: "coverageOff" :: "coverageAggregate" :: state }
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {

@@ -20,8 +20,8 @@ import java.time.Instant
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.NotUsed
-import akka.stream.scaladsl.{Merge, Source}
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.{Merge, Source}
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier

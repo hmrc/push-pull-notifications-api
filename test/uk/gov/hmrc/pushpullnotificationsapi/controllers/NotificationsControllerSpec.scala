@@ -22,7 +22,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 

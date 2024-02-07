@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import com.mongodb.MongoWriteException
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set

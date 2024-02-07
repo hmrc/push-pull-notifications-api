@@ -61,6 +61,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
     with MongoJavatimeFormats.Implicits {
 
   private val logger = Logger(this.getClass)
+  override lazy val requiresTtlIndex: Boolean = false
 
   def findByBoxId(boxId: BoxId): Future[Option[Box]] = {
     collection.find(equal("boxId", Codecs.toBson(boxId))).headOption()

@@ -54,7 +54,7 @@ class NotificationsControllerISpec
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
-  override protected def repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
+  override protected val repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
   val clientId = ClientId.random
@@ -67,8 +67,8 @@ class NotificationsControllerISpec
     super.beforeEach()
     primeAuditService()
     primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
-    await(boxRepository.ensureIndexes)
-    await(notificationRepo.ensureIndexes)
+    await(boxRepository.ensureIndexes())
+    await(notificationRepo.ensureIndexes())
   }
 
   protected override def appBuilder: GuiceApplicationBuilder =

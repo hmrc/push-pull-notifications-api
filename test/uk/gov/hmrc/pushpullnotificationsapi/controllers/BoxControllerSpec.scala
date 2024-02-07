@@ -20,6 +20,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
+import org.apache.pekko.stream.Materializer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
@@ -46,7 +47,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with AuthConnectorMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
-  implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val mockAppConfig: AppConfig = mock[AppConfig]

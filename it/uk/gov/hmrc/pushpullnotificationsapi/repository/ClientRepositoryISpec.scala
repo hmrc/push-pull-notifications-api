@@ -50,7 +50,7 @@ class ClientRepositoryISpec
   override implicit lazy val app: Application = appBuilder.build()
 
   def repo: ClientRepository = app.injector.instanceOf[ClientRepository]
-  override protected def repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
+  override protected val repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]
 
   // Do we need there given we have CleanMongoCollectionSupport ??
   override def beforeEach(): Unit = {

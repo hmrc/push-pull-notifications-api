@@ -20,7 +20,8 @@ import java.time.{Duration, Instant}
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import akka.stream.scaladsl.Sink
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Sink
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -58,18 +59,18 @@ class BoxRepositoryISpec
       )
 
   override implicit lazy val app: Application = appBuilder.build()
-  implicit def mat: akka.stream.Materializer = app.injector.instanceOf[akka.stream.Materializer]
+  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
 
   def repo: BoxRepository = app.injector.instanceOf[BoxRepository]
   def notificationsRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
 
   def notificationPushService = app.injector.instanceOf[NotificationPushService]
 
-  override protected def repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
+  override protected val repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    await(repo.ensureIndexes)
+    await(repo.ensureIndexes())
   }
 
   val clientId: ClientId = ClientId.random

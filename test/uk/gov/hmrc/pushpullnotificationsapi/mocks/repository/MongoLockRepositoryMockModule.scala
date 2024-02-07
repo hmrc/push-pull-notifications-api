@@ -22,9 +22,11 @@ import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
+import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 
-trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
+
+trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar with FixedClock {
 
   trait BaseMongoLockRepositoryMock {
     def aMock: MongoLockRepository
@@ -50,11 +52,14 @@ trait MongoLockRepositoryMockModule extends MockitoSugar with ArgumentMatchersSu
     object TakeLock {
 
       def thenTrueFalse() = {
-        when(aMock.takeLock(*, *, *)).thenReturn(successful(true)).andThenAnswer(successful(false))
+        when(aMock.takeLock(*, *, *)).thenReturn(successful(Some(Lock("", "", instant, instant)))).andThenAnswer(successful(None))
       }
 
       def thenSuccess(bool: Boolean) = {
-        when(aMock.takeLock(*, *, *)).thenReturn(successful(bool))
+        if (bool)
+          when(aMock.takeLock(*, *, *)).thenReturn(successful(Some(Lock("", "", instant, instant))))
+        else
+          when(aMock.takeLock(*, *, *)).thenReturn(successful(None))
       }
 
     }

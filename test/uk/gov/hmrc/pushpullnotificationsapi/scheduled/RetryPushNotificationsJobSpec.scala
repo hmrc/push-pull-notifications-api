@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
@@ -39,7 +39,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with FixedClock {
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
-    .disable[com.kenshoo.play.metrics.PlayModule]
     .configure("metrics.enabled" -> false).build()
   implicit lazy val materializer: Materializer = app.materializer
 

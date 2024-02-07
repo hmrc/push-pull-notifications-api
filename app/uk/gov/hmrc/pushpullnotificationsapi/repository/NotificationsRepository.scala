@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
+import org.apache.pekko.NotUsed
+import org.apache.pekko.stream.scaladsl.Source
 import org.bson.conversions.Bson
 import org.mongodb.scala.model.Aggregates.`match`
 import org.mongodb.scala.model.Filters.{equal, _}
@@ -90,10 +90,6 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     with MongoJavatimeFormats.Implicits with ClockNow {
 
   lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
-
-  override def ensureIndexes: Future[Seq[String]] = {
-    super.ensureIndexes
-  }
 
   def getByBoxIdAndFilters(
       boxId: BoxId,
