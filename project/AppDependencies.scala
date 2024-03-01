@@ -27,5 +27,5 @@ object AppDependencies {
     "org.mockito"             %% "mockito-scala-scalatest"          % "1.17.29",
     "org.playframework"       %% "play-pekko-http-server"           % "3.0.1",
     "uk.gov.hmrc"             %% "api-platform-test-common-domain"  % commonDomainVersion
-  ).map(_ % "test, it")
+  ).map(_ % "test")
 }
