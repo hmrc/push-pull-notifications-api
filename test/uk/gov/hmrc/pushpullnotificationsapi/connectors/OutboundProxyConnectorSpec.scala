@@ -20,14 +20,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
 
 import org.mockito.captor.ArgCaptor
-import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 
 import play.api.Logger
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
 
 class OutboundProxyConnectorSpec extends HmrcSpec {
   implicit val hc: HeaderCarrier = HeaderCarrier()

@@ -19,5 +19,5 @@ package uk.gov.hmrc.pushpullnotificationsapi.util
 import play.api.Logger
 
 trait ApplicationLogger {
-  val logger = Logger("application")
+  lazy val logger = Logger("application")
 }
