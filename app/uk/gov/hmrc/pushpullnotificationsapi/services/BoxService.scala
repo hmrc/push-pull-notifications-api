@@ -34,6 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 class BoxService @Inject() (
     repository: BoxRepository,
     pushConnector: PushConnector,
+    pushService: PushService,
     applicationConnector: ThirdPartyApplicationConnector,
     eventsConnector: ApiPlatformEventsConnector,
     clientService: ClientService
@@ -118,7 +119,7 @@ class BoxService @Inject() (
 
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest): Future[UpdateCallbackUrlResult] = {
     if (request.callbackUrl.nonEmpty) {
-      pushConnector.validateCallbackUrl(request) flatMap {
+      pushService.validateCallbackUrl(request) flatMap {
         case _: PushConnectorSuccessResult     =>
           logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
           updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
