@@ -27,9 +27,9 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.{ApiPlatformEventsConnectorMockModule, PushConnectorMockModule, ThirdPartyApplicationConnectorMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.BoxRepositoryMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ClientServiceMockModule, PushServiceMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
@@ -49,12 +49,20 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       with ApiPlatformEventsConnectorMockModule
       with ThirdPartyApplicationConnectorMockModule
       with PushConnectorMockModule
+      with PushServiceMockModule
       with ClientServiceMockModule {
 
     val mockApiPlatformEventsConnector: ApiPlatformEventsConnector = mock[ApiPlatformEventsConnector]
 
     val objInTest =
-      new BoxService(BoxRepositoryMock.aMock, PushConnectorMock.aMock, ThirdPartyApplicationConnectorMock.aMock, ApiPlatformEventsConnectorMock.aMock, ClientServiceMock.aMock)
+      new BoxService(
+        BoxRepositoryMock.aMock,
+        PushConnectorMock.aMock,
+        PushServiceMock.aMock,
+        ThirdPartyApplicationConnectorMock.aMock,
+        ApiPlatformEventsConnectorMock.aMock,
+        ClientServiceMock.aMock
+      )
 
     val argumentCaptor: Captor[Box] = ArgCaptor[Box]
 
@@ -160,7 +168,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(boxWithApplicationId))
         BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, Some(boxWithApplicationId))
 
-        PushConnectorMock.ValidateCallbackUrl.succeedsFor(validRequest)
+        PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
         ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.succeedsWith(applicationId, newUrl, boxWithApplicationId)
 
         await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
@@ -168,7 +176,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
             ThirdPartyApplicationConnectorMock.verifyZeroInteractions()
             BoxRepositoryMock.UpdateApplicationId.verifyNeverCalled()
 
-            PushConnectorMock.ValidateCallbackUrl.verifyCalled(validRequest)
+            PushServiceMock.ValidateCallbackUrl.verifyCalled(validRequest)
             ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.verifyCalledWith(applicationId, endpoint, newUrl, boxWithApplicationId)
 
           case _ => fail()
@@ -184,13 +192,13 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
         ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.succeeds()
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
-        PushConnectorMock.ValidateCallbackUrl.succeedsFor(validRequest)
+        PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
         await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
           case _: CallbackUrlUpdated =>
             ThirdPartyApplicationConnectorMock.GetApplicationDetails.verifyCalledWith(clientId)
             BoxRepositoryMock.UpdateApplicationId.verifyCalledWith(boxId, applicationId)
-            PushConnectorMock.ValidateCallbackUrl.verifyCalled(validRequest)
+            PushServiceMock.ValidateCallbackUrl.verifyCalled(validRequest)
             ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.verifyCalled()
           case _                     => fail()
         }
@@ -219,11 +227,11 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         BoxRepositoryMock.UpdateSubscriber.succeedsWith(boxId, None)
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
-        PushConnectorMock.ValidateCallbackUrl.succeedsFor(validRequest)
+        PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
         await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
           case _: UnableToUpdateCallbackUrl =>
-            PushConnectorMock.ValidateCallbackUrl.verifyCalled(validRequest)
+            PushServiceMock.ValidateCallbackUrl.verifyCalled(validRequest)
             ApiPlatformEventsConnectorMock.verifyZeroInteractions()
           case _                            => fail()
         }
@@ -235,7 +243,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         ThirdPartyApplicationConnectorMock.GetApplicationDetails.failsWith(clientId)
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
-        PushConnectorMock.ValidateCallbackUrl.succeedsFor(validRequest)
+        PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
         await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
           case _: UnableToUpdateCallbackUrl =>
@@ -263,7 +271,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers.copy(applicationId = Some(applicationId))))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
-        PushConnectorMock.ValidateCallbackUrl.failsFor(validRequest)
+        PushServiceMock.ValidateCallbackUrl.failsFor(validRequest)
 
         await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
           case _: CallbackValidationFailed => ApiPlatformEventsConnectorMock.verifyZeroInteractions()

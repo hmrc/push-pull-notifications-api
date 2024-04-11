@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
+import java.util.UUID.randomUUID
 
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
@@ -80,6 +81,7 @@ class BoxControllerISpec
   val createClientManagedBox2JsonBody = raw"""{"boxName": "bbyybybyb"}"""
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId":  "${clientId2.value}", "boxName": "bbyybybyb"}"""
+  val expectedChallenge = randomUUID.toString
   val tpaResponse: String = raw"""{"id":  "931cbba3-c2ae-4078-af8a-b7fbcb804758", "clientId": "${clientId.value}"}"""
 
   val updateSubscriberJsonBodyWithIds: String =
@@ -404,8 +406,10 @@ class BoxControllerISpec
          |}
          |""".stripMargin
 
+    // --------------------------------------------------------------------------------------------------------
+
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
-      primeGatewayServiceValidateCallBack(OK)
+      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> "incorrectChallenge")))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 

@@ -28,6 +28,7 @@ import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, Clie
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
+import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
@@ -120,10 +121,10 @@ class BoxService @Inject() (
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest): Future[UpdateCallbackUrlResult] = {
     if (request.callbackUrl.nonEmpty) {
       pushService.validateCallbackUrl(request) flatMap {
-        case _: PushConnectorSuccessResult     =>
+        case _: PushServiceSuccessResult     =>
           logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
           updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
-        case result: PushConnectorFailedResult =>
+        case result: PushServiceFailedResult =>
           logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
           successful(CallbackValidationFailed(result.errorMessage))
       }

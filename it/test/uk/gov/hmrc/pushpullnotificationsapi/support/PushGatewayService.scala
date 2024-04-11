@@ -17,10 +17,14 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
+import play.api.libs.json.JsValue
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait PushGatewayService {
   val gatewayPostUrl = "/notify"
   val gatewayValidateCalllBackUrl = "/validate-callback"
+  val destinationUrl = "/destination-service/post-handler"
 
   def primeGatewayServiceValidateCallBack(status: Int, successfulResult: Boolean = true, errorMessage: Option[String] = None) = {
     val errorMessageStr = errorMessage.fold("")(value => raw""","errorMessage":"${value}"""")
@@ -39,6 +43,10 @@ trait PushGatewayService {
   def primeGatewayServicPostNoBody(status: Int) = {
     primeGatewayServiceNoBody(gatewayPostUrl, status)
   }
+
+  // def primeThirdPartyUrlForIncorrectChallenge() = {
+  //   primeThirdPartyUrl()
+  // }
 
   private def primeGatewayServiceNoBody(url: String, status: Int) = {
 
@@ -60,6 +68,30 @@ trait PushGatewayService {
           .withHeader("Content-Type", "application/json")
           .withBody(body)
       ))
+  }
+
+  // private def primeThirdPartyUrl() = {
+
+  //   stubFor(post(urlEqualTo("https://some.callback.url"))
+  //     .willReturn(
+  //       aResponse()
+  //         .withStatus(200)
+  //         .withHeader("Content-Type", "application/json")
+  //         .withBody("""{
+  //           "challenge": "someChallenge"
+  //         }""")
+  //     ))
+  // }
+
+  def primeDestinationServiceForValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
+    val response: ResponseDefinitionBuilder = responseBody
+      .fold(aResponse().withStatus(status))(body => aResponse().withStatus(status).withBody(body.toString()))
+    val params                              = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
+
+    stubFor(
+      get(urlEqualTo(s"$destinationUrl$params"))
+        .willReturn(response)
+    )
   }
 
 }
