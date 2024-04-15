@@ -14,7 +14,7 @@ object AppDependencies {
     "commons-codec"           %  "commons-codec"                    % "1.15",
     "uk.gov.hmrc"             %% "domain-play-30"                   % "9.0.0",
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-30"               % mongoVersion,
-    "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.41.0",
+    "uk.gov.hmrc"             %% "api-platform-application-events"  % "0.48.0",
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
     "uk.gov.hmrc"             %% "crypto-json-play-30"              % "7.6.0",
