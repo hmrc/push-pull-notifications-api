@@ -24,7 +24,7 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 trait PushGatewayService {
   val gatewayPostUrl = "/notify"
   val gatewayValidateCalllBackUrl = "/validate-callback"
-  val destinationUrl = "/destination-service/post-handler"
+  val destinationUrl = "/callback"
 
   def primeGatewayServiceValidateCallBack(status: Int, successfulResult: Boolean = true, errorMessage: Option[String] = None) = {
     val errorMessageStr = errorMessage.fold("")(value => raw""","errorMessage":"${value}"""")
@@ -43,10 +43,6 @@ trait PushGatewayService {
   def primeGatewayServicPostNoBody(status: Int) = {
     primeGatewayServiceNoBody(gatewayPostUrl, status)
   }
-
-  // def primeThirdPartyUrlForIncorrectChallenge() = {
-  //   primeThirdPartyUrl()
-  // }
 
   private def primeGatewayServiceNoBody(url: String, status: Int) = {
 
@@ -69,19 +65,6 @@ trait PushGatewayService {
           .withBody(body)
       ))
   }
-
-  // private def primeThirdPartyUrl() = {
-
-  //   stubFor(post(urlEqualTo("https://some.callback.url"))
-  //     .willReturn(
-  //       aResponse()
-  //         .withStatus(200)
-  //         .withHeader("Content-Type", "application/json")
-  //         .withBody("""{
-  //           "challenge": "someChallenge"
-  //         }""")
-  //     ))
-  // }
 
   def primeDestinationServiceForValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
     val response: ResponseDefinitionBuilder = responseBody

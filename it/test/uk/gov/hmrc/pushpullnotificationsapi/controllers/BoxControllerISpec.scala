@@ -16,14 +16,16 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
+import java.util.UUID.randomUUID
+
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
-import java.util.UUID.randomUUID
 
 import play.api.http.HeaderNames.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
 import play.api.http.Status.NO_CONTENT
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -35,6 +37,7 @@ import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
+import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
 
 class BoxControllerISpec
@@ -56,6 +59,10 @@ class BoxControllerISpec
     await(repo.ensureIndexes())
   }
 
+  val stubbedChallengeGenerator: ChallengeGenerator = new ChallengeGenerator {
+    override def generateChallenge: String = expectedChallenge
+  }
+
   override protected val repository: PlayMongoRepository[Box] = app.injector.instanceOf[BoxRepository]
 
   protected override def appBuilder: GuiceApplicationBuilder =
@@ -69,8 +76,9 @@ class BoxControllerISpec
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
-        "microservice.services.third-party-application.port" -> wireMockPort
-      )
+        "microservice.services.third-party-application.port" -> wireMockPort,
+        "validateHttpsCallbackUrl" -> false
+      ).overrides(bind[ChallengeGenerator].to(stubbedChallengeGenerator))
 
   val url = s"http://localhost:$port"
 
@@ -388,7 +396,7 @@ class BoxControllerISpec
   }
 
   "PUT /box/{boxId}/callback" should {
-    val callbackUrl = "https://some.callback.url"
+    val callbackUrl = wireMockBaseUrlAsString + "/callback"
 
     def updateCallbackUrlRequestJson(boxClientId: ClientId): String =
       s"""
@@ -409,7 +417,7 @@ class BoxControllerISpec
     // --------------------------------------------------------------------------------------------------------
 
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
-      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> "incorrectChallenge")))
+      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
@@ -540,7 +548,7 @@ class BoxControllerISpec
   }
 
   "PUT /cmb/box/{boxId}/callback" should {
-    val callbackUrl = "https://some.callback.url"
+    val callbackUrl = wireMockBaseUrlAsString + "/callback"
     val boxId: BoxId = BoxId.random
     val clientId: ClientId = ClientId.random
     val clientManagedBox: Box = Box(boxName = "boxName", boxId = boxId, boxCreator = BoxCreator(clientId), clientManaged = true)
@@ -549,7 +557,7 @@ class BoxControllerISpec
     def updateCallbackUrlRequestJsonNoCallBack(): String = raw"""{"callbackUrl": ""}"""
 
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
-      primeGatewayServiceValidateCallBack(OK)
+      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
 
