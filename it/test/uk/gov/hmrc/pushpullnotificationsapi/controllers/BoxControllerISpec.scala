@@ -456,8 +456,7 @@ class BoxControllerISpec
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
-      val errorMessage = "Unable to verify callback url"
-      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some(errorMessage))
+      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some("as`dkjhasdfkjasdh"))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
@@ -466,7 +465,7 @@ class BoxControllerISpec
 
       val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
       responseBody.successful shouldBe false
-      responseBody.errorMessage shouldBe Some(errorMessage)
+      responseBody.errorMessage shouldBe Some("Invalid callback URL. Check the information you have provided is correct.")
     }
 
     "return 401 when clientId does not match that on the Box" in {
