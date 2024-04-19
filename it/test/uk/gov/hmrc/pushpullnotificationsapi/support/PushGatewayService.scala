@@ -24,7 +24,6 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 trait PushGatewayService {
   val gatewayPostUrl = "/notify"
   val gatewayValidateCalllBackUrl = "/validate-callback"
-  val destinationUrl = "/callback"
 
   def primeGatewayServiceValidateCallBack(status: Int, successfulResult: Boolean = true, errorMessage: Option[String] = None) = {
     val errorMessageStr = errorMessage.fold("")(value => raw""","errorMessage":"${value}"""")
@@ -72,7 +71,7 @@ trait PushGatewayService {
     val params                              = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
 
     stubFor(
-      get(urlEqualTo(s"$destinationUrl$params"))
+      get(urlEqualTo(s"/callback$params"))
         .willReturn(response)
     )
   }

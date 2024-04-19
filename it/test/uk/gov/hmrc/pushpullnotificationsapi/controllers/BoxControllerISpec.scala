@@ -479,12 +479,6 @@ class BoxControllerISpec
       updateResult.status shouldBe NOT_FOUND
       updateResult.body shouldBe "{\"code\":\"BOX_NOT_FOUND\",\"message\":\"Box not found\"}"
     }
-//TODO check JSON? cqant send invalid UUID
-//    "return 400 when boxId is not a UUID" in {
-//      val updateResult = callUpdateCallbackUrlEndpoint("NotaUUid", updateCallbackUrlRequestJson(clientId), validHeaders)
-//      updateResult.status shouldBe BAD_REQUEST
-//      updateResult.body shouldBe "{\"code\":\"BAD_REQUEST\",\"message\":\"Box ID is not a UUID\"}"
-//    }
 
     "return 400 when requestBody is not a valid payload" in {
       val updateResult = callUpdateCallbackUrlEndpoint(BoxId.random, "{}", validHeaders)
