@@ -414,10 +414,8 @@ class BoxControllerISpec
          |}
          |""".stripMargin
 
-    // --------------------------------------------------------------------------------------------------------
-
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
-      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
+      primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
@@ -456,7 +454,7 @@ class BoxControllerISpec
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
-      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> "bad challenge")))
+      primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> "bad challenge")))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
@@ -556,7 +554,7 @@ class BoxControllerISpec
     def updateCallbackUrlRequestJsonNoCallBack(): String = raw"""{"callbackUrl": ""}"""
 
     "return 200 with {successful:true} and update box successfully when Callback Url is validated" in {
-      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
+      primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
 
@@ -591,7 +589,7 @@ class BoxControllerISpec
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), 404, None)
+      primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), 404, None)
 
       await(repo.createBox(clientManagedBox))
 

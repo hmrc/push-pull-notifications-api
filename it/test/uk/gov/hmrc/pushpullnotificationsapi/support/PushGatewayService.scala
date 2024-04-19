@@ -66,7 +66,7 @@ trait PushGatewayService {
       ))
   }
 
-  def primeDestinationServiceForValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
+  def primeDestinationServiceForCallbackValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
     val response: ResponseDefinitionBuilder = responseBody
       .fold(aResponse().withStatus(status))(body => aResponse().withStatus(status).withBody(body.toString()))
     val params                              = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
