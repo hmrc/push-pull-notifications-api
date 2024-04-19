@@ -456,7 +456,7 @@ class BoxControllerISpec
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
-      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some("as`dkjhasdfkjasdh"))
+      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> "bad challenge")))
 
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
@@ -589,10 +589,9 @@ class BoxControllerISpec
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {
-      val errorMessage = "Unable to verify callback url"
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-      primeGatewayServiceValidateCallBack(OK, successfulResult = false, Some(errorMessage))
+      primeDestinationServiceForValidation(Seq("challenge" -> expectedChallenge), 404, None)
 
       await(repo.createBox(clientManagedBox))
 
@@ -601,7 +600,7 @@ class BoxControllerISpec
 
       val responseBody = Json.parse(updateResult.body).as[UpdateCallbackUrlResponse]
       responseBody.successful shouldBe false
-      responseBody.errorMessage shouldBe Some(errorMessage)
+      responseBody.errorMessage shouldBe Some("Invalid callback URL. Check the information you have provided is correct.")
     }
 
     "return 403 when Box isn't client managed" in {
