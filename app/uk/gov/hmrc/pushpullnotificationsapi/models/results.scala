@@ -60,6 +60,10 @@ sealed trait PushConnectorResult
 final case class PushConnectorSuccessResult() extends PushConnectorResult
 final case class PushConnectorFailedResult(errorMessage: String) extends PushConnectorResult
 
+sealed trait PushServiceResult
+final case class PushServiceSuccessResult() extends PushServiceResult
+final case class PushServiceFailedResult(errorMessage: String) extends PushServiceResult
+
 sealed trait ConfirmationConnectorResult
 final case class ConfirmationConnectorSuccessResult() extends ConfirmationConnectorResult
 final case class ConfirmationConnectorFailedResult(errorMessage: String) extends ConfirmationConnectorResult

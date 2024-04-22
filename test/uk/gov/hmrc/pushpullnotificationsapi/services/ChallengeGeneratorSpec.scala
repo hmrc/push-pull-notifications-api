@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.util
+package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import play.api.Logger
+import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 
-trait ApplicationLogger {
-  lazy val logger = Logger("application")
+class ChallengeGeneratorSpec extends HmrcSpec {
+
+  trait Setup {
+    val underTest = new ChallengeGenerator()
+  }
+
+  "generateChallenge" should {
+    "generate a new random challenge every time it is invoked" in new Setup {
+      val firstResult: String = underTest.generateChallenge
+      val secondResult: String = underTest.generateChallenge
+
+      firstResult should not be secondResult
+    }
+  }
 }

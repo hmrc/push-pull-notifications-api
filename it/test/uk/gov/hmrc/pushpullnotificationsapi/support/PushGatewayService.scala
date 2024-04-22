@@ -17,6 +17,9 @@
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
+import play.api.libs.json.JsValue
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 trait PushGatewayService {
   val gatewayPostUrl = "/notify"
@@ -60,6 +63,17 @@ trait PushGatewayService {
           .withHeader("Content-Type", "application/json")
           .withBody(body)
       ))
+  }
+
+  def primeDestinationServiceForCallbackValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
+    val response: ResponseDefinitionBuilder = responseBody
+      .fold(aResponse().withStatus(status))(body => aResponse().withStatus(status).withBody(body.toString()))
+    val params                              = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
+
+    stubFor(
+      get(urlEqualTo(s"/callback$params"))
+        .willReturn(response)
+    )
   }
 
 }

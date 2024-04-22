@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.util
+package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import play.api.Logger
+import java.util.UUID.randomUUID
+import javax.inject.Singleton
 
-trait ApplicationLogger {
-  lazy val logger = Logger("application")
+@Singleton
+class ChallengeGenerator {
+  def generateChallenge: String = randomUUID.toString
 }

@@ -45,4 +45,8 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val maxNotificationSize = config.underlying.getBytes("notifications.maxSize")
   val wrappedNotificationEnvelopeSize = config.underlying.getBytes("notifications.envelopeSize")
+
+  val allowedHostList: List[String] = config.underlying.getStringList("allowedHostList").asScala.toList
+  val useProxy: Boolean = config.getOptional[Boolean]("http-verbs.proxy.enabled").getOrElse(false)
+  val validateHttpsCallbackUrl: Boolean = config.getOptional[Boolean]("validateHttpsCallbackUrl").getOrElse(true)
 }
