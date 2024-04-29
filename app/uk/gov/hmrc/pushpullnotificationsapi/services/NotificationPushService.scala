@@ -26,18 +26,15 @@ import org.apache.pekko.stream.scaladsl.{Merge, Source}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
 
 @Singleton
 class NotificationPushService @Inject() (
-    connector: PushConnector,
     pushService: PushService,
     notificationsRepository: NotificationsRepository,
     boxRepository: BoxRepository,

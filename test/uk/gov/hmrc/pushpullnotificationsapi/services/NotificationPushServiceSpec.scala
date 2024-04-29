@@ -38,7 +38,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   trait Setup
-      extends PushConnectorMockModule
+      extends PushServiceMockModule
       with ConfirmationServiceMockModule
       with BoxRepositoryMockModule
       with NotificationsRepositoryMockModule
@@ -46,7 +46,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
       with HmacServiceMockModule {
 
     val serviceToTest = new NotificationPushService(
-      PushConnectorMock.aMock,
+      PushServiceMock.aMock,
       NotificationsRepositoryMock.aMock,
       BoxRepositoryMock.aMock,
       ClientServiceMock.aMock,
@@ -76,7 +76,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
 
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)
-      val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
+      val outboundNotificationCaptor = PushServiceMock.HandleNotification.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, notification))
@@ -91,7 +91,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "put the notification signature in the forwarded headers" in new Setup {
       val expectedSignature = "the signature"
       HmacServiceMock.Sign.succeedsWith(expectedSignature)
-      val outboundNotificationCaptor = PushConnectorMock.Send.succeedsFor()
+      val outboundNotificationCaptor = PushServiceMock.HandleNotification.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)
 
@@ -103,7 +103,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "return false when connector returns failed result due to exception" in new Setup {
 
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
-      val outboundNotificationCaptor = PushConnectorMock.Send.fails()
+      val outboundNotificationCaptor = PushServiceMock.HandleNotification.fails()
 
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, notification))
 
@@ -114,7 +114,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "not try to update the notification status to FAILED when the connector fails but the notification already had the status FAILED" in new Setup {
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
-      val outboundNotificationCaptor = PushConnectorMock.Send.fails()
+      val outboundNotificationCaptor = PushServiceMock.HandleNotification.fails()
 
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers, failedNotification))
 
@@ -129,7 +129,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
       val result: Boolean = await(serviceToTest.handlePushNotification(BoxObjectWithPushSubscribers.copy(subscriber = Some(PushSubscriber(""))), notification))
 
       result shouldBe true
-      PushConnectorMock.verifyZeroInteractions()
+      PushServiceMock.verifyZeroInteractions()
       NotificationsRepositoryMock.verifyZeroInteractions()
     }
 
@@ -142,7 +142,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
       val result: Boolean = await(serviceToTest.handlePushNotification(box, notification))
 
       result shouldBe true
-      PushConnectorMock.verifyZeroInteractions()
+      PushServiceMock.verifyZeroInteractions()
       NotificationsRepositoryMock.verifyZeroInteractions()
     }
   }
