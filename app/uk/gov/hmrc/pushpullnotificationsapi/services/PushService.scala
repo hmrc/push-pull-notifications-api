@@ -19,19 +19,17 @@ package uk.gov.hmrc.pushpullnotificationsapi.services
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.{CallbackValidation, PushServiceFailedResult, PushServiceResult, PushServiceSuccessResult, UpdateCallbackUrlRequest}
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.OutboundProxyConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models.PushConnectorSuccessResult
-import uk.gov.hmrc.pushpullnotificationsapi.models.PushConnectorFailedResult
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
+import uk.gov.hmrc.pushpullnotificationsapi.models.{CallbackValidation, PushServiceFailedResult, PushServiceResult, PushServiceSuccessResult, UpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton()
 class PushService @Inject() (
-  callbackValidator: CallbackValidator,
-  outboundProxyConnector: OutboundProxyConnector
-)(implicit ec: ExecutionContext)
-  extends ApplicationLogger {
+    callbackValidator: CallbackValidator,
+    outboundProxyConnector: OutboundProxyConnector
+  )(implicit ec: ExecutionContext)
+    extends ApplicationLogger {
 
   def validateCallbackUrl(request: UpdateCallbackUrlRequest): Future[PushServiceResult] = {
     callbackValidator.validateCallback(CallbackValidation(request.callbackUrl)) map {
@@ -49,17 +47,18 @@ class PushService @Inject() (
         .map(statusCode => {
           val successful = statusCode == 200 // We only accept HTTP 200 as being successful response
           if (!successful) {
-            PushServiceFailedResult("An Error here?????????????????????")
             logger.warn(s"Call to ${notification.destinationUrl} returned HTTP Status Code $statusCode - treating notification as unsuccessful")
+            PushServiceFailedResult("HTTP Status Code was not 200")
+          } else {
+            PushServiceSuccessResult()
           }
-          PushServiceSuccessResult()
-          })
-          .recover {
-          case e => PushServiceFailedResult("An Error here?????????????????????")
-          }
+        })
+        .recover {
+          case e => PushServiceFailedResult("An exception occured: " + e)
+        }
     } else {
       logger.error(s"Invalid notification with destination ${notification.destinationUrl}")
-      PushServiceFailedResult("An Error here?????????????????????")
+      Future(PushServiceFailedResult("Invalid OutboundNotification"))
     }
   }
 }
