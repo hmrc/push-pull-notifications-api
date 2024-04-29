@@ -33,10 +33,12 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
 
 @Singleton
 class NotificationPushService @Inject() (
     connector: PushConnector,
+    pushService: PushService,
     notificationsRepository: NotificationsRepository,
     boxRepository: BoxRepository,
     clientService: ClientService,
@@ -69,9 +71,9 @@ class NotificationPushService @Inject() (
       val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
       val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 
-      connector.send(outboundNotification).map {
-        case _: PushConnectorSuccessResult    => true
-        case error: PushConnectorFailedResult =>
+      pushService.handleNotification(outboundNotification).map {
+        case _: PushServiceSuccessResult    => true
+        case error: PushServiceFailedResult =>
           logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false
       }
