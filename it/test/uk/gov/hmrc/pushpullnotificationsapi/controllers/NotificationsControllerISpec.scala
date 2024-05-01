@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import java.time.Instant
 import java.util.UUID
+import java.util.UUID.randomUUID
 import scala.collection.mutable
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
@@ -25,6 +26,7 @@ import org.scalatestplus.play.ServerProvider
 
 import play.api.http.HeaderNames.{CONTENT_TYPE, USER_AGENT}
 import play.api.http.Status
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json, Reads, Writes}
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -38,6 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequ
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.support._
+import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -50,6 +53,12 @@ class NotificationsControllerISpec
     with ThirdPartyApplicationService {
 
   this: Suite with ServerProvider =>
+
+  val expectedChallenge = randomUUID.toString
+  val stubbedChallengeGenerator: ChallengeGenerator = new ChallengeGenerator {
+    override def generateChallenge: String = expectedChallenge
+  }
+
   implicit val instantFormatter: Format[Instant] = Format(Reads.DefaultInstantReads, Writes.DefaultInstantWrites)
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
@@ -82,8 +91,9 @@ class NotificationsControllerISpec
         "auditing.enabled" -> true,
         "auditing.consumer.baseUri.host" -> wireMockHost,
         "auditing.consumer.baseUri.port" -> wireMockPort,
-        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}"
-      )
+        "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
+        "validateHttpsCallbackUrl" -> false
+      ).overrides(bind[ChallengeGenerator].to(stubbedChallengeGenerator))
 
   val url = s"http://localhost:$port"
 
@@ -155,9 +165,39 @@ class NotificationsControllerISpec
 
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
+
+
+        //expectedChallenge
+        primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
+            val callbackUrl = wireMockBaseUrlAsString + "/callback"
+
+              def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
+    wsClient
+      .url(s"$url/box/${boxId.value.toString}/callback")
+      .withHttpHeaders(headers: _*)
+      .put(jsonBody)
+      .futureValue
+
+    def updateCallbackUrlRequestJson(boxClientId: ClientId): String =
+      s"""
+         |{
+         | "clientId": "${boxClientId.value}",
+         | "callbackUrl": "$callbackUrl"
+         |}
+         |""".stripMargin
+
+
         primeGatewayServiceWithBody(Status.OK)
         val box = createBoxAndReturn()
+        val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
+        val wsresponse = callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
+
+        println(wsresponse)
+
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", validHeadersJson)
+
+        println(result.body)
+
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
       }
