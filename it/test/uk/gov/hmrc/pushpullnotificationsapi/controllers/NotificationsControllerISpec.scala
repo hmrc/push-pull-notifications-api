@@ -50,7 +50,8 @@ class NotificationsControllerISpec
     with AuthService
     with AuditService
     with PushGatewayService
-    with ThirdPartyApplicationService {
+    with ThirdPartyApplicationService
+    with ApiPlatformEventsService {
 
   this: Suite with ServerProvider =>
 
@@ -87,6 +88,7 @@ class NotificationsControllerISpec
         "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
         "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
         "microservice.services.third-party-application.port" -> wireMockPort,
+        "microservice.services.api-platform-events.port" -> wireMockPort,
         "metrics.enabled" -> true,
         "auditing.enabled" -> true,
         "auditing.consumer.baseUri.host" -> wireMockHost,
@@ -165,13 +167,12 @@ class NotificationsControllerISpec
 
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
+        primeCallBackUpdatedEndpoint(200)
 
 
-        //expectedChallenge
         primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
-            val callbackUrl = wireMockBaseUrlAsString + "/callback"
-
-              def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
+        val callbackUrl = wireMockBaseUrlAsString + "/callback"
+        def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/${boxId.value.toString}/callback")
       .withHttpHeaders(headers: _*)
@@ -187,19 +188,20 @@ class NotificationsControllerISpec
          |""".stripMargin
 
 
-        primeGatewayServiceWithBody(Status.OK)
+        primeDestinationServiceForPushNotification()
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         val wsresponse = callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
 
         println(wsresponse)
 
-        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "{}", validHeadersJson)
+        val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", """{"hello":"test"}""", validHeadersJson)
 
         println(result.body)
 
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
+        verifyCallback()
       }
 
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {
