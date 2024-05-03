@@ -179,13 +179,17 @@ class NotificationsControllerISpec
     List() ++ notifications
   }
 
+  def createNotificationTestSetup(pushStatus: Int) = {
+    primeCallBackUpdatedEndpoint(OK)
+    primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
+    primeDestinationServiceForPushNotification(pushStatus)
+  }
+
   "NotificationsController" when {
 
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
-        primeCallBackUpdatedEndpoint(OK)
-        primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
-        primeDestinationServiceForPushNotification(OK)
+        createNotificationTestSetup(OK)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
@@ -211,9 +215,7 @@ class NotificationsControllerISpec
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
-        primeCallBackUpdatedEndpoint(OK)
-        primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
-        primeDestinationServiceForPushNotification(BAD_REQUEST)
+        createNotificationTestSetup(BAD_REQUEST)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
@@ -225,17 +227,15 @@ class NotificationsControllerISpec
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
-        primeCallBackUpdatedEndpoint(OK)
-        primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
-        primeDestinationServiceForPushNotification(INTERNAL_SERVER_ERROR)
+        createNotificationTestSetup(INTERNAL_SERVER_ERROR)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
+
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
         verifyCallback()
-
       }
 
       "respond with 400 when boxId is not a UUID" in {
