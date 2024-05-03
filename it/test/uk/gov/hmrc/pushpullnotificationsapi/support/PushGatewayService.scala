@@ -76,10 +76,10 @@ trait PushGatewayService {
     )
   }
 
-  def primeDestinationServiceForPushNotification(): Unit = {
+  def primeDestinationServiceForPushNotification(status: Int): Unit = {
       stubFor(
       post(urlEqualTo(s"/callback"))
-        .willReturn(aResponse().withStatus(200))
+        .willReturn(aResponse().withStatus(status))
     )
   }
 

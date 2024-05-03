@@ -27,7 +27,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks._
-import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.PushConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._

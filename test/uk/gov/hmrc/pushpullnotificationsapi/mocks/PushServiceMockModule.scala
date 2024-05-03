@@ -18,13 +18,13 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
 import scala.concurrent.Future.successful
 
+import org.mockito.captor.ArgCaptor
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar, Strictness}
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushServiceFailedResult, PushServiceSuccessResult, UpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
-import org.mockito.captor.ArgCaptor
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 
 trait PushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
@@ -51,7 +51,7 @@ trait PushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
     }
 
-  object HandleNotification {
+    object HandleNotification {
 
       def fails() = {
         val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
