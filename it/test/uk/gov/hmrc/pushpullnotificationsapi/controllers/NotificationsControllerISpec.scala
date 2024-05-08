@@ -179,7 +179,7 @@ class NotificationsControllerISpec
     List() ++ notifications
   }
 
-  def createNotificationTestSetup(pushStatus: Int) = {
+  def createPushNotificationTestSetup(pushStatus: Int) = {
     primeCallBackUpdatedEndpoint(OK)
     primeDestinationServiceForCallbackValidation(Seq("challenge" -> expectedChallenge), OK, Some(Json.obj("challenge" -> expectedChallenge)))
     primeDestinationServiceForPushNotification(pushStatus)
@@ -189,7 +189,7 @@ class NotificationsControllerISpec
 
     "POST /box/[boxId]/notifications" should {
       "respond with 201 when notification created for valid json and json content type with push subscriber" in {
-        createNotificationTestSetup(OK)
+        createPushNotificationTestSetup(OK)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
@@ -215,7 +215,7 @@ class NotificationsControllerISpec
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails bad request" in {
-        createNotificationTestSetup(BAD_REQUEST)
+        createPushNotificationTestSetup(BAD_REQUEST)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)
@@ -227,7 +227,7 @@ class NotificationsControllerISpec
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
-        createNotificationTestSetup(INTERNAL_SERVER_ERROR)
+        createPushNotificationTestSetup(INTERNAL_SERVER_ERROR)
         val box = createBoxAndReturn()
         val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
         callUpdateCallbackUrlEndpoint(box.boxId, updateCallbackUrlRequestJson(clientId), validHeaders)

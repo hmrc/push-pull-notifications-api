@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, PushConnector, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ThirdPartyApplicationConnector}
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
@@ -34,7 +34,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 @Singleton
 class BoxService @Inject() (
     repository: BoxRepository,
-    pushConnector: PushConnector,
     pushService: PushService,
     applicationConnector: ThirdPartyApplicationConnector,
     eventsConnector: ApiPlatformEventsConnector,

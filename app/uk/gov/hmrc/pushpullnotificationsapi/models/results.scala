@@ -56,10 +56,6 @@ final case class AcknowledgeNotificationsServiceBoxNotFoundResult(message: Strin
 final case class AcknowledgeNotificationsServiceUnauthorisedResult(message: String) extends AcknowledgeNotificationsServiceResultFailure
 final case class AcknowledgeNotificationsSuccessUpdatedResult(result: Boolean) extends AcknowledgeNotificationsServiceResultSuccess
 
-sealed trait PushConnectorResult
-final case class PushConnectorSuccessResult() extends PushConnectorResult
-final case class PushConnectorFailedResult(errorMessage: String) extends PushConnectorResult
-
 sealed trait PushServiceResult
 final case class PushServiceSuccessResult() extends PushServiceResult
 final case class PushServiceFailedResult(errorMessage: String) extends PushServiceResult
