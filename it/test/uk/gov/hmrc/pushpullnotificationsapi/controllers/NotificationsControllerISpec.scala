@@ -49,7 +49,7 @@ class NotificationsControllerISpec
     with CleanMongoCollectionSupport
     with AuthService
     with AuditService
-    with PushGatewayService
+    with CallbackDestinationService
     with ThirdPartyApplicationService
     with ApiPlatformEventsService {
 
