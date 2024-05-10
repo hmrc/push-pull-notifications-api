@@ -18,9 +18,11 @@ package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
 import scala.concurrent.Future.successful
 
+import org.mockito.captor.ArgCaptor
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar, Strictness}
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.{PushServiceFailedResult, PushServiceSuccessResult, UpdateCallbackUrlRequest}
 import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
 
@@ -46,6 +48,22 @@ trait PushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
       def verifyCalled(request: UpdateCallbackUrlRequest): Unit = {
         verify(atLeastOnce).validateCallbackUrl(eqTo(request))
+      }
+    }
+
+    object HandleNotification {
+
+      def fails() = {
+        val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+        when(aMock.handleNotification(outboundNotificationCaptor))
+          .thenReturn(successful(PushServiceFailedResult("some error")))
+        outboundNotificationCaptor
+      }
+
+      def succeedsFor() = {
+        val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
+        when(aMock.handleNotification(outboundNotificationCaptor)).thenReturn(successful(PushServiceSuccessResult()))
+        outboundNotificationCaptor
       }
     }
   }

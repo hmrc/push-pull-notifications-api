@@ -38,7 +38,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
-import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, PushGatewayService, ServerBaseISpec, ThirdPartyApplicationService}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, CallbackDestinationService, ServerBaseISpec, ThirdPartyApplicationService}
 
 class BoxControllerISpec
     extends ServerBaseISpec
@@ -47,7 +47,7 @@ class BoxControllerISpec
     with PlayMongoRepositorySupport[Box]
     with CleanMongoCollectionSupport
     with IntegrationPatience
-    with PushGatewayService
+    with CallbackDestinationService
     with ThirdPartyApplicationService {
   this: Suite with ServerProvider =>
 
@@ -444,13 +444,10 @@ class BoxControllerISpec
     }
 
     "return 401 when useragent header is missing" in {
-      primeGatewayServiceValidateCallBack(OK)
-
       val createdBox = createBoxAndCheckExistsWithNoSubscribers()
 
       val updateResult = callUpdateCallbackUrlEndpoint(createdBox.boxId, updateCallbackUrlRequestJson(clientId), List("Content-Type" -> "application/json"))
       updateResult.status shouldBe FORBIDDEN
-
     }
 
     "return 200 with {successful:false} when Callback Url cannot be validated" in {

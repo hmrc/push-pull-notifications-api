@@ -26,7 +26,6 @@ import org.apache.pekko.stream.scaladsl.{Merge, Source}
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.PushConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
@@ -36,7 +35,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
 class NotificationPushService @Inject() (
-    connector: PushConnector,
+    pushService: PushService,
     notificationsRepository: NotificationsRepository,
     boxRepository: BoxRepository,
     clientService: ClientService,
@@ -69,9 +68,9 @@ class NotificationPushService @Inject() (
       val notificationAsJsonString: String = Json.toJson(NotificationResponse.fromNotification(notification)).toString
       val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 
-      connector.send(outboundNotification).map {
-        case _: PushConnectorSuccessResult    => true
-        case error: PushConnectorFailedResult =>
+      pushService.handleNotification(outboundNotification).map {
+        case _: PushServiceSuccessResult    => true
+        case error: PushServiceFailedResult =>
           logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false
       }
