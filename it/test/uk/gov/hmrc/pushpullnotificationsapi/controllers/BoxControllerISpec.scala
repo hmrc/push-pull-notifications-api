@@ -74,8 +74,6 @@ class BoxControllerISpec
         "auditing.consumer.baseUri.host" -> wireMockHost,
         "auditing.consumer.baseUri.port" -> wireMockPort,
         "mongodb.uri" -> s"mongodb://127.0.0.1:27017/test-${this.getClass.getSimpleName}",
-        "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
-        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
         "microservice.services.third-party-application.port" -> wireMockPort,
         "validateHttpsCallbackUrl" -> false
       ).overrides(bind[ChallengeGenerator].to(stubbedChallengeGenerator))
