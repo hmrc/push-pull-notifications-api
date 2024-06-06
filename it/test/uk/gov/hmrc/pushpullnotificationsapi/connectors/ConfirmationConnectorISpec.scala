@@ -42,8 +42,7 @@ class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
         "metrics.enabled" -> true,
-        "auditing.enabled" -> false,
-        "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort
+        "auditing.enabled" -> false
       )
 
   trait SetUp {

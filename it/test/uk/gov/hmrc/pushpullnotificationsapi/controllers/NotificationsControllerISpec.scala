@@ -85,8 +85,6 @@ class NotificationsControllerISpec
     new GuiceApplicationBuilder()
       .configure(
         "microservice.services.auth.port" -> wireMockPort,
-        "microservice.services.push-pull-notifications-gateway.port" -> wireMockPort,
-        "microservice.services.push-pull-notifications-gateway.authorizationKey" -> "iampushpullapi",
         "microservice.services.third-party-application.port" -> wireMockPort,
         "microservice.services.api-platform-events.port" -> wireMockPort,
         "metrics.enabled" -> true,
