@@ -6,7 +6,7 @@
 This API allows notifications to be sent (pushed) to software developers or allows the software developer to get (pull) 
 notifications. Notifications are created by other HMRC services.
 
-An example use case is for asynchronous API requests.
+An example use case is for asynchronous API requests:
 1. API X defines an *api-subscription-field* of type PPNS (see https://confluence.tools.tax.service.gov.uk/pages/viewpage.action?pageId=182540862)
 1. Software developer subscribes to API X in Developer Hub and can optionally add an endpoint where notifications 
     will be pushed to. This automatically creates a PPNS box called [API_CONTEXT]##[API_VERSION]##[API_SUBSCRIPTION_FIELD_NAME]
