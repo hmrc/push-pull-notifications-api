@@ -27,7 +27,8 @@ import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status.{BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR}
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.CallbackValidation
@@ -35,12 +36,12 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotific
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class OutboundProxyConnector @Inject() (appConfig: AppConfig, defaultHttpClient: HttpClient, proxiedHttpClient: ProxiedHttpClient)(implicit ec: ExecutionContext)
+class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   import OutboundProxyConnector._
 
-  lazy val httpClient: HttpClient = if (appConfig.useProxy) proxiedHttpClient else defaultHttpClient
+  def addProxyIfRequired(requestBuilder: RequestBuilder): RequestBuilder = if (appConfig.useProxy) requestBuilder.withProxy else requestBuilder
 
   val destinationUrlPattern: Pattern = "^https.*".r.pattern
 
@@ -73,12 +74,15 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, defaultHttpClient:
     validate(notification.destinationUrl) flatMap { url =>
       val extraHeaders = (CONTENT_TYPE -> "application/json") :: notification.forwardedHeaders.map(fh => (fh.key, fh.value))
 
-      httpClient.POSTString[Either[UpstreamErrorResponse, HttpResponse]](url, notification.payload, extraHeaders)
-        .map(_ match {
+      addProxyIfRequired(httpClient.post(url"$url"))
+        .withBody(Json.toJson(notification.payload))
+        .setHeader(extraHeaders: _*)
+        .execute[Either[UpstreamErrorResponse, HttpResponse]]
+        .map {
           case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
             failWith(statusCode)
           case Right(r: HttpResponse)                           => r.status
-        })
+        }
         .recover {
           case _: GatewayTimeoutException => failWith(GATEWAY_TIMEOUT)
           case _: BadGatewayException     => failWith(BAD_GATEWAY)
@@ -90,9 +94,10 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, defaultHttpClient:
   def validateCallback(callbackValidation: CallbackValidation, challenge: String): Future[String] = {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     validate(callbackValidation.callbackUrl) flatMap { validatedCallbackUrl =>
-      val callbackUrlWithChallenge = Option(new URL(validatedCallbackUrl).getQuery)
-        .fold(s"$validatedCallbackUrl?challenge=$challenge")(_ => s"$validatedCallbackUrl&challenge=$challenge")
-      httpClient.GET[CallbackValidationResponse](callbackUrlWithChallenge).map(_.challenge)
+      addProxyIfRequired(httpClient.get(url"$validatedCallbackUrl?challenge=$challenge"))
+        .withProxy
+        .execute[CallbackValidationResponse]
+        .map(_.challenge)
     }
   }
 }

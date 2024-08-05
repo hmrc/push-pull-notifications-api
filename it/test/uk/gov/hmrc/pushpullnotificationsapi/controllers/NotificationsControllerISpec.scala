@@ -39,8 +39,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.support._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
+import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -56,6 +56,7 @@ class NotificationsControllerISpec
   this: Suite with ServerProvider =>
 
   val expectedChallenge = randomUUID.toString
+
   val stubbedChallengeGenerator: ChallengeGenerator = new ChallengeGenerator {
     override def generateChallenge: String = expectedChallenge
   }
@@ -120,11 +121,11 @@ class NotificationsControllerISpec
 
   def updateCallbackUrlRequestJson(boxClientId: ClientId): String =
     s"""
-        |{
-        | "clientId": "${boxClientId.value}",
-        | "callbackUrl": "$callbackUrl"
-        |}
-        |""".stripMargin
+       |{
+       | "clientId": "${boxClientId.value}",
+       | "callbackUrl": "$callbackUrl"
+       |}
+       |""".stripMargin
 
   val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
   val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")

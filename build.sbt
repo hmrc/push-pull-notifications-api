@@ -1,12 +1,9 @@
-import sbt.Keys._
-import sbt.Tests._
 import uk.gov.hmrc.DefaultBuildSettings
-import uk.gov.hmrc.DefaultBuildSettings._
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
-
-lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val appName = "push-pull-notifications-api"
+
+Global / bloopAggregateSourceDependencies := true
+Global / bloopExportJarClassifiers := Some(Set("sources"))
 
 ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / majorVersion := 0
@@ -17,16 +14,11 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
-  .settings(playSettings: _*)
-  .settings(scalaSettings: _*)
-  .settings(defaultSettings(): _*)
   .settings(CodeCoverageSettings.settings)
   .settings(
-    name := appName,
     libraryDependencies ++= AppDependencies(),
-    retrieveManaged := true,
-    routesGenerator := InjectedRoutesGenerator,
     PlayKeys.playDefaultPort := 6701,
+    retrieveManaged := true
   )
   .settings(
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
@@ -41,19 +33,14 @@ lazy val microservice = Project(appName, file("."))
     )
   )
   .settings(
-    scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-unused", "-Wconf:src=routes/.*:s")
-  )
-  .settings(
     scalacOptions ++= Seq(
-      "-Xlint:-missing-interpolator,_"
-    )
-  )
-  .settings(
-    scalacOptions ++= Seq(
-    "-Wconf:cat=unused&src=views/.*\\.scala:s",
-    "-Wconf:cat=unused&src=.*RoutesPrefix\\.scala:s",
-    "-Wconf:cat=unused&src=.*Routes\\.scala:s",
-    "-Wconf:cat=unused&src=.*ReverseRoutes\\.scala:s"
+      "-deprecation",
+      "-feature",
+      "-Ywarn-unused",
+      "-Xlint:-missing-interpolator,_",
+      // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
+      // suppress warnings in generated routes files
+      "-Wconf:src=routes/.*:s"
     )
   )
 
@@ -71,7 +58,8 @@ commands ++= Seq(
   Command.command("fmtAll") { state => "scalafmtAll" :: "it/scalafmtAll" :: state },
   Command.command("fixAll") { state => "scalafixAll" :: "it/scalafixAll" :: state },
   Command.command("testAll") { state => "test" :: "it/test" :: state },
+
   Command.command("run-all-tests") { state => "testAll" :: state },
-  Command.command("clean-and-test") { state => "clean" :: "compile" :: "run-all-tests" :: state },
-  Command.command("pre-commit") { state => "clean" :: "scalafmtAll" :: "scalafixAll" :: "coverage" :: "run-all-tests" :: "coverageOff" :: "coverageAggregate" :: state }
+  Command.command("clean-and-test") { state => "cleanAll" :: "compile" :: "run-all-tests" :: state },
+  Command.command("pre-commit") { state => "cleanAll" :: "fmtAll" :: "fixAll" :: "coverage" :: "testAll" :: "coverageOff" :: "coverageAggregate" :: state }
 )

@@ -23,7 +23,8 @@ import com.google.inject.Inject
 
 import play.api.libs.json.OFormat
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -37,10 +38,9 @@ object ApplicationResponse {
 }
 
 @Singleton
-class ThirdPartyApplicationConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class ThirdPartyApplicationConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationResponse] = {
-    val url = s"${appConfig.thirdPartyApplicationUrl}/application"
-    http.GET[ApplicationResponse](url, Seq(("clientId", clientId.value)))
+    http.get(url"${appConfig.thirdPartyApplicationUrl}/application?${Seq("clientId" -> clientId)}").execute[ApplicationResponse]
   }
 }
