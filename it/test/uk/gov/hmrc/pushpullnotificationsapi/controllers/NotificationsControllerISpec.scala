@@ -21,6 +21,7 @@ import java.util.UUID
 import java.util.UUID.randomUUID
 import scala.collection.mutable
 
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 
@@ -51,7 +52,8 @@ class NotificationsControllerISpec
     with AuditService
     with CallbackDestinationService
     with ThirdPartyApplicationService
-    with ApiPlatformEventsService {
+    with ApiPlatformEventsService
+    with Eventually {
 
   this: Suite with ServerProvider =>
 
@@ -222,7 +224,9 @@ class NotificationsControllerISpec
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
@@ -234,7 +238,9 @@ class NotificationsControllerISpec
 
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 400 when boxId is not a UUID" in {
