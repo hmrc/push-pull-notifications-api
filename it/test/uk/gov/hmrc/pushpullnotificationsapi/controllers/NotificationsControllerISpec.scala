@@ -21,6 +21,7 @@ import java.util.UUID
 import java.util.UUID.randomUUID
 import scala.collection.mutable
 
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 
@@ -39,8 +40,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
-import uk.gov.hmrc.pushpullnotificationsapi.support._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
+import uk.gov.hmrc.pushpullnotificationsapi.support._
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -51,11 +52,13 @@ class NotificationsControllerISpec
     with AuditService
     with CallbackDestinationService
     with ThirdPartyApplicationService
-    with ApiPlatformEventsService {
+    with ApiPlatformEventsService
+    with Eventually {
 
   this: Suite with ServerProvider =>
 
   val expectedChallenge = randomUUID.toString
+
   val stubbedChallengeGenerator: ChallengeGenerator = new ChallengeGenerator {
     override def generateChallenge: String = expectedChallenge
   }
@@ -120,11 +123,11 @@ class NotificationsControllerISpec
 
   def updateCallbackUrlRequestJson(boxClientId: ClientId): String =
     s"""
-        |{
-        | "clientId": "${boxClientId.value}",
-        | "callbackUrl": "$callbackUrl"
-        |}
-        |""".stripMargin
+       |{
+       | "clientId": "${boxClientId.value}",
+       | "callbackUrl": "$callbackUrl"
+       |}
+       |""".stripMargin
 
   val acceptHeader: (String, String) = ACCEPT -> "application/vnd.hmrc.1.0+json"
   val validHeadersJson = List(acceptHeader, CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
@@ -221,7 +224,9 @@ class NotificationsControllerISpec
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", "<somNode/>", validHeadersXml)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 201 when notification created for valid xml and xml content type even if push fails internal server error" in {
@@ -233,7 +238,9 @@ class NotificationsControllerISpec
 
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 400 when boxId is not a UUID" in {

@@ -16,17 +16,18 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
-import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
-import play.api.libs.json.JsValue
+import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
+
+import play.api.libs.json.JsValue
 
 trait CallbackDestinationService {
 
   def primeDestinationServiceForCallbackValidation(queryParams: Seq[(String, String)], status: Int, responseBody: Option[JsValue]): StubMapping = {
     val response: ResponseDefinitionBuilder = responseBody
       .fold(aResponse().withStatus(status))(body => aResponse().withStatus(status).withBody(body.toString()))
-    val params                              = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
+    val params = queryParams.map { case (k, v) => s"$k=$v" }.mkString("?", "&", "")
 
     stubFor(
       get(urlEqualTo(s"/callback$params"))
@@ -35,13 +36,13 @@ trait CallbackDestinationService {
   }
 
   def primeDestinationServiceForPushNotification(status: Int): Unit = {
-      stubFor(
+    stubFor(
       post(urlEqualTo(s"/callback"))
         .willReturn(aResponse().withStatus(status))
     )
   }
 
-  def verifyCallback(): Unit =  {
+  def verifyCallback(): Unit = {
     verify(postRequestedFor(urlEqualTo("/callback")))
   }
 }

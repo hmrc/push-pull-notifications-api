@@ -19,15 +19,16 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import java.net.URL
 import java.util.regex.Pattern
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future.{failed, successful}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status.{BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR}
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.CallbackValidation
@@ -35,24 +36,21 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotific
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class OutboundProxyConnector @Inject() (appConfig: AppConfig, defaultHttpClient: HttpClient, proxiedHttpClient: ProxiedHttpClient)(implicit ec: ExecutionContext)
+class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
   import OutboundProxyConnector._
 
-  lazy val httpClient: HttpClient = if (appConfig.useProxy) proxiedHttpClient else defaultHttpClient
-
-  val destinationUrlPattern: Pattern = "^https.*".r.pattern
-
-  private def validate(destinationUrl: String): Future[String] = {
-    val optionalPattern = Some(destinationUrlPattern).filter(_ => appConfig.validateHttpsCallbackUrl)
-
-    validateDestinationUrl(optionalPattern, appConfig.allowedHostList)(destinationUrl)
-      .fold(
-        err => failed(new IllegalArgumentException(err)),
-        ok => successful(ok)
-      )
+  def addProxyIfRequired(requestBuilder: RequestBuilder): RequestBuilder = if (appConfig.useProxy) {
+    requestBuilder.withProxy
+  } else {
+    requestBuilder
   }
+
+  private val destinationUrlPattern: Pattern = "^https.*".r.pattern
+
+  private val validate: String => Try[String] =
+    OutboundProxyConnector.validateDestinationUrl(appConfig.validateCallbackUrlIsHttps, destinationUrlPattern, appConfig.allowedHostList) _
 
   def postNotification(notification: OutboundNotification): Future[Int] = {
 
@@ -70,30 +68,34 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, defaultHttpClient:
 
     implicit val irrelevantHc: HeaderCarrier = HeaderCarrier()
 
-    validate(notification.destinationUrl) flatMap { url =>
-      val extraHeaders = (CONTENT_TYPE -> "application/json") :: notification.forwardedHeaders.map(fh => (fh.key, fh.value))
+    Future.fromTry(validate(notification.destinationUrl))
+      .flatMap { url =>
+        val extraHeaders = (CONTENT_TYPE -> "application/json") :: notification.forwardedHeaders.map(fh => (fh.key, fh.value))
 
-      httpClient.POSTString[Either[UpstreamErrorResponse, HttpResponse]](url, notification.payload, extraHeaders)
-        .map(_ match {
-          case Left(UpstreamErrorResponse(_, statusCode, _, _)) =>
-            failWith(statusCode)
-          case Right(r: HttpResponse)                           => r.status
-        })
-        .recover {
-          case _: GatewayTimeoutException => failWith(GATEWAY_TIMEOUT)
-          case _: BadGatewayException     => failWith(BAD_GATEWAY)
-          case NonFatal(e)                => failWithThrowable(e)
-        }
-    }
+        addProxyIfRequired(httpClient.post(url"$url"))
+          .withBody(Json.parse(notification.payload))
+          .setHeader(extraHeaders: _*)
+          .execute[Either[UpstreamErrorResponse, HttpResponse]]
+          .map {
+            case Left(UpstreamErrorResponse(_, statusCode, _, _)) => failWith(statusCode)
+            case Right(r: HttpResponse)                           => r.status
+          }
+          .recover {
+            case _: GatewayTimeoutException => failWith(GATEWAY_TIMEOUT)
+            case _: BadGatewayException     => failWith(BAD_GATEWAY)
+            case NonFatal(e)                => failWithThrowable(e)
+          }
+      }
   }
 
   def validateCallback(callbackValidation: CallbackValidation, challenge: String): Future[String] = {
     implicit val hc: HeaderCarrier = HeaderCarrier()
-    validate(callbackValidation.callbackUrl) flatMap { validatedCallbackUrl =>
-      val callbackUrlWithChallenge = Option(new URL(validatedCallbackUrl).getQuery)
-        .fold(s"$validatedCallbackUrl?challenge=$challenge")(_ => s"$validatedCallbackUrl&challenge=$challenge")
-      httpClient.GET[CallbackValidationResponse](callbackUrlWithChallenge).map(_.challenge)
-    }
+    Future.fromTry(validate(callbackValidation.callbackUrl))
+      .flatMap { validatedCallbackUrl =>
+        addProxyIfRequired(httpClient.get(url"$validatedCallbackUrl?challenge=$challenge"))
+          .execute[CallbackValidationResponse]
+          .map(_.challenge)
+      }
   }
 }
 
@@ -101,7 +103,21 @@ object OutboundProxyConnector extends ApplicationLogger {
   implicit val callbackValidationResponseFormat: OFormat[CallbackValidationResponse] = Json.format[CallbackValidationResponse]
   private[connectors] case class CallbackValidationResponse(challenge: String)
 
-  def validateUrlProtocol(destinationUrlPattern: Option[Pattern])(destinationUrl: String): Either[String, String] = {
+  def validateDestinationUrl(validateCallbackUrlIsHttps: Boolean, destinationUrlPattern: Pattern, allowedHostList: List[String])(destinationUrl: String): Try[String] = {
+    val optionalPattern = Some(destinationUrlPattern).filter(_ => validateCallbackUrlIsHttps)
+    (
+      for {
+        _ <- validateUrlProtocol(optionalPattern)(destinationUrl)
+        _ <- validateAgainstAllowedHostList(allowedHostList)(destinationUrl)
+      } yield destinationUrl
+    )
+      .fold(
+        err => Failure(new IllegalArgumentException(err)),
+        ok => Success(ok)
+      )
+  }
+
+  private def validateUrlProtocol(destinationUrlPattern: Option[Pattern])(destinationUrl: String): Either[String, String] = {
     destinationUrlPattern match {
       case None          => Right(destinationUrl)
       case Some(pattern) =>
@@ -114,7 +130,7 @@ object OutboundProxyConnector extends ApplicationLogger {
     }
   }
 
-  def validateAgainstAllowedHostList(allowedHostList: List[String])(destinationUrl: String): Either[String, String] = {
+  private def validateAgainstAllowedHostList(allowedHostList: List[String])(destinationUrl: String): Either[String, String] = {
     if (allowedHostList.nonEmpty) {
       val host = new URL(destinationUrl).getHost
       if (allowedHostList.contains(host)) {
@@ -126,14 +142,6 @@ object OutboundProxyConnector extends ApplicationLogger {
     } else {
       Right(destinationUrl)
     }
-  }
-
-  def validateDestinationUrl(destinationUrlPattern: Option[Pattern], allowedHostList: List[String])(destinationUrl: String): Either[String, String] = {
-    // This could use validated to sum up the errors but that would affect the error text which is used in tests and perhaps in other callers of this functionality
-    for {
-      protocolValidated <- validateUrlProtocol(destinationUrlPattern)(destinationUrl)
-      hostValidated <- validateAgainstAllowedHostList(allowedHostList)(destinationUrl)
-    } yield destinationUrl
   }
 
 }
