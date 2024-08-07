@@ -4,7 +4,7 @@ import play.sbt.PlayImport._
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-  lazy val bootstrapVersion = "9.1.0"
+  lazy val bootstrapVersion = "9.2.0"
   lazy val mongoVersion = "2.2.0"
   private val commonDomainVersion = "0.15.0"
   
