@@ -81,14 +81,21 @@ class OutboundProxyConnectorISpec extends AsyncHmrcSpec with WireMockSupport wit
       )
 
     "succeed when the callback URL does validate" in new Setup {
-      val url = s"http://localhost:$wireMockPort" + callbackUrlPath
+      val url = s"http://localhost:$wireMockPort$callbackUrlPath"
+      stubValidateCallback(callbackUrlPath, challenge)
+
+      await(underTest.validateCallback(CallbackValidation(url), challenge)) shouldBe challenge
+    }
+
+    "succeed when the callback URL has a query parameter" in new Setup {
+      val url = s"http://localhost:$wireMockPort$callbackUrlPath?key=value"
       stubValidateCallback(callbackUrlPath, challenge)
 
       await(underTest.validateCallback(CallbackValidation(url), challenge)) shouldBe challenge
     }
 
     "fail when the callback URL does not validate" in new Setup {
-      val url = s"http://abc.com:6001" + callbackUrlPath
+      val url = s"http://abc.com:6001$callbackUrlPath"
 
       val exception = intercept[IllegalArgumentException] {
         await(underTest.validateCallback(CallbackValidation(url), challenge))

@@ -92,7 +92,9 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
     implicit val hc: HeaderCarrier = HeaderCarrier()
     Future.fromTry(validate(callbackValidation.callbackUrl))
       .flatMap { validatedCallbackUrl =>
-        addProxyIfRequired(httpClient.get(url"$validatedCallbackUrl?challenge=$challenge"))
+        val callbackUrlWithChallenge = Option(new URL(validatedCallbackUrl).getQuery)
+          .fold(s"$validatedCallbackUrl?challenge=$challenge")(_ => s"$validatedCallbackUrl&challenge=$challenge")
+        addProxyIfRequired(httpClient.get(url"$callbackUrlWithChallenge"))
           .execute[CallbackValidationResponse]
           .map(_.challenge)
       }
