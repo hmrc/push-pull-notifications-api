@@ -37,13 +37,13 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
   "save Confirmation" should {
     "indicate when successful" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.thenSuccessfulWith(confirmationId)
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, confirmationCallbackUrl, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceSuccessResult()
     }
 
     "indicate when failure" in new SetUp {
       ConfirmationRepositoryMock.SaveConfirmationRequest.returnsNone()
-      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, url, notificationId, List.empty))
+      val result = await(serviceToTest.saveConfirmationRequest(confirmationId, confirmationCallbackUrl, notificationId, List.empty))
       result shouldBe ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
   }
@@ -52,7 +52,7 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
     "send Confirmation when update successful" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
-        url,
+        confirmationCallbackUrl,
         OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty)
       )
       ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, ConfirmationStatus.ACKNOWLEDGED, confirmationRequest)
@@ -60,7 +60,7 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       await(serviceToTest.handleConfirmation(notificationId)) shouldBe true
 
       ConfirmationRepositoryMock.UpdateConfirmationNeed.verifyCalled(notificationId)
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
 
@@ -81,14 +81,14 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       await(serviceToTest.handleConfirmation(notificationId)) shouldBe true
 
       ConfirmationRepositoryMock.UpdateConfirmationNeed.verifyCalled(notificationId)
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
     "return true when update status fails" in new SetUp {
       ConfirmationRepositoryMock.UpdateConfirmationNeed.returnsSuccesswith(notificationId, confirmationRequest)
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
-        url,
+        confirmationCallbackUrl,
         OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty)
       )
       ConfirmationRepositoryMock.UpdateStatus.returnsNone()
@@ -96,7 +96,7 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
       await(serviceToTest.handleConfirmation(notificationId)) shouldBe true
 
       ConfirmationRepositoryMock.UpdateConfirmationNeed.verifyCalled(notificationId)
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
   }
@@ -104,14 +104,14 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
   "handleConfirmation" should {
     "return true and call update status on repo when connector successful" in new SetUp {
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
-        url,
+        confirmationCallbackUrl,
         OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty)
       )
       ConfirmationRepositoryMock.UpdateStatus.isSuccessWith(notificationId, acknowledgedConfirmationStatus, confirmationRequest)
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe true
 
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
 
@@ -120,7 +120,7 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe false
 
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
@@ -129,20 +129,20 @@ class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe false
 
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.neverCalled()
     }
 
     "return true and do not call update status on repo when connector fails" in new SetUp {
       ConfirmationConnectorMock.SendConfirmation.isSuccessWith(
-        url,
+        confirmationCallbackUrl,
         OutboundConfirmation(confirmationId, notificationId, "1", acknowledgedNotificationStatus, Some(pushedTime), List.empty)
       )
       ConfirmationRepositoryMock.UpdateStatus.failswithException()
 
       await(serviceToTest.sendConfirmation(confirmationRequest)) shouldBe true
 
-      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(url)
+      ConfirmationConnectorMock.SendConfirmation.verifyCalledWith(confirmationCallbackUrl)
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, acknowledgedConfirmationStatus)
     }
   }

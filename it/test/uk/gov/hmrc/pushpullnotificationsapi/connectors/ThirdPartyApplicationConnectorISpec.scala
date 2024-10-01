@@ -23,11 +23,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService {
+class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService
+    with TestData {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -54,14 +56,14 @@ class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSup
     val clientId = ClientId.random
 
     "retrieve application record based on provided clientId" in new SetUp() {
-      val expectedApplicationId = ApplicationId.random
-      val jsonResponse: String = raw"""{"id":  "${expectedApplicationId.value}", "clientId": "${clientId.value}"}"""
+
+      val jsonResponse: String = raw"""{"id":  "${applicationId.value}", "clientId": "${clientId.value}"}"""
 
       primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 
       val result: ApplicationResponse = await(objInTest.getApplicationDetails(clientId))
 
-      result.id shouldBe expectedApplicationId
+      result.id shouldBe applicationId
     }
 
     "return failed Future if TPA returns a 404" in new SetUp {

@@ -22,19 +22,20 @@ import java.util.UUID
 
 import play.api.test.Helpers.{ACCEPT, CONTENT_TYPE, USER_AGENT}
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ApplicationIdFixtures, ClientId, ClientIdFixtures}
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
 
-trait TestData extends FixedClock {
+trait TestData extends FixedClock with ApplicationIdFixtures with ClientIdFixtures {
 
-  val applicationId = ApplicationId.random
+  val applicationId: ApplicationId = applicationIdOne
 
   val boxId = BoxId.random
-  val clientId: ClientId = ClientId.random
+  val clientId: ClientId = clientIdOne
+  val clientIdStr = clientId.value
   val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   val client: Client = Client(clientId, Seq(clientSecret))
   val boxName: String = "boxName"
@@ -55,12 +56,15 @@ trait TestData extends FixedClock {
   val validHeadersWithInValidContentType: Map[String, String] = Map(invalidContentTypeHeader, USER_AGENT -> "api-subscription-fields")
   val validHeadersWithEmptyContentType: Map[String, String] = Map(emptyContentTypeHeader, USER_AGENT -> "api-subscription-fields")
   val validHeaders: Map[String, String] = Map(validContentTypeHeader, validAcceptHeader)
-  val validHeadersJson: Map[String, String] = Map(validAcceptHeader, validContentTypeHeader)
+
+  val validHeadersJson: Map[String, String] =
+    Map(validAcceptHeader, validContentTypeHeader, "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields", "AUTHORIZATION" -> "Bearer token")
+
   val validHeadersWithInvalidAcceptHeader: Map[String, String] = Map(invalidAcceptHeader, validContentTypeHeader)
   val validHeadersWithAcceptHeader = List(USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json")
 
   val confirmationId: ConfirmationId = ConfirmationId(UUID.randomUUID())
-  val url = new URL("https://test")
+  val confirmationCallbackUrl = new URL("https://test")
   val notificationId: NotificationId = NotificationId(UUID.randomUUID())
   val pushedTime = instant
   val acknowledgedNotificationStatus = NotificationStatus.ACKNOWLEDGED
@@ -72,7 +76,7 @@ trait TestData extends FixedClock {
   val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   val messageContentTypeXml = MessageContentType.APPLICATION_XML
 
-  val confirmationRequest = ConfirmationRequest(confirmationId, url, notificationId, List.empty, pushedDateTime = Some(pushedTime))
+  val confirmationRequest = ConfirmationRequest(confirmationId, confirmationCallbackUrl, notificationId, List.empty, pushedDateTime = Some(pushedTime))
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
     ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = instant.minus(Duration.ofHours(7)))
@@ -84,6 +88,7 @@ trait TestData extends FixedClock {
   val BoxObjectWithPullSubscribers = Box(boxId, boxName, BoxCreator(clientId), subscriber = Some(pullSubscriber))
 
   val message = "message"
+  val createdDateTime: Instant = instant.minus(Duration.ofDays(1))
 
   val notification: Notification =
     Notification(
@@ -91,7 +96,8 @@ trait TestData extends FixedClock {
       BoxId(UUID.randomUUID()),
       MessageContentType.APPLICATION_JSON,
       """{ "foo": "bar" }""",
-      NotificationStatus.PENDING
+      NotificationStatus.PENDING,
+      createdDateTime
     )
 
   val failedNotification = notification.copy(status = FAILED)

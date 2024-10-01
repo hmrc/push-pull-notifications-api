@@ -36,7 +36,6 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.lenientFormatter
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
@@ -46,8 +45,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach
+    with TestData
     with FixedClock {
 
   override lazy val app: Application = GuiceApplicationBuilder()
@@ -63,20 +64,9 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
     reset(NotificationsServiceMock.aMock, AuthConnectorMock.aMock)
   }
 
-  val clientIdStr: String = UUID.randomUUID().toString
-  val clientId: ClientId = ClientId(clientIdStr)
   val incorrectClientId: String = "badclientid"
-  val boxName: String = "boxName"
-  val boxIdStr: String = UUID.randomUUID().toString
-  val boxId: BoxId = BoxId(UUID.fromString(boxIdStr))
   val jsonBody: String = "{}"
   val xmlBody: String = "<someNode/>"
-
-  private val validAcceptHeader = ACCEPT -> "application/vnd.hmrc.1.0+json"
-  private val invalidAcceptHeader = ACCEPT -> "application/vnd.hmrc.2.0+json"
-
-  private val validHeadersJson: Map[String, String] =
-    Map(validAcceptHeader, "Content-Type" -> "application/json", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
 
   private val validHeadersXml: Map[String, String] =
     Map(validAcceptHeader, "Content-Type" -> "application/xml", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
@@ -86,17 +76,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
 
   private val headersWithInvalidContentType: Map[String, String] =
     Map(validAcceptHeader, "Content-Type" -> "foo", "X-CLIENT-ID" -> clientId.value, "user-Agent" -> "api-subscription-fields")
-
-  val createdDateTime: Instant = instant.minus(Duration.ofDays(1))
-
-  val notification: Notification = Notification(
-    NotificationId(UUID.randomUUID()),
-    boxId,
-    messageContentType = MessageContentType.APPLICATION_JSON,
-    message = "{}",
-    createdDateTime = createdDateTime,
-    status = PENDING
-  )
 
   val notification2: Notification = Notification(
     NotificationId(UUID.randomUUID()),
