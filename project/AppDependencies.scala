@@ -6,8 +6,8 @@ object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
   lazy val bootstrapVersion = "9.2.0"
   lazy val mongoVersion = "2.2.0"
-  private val eventsVersion = "0.67.0-SNAPSHOT"
-  private val commonDomainVersion = "0.17.0-SNAPSHOT"
+  private val eventsVersion = "0.66.2"
+  private val commonDomainVersion = "0.17.0"
   
   lazy val dependencies = Seq(
     ws,
