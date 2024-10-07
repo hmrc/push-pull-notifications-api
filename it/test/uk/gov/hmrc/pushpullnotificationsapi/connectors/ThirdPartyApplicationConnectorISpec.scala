@@ -57,7 +57,7 @@ class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSup
 
     "retrieve application record based on provided clientId" in new SetUp() {
 
-      val jsonResponse: String = raw"""{"id":  "${applicationId.value}", "clientId": "${clientId.value}"}"""
+      val jsonResponse: String = raw"""{"id":  "$applicationId", "clientId": "${clientId.value}"}"""
 
       primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 

@@ -120,21 +120,21 @@ class BoxControllerISpec
 
   def callUpdateSubscriberEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/box/${boxId.value.toString}/subscriber")
+      .url(s"$url/box/$boxId/subscriber")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
   def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/box/${boxId.value.toString}/callback")
+      .url(s"$url/box/$boxId/callback")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
 
   def callClientManagedUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/cmb/box/${boxId.value.toString}/callback")
+      .url(s"$url/cmb/box/$boxId/callback")
       .withHttpHeaders(headers: _*)
       .put(jsonBody)
       .futureValue
@@ -171,7 +171,7 @@ class BoxControllerISpec
 
   def callDeleteClientManagedBoxEndpoint(boxId: BoxId, headers: List[(String, String)]): WSResponse =
     wsClient
-      .url(s"$url/cmb/box/${boxId.value.toString}")
+      .url(s"$url/cmb/box/$boxId")
       .withHttpHeaders(headers: _*)
       .delete()
       .futureValue
