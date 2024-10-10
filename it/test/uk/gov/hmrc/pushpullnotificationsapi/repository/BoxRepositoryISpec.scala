@@ -40,6 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentT
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class BoxRepositoryISpec
     extends AsyncHmrcSpec
@@ -49,6 +50,7 @@ class BoxRepositoryISpec
     with GuiceOneAppPerSuite
     with IntegrationPatience
     with Matchers
+    with TestData
     with FixedClock
     with PlayMongoRepositorySupport[Box] {
 
@@ -73,9 +75,6 @@ class BoxRepositoryISpec
     await(repo.ensureIndexes())
   }
 
-  val clientId: ClientId = ClientId.random
-  val boxName: String = "boxName"
-  final val boxId: BoxId = BoxId.random
   val callBackEndpoint = "some/endpoint"
   val box: Box = Box(boxName = boxName, boxId = boxId, boxCreator = BoxCreator(clientId))
 
@@ -129,7 +128,7 @@ class BoxRepositoryISpec
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
       val newBoxId = BoxId.random
-      val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(ClientId(UUID.randomUUID().toString)))
+      val newBox = box.copy(newBoxId, boxCreator = box.boxCreator.copy(clientIdTwo))
       val result2: Unit = await(repo.createBox(newBox))
       result2 shouldBe ((): Unit)
       val fetchedRecords = await(repo.collection.find().toFuture())

@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -24,7 +23,7 @@ import org.mockito.captor.{ArgCaptor, Captor}
 
 import uk.gov.hmrc.http.HeaderCarrier
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ApiPlatformEventsConnector
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.{ApiPlatformEventsConnectorMockModule, ThirdPartyApplicationConnectorMockModule}
@@ -156,7 +155,6 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
     }
 
     "updateCallbackUrl" should {
-      val applicationId = ApplicationId.random
 
       "return CallbackUrlUpdated when process completes successfully" in new Setup {
         val boxWithApplicationId: Box = boxWithExistingPushSubscriber.copy(applicationId = Some(applicationId))
@@ -305,7 +303,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
         when(BoxRepositoryMock.aMock.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(BoxObjectWithNoSubscribers)))
-        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, ClientId(UUID.randomUUID().toString)))
+        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientIdTwo))
         result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
       }
 
@@ -334,7 +332,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       }
 
       "return BoxDeleteAccessDeniedResult when the given clientId does not match the box's clientId" in new Setup {
-        val incorrectClientId: ClientId = ClientId(UUID.randomUUID().toString)
+        val incorrectClientId: ClientId = clientIdTwo
         val clientManagedBox: Box = BoxObjectWithNoSubscribers.copy(clientManaged = true)
 
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(clientManagedBox))

@@ -73,8 +73,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
   private val headersWithInValidUserAgent: Map[String, String] =
     Map(validAcceptHeader, "X-CLIENT-ID" -> clientId.value, "Content-Type" -> "application/json", "user-Agent" -> "some-other-service")
 
-  val createdDateTime: Instant = instant.minus(Duration.ofDays(1))
-
   val notification2: Notification = Notification(
     NotificationId.random,
     boxId,
