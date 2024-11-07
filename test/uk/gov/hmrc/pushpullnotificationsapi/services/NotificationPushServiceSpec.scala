@@ -21,8 +21,11 @@ import java.time.format.DateTimeFormatterBuilder
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import com.codahale.metrics.{MetricRegistry, Timer}
+
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
@@ -44,13 +47,21 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
       with ClientServiceMockModule
       with HmacServiceMockModule {
 
+    val mockMetrics: Metrics = mock[Metrics]
+    val mockRegistry = mock[MetricRegistry]
+    val mockTimer = mock[Timer]
+    when(mockMetrics.defaultRegistry).thenReturn(mockRegistry)
+    when(mockRegistry.timer(*)).thenReturn(mockTimer)
+
     val serviceToTest = new NotificationPushService(
       PushServiceMock.aMock,
       NotificationsRepositoryMock.aMock,
       BoxRepositoryMock.aMock,
       ClientServiceMock.aMock,
       HmacServiceMock.aMock,
-      ConfirmationServiceMock.aMock
+      ConfirmationServiceMock.aMock,
+      mockMetrics,
+      FixedClock.clock
     )
   }
 
