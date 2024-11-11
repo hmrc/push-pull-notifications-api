@@ -59,12 +59,12 @@ class NotificationPushService @Inject() (
 
             metrics.defaultRegistry.timer(s"pushNotifictionDuration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
-            logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
+            logger.info(s"Notification ${notification.notificationId}  sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
             confirmationService.handleConfirmation(notification.notificationId)
           })
           true
         case false => {
-          logger.info(s"Notification not sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
+          logger.info(s"Notification ${notification.notificationId}  not sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
           false
         }
       }
