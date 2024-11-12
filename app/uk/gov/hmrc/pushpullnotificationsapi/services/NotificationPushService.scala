@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.time.Instant
+import java.time.{Clock, Instant}
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,7 +26,9 @@ import org.apache.pekko.stream.scaladsl.{Merge, Source}
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
+import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
@@ -40,21 +43,28 @@ class NotificationPushService @Inject() (
     boxRepository: BoxRepository,
     clientService: ClientService,
     hmacService: HmacService,
-    confirmationService: ConfirmationService
+    confirmationService: ConfirmationService,
+    metrics: Metrics,
+    val clock: Clock
   )(implicit ec: ExecutionContext)
-    extends ApplicationLogger {
+    extends ApplicationLogger with ClockNow {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
       sendNotificationToPush(box, notification) map {
         case true  =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => {
-            logger.info(s"Notification sent successfully for clientId : ${box.boxCreator.clientId}")
+
+            val pushDurationInMilliseconds = instant().toEpochMilli - notification.createdDateTime.toEpochMilli()
+
+            metrics.defaultRegistry.timer(s"pushNotifictionDuration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
+
+            logger.info(s"Notification ${notification.notificationId}  sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
             confirmationService.handleConfirmation(notification.notificationId)
           })
           true
         case false => {
-          logger.info(s"Notification not sent successfully for clientId : ${box.boxCreator.clientId}")
+          logger.info(s"Notification ${notification.notificationId}  not sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
           false
         }
       }

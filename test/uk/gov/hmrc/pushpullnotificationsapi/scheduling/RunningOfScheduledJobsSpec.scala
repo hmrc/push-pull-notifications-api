@@ -25,14 +25,15 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minute, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
 import play.api.test.DefaultAwaitTimeout
 import play.api.test.Helpers.await
 
-class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventually with MockitoSugar with GuiceOneAppPerTest with DefaultAwaitTimeout {
+import uk.gov.hmrc.pushpullnotificationsapi.NoMetricsGuiceOneAppPerTest
+
+class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventually with MockitoSugar with NoMetricsGuiceOneAppPerTest with DefaultAwaitTimeout {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = 5.seconds)
@@ -45,6 +46,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         var interval: FiniteDuration = _
       }
       private val testApp = fakeApplication()
+
       new RunningOfScheduledJobs {
         override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
         override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
