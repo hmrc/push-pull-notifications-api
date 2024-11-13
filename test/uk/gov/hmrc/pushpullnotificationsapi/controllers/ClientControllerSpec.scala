@@ -31,14 +31,13 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
+import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach with TestData {
 
   implicit def mat: Materializer = app.injector.instanceOf[Materializer]
 
@@ -68,10 +67,6 @@ class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule wi
     val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
     route(app, fakeRequest).get
   }
-
-  val clientIdStr: String = randomUUID.toString
-  val clientId: ClientId = ClientId(clientIdStr)
-  val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
 
   "getClientSecrets" should {
     "return 200 and the array of secrets for the requested client" in {

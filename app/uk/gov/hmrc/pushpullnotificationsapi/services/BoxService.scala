@@ -108,7 +108,7 @@ class BoxService @Inject() (
 
   def validateBoxOwner(boxId: BoxId, clientId: ClientId): Future[ValidateBoxOwnerResult] = {
     repository.findByBoxId(boxId) flatMap {
-      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: ${boxId.value.toString} not found"))
+      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: $boxId not found"))
       case Some(box) => if (box.boxCreator.clientId == clientId) {
           Future.successful(ValidateBoxOwnerSuccessResult())
         } else {
@@ -121,14 +121,14 @@ class BoxService @Inject() (
     if (request.callbackUrl.nonEmpty) {
       pushService.validateCallbackUrl(request) flatMap {
         case _: PushServiceSuccessResult     =>
-          logger.info(s"Callback Validated for boxId:${box.boxId.value} updating push callbackUrl")
+          logger.info(s"Callback Validated for boxId:${box.boxId} updating push callbackUrl")
           updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
         case result: PushServiceFailedResult =>
-          logger.info(s"Callback validation failed for boxId:${box.boxId.value}")
+          logger.info(s"Callback validation failed for boxId:${box.boxId}")
           successful(CallbackValidationFailed(result.errorMessage))
       }
     } else {
-      logger.info(s"updating callback for boxId:${box.boxId.value} with PullSubscriber")
+      logger.info(s"updating callback for boxId:${box.boxId} with PullSubscriber")
       updateBoxWithCallBack(box.boxId, new SubscriberContainer(PullSubscriber("")))
     }
   }

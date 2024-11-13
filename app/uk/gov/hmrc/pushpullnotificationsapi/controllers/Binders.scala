@@ -63,7 +63,7 @@ object Binders {
     }
 
     override def unbind(key: String, boxId: BoxId): String = {
-      boxId.value.toString
+      boxId.toString
     }
   }
 
