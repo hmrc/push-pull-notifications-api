@@ -58,12 +58,18 @@ class NotificationPushService @Inject() (
             val pushDurationInMilliseconds = instant().toEpochMilli - notification.createdDateTime.toEpochMilli()
 
             metrics.defaultRegistry.timer(s"pushNotifictionDuration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
+            // TODO remove this log entry when metrics have been verfied as correct
+            logger.info(s"Recording metric pushNotifictionDuration $pushDurationInMilliseconds in millis for Box ID ${box.boxId}")
+
+            metrics.defaultRegistry.counter(s"pushNotifictionSuccessCount.${box.boxId}").inc()
 
             logger.info(s"Notification ${notification.notificationId}  sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
+
             confirmationService.handleConfirmation(notification.notificationId)
           })
           true
         case false => {
+          metrics.defaultRegistry.counter(s"pushNotifictionFailureCount.${box.boxId}").inc()
           logger.info(s"Notification ${notification.notificationId}  not sent successfully for clientId : ${box.boxCreator.clientId} for boxId : ${box.boxId}")
           false
         }
