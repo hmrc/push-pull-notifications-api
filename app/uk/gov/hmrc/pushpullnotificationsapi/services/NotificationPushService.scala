@@ -51,9 +51,9 @@ class NotificationPushService @Inject() (
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
-      sendNotificationToPush(box, notification) map {
+      sendNotificationToPush(box, notification) flatMap {
         case true  =>
-          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).map(_ => {
+          notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).flatMap(_ => {
 
             val pushDurationInMilliseconds = instant().toEpochMilli - notification.createdDateTime.toEpochMilli()
 
@@ -65,13 +65,12 @@ class NotificationPushService @Inject() (
 
             logger.info(s"Notification sent successfully for clientId: ${box.boxCreator.clientId} for boxId: ${box.boxId} NotificationId:${notification.notificationId}")
 
-            confirmationService.handleConfirmation(notification.notificationId)
+            confirmationService.handleConfirmation(notification.notificationId).map(_ => true)
           })
-          true
         case false => {
           metrics.defaultRegistry.counter(s"pushNotifictionFailureCount.${box.boxId}").inc()
           logger.info(s"Notification failed to send for clientId: ${box.boxCreator.clientId} for boxId: ${box.boxId} NotificationId:${notification.notificationId}")
-          false
+          Future.successful(false)
         }
       }
     } else Future.successful(true)

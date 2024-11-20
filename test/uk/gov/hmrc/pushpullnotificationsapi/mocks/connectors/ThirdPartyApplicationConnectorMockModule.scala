@@ -22,10 +22,11 @@ import org.mockito.Strictness.Lenient
 import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
+import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.ApplicationWithCollaboratorsFixtures
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
-import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApplicationResponse, ThirdPartyApplicationConnector}
+import uk.gov.hmrc.pushpullnotificationsapi.connectors.ThirdPartyApplicationConnector
 
-trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
+trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar with ApplicationWithCollaboratorsFixtures {
 
   trait BaseThirdPartyApplicationConnectorMock {
 
@@ -53,7 +54,7 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
 
       def isSuccessWith(clientId: ClientId, applicationId: ApplicationId) = {
         when(aMock.getApplicationDetails(eqTo(clientId))(*))
-          .thenReturn(successful(ApplicationResponse(applicationId)))
+          .thenReturn(successful(standardApp.withId(applicationId)))
       }
 
     }

@@ -43,6 +43,10 @@ trait ConfirmationServiceMockModule extends MockitoSugar with ArgumentMatchersSu
 
     object HandleConfirmation {
 
+      def thenSuccessFor(notificationId: NotificationId) = {
+        when(aMock.handleConfirmation(eqTo(notificationId))(*, *)).thenReturn(successful(true))
+      }
+
       def verifyCalledWith(notificationId: NotificationId) = {
         verify.handleConfirmation(eqTo(notificationId))(*, *)
       }

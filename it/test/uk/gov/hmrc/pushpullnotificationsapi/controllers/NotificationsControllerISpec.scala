@@ -35,6 +35,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
+import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.ApplicationWithCollaboratorsFixtures
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequest, Box, BoxId, CreateNotificationResponse}
@@ -53,6 +54,7 @@ class NotificationsControllerISpec
     with CallbackDestinationService
     with ThirdPartyApplicationService
     with ApiPlatformEventsService
+    with ApplicationWithCollaboratorsFixtures
     with Eventually {
 
   this: Suite with ServerProvider =>
@@ -73,8 +75,7 @@ class NotificationsControllerISpec
   val clientId = ClientId.random
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
-  val expectedApplicationId: UUID = UUID.randomUUID()
-  val tpaResponse: String = raw"""{"id":  "${expectedApplicationId.toString}", "clientId": "$clientId"}"""
+  val tpaResponse: String = Json.toJson(standardApp.modify(_.copy(clientId = clientId))).toString()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -361,16 +362,6 @@ class NotificationsControllerISpec
         val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
         result.status shouldBe NO_CONTENT
       }
-//TODO cant send bad UUID in model anymore need to check JSON instead
-//      "return 400 when invalid UUID is included" in {
-//        primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
-//        val box = createBoxAndReturn()
-//        val notifications = createNotifications(box.boxId, 4)
-//        val notificationIdList: List[NotificationId] = "fooBar" :: UUID.randomUUID().toString :: notifications.map(stringToCreateNotificationResponse).map(_.notificationId)
-//
-//        val result: WSResponse = doPut(s"$url/box/${box.boxId.value.toString}/notifications/acknowledge", buildAcknowledgeRequest(notificationIdList), validHeadersJson)
-//        result.status shouldBe BAD_REQUEST
-//      }
 
       "return 401 when no client id in auth response" in {
         primeAuthServiceNoClientId("{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")

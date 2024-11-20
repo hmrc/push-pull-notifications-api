@@ -22,6 +22,8 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.codahale.metrics.{Counter, MetricRegistry, Timer}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time._
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
@@ -35,7 +37,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with FixedClock {
+class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with FixedClock with Eventually with SpanSugar {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -88,6 +90,8 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "return true when connector returns success result and update the notification status to ACKNOWLEDGED" in new Setup {
 
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)
+      ConfirmationServiceMock.HandleConfirmation.thenSuccessFor(notificationId)
+
       val outboundNotificationCaptor = PushServiceMock.HandleNotification.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
 
@@ -103,6 +107,7 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     "put the notification signature in the forwarded headers" in new Setup {
       val expectedSignature = "the signature"
       HmacServiceMock.Sign.succeedsWith(expectedSignature)
+      ConfirmationServiceMock.HandleConfirmation.thenSuccessFor(notificationId)
       val outboundNotificationCaptor = PushServiceMock.HandleNotification.succeedsFor()
       ClientServiceMock.FindOrCreateClient.isSuccessWith(clientId, client)
       NotificationsRepositoryMock.UpdateStatus.succeedsFor(notification, acknowledgedNotificationStatus)

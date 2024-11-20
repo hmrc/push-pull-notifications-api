@@ -20,15 +20,23 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
+import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.{ApplicationWithCollaborators, ApplicationWithCollaboratorsFixtures}
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ThirdPartyApplicationService
+class ThirdPartyApplicationConnectorISpec
+    extends AsyncHmrcSpec
+    with WireMockSupport
+    with GuiceOneAppPerSuite
+    with MetricsTestSupport
+    with ThirdPartyApplicationService
+    with ApplicationWithCollaboratorsFixtures
     with TestData {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -57,11 +65,11 @@ class ThirdPartyApplicationConnectorISpec extends AsyncHmrcSpec with WireMockSup
 
     "retrieve application record based on provided clientId" in new SetUp() {
 
-      val jsonResponse: String = raw"""{"id":  "$applicationId", "clientId": "${clientId.value}"}"""
+      val jsonResponse = Json.toJson(standardApp.withId(applicationId).modify(_.copy(clientId = clientId))).toString()
 
       primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 
-      val result: ApplicationResponse = await(objInTest.getApplicationDetails(clientId))
+      val result: ApplicationWithCollaborators = await(objInTest.getApplicationDetails(clientId))
 
       result.id shouldBe applicationId
     }
