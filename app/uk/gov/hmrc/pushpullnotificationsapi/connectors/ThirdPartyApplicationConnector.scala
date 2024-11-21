@@ -21,26 +21,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.google.inject.Inject
 
-import play.api.libs.json.OFormat
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.ApplicationWithCollaborators
+import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-
-case class ApplicationResponse(id: ApplicationId)
-
-object ApplicationResponse {
-  import play.api.libs.json.Json
-
-  implicit val format: OFormat[ApplicationResponse] = Json.format[ApplicationResponse]
-}
 
 @Singleton
 class ThirdPartyApplicationConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
-  def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationResponse] = {
-    http.get(url"${appConfig.thirdPartyApplicationUrl}/application?${Seq("clientId" -> clientId)}").execute[ApplicationResponse]
+  def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationWithCollaborators] = {
+    http.get(url"${appConfig.thirdPartyApplicationUrl}/application?${Seq("clientId" -> clientId)}").execute[ApplicationWithCollaborators]
   }
 }

@@ -33,6 +33,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
+import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.ApplicationWithCollaboratorsFixtures
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
@@ -50,6 +51,7 @@ class BoxControllerISpec
     with IntegrationPatience
     with CallbackDestinationService
     with ThirdPartyApplicationService
+    with ApplicationWithCollaboratorsFixtures
     with TestData {
   this: Suite with ServerProvider =>
 
@@ -87,7 +89,7 @@ class BoxControllerISpec
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId":  "${clientIdTwo.value}", "boxName": "bbyybybyb"}"""
   val expectedChallenge = randomUUID.toString
-  val tpaResponse: String = raw"""{"id":  "931cbba3-c2ae-4078-af8a-b7fbcb804758", "clientId": "${clientId.value}"}"""
+  val tpaResponse = Json.toJson(standardApp.modify(_.copy(clientId = clientId))).toString()
 
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
@@ -98,10 +100,6 @@ class BoxControllerISpec
          |}
          |""".stripMargin
 
-//  val validHeaders = List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
-//
-//  val validHeadersWithAcceptHeader =
-//    List(CONTENT_TYPE -> "application/json", USER_AGENT -> "api-subscription-fields", ACCEPT -> "application/vnd.hmrc.1.0+json", AUTHORIZATION -> "Bearer token")
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
