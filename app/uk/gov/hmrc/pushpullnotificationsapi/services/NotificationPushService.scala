@@ -56,19 +56,19 @@ class NotificationPushService @Inject() (
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).flatMap(_ => {
 
             val pushDurationInMilliseconds = instant().toEpochMilli - notification.createdDateTime.toEpochMilli()
+            metrics.defaultRegistry.timer(s"pushNotifiction.duration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
-            metrics.defaultRegistry.timer(s"pushNotifictionDuration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
             // TODO remove this log entry when metrics have been verfied as correct
             logger.info(s"Recording metric pushNotifictionDuration $pushDurationInMilliseconds in millis for Box ID ${box.boxId}")
 
-            metrics.defaultRegistry.counter(s"pushNotifictionSuccessCount.${box.boxId}").inc()
+            metrics.defaultRegistry.histogram(s"pushNotifiction.sendNotificationToPush.successCount.${box.boxId}").update(1)
 
             logger.info(s"Notification sent successfully for clientId: ${box.boxCreator.clientId} for boxId: ${box.boxId} NotificationId:${notification.notificationId}")
 
             confirmationService.handleConfirmation(notification.notificationId).map(_ => true)
           })
         case false => {
-          metrics.defaultRegistry.counter(s"pushNotifictionFailureCount.${box.boxId}").inc()
+          metrics.defaultRegistry.histogram(s"pushNotifiction.sendNotificationToPush.failureCount.${box.boxId}").update(1)
           logger.info(s"Notification failed to send for clientId: ${box.boxCreator.clientId} for boxId: ${box.boxId} NotificationId:${notification.notificationId}")
           Future.successful(false)
         }

@@ -76,7 +76,6 @@ class NotificationsControllerISpec
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
   val tpaResponse: String = Json.toJson(standardApp.modify(_.copy(clientId = clientId))).toString()
-
   override def beforeEach(): Unit = {
     super.beforeEach()
     primeAuditService()
