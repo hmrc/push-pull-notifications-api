@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatterBuilder
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import com.codahale.metrics.{Counter, MetricRegistry, Timer}
+import com.codahale.metrics._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time._
 
@@ -52,10 +52,10 @@ class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with Fixed
     val mockMetrics: Metrics = mock[Metrics]
     val mockRegistry = mock[MetricRegistry]
     val mockTimer = mock[Timer]
-    val mockCounter = mock[Counter]
+    val mockHistogram = mock[Histogram]
     when(mockMetrics.defaultRegistry).thenReturn(mockRegistry)
     when(mockRegistry.timer(*)).thenReturn(mockTimer)
-    when(mockRegistry.counter(*)).thenReturn(mockCounter)
+    when(mockRegistry.histogram(*)).thenReturn(mockHistogram)
 
     val serviceToTest = new NotificationPushService(
       PushServiceMock.aMock,
