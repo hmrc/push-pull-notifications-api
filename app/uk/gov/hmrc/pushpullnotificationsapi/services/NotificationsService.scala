@@ -73,6 +73,10 @@ class NotificationsService @Inject() (
       .flatMap {
         case None      => Future.successful(Left(GetNotificationsServiceBoxNotFoundResult(s"BoxId: ${boxId.value.toString} not found")))
         case Some(box) =>
+          val subscriptionType = box.subscriber.map(_.subscriptionType).getOrElse(SubscriptionType.API_PULL_SUBSCRIBER)
+          if (subscriptionType == SubscriptionType.API_PUSH_SUBSCRIBER) {
+            logger.warn(s"Push Box is being pulled boxId: $boxId, clientId: $clientId")
+          }
           if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) }
           else notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
       }
