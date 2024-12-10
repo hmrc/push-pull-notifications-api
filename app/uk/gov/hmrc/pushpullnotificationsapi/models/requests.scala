@@ -32,12 +32,6 @@ object CreateBoxRequest {
   implicit val format: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
 }
 
-case class CreateClientManagedBoxRequest(boxName: String)
-
-object CreateClientManagedBoxRequest {
-  implicit val format: OFormat[CreateClientManagedBoxRequest] = Json.format[CreateClientManagedBoxRequest]
-}
-
 case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType)
 
 object SubscriberRequest {

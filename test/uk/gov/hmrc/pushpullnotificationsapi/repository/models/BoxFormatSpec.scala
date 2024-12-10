@@ -35,7 +35,6 @@ class BoxFormatSpec extends HmrcSpec {
         """{
           | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
           | "boxName":"boxName",
-          | "clientManaged":true,
           | "applicationId":"71ef5626-2f75-429c-b8b3-23bbdf5f0084",
           | "boxCreator":{
           |  "clientId":"someClientId"
@@ -66,10 +65,6 @@ class BoxFormatSpec extends HmrcSpec {
         box.boxCreator shouldBe BoxCreator(ClientId("someClientId"))
       }
 
-      "correctly assign the clientManaged value" in {
-        box.clientManaged shouldBe true
-      }
-
       "correctly assign the applicationId value" in {
         box.applicationId shouldBe Some(
           ApplicationId(UUID.fromString("71ef5626-2f75-429c-b8b3-23bbdf5f0084"))
@@ -96,10 +91,6 @@ class BoxFormatSpec extends HmrcSpec {
       )
 
       val box = Json.fromJson[Box](json).get
-
-      "default clientManaged to false" in {
-        box.clientManaged shouldBe false
-      }
 
       "default applicationId to None" in {
         box.applicationId shouldBe None
@@ -207,8 +198,7 @@ class BoxFormatSpec extends HmrcSpec {
           Some(ApplicationId(UUID.fromString("c11aafb0-eb89-4827-b0fa-c5e9eee82c18"))),
           Some(
             PullSubscriber("callback", Instant.parse("2010-06-29T23:20:00Z"))
-          ),
-          clientManaged = true
+          )
         )
 
         val expectedJson = Json.parse(
@@ -217,8 +207,7 @@ class BoxFormatSpec extends HmrcSpec {
             | "boxName":"boxName",
             | "boxCreator":{"clientId":"someClientId"},
             | "applicationId":"c11aafb0-eb89-4827-b0fa-c5e9eee82c18",
-            | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":{"$numberLong":"1277853600000"}},"subscriptionType":"API_PULL_SUBSCRIBER"},
-            | "clientManaged":true
+            | "subscriber":{"callBackUrl":"callback","subscribedDateTime":{"$date":{"$numberLong":"1277853600000"}},"subscriptionType":"API_PULL_SUBSCRIBER"}
             |}""".stripMargin
         )
 
@@ -238,8 +227,7 @@ class BoxFormatSpec extends HmrcSpec {
           """{
             | "boxId":"ceb081f7-6e89-4f6a-b6ba-1e651aaa49a8",
             | "boxName":"boxName",
-            | "boxCreator":{"clientId":"someClientId"},
-            | "clientManaged":false
+            | "boxCreator":{"clientId":"someClientId"}
             |}""".stripMargin
         )
 

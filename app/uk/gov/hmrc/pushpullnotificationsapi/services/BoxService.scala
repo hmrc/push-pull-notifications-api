@@ -41,7 +41,7 @@ class BoxService @Inject() (
   )(implicit ec: ExecutionContext)
     extends ApplicationLogger {
 
-  def createBox(clientId: ClientId, boxName: String, clientManaged: Boolean = false)(implicit hc: HeaderCarrier): Future[CreateBoxResult] = {
+  def createBox(clientId: ClientId, boxName: String)(implicit hc: HeaderCarrier): Future[CreateBoxResult] = {
 
     repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
       case Some(x) => successful(BoxRetrievedResult(x))
@@ -49,7 +49,7 @@ class BoxService @Inject() (
         for {
           _ <- clientService.findOrCreateClient(clientId)
           appDetails <- applicationConnector.getApplicationDetails(clientId)
-          createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id), None, clientManaged))
+          createdBox <- repository.createBox(Box(BoxId(ju.UUID.randomUUID), boxName, BoxCreator(clientId), Some(appDetails.id), None))
         } yield createdBox
     } recoverWith {
       case NonFatal(e) => successful(BoxCreateFailedResult(e.getMessage))
@@ -60,36 +60,25 @@ class BoxService @Inject() (
     repository.getAllBoxes()
   }
 
-  def deleteBox(clientId: ClientId, boxId: BoxId): Future[DeleteBoxResult] = {
-    repository.findByBoxId(boxId) flatMap {
-      case Some(box) => validateAndDeleteBox(box, clientId)
-      case None      => successful(BoxDeleteNotFoundResult())
-    }
-  }
-
   def getBoxByNameAndClientId(boxName: String, clientId: ClientId): Future[Option[Box]] =
     repository.getBoxByNameAndClientId(boxName, clientId)
 
-  def getBoxesByClientId(clientId: ClientId): Future[List[Box]] =
-    repository.getBoxesByClientId(clientId)
-
   def updateCallbackUrl(
       boxId: BoxId,
-      request: UpdateCallbackUrlRequest,
-      clientManaged: Boolean
+      request: UpdateCallbackUrlRequest
     )(implicit ec: ExecutionContext,
       hc: HeaderCarrier
     ): Future[UpdateCallbackUrlResult] = {
-    repository.findByBoxId(boxId) flatMap {
-      case Some(box) => if (box.boxCreator.clientId == request.clientId && box.clientManaged == clientManaged) {
+    repository.findByBoxId(boxId).flatMap {
+      case Some(box) => if (box.boxCreator.clientId == request.clientId) {
           val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
 
           for {
-            appId <- if (box.applicationId.isEmpty) updateBoxWithApplicationId(box) else successful(box.applicationId.get)
+            appId <- box.applicationId.fold(updateBoxWithApplicationId(box))(id => successful(id))
             result <- validateCallBack(box, request)
             _ = result match {
                   case successfulUpdate: CallbackUrlUpdated =>
-                    eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box) recoverWith {
+                    eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box).recoverWith {
                       case NonFatal(e) =>
                         logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                         successful(successfulUpdate)
@@ -98,22 +87,10 @@ class BoxService @Inject() (
                 }
           } yield result
         } else successful(UpdateCallbackUrlUnauthorisedResult())
-      case None      => successful(BoxIdNotFound())
+
+      case None => successful(BoxIdNotFound())
     } recoverWith {
-
       case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage))
-    }
-
-  }
-
-  def validateBoxOwner(boxId: BoxId, clientId: ClientId): Future[ValidateBoxOwnerResult] = {
-    repository.findByBoxId(boxId) flatMap {
-      case None      => Future.successful(ValidateBoxOwnerNotFoundResult(s"BoxId: $boxId not found"))
-      case Some(box) => if (box.boxCreator.clientId == clientId) {
-          Future.successful(ValidateBoxOwnerSuccessResult())
-        } else {
-          Future.successful(ValidateBoxOwnerFailedResult("clientId does not match boxCreator"))
-        }
     }
   }
 
@@ -152,16 +129,6 @@ class BoxService @Inject() (
         repository.updateApplicationId(box.boxId, appDetails.id)
         successful(appDetails.id)
       })
-  }
-
-  private def validateAndDeleteBox(box: Box, clientId: ClientId): Future[DeleteBoxResult] = {
-    if (!box.clientManaged || box.boxCreator.clientId != clientId) {
-      successful(BoxDeleteAccessDeniedResult())
-    } else if (box.boxCreator.clientId == clientId) {
-      repository.deleteBox(box.boxId)
-    } else {
-      successful(BoxDeleteNotFoundResult())
-    }
   }
 
 }

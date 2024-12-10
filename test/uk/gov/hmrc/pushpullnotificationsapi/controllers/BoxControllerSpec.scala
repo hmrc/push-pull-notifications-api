@@ -25,7 +25,6 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
-import play.api.http.HeaderNames.ACCEPT
 import play.api.http.Status.NO_CONTENT
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -93,7 +92,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), CREATED, s"""{"boxId":"${boxId.value.toString}"}""")
 
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, isClientManaged = false)
+        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName)
       }
 
       "return 200 and boxId when box already exists" in {
@@ -103,7 +102,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), OK, s"""{"boxId":"${boxId.value.toString}"}""")
 
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, isClientManaged = false)
+        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName)
       }
 
       "return 400 when payload is completely invalid against expected format" in {
@@ -164,7 +163,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"UNKNOWN_ERROR","message":"unable to createBox:Box with name :$boxName already exists for clientId: ${clientId.value} but unable to retrieve" }"""
         )
 
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, false)
+        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName)
       }
 
       "return 400 when useragent config is empty" in {
@@ -198,7 +197,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         validateResult(doPut("/box", validHeadersWithValidUserAgent, jsonBody), INTERNAL_SERVER_ERROR, "")
 
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, false)
+        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName)
       }
 
       "return 400 when non JSon payload sent" in {
@@ -223,237 +222,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
         )
 
         BoxServiceMock.verifyZeroInteractions()
-      }
-    }
-
-    "createClientManagedBox" should {
-
-      "return unauthorised if bearer token doesn't contain client ID" in {
-        AuthConnectorMock.Authorise.succeedsWith(None)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, jsonBody),
-          expectedStatus = UNAUTHORIZED,
-          expectedBodyStr = s"""{"code":"UNAUTHORISED","message":"Unable to retrieve ClientId"}"""
-        )
-
-      }
-
-      "return 201 and boxId when box successfully created" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.CreateBox.thenSucceedCreated(BoxObjectWithNoSubscribers)
-
-        validateResult(doPut("/cmb/box", validHeadersJson, jsonBody), expectedStatus = CREATED, expectedBodyStr = s"""{"boxId":"${boxId.value.toString}"}""")
-
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, true)
-      }
-
-      "return 200 and boxId when box already exists" in {
-        primeAuthAction(clientId.value)
-        BoxServiceMock.CreateBox.thenSucceedRetrieved(BoxObjectWithNoSubscribers)
-
-        validateResult(doPut("/cmb/box", validHeadersJson, jsonBody), expectedStatus = OK, expectedBodyStr = s"""{"boxId":"${boxId.value.toString}"}""")
-
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, true)
-      }
-
-      "return 400 when payload is completely invalid against expected format" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, "{\"someOtherJson\":\"value\"}"),
-          expectedStatus = BAD_REQUEST,
-          expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 400 when request payload is missing boxName" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, s"""{"boxName":""}"""),
-          expectedStatus = BAD_REQUEST,
-          expectedBodyStr = s"""{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxName in request body"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 406 when accept header is invalid" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersWithInvalidAcceptHeader, jsonBody),
-          expectedStatus = NOT_ACCEPTABLE,
-          expectedBodyStr = s"""{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 415 when content type header is invalid" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersWithInValidContentType, jsonBody),
-          expectedStatus = UNSUPPORTED_MEDIA_TYPE,
-          expectedBodyStr = s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 415 when content type header is empty" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersWithEmptyContentType, jsonBody),
-          expectedStatus = UNSUPPORTED_MEDIA_TYPE,
-          expectedBodyStr = s"""{"code":"BAD_REQUEST","message":"Expecting text/json or application/json body"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 422 when Left returned from Box Service" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.CreateBox.thenFailsWithCreateFailedResult("some error")
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, jsonBody),
-          expectedStatus = UNPROCESSABLE_ENTITY,
-          expectedBodyStr = s"""{"code":"UNKNOWN_ERROR","message":"unable to createBox:some error"}"""
-        )
-
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, true)
-      }
-
-      "return 500 when service fails with any runtime exception" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.CreateBox.thenFailsWithException("some error")
-
-        validateResult(doPut("/cmb/box", validHeadersJson, jsonBody), expectedStatus = INTERNAL_SERVER_ERROR, expectedBodyStr = "")
-
-        BoxServiceMock.CreateBox.verifyCalledWith(clientId, boxName, true)
-      }
-
-      "return 400 when non JSon payload sent" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, "xxx"),
-          expectedStatus = BAD_REQUEST,
-          expectedBodyStr = """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 400 when invalid JSon payload sent" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doPut("/cmb/box", validHeadersJson, "{}"),
-          expectedStatus = BAD_REQUEST,
-          expectedBodyStr = """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-    }
-
-    "deleteClientManagedBox" should {
-
-      "return unauthorised if bearer token doesn't contain client ID on a box delete" in {
-        AuthConnectorMock.Authorise.succeedsWith(None)
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
-          expectedStatus = UNAUTHORIZED,
-          expectedBodyStr = """{"code":"UNAUTHORISED","message":"Unable to retrieve ClientId"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 201 and boxId when box successfully deleted" in {
-        primeAuthAction(clientId.value)
-        BoxServiceMock.DeleteBox.isSuccessful()
-
-        validateResult(doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader), expectedStatus = NO_CONTENT, expectedBodyStr = "")
-
-        BoxServiceMock.DeleteBox.verifyCalledWith(clientId, boxId)
-      }
-
-      "return 404(NOT FOUND) when attempting to delete a box with an ID that does not exist" in {
-        primeAuthAction(clientId.value)
-        BoxServiceMock.DeleteBox.failsNotFound()
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
-          expectedStatus = NOT_FOUND,
-          expectedBodyStr = """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
-        )
-
-        BoxServiceMock.DeleteBox.verifyCalledWith(clientId, boxId)
-      }
-
-      "return 403(FORBIDDEN) when Attempt to delete a box which for a different client ID" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.DeleteBox.failsAccessDenied()
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
-          expectedStatus = FORBIDDEN,
-          expectedBodyStr = """{"code":"FORBIDDEN","message":"Access denied"}"""
-        )
-
-        BoxServiceMock.DeleteBox.verifyCalledWith(clientId, boxId)
-      }
-
-      "return 406 when a Incorrect Accept Header Version" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithInvalidAcceptHeader.toList),
-          expectedStatus = NOT_ACCEPTABLE,
-          expectedBodyStr = """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
-        )
-
-        BoxServiceMock.verifyZeroInteractions()
-      }
-
-      "return 422 when Left returned from Box Service" in {
-        primeAuthAction(clientId.value)
-        val errorMsg = s"Box with name :$boxName and clientId: ${clientId.value} but unable to delete"
-        BoxServiceMock.DeleteBox.failedResultWithText(errorMsg)
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
-          expectedStatus = UNPROCESSABLE_ENTITY,
-          expectedBodyStr = s"""{"code":"UNKNOWN_ERROR","message":"unable to deleteBox:$errorMsg"}"""
-        )
-
-        BoxServiceMock.DeleteBox.verifyCalledWith(clientId, boxId)
-      }
-
-      "return 500 when service fails with any runtime exception" in {
-        primeAuthAction(clientId.value)
-        BoxServiceMock.DeleteBox.failsWithException("some error")
-
-        validateResult(
-          doDelete(s"/cmb/box/${boxId.value.toString}", validHeadersWithAcceptHeader),
-          expectedStatus = INTERNAL_SERVER_ERROR,
-          expectedBodyStr = s"""{"code":"UNKNOWN_ERROR","message":"blah"}"""
-        )
-
-        BoxServiceMock.DeleteBox.verifyCalledWith(clientId, boxId)
       }
     }
 
@@ -518,66 +286,6 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       }
     }
 
-    "getBoxesByClientId" should {
-
-      "return empty list when client has no boxes" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.GetBoxesByClientId.thenSuccessWith(clientId, List.empty[Box])
-
-        validateResult(doGet(s"/cmb/box", validHeaders), OK, "[]")
-
-        BoxServiceMock.GetBoxesByClientId.verifyCalledWith(clientId)
-      }
-
-      "return boxes for client specified in auth token in json format" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.GetBoxesByClientId.thenSuccessWith(clientId, List(BoxObjectWithNoSubscribers))
-
-        validateResult(doGet(s"/cmb/box", validHeaders), OK, Json.toJson(List(BoxObjectWithNoSubscribers.copy(boxName = "DEFAULT"))).toString())
-
-        BoxServiceMock.GetBoxesByClientId.verifyCalledWith(clientId)
-      }
-
-      "return a 500 response code if service fails with an exception" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.GetBoxesByClientId.theFailsWith(clientId, new RuntimeException("some error"))
-
-        validateResult(doGet(s"/cmb/box", validHeaders), INTERNAL_SERVER_ERROR, "")
-
-        BoxServiceMock.GetBoxesByClientId.verifyCalledWith(clientId)
-      }
-
-      // All these test cases below should probably be replaced by an assertion that the correct ActionFilters have
-      // been called.
-      "return unauthorised if bearer token doesn't contain client ID" in {
-        AuthConnectorMock.Authorise.succeedsWith(None)
-
-        validateResult(doGet(s"/cmb/box", validHeaders), UNAUTHORIZED, """{"code":"UNAUTHORISED","message":"Unable to retrieve ClientId"}""")
-
-        BoxServiceMock.GetBoxesByClientId.verifyNoInteractions()
-      }
-
-      "return 406 when accept header is missing" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(doGet(s"/cmb/box", validHeaders - ACCEPT), NOT_ACCEPTABLE, """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}""")
-
-      }
-
-      "return 406 when accept header is invalid" in {
-        primeAuthAction(clientId.value)
-
-        validateResult(
-          doGet(s"/cmb/box", validHeaders + (ACCEPT -> "XYZAccept")),
-          NOT_ACCEPTABLE,
-          """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
-        )
-      }
-    }
-
     "addCallbackUrl" should {
 
       def createRequest(clientId: String, callBackUrl: String) = {
@@ -589,11 +297,9 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
              |""".stripMargin
       }
 
-      val isClientManaged = false
-
       "return 200 when request is successful" in {
         setUpAppConfig(List("api-subscription-fields"))
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
+        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated())
 
         validateResult(
           doPut(
@@ -605,13 +311,13 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           """{"successful":true}"""
         )
 
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
+        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId)
       }
 
       "return 200 when payload is missing the callbackUrl value" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
+        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated())
 
         validateResult(
           doPut(
@@ -623,7 +329,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           """{"successful":true}"""
         )
 
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
+        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId)
       }
 
       "return 401 if User-Agent is not allowlisted" in {
@@ -645,7 +351,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 404 if Box does not exist" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, BoxIdNotFound())
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, BoxIdNotFound())
 
         validateResult(
           doPut(
@@ -663,7 +369,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200, successful false and errormessage when mongo update fails" in {
         setUpAppConfig(List("api-subscription-fields"))
         val errorMessage = "Unable to update"
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UnableToUpdateCallbackUrl(errorMessage))
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, UnableToUpdateCallbackUrl(errorMessage))
 
         validateResult(
           doPut(
@@ -675,14 +381,14 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"successful":false,"errorMessage":"$errorMessage"}"""
         )
 
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
+        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId)
       }
 
       "return 200, successful false and errormessage when callback validation fails" in {
         setUpAppConfig(List("api-subscription-fields"))
         val errorMessage = "Unable to update"
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, CallbackValidationFailed(errorMessage))
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, CallbackValidationFailed(errorMessage))
 
         validateResult(
           doPut(
@@ -694,13 +400,13 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"successful":false,"errorMessage":"$errorMessage"}"""
         )
 
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
+        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId)
       }
 
       "return 401 if client id does not match that on the box" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UpdateCallbackUrlUnauthorisedResult())
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, UpdateCallbackUrlUnauthorisedResult())
 
         validateResult(
           doPut(
@@ -712,7 +418,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
           s"""{"code":"UNAUTHORISED","message":"Client Id did not match"}"""
         )
 
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
+        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId)
       }
 
       "return 400 when payload is non JSON" in {
@@ -736,226 +442,12 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
         BoxServiceMock.UpdateCallbackUrl.verifyNoInteractions()
       }
-
     }
-
-    "updatedManagedBoxCallbackUrl" should {
-      def createRequest(callBackUrl: String): String = s"""{"callbackUrl": "$callBackUrl"}"""
-
-      val isClientManaged = true
-
-      "return 200 when request is successful" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl")
-          ),
-          OK,
-          """{"successful":true}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 200 when payload is missing the callbackUrl value" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, isClientManaged, CallbackUrlUpdated())
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("")
-          ),
-          OK,
-          """{"successful":true}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 404 if Box does not exist" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, BoxIdNotFound())
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl")
-          ),
-          NOT_FOUND,
-          """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 200, successful false and errormessage when mongo update fails" in {
-        primeAuthAction(clientId.value)
-        val errorMessage = "Unable to update"
-
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UnableToUpdateCallbackUrl(errorMessage))
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl")
-          ),
-          OK,
-          s"""{"successful":false,"errorMessage":"$errorMessage"}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 200, successful false and errormessage when callback validation fails" in {
-        primeAuthAction(clientId.value)
-        val errorMessage = "Unable to update"
-
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UnableToUpdateCallbackUrl(errorMessage))
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl")
-          ),
-          OK,
-          s"""{"successful":false,"errorMessage":"$errorMessage"}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 403 if client id does not match that on the box" in {
-        primeAuthAction(clientId.value)
-
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, isClientManaged, UpdateCallbackUrlUnauthorisedResult())
-
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            createRequest("callbackUrl")
-          ),
-          FORBIDDEN,
-          """{"code":"FORBIDDEN","message":"Access denied"}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyCalledWith(boxId, isClientManaged)
-      }
-
-      "return 400 when payload is non JSON" in {
-        validateResult(
-          doPut(
-            s"/cmb/box/${boxId.value.toString}/callback",
-            validHeadersJson,
-            "someBody"
-          ),
-          BAD_REQUEST,
-          """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        )
-
-        BoxServiceMock.UpdateCallbackUrl.verifyNoInteractions()
-      }
-    }
-
-    "validateBoxOwnership" should {
-      def validateBody(boxIdStr: String, clientId: String): String = s"""{"boxId":"$boxIdStr","clientId":"$clientId"}"""
-
-      "return 200 and valid when ownership confirmed" in {
-        BoxServiceMock.ValidateBoxOwner.thenSucceedsWith(boxId, clientId)
-
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)), OK, """{"valid":true}""")
-
-        BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
-      }
-
-      "return 200 and invalid when ownership not confirmed" in {
-        BoxServiceMock.ValidateBoxOwner.thenFailsWith(boxId, clientId, ValidateBoxOwnerFailedResult("Ownership doesn't match"))
-
-        validateResult(doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)), OK, """{"valid":false}""")
-
-        BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
-      }
-
-      "return 404 when box not found" in {
-        BoxServiceMock.ValidateBoxOwner.thenFailsWith(boxId, clientId, ValidateBoxOwnerNotFoundResult("Box not found"))
-
-        validateResult(
-          doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, clientId.value)),
-          NOT_FOUND,
-          """{"code":"BOX_NOT_FOUND","message":"Box not found"}"""
-        )
-
-        BoxServiceMock.ValidateBoxOwner.verifyCalledWith(boxId, clientId)
-      }
-
-      "return 400 when clientId is empty" in {
-        validateResult(
-          doPost("/cmb/validate", validHeaders, validateBody(boxId.value.toString, "")),
-          BAD_REQUEST,
-          """{"code":"INVALID_REQUEST_PAYLOAD","message":"Expecting boxId and clientId in request body"}"""
-        )
-
-        BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
-      }
-
-      "return 400 when format is wrong" in {
-        validateResult(
-          doPost("/cmb/validate", validHeaders, s"""{"boxId":"${boxId.value.toString}"}"""),
-          BAD_REQUEST,
-          """{"code":"INVALID_REQUEST_PAYLOAD","message":"JSON body is invalid against expected format"}"""
-        )
-
-        BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
-
-      }
-
-      "return 406 when accept header is missing" in {
-
-        validateResult(
-          doPost("/cmb/validate", validHeaders - ACCEPT, validateBody(boxId.value.toString, clientId.value)),
-          NOT_ACCEPTABLE,
-          """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
-        )
-
-        BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
-
-      }
-
-      "return 406 when accept header is invalid" in {
-        validateResult(
-          doPost("/cmb/validate", validHeaders + (ACCEPT -> "XYZAccept"), validateBody(boxId.value.toString, clientId.value)),
-          NOT_ACCEPTABLE,
-          """{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}"""
-        )
-
-        BoxServiceMock.ValidateBoxOwner.verifyNoInteractions()
-      }
-    }
-  }
-
-  private def primeAuthAction(clientId: String): Unit = {
-    AuthConnectorMock.Authorise.succeedsWith(Some(clientId))
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
     val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
     route(app, fakeRequest).get
-  }
-
-  def doPost(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
-    doWithBody(uri, headers, bodyValue, POST)
   }
 
   def doPut(uri: String, headers: Map[String, String], bodyValue: String): Future[Result] = {
@@ -977,10 +469,5 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
     val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
-  }
-
-  def doDelete(uri: String, headers: List[(String, String)]): Future[Result] = {
-    val fakeRequest = FakeRequest(DELETE, uri).withHeaders(headers: _*)
-    route(app, fakeRequest).get
   }
 }

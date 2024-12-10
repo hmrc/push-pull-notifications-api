@@ -22,12 +22,4 @@ POST      /box/:boxId/wrapped-notifications       uk.gov.hmrc.pushpullnotificati
 GET      /client/:clientId/secrets                uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
 
 # Client Managed Boxes
-PUT      /cmb/box                                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createClientManagedBox()
-
-POST     /cmb/validate                            uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.validateBoxOwnership()
-
-GET      /cmb/box                                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxesByClientId()
-
-DELETE   /cmb/box/:boxId                          uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.deleteClientManagedBox(boxId: BoxId)
-
-PUT      /cmb/box/:boxId/callback                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)
+# PUT      /cmb/box/:boxId/callback                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)

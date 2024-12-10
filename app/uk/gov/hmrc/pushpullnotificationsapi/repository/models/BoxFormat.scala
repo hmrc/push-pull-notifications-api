@@ -48,8 +48,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "boxName").read[String] and
       (__ \ "boxCreator").read[BoxCreator] and
       (__ \ "applicationId").readNullable[ApplicationId] and
-      (__ \ "subscriber").readNullable[Subscriber] and
-      (__ \ "clientManaged").readWithDefault(false)
+      (__ \ "subscriber").readNullable[Subscriber]
   ) { Box }
 
   implicit val boxFormats: OFormat[Box] = OFormat(boxReads, boxWrites)
