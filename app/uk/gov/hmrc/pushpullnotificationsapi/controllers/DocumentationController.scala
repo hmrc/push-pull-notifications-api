@@ -42,7 +42,7 @@ class DocumentationController @Inject() (appconfig: AppConfig, assets: Assets, c
   }
 
   private def returnTemplatedYaml(): Action[AnyContent] = Action {
-    Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
+    Ok(txt.application()).as("application/text")
   }
 
   private def returnStaticAsset(version: String, file: String): Action[AnyContent] = {

@@ -55,18 +55,6 @@ object UpdateCallbackUrlRequest {
   implicit val format: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
 }
 
-case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
-
-object UpdateManagedCallbackUrlRequest {
-  implicit val format: OFormat[UpdateManagedCallbackUrlRequest] = Json.format[UpdateManagedCallbackUrlRequest]
-}
-
-case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
-
-object ValidateBoxOwnershipRequest {
-  implicit val format: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
-}
-
 case class PrivateHeader(name: String, value: String)
 
 object PrivateHeader {

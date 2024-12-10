@@ -20,6 +20,3 @@ POST      /box/:boxId/wrapped-notifications       uk.gov.hmrc.pushpullnotificati
 # Client
 
 GET      /client/:clientId/secrets                uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
-
-# Client Managed Boxes
-# PUT      /cmb/box/:boxId/callback                 uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateClientManagedCallbackUrl(boxId: BoxId)

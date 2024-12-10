@@ -82,8 +82,6 @@ class BoxControllerISpec
 
   val url = s"http://localhost:$port"
 
-  val createClientManagedBoxJsonBody = raw"""{"boxName": "$boxName"}"""
-  val createClientManagedBox2JsonBody = raw"""{"boxName": "bbyybybyb"}"""
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId":  "${clientIdTwo.value}", "boxName": "bbyybybyb"}"""
   val expectedChallenge = randomUUID.toString
