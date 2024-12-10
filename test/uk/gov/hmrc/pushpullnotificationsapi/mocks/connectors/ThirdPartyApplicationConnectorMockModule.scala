@@ -56,14 +56,10 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
         when(aMock.getApplicationDetails(eqTo(clientId))(*))
           .thenReturn(successful(standardApp.withId(applicationId)))
       }
-
     }
-
   }
 
   object ThirdPartyApplicationConnectorMock extends BaseThirdPartyApplicationConnectorMock {
     val aMock = mock[ThirdPartyApplicationConnector](withSettings.strictness(Lenient))
-
   }
-
 }

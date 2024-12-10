@@ -32,10 +32,6 @@ An example use case is for asynchronous API requests:
 
 [![](https://mermaid.ink/img/pako:eNp1k0tv2zAMx78KoV06LGneQOFDgW4dkAF7GE27ky-0TNtCZcmTpWJBkO8-yk7SDGl9sGjyx4ekv3dC2oJEIjr6E8hIuldYOWwyA_x45TUl8FgrV0CLzm9BWlOqKjhlKvA1QUElBu0ht39BotY5ymd4evgO1sA9vZC2LTlYh3yoiMFbE5qc3OFbeutg4QpmAbtoQdo3OiUPYOyupGrR-B46Zy8JTuaWEXpjhnMwTX9uInaXfoNUoy-ta3rnJXoXfN2jvL4R5QIcXP94-BLtS-AzHwyZfvCjOYG1LQZyeDuSHlyVX81Xq9F8Oh3x-hE-QBpcq-mcHE5sfHv7adhqAh350wU8OT1gQzBicU_vQDEUEa6ZwCYOdobAC2pVoFd8n7JmP5mKTjOMOW_cn2ECvyP4yvBmutaajs6aRPo476_n_0aMoYMMXmM8S2bESDTkGlQFy3QXA5lg5TWUiYTNgwAzkZk9o6HlYelroVhXIilRdzQSUXWbrZEi8S7QETpI_URpiwVx0k74bRv_iUp1nksOko_-4DS7a-_bLplMYvi6Ur4O-bW0zQQLbFqnisY6muByvsTZaoZTmiMtVzfTGZbyJl_I5aJcrEqx3-__ATSmJAY)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNp1k0tv2zAMx78KoV06LGneQOFDgW4dkAF7GE27ky-0TNtCZcmTpWJBkO8-yk7SDGl9sGjyx4ekv3dC2oJEIjr6E8hIuldYOWwyA_x45TUl8FgrV0CLzm9BWlOqKjhlKvA1QUElBu0ht39BotY5ymd4evgO1sA9vZC2LTlYh3yoiMFbE5qc3OFbeutg4QpmAbtoQdo3OiUPYOyupGrR-B46Zy8JTuaWEXpjhnMwTX9uInaXfoNUoy-ta3rnJXoXfN2jvL4R5QIcXP94-BLtS-AzHwyZfvCjOYG1LQZyeDuSHlyVX81Xq9F8Oh3x-hE-QBpcq-mcHE5sfHv7adhqAh350wU8OT1gQzBicU_vQDEUEa6ZwCYOdobAC2pVoFd8n7JmP5mKTjOMOW_cn2ECvyP4yvBmutaajs6aRPo476_n_0aMoYMMXmM8S2bESDTkGlQFy3QXA5lg5TWUiYTNgwAzkZk9o6HlYelroVhXIilRdzQSUXWbrZEi8S7QETpI_URpiwVx0k74bRv_iUp1nksOko_-4DS7a-_bLplMYvi6Ur4O-bW0zQQLbFqnisY6muByvsTZaoZTmiMtVzfTGZbyJl_I5aJcrEqx3-__ATSmJAY)
 
-## 3rd Party create client managed box and set callback URL
-
-[![](https://mermaid.ink/img/pako:eNp9k8lu2zAQhl9lwF5a1I53INUhQJYCzqGtEMc9-TKiRhIRilQpyohh-N07lOzIqJPyIFEz3z8bxb2QNiURiZr-NGQkPSjMHZYbA7y88poieC6US6FC53cgHaGnGhCkVmQ8lGgwpxQS-wpbhRDHP1dwGz92EbDx1jRlQu74Lb11MHPpA20B67CDuA3MBtK2OoEhm5KqQk4RoHP2kmDxskkC9BYG2HAJttUxxgVCrNFn1pWt8RK9bXzRovx-x8sB2Ln88XTfd3sO3KF8IdMWftqOYGnTjuyejqQHlyefp4vFYDoeD_j9BT5B3LhKU8eE1c1reHPzNZQaQbx-juC-PYkw9x4M7iFzw04RwZ19fTym5Ao25t-842__y2srz4dPfOpowBdkgkVZg1rvoCYfbOzTOuEO1073yg-rXldpqPpDUdsBS1gcwSpM7QyFLWrFei4BZMF2MjldJG0H0B50BL-DoGe587qypqZ3kvZjY92vl55oB3fciIEoyZWoUr4z-2DeCB5CSRsR8TalDBvtN2JjDow2bbPfU8U_vYgy1DUNRLgSq52RIvKuoRN0vHdvlLaYEov2wu-qcEFzVXsOKa3JVB7sjdNsLryv6mg0Cu6rXPmiSa6kLUeYYlk5lZbW0Qjn0zlOFhMc0xRpvrgeTzCT18lMzmfZbJGJw-HwF_GkRH4)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNp9k8lu2zAQhl9lwF5a1I53INUhQJYCzqGtEMc9-TKiRhIRilQpyohh-N07lOzIqJPyIFEz3z8bxb2QNiURiZr-NGQkPSjMHZYbA7y88poieC6US6FC53cgHaGnGhCkVmQ8lGgwpxQS-wpbhRDHP1dwGz92EbDx1jRlQu74Lb11MHPpA20B67CDuA3MBtK2OoEhm5KqQk4RoHP2kmDxskkC9BYG2HAJttUxxgVCrNFn1pWt8RK9bXzRovx-x8sB2Ln88XTfd3sO3KF8IdMWftqOYGnTjuyejqQHlyefp4vFYDoeD_j9BT5B3LhKU8eE1c1reHPzNZQaQbx-juC-PYkw9x4M7iFzw04RwZ19fTym5Ao25t-842__y2srz4dPfOpowBdkgkVZg1rvoCYfbOzTOuEO1073yg-rXldpqPpDUdsBS1gcwSpM7QyFLWrFei4BZMF2MjldJG0H0B50BL-DoGe587qypqZ3kvZjY92vl55oB3fciIEoyZWoUr4z-2DeCB5CSRsR8TalDBvtN2JjDow2bbPfU8U_vYgy1DUNRLgSq52RIvKuoRN0vHdvlLaYEov2wu-qcEFzVXsOKa3JVB7sjdNsLryv6mg0Cu6rXPmiSa6kLUeYYlk5lZbW0Qjn0zlOFhMc0xRpvrgeTzCT18lMzmfZbJGJw-HwF_GkRH4)
-
 ### CallbackUL Validation
 
 The details on the validation of the callbackURL with the 3rd party are documented here: [External Push Pull Notifications API](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/push-pull-notifications-api/1.0)
@@ -44,11 +40,6 @@ The details on the validation of the callbackURL with the 3rd party are document
 ### For a default box
 
 [![](https://mermaid.ink/img/pako:eNp9VE1v2zAM_SuEdmiKJU2aD6DwoUDXDm0P3YJ22ykXWaJtobbkyVKWoMh_HyV_rG2K-RDT5OPTI8XwhQkjkSWswd8etcAbxXPLq40GepxyJSawXn97gp-N0jmsfVOAj6bEjPvSQWp2LZp7Z7SvUrTdt3DGwsLKG9wCb4IFa27dHsiBpal7YE1OJVTNtYug19hjBCXf-TSABhogxzEwyibY1foe1iV3mbFVdB5Dr7wrIpTeH0SJgIJ3D4_XwT4GfOHiGXUU3ptTuDOyRba_FoUDm6ej-Ww2hvlqNSbjFD7BrUXULUYbh2C2GLuWwAN_RuLcaxElXPOyfIUrMXNgshBK4EehGuB1XSpsQGXgCgRBHyROGnJRBigtSi8xxk52E0F0Kamd0AVOlDyBArnsryT0f3J52ZKHwwMaRn8U9Umb_6SfDnevtpxUDv0ytYPvtVNGU-IecnSdwHvqGzWMaO7l-zZ0tUUaqPgeCr6lAkxM_1cjUZi25tgCwcMxDbWcZrpxkX7LSyVJUHtCoIvlhXtP4Pa1mBEPTovOKqSso4KGEYnJXZOIZNQzdBkSP8ih0Xij4HMc0gR-dfIGGS0qRieEm7Rn9DD5DhfZTvvhezM5YpiaCAp643A9ovNWw2i-230guL81YmNjVqGtuJK0Jl6Ce8Oo1RVuWEJmtwY2bKMPBPV10PdVKvrvsyTjZYNjFjbDE4lhibMee1C3agZUacIAseSFuX0ddlKuGkeUwuhM5cHvbUnuwrm6SabTED7LaSJ9eiZMNeWSV7VVsjIWp3w5X_Lz1Tmf4ZzjcnUxO-eZuEgXYrnIFquMHQ6Hv8cEnVM)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNp9VE1v2zAM_SuEdmiKJU2aD6DwoUDXDm0P3YJ22ykXWaJtobbkyVKWoMh_HyV_rG2K-RDT5OPTI8XwhQkjkSWswd8etcAbxXPLq40GepxyJSawXn97gp-N0jmsfVOAj6bEjPvSQWp2LZp7Z7SvUrTdt3DGwsLKG9wCb4IFa27dHsiBpal7YE1OJVTNtYug19hjBCXf-TSABhogxzEwyibY1foe1iV3mbFVdB5Dr7wrIpTeH0SJgIJ3D4_XwT4GfOHiGXUU3ptTuDOyRba_FoUDm6ej-Ww2hvlqNSbjFD7BrUXULUYbh2C2GLuWwAN_RuLcaxElXPOyfIUrMXNgshBK4EehGuB1XSpsQGXgCgRBHyROGnJRBigtSi8xxk52E0F0Kamd0AVOlDyBArnsryT0f3J52ZKHwwMaRn8U9Umb_6SfDnevtpxUDv0ytYPvtVNGU-IecnSdwHvqGzWMaO7l-zZ0tUUaqPgeCr6lAkxM_1cjUZi25tgCwcMxDbWcZrpxkX7LSyVJUHtCoIvlhXtP4Pa1mBEPTovOKqSso4KGEYnJXZOIZNQzdBkSP8ih0Xij4HMc0gR-dfIGGS0qRieEm7Rn9DD5DhfZTvvhezM5YpiaCAp643A9ovNWw2i-230guL81YmNjVqGtuJK0Jl6Ce8Oo1RVuWEJmtwY2bKMPBPV10PdVKvrvsyTjZYNjFjbDE4lhibMee1C3agZUacIAseSFuX0ddlKuGkeUwuhM5cHvbUnuwrm6SabTED7LaSJ9eiZMNeWSV7VVsjIWp3w5X_Lz1Tmf4ZzjcnUxO-eZuEgXYrnIFquMHQ6Hv8cEnVM)
-
-### For a client managed box
-
-[![](https://mermaid.ink/img/pako:eNp1VE1P4zAQ_SsjrxBF29LSDwnlgMTCCjiwW8Hunnpx7Eli4dhZx-m2Qv3vO3aSUlToIZ08P795npn4lQkrkSWsxr8NGoG3iueOlysD9PPKa0xgufzxDL9rZXJYNnUBTQwlZrzRHlK7adm88dY0ZYquexfeOpg5eYtr4HWIYMmd3wIBqG3VEysClVAVNz6SDrnHDNp836SBtJcBAo6J0TbRrpcPsNTcZ9aVETymXje-iFT6_2CVBGjx_vHpJsTHhG9cvKCJxvtwDPdWtsz26VB4cHk6mE4mQ5guFkMKzuAL3DlE03KM9Qh2jbFqCTzyFyTNrRHRwg3X-oCnMfNgs7CUwK9C1cCrSiusQWXgCwRBL2ROGaEbSXDATjcjQTIpuRxR40ZKnkKBXPatCHUfXV21oiFpYMPgn6L6fL73bN9wteZkbV-kY6M5-s7Yg4TM2fKg5iFfTB66kcDdIXXAA-jQO4Vrro8yvokE3qg7A6kMeolui8QPNp2cADXtnYuvcXxaF3RaSLfQHrplxdWQZtSm-fny2Yn_cK1kSPfWE1IBayIQpEvuRdE1qG9aV5wAvT_5gcmzftrejYrYj0kkhUrEaXpC3zgDg-lm80Ep-o6RGhuyEl3JlaR74TXAK0Y-SlyxhMLuu1-xldkRtanC4b5LRR87SzKuaxyycBU8kxmWeNdgT-rulj1L2zA8LHllfluFSyhXtSdJYU2m8oA3ThNceF_VyXgcls9zGsUmPRe2HHPJy8opWVqHYz6fzvnF4oJPcMpxvricXPBMXKYzMZ9ls0XGdrvdf2zElZs)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNp1VE1P4zAQ_SsjrxBF29LSDwnlgMTCCjiwW8Hunnpx7Eli4dhZx-m2Qv3vO3aSUlToIZ08P795npn4lQkrkSWsxr8NGoG3iueOlysD9PPKa0xgufzxDL9rZXJYNnUBTQwlZrzRHlK7adm88dY0ZYquexfeOpg5eYtr4HWIYMmd3wIBqG3VEysClVAVNz6SDrnHDNp836SBtJcBAo6J0TbRrpcPsNTcZ9aVETymXje-iFT6_2CVBGjx_vHpJsTHhG9cvKCJxvtwDPdWtsz26VB4cHk6mE4mQ5guFkMKzuAL3DlE03KM9Qh2jbFqCTzyFyTNrRHRwg3X-oCnMfNgs7CUwK9C1cCrSiusQWXgCwRBL2ROGaEbSXDATjcjQTIpuRxR40ZKnkKBXPatCHUfXV21oiFpYMPgn6L6fL73bN9wteZkbV-kY6M5-s7Yg4TM2fKg5iFfTB66kcDdIXXAA-jQO4Vrro8yvokE3qg7A6kMeolui8QPNp2cADXtnYuvcXxaF3RaSLfQHrplxdWQZtSm-fny2Yn_cK1kSPfWE1IBayIQpEvuRdE1qG9aV5wAvT_5gcmzftrejYrYj0kkhUrEaXpC3zgDg-lm80Ep-o6RGhuyEl3JlaR74TXAK0Y-SlyxhMLuu1-xldkRtanC4b5LRR87SzKuaxyycBU8kxmWeNdgT-rulj1L2zA8LHllfluFSyhXtSdJYU2m8oA3ThNceF_VyXgcls9zGsUmPRe2HHPJy8opWVqHYz6fzvnF4oJPcMpxvricXPBMXKYzMZ9ls0XGdrvdf2zElZs)
-
 
 ## 3rd party receiving a PPNS notification
 ### Via a push to the callbackUrl
@@ -67,7 +58,6 @@ The details on the validation of the callbackURL with the 3rd party are document
 | _notification_ | A wrapper for a message. Notifications expire after 30 days |
 | _message_ | XML or JSON that is being communicated from an API producer to an API consumer |
 | _default box_ | the default box created automatically per application and API version subscription |
-| _client mangaged box_ | a box create by a 3rf party and associated with a single applicaiton |
 
 ## `GET /box`
 Return the details of a box
@@ -333,42 +323,6 @@ HTTP Status: `200`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 | The accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
 
-## `PUT /cmb/box`
-Create a new client managed box
-
-### Request headers
-| Name | Description |
-| --- | --- |
-| `Content-Type` | `application/json`
-| `Accept Header` | `application/vnd.hmrc.1.0+json`
-| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
-
-### Request
-```
-{
-   "boxName": "My first box"
-}
-```
-| Name | Description |
-| --- | --- |
-| `boxName` | The name of the box to create |
-
-
-### Response
-HTTP Status: `201` if the box is created
-```
-{
-    "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
-}
-```
-
-HTTP Status: `200` if the box already exists
-```
-{
-    "boxId": "105ca34d-7a45-4df4-9fcf-9685b53799ab"
-}
-```
-
 ### Error scenarios
 | Scenario | HTTP Status | Code |
 | --- | --- | --- |
@@ -380,95 +334,6 @@ HTTP Status: `200` if the box already exists
 | Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
 | Missing or Invalid Content Type Header | `415` | `BAD_REQUEST`
 
-## `GET /cmb/box`
-Retrieve a list of all the boxes belonging to a specific Client ID which is passed in via auth
-
-### Request headers
-| Name | Description |
-| --- | --- |
-| `Accept Header` | `application/vnd.hmrc.1.0+json`
-| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
-
-### Response
-HTTP Status: `200` list all boxes endpoint for a specific client ID
-```
-[
-   {
-      "boxId":"f2a14c7c-82da-4118-a09f-769580f7a5ec",
-      "boxName":"DEFAULT",
-      "boxCreator":{
-         "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
-      },
-      "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
-      "subscriber":{
-         "callBackUrl":"",
-         "subscribedDateTime":"2022-06-15T14:24:24.385+0000",
-         "subscriptionType":"API_PULL_SUBSCRIBER"
-      },
-      "clientManaged":false
-   },
-   {
-      "boxId":"aca044b1-cd06-44a7-bd6b-bd7c58ea9ad4",
-      "boxName":"My First Client Managed Box",
-      "boxCreator":{
-         "clientId":"P7JXjYo6Wn13k3l5SDBlV2Qgimsu"
-      },
-      "applicationId":"6722217f-25ce-423a-93cd-4d3d0c8af11b",
-      "clientManaged":true
-   }
- ]
-```
-| Name | Description |
-| --- | --- |
-| `boxId` | Identifier for a box
-| `boxName` | The boxName will be returned as "DEFAULT" if clientManaged is false
-| `boxCreator.clientId` | Developer Hub Application Client ID, that created and has access to this box
-| `subscriber` | Details of the subscriber to this box |
-| `subscriber.subscribedDateTime` | ISO-8601 UTC date and time that the subscription was created |
-| `subscriber.callBackUrl` | The URL of the endpoint where push notifications will be sent |
-| `subscriber.subscriptionType` | The type of subscriber. Currently only `API_PUSH_SUBSCRIBER` is supported |
-| `clientManaged` | Boolean value to show if the box is client managed |
-
-HTTP Status: `200` list all boxes endpoint for a specific client ID which has no boxes
-```
-[]
-```
-
-### Error scenarios
-| Scenario | HTTP Status | Code |
-| --- | --- | --- |
-| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
-| Called the endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
-
-## `DELETE /cmb/box/:boxId`
-Delete a client managed box
-
-### Request headers
-| Name | Description |
-| --- | --- |
-| `Content-Type` | `application/json`
-| `Accept Header` | `application/vnd.hmrc.1.0+json`
-| `Authorisation` | `requires An OAuth 2.0 Bearer Token with the write:ppns-boxes scope`
-
-### Path parameters
-| Name | Description |
-| --- | --- |
-| `boxId` | Unique identifier for a box |
-
-
-### Response
-HTTP Status: `204` if the box is deleted
-
-### Error scenarios
-| Scenario | HTTP Status | Code |
-| --- | --- | --- |
-| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
-| Response when attempting to delete a box which belongs to a different client ID  | `403` | `FORBIDDEN`
-| Attempt to delete a default box should not be allowed for example a default box | `403` | `FORBIDDEN`
-| Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
-| Response when attempting to delete a box with an ID that does not exist | `404` | `BOX_NOT_FOUND`
-| Called the Delete CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
-| Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
 
 # Run locally and call the API locally
 

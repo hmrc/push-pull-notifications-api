@@ -24,7 +24,7 @@ import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateContentTypeHeaderAction, ValidateUserAgentHeaderAction}
+import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters._
 import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
@@ -33,12 +33,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 @Singleton()
 class BoxController @Inject() (
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
-    validateContentTypeHeaderAction: ValidateContentTypeHeaderAction,
     boxService: BoxService,
     cc: ControllerComponents,
-    playBodyParsers: PlayBodyParsers,
-    authAction: AuthAction,
-    validateAcceptHeaderAction: ValidateAcceptHeaderAction
+    playBodyParsers: PlayBodyParsers
   )(implicit val ec: ExecutionContext)
     extends BackendController(cc)
     with ApplicationLogger {
@@ -64,42 +61,6 @@ class BoxController @Inject() (
         } recover recovery
       }
 
-  def createClientManagedBox(): Action[JsValue] =
-    (Action
-      andThen validateAcceptHeaderAction
-      andThen validateContentTypeHeaderAction
-      andThen authAction)
-      .async(playBodyParsers.json) { implicit request =>
-        implicit val actualBody: Request[JsValue] = request.request
-        withJsonBody[CreateClientManagedBoxRequest] {
-          box: CreateClientManagedBoxRequest =>
-            if (box.boxName.isEmpty) {
-              Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxName in request body")))
-            } else {
-              boxService.createBox(request.clientId, box.boxName, clientManaged = true).map {
-                case r: BoxCreatedResult      => Created(Json.toJson(CreateBoxResponse(r.box.boxId)))
-                case r: BoxRetrievedResult    => Ok(Json.toJson(CreateBoxResponse(r.box.boxId)))
-                case r: BoxCreateFailedResult =>
-                  logger.info(s"Unable to create Box: ${r.message}")
-                  UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to createBox:${r.message}"))
-              }
-            }
-        }(actualBody, manifest, CreateClientManagedBoxRequest.format) recover recovery
-      }
-
-  def deleteClientManagedBox(boxId: BoxId): Action[AnyContent] =
-    (Action
-      andThen validateAcceptHeaderAction
-      andThen authAction)
-      .async { implicit request =>
-        boxService.deleteBox(request.clientId, boxId).map {
-          case _: BoxDeleteSuccessfulResult        => NoContent
-          case _: BoxDeleteNotFoundResult          => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case _: BoxDeleteAccessDeniedResult      => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
-          case failedResult: BoxDeleteFailedResult => UnprocessableEntity(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"unable to deleteBox:${failedResult.message}"))
-        } recover recovery
-      }
-
   def getBoxes(boxName: Option[String], clientId: Option[ClientId]): Action[AnyContent] = Action.async {
     ((boxName, clientId) match {
       case (Some(boxName), Some(clientId)) => getBoxByNameAndClientId(boxName, clientId)
@@ -115,19 +76,6 @@ class BoxController @Inject() (
     }
   }
 
-  def getBoxesByClientId(): Action[AnyContent] = (Action andThen validateAcceptHeaderAction andThen authAction).async {
-    implicit request =>
-      boxService.getBoxesByClientId(request.clientId).map { boxes =>
-        Ok(Json.toJson(boxes.map(box =>
-          if (box.clientManaged) {
-            box
-          } else {
-            box.copy(boxName = "DEFAULT")
-          }
-        )))
-      } recover recovery
-  }
-
   def updateCallbackUrl(boxId: BoxId): Action[JsValue] =
     (Action andThen
       validateUserAgentHeaderAction)
@@ -136,7 +84,7 @@ class BoxController @Inject() (
           if (addCallbackUrlRequest.isInvalid) {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "clientId is required")))
           } else {
-            boxService.updateCallbackUrl(boxId, addCallbackUrlRequest, clientManaged = false) map {
+            boxService.updateCallbackUrl(boxId, addCallbackUrlRequest) map {
               case _: CallbackUrlUpdated                  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
               case c: CallbackValidationFailed            => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
               case u: UnableToUpdateCallbackUrl           => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
@@ -145,47 +93,6 @@ class BoxController @Inject() (
             } recover recovery
           }
         }
-      }
-
-  def updateClientManagedCallbackUrl(boxId: BoxId): Action[JsValue] =
-    (Action
-      andThen validateAcceptHeaderAction
-      andThen validateContentTypeHeaderAction
-      andThen authAction)
-      .async(playBodyParsers.json) {
-        implicit request =>
-          implicit val actualBody: Request[JsValue] = request.request
-          withJsonBody[UpdateManagedCallbackUrlRequest] { callbackUrlRequest =>
-            boxService.updateCallbackUrl(boxId, UpdateCallbackUrlRequest(request.clientId, callbackUrlRequest.callbackUrl), clientManaged = true) map {
-              case _: CallbackUrlUpdated                  => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = true)))
-              case c: CallbackValidationFailed            => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(c.errorMessage))))
-              case u: UnableToUpdateCallbackUrl           => Ok(Json.toJson(UpdateCallbackUrlResponse(successful = false, Some(u.errorMessage))))
-              case _: BoxIdNotFound                       => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-              case _: UpdateCallbackUrlUnauthorisedResult => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
-            } recover recovery
-          }(actualBody, manifest, UpdateManagedCallbackUrlRequest.format)
-      }
-
-  def validateBoxOwnership(): Action[JsValue] =
-    (Action
-      andThen validateContentTypeHeaderAction
-      andThen validateAcceptHeaderAction)
-      .async(playBodyParsers.json) {
-        implicit request =>
-          withJsonBody[ValidateBoxOwnershipRequest] {
-            implicit request =>
-              {
-                if (request.clientId.value.isEmpty) {
-                  Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Expecting boxId and clientId in request body")))
-                } else {
-                  boxService.validateBoxOwner(request.boxId, request.clientId) map {
-                    case _: ValidateBoxOwnerSuccessResult  => Ok(Json.toJson(ValidateBoxOwnershipResponse(valid = true)))
-                    case _: ValidateBoxOwnerFailedResult   => Ok(Json.toJson(ValidateBoxOwnershipResponse(valid = false)))
-                    case _: ValidateBoxOwnerNotFoundResult => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-                  }
-                }
-              } recover recovery
-          }
       }
 
   override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], m: Manifest[T], reads: Reads[T]): Future[Result] =

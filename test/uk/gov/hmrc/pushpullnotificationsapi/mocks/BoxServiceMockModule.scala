@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.mocks
 
-import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
 
 import org.mockito.Strictness.Lenient
@@ -42,59 +41,31 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object CreateBox {
 
       def thenFailsWithException(error: String) = {
-        when(aMock.createBox(*[ClientId], *, *)(*))
+        when(aMock.createBox(*[ClientId], *)(*))
           .thenReturn(failed(new RuntimeException(error)))
       }
 
       def thenSucceedCreated(box: Box) = {
-        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxCreatedResult(box)))
+        when(aMock.createBox(*[ClientId], *)(*)).thenReturn(successful(BoxCreatedResult(box)))
       }
 
       def thenSucceedRetrieved(box: Box) = {
-        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxRetrievedResult(box)))
+        when(aMock.createBox(*[ClientId], *)(*)).thenReturn(successful(BoxRetrievedResult(box)))
       }
 
       def thenFailsWithBoxName(boxName: String, clientId: ClientId) = {
-        when(aMock.createBox(eqTo(clientId), eqTo(boxName), *)(*)).thenReturn(successful(
+        when(aMock.createBox(eqTo(clientId), eqTo(boxName))(*)).thenReturn(successful(
           BoxCreateFailedResult(s"Box with name :$boxName already exists for clientId: ${clientId.value} but unable to retrieve")
         ))
       }
 
       def thenFailsWithCreateFailedResult(error: String) = {
-        when(aMock.createBox(*[ClientId], *, *)(*)).thenReturn(successful(BoxCreateFailedResult(error)))
+        when(aMock.createBox(*[ClientId], *)(*)).thenReturn(successful(BoxCreateFailedResult(error)))
       }
 
-      def verifyCalledWith(clientId: ClientId, boxName: String, isClientManaged: Boolean) = {
-        verify.createBox(eqTo(clientId), eqTo(boxName), eqTo(isClientManaged))(*)
+      def verifyCalledWith(clientId: ClientId, boxName: String) = {
+        verify.createBox(eqTo(clientId), eqTo(boxName))(*)
       }
-    }
-
-    object DeleteBox {
-
-      def failsWithException(msg: String) = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(failed(new RuntimeException(msg)))
-      }
-
-      def failedResultWithText(errorText: String) = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteFailedResult(errorText)))
-      }
-
-      def failsNotFound() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteNotFoundResult()))
-      }
-
-      def failsAccessDenied() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteAccessDeniedResult()))
-      }
-
-      def isSuccessful() = {
-        when(aMock.deleteBox(*[ClientId], *[BoxId])).thenReturn(successful(BoxDeleteSuccessfulResult()))
-      }
-
-      def verifyCalledWith(clientId: ClientId, boxId: BoxId) = {
-        verify.deleteBox(eqTo(clientId), eqTo(boxId))
-      }
-
     }
 
     object GetBoxByNameAndClientId {
@@ -129,68 +100,24 @@ trait BoxServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
     }
 
-    object GetBoxesByClientId {
-
-      def verifyNoInteractions() = {
-        verifyZeroInteractions()
-      }
-
-      def theFailsWith(clientId: ClientId, exception: RuntimeException) = {
-        when(BoxServiceMock.aMock.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.failed(exception))
-      }
-
-      def verifyCalledWith(clientId: ClientId) = {
-        verify.getBoxesByClientId(eqTo(clientId))
-      }
-
-      def thenSuccessWith(clientId: ClientId, boxes: List[Box]) = {
-        when(aMock.getBoxesByClientId(eqTo(clientId))).thenReturn(Future.successful(boxes))
-      }
-
-    }
-
     object UpdateCallbackUrl {
 
-      def verifyCalledWith(boxId: BoxId, clientManaged: Boolean = false) = {
-        verify.updateCallbackUrl(eqTo(boxId), *, eqTo(clientManaged))(*, *)
+      def verifyCalledWith(boxId: BoxId) = {
+        verify.updateCallbackUrl(eqTo(boxId), *)(*, *)
       }
 
-      def failsWith(boxId: BoxId, clientManaged: Boolean = false, result: UpdateCallbackUrlFailedResult) = {
-        when(aMock.updateCallbackUrl(eqTo(boxId), *, eqTo(clientManaged))(*, *)).thenReturn(successful(result))
+      def failsWith(boxId: BoxId, result: UpdateCallbackUrlFailedResult) = {
+        when(aMock.updateCallbackUrl(eqTo(boxId), *)(*, *)).thenReturn(successful(result))
       }
 
       def verifyNoInteractions() = {
         verifyZeroInteractions()
       }
 
-      def thenSucceedsWith(boxId: BoxId, clientManaged: Boolean = false, result: UpdateCallbackUrlSuccessResult) = {
-        when(aMock.updateCallbackUrl(eqTo(boxId), *, eqTo(clientManaged))(*, *)).thenReturn(successful(result))
+      def thenSucceedsWith(boxId: BoxId, result: UpdateCallbackUrlSuccessResult) = {
+        when(aMock.updateCallbackUrl(eqTo(boxId), *)(*, *)).thenReturn(successful(result))
       }
-
     }
-
-    object ValidateBoxOwner {
-
-      def verifyNoInteractions() = {
-        verifyZeroInteractions()
-      }
-
-      def thenFailsWith(boxId: BoxId, clientId: ClientId, result: ValidateBoxOwnerResult) = {
-        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))).thenReturn(successful(result))
-      }
-
-      def verifyCalledWith(boxId: BoxId, clientId: ClientId) = {
-        verify.validateBoxOwner(eqTo(boxId), eqTo(clientId))
-      }
-
-      def thenSucceedsWith(boxId: BoxId, clientId: ClientId) = {
-        when(aMock.validateBoxOwner(eqTo(boxId), eqTo(clientId))).thenReturn(successful(ValidateBoxOwnerSuccessResult()))
-      }
-
-    }
-
-    // validateBoxOwner
-
   }
 
   object BoxServiceMock extends BaseBoxServiceMock {
