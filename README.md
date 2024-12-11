@@ -323,18 +323,6 @@ HTTP Status: `200`
 | Box does not exist | `404` | `BOX_NOT_FOUND`
 | The accept header is missing or invalid | `406` | `ACCEPT_HEADER_INVALID`
 
-### Error scenarios
-| Scenario | HTTP Status | Code |
-| --- | --- | --- |
-| Provided an invalid field value in request body | `400` | `INVALID_REQUEST_PAYLOAD`
-| Invalid or expired bearer token | `401` | `UNAUTHORIZED`
-| Provided a valid bearer token which belongs to a different client ID | `403` | `FORBIDDEN`
-| Generated a bearer token with an invalid scope | `403` | `INVALID_SCOPE`
-| Called the Create CMB endpoint with an incorrect accept header version  | `404` | `MATCHING_RESOURCE_NOT_FOUND`
-| Called the Create CMB endpoint with an invalid or missing accept header | `406` | `ACCEPT_HEADER_INVALID`
-| Missing or Invalid Content Type Header | `415` | `BAD_REQUEST`
-
-
 # Run locally and call the API locally
 
 If you need to call any of the endpoints exposed over the API Platform, you need to pass in an valid authorisation header for the application restricted endpoints:

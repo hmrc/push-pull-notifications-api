@@ -80,10 +80,10 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
     }
 
     "provide yaml documentation" in new Setup {
-      val result = documentationController.yaml("1.0", "application.yaml")(request)
+      val result = documentationController.asset("1.0", "application.yaml")(request)
 
       status(result) shouldBe OK
-      contentAsString(result) should startWith("---")
+      contentAsString(result) should include("openapi: 3.0.3")
     }
   }
 

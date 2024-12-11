@@ -70,9 +70,14 @@ class BoxService @Inject() (
       hc: HeaderCarrier
     ): Future[UpdateCallbackUrlResult] = {
     repository.findByBoxId(boxId).flatMap {
+
+      // Perhaps a case for pattern matching extract of values ? but see comment below.  To revist at a later date.
+
       case Some(box) => if (box.boxCreator.clientId == request.clientId) {
           val oldUrl: String = box.subscriber.map(extractCallBackUrl).getOrElse("")
 
+          // Issues with the type (wrapped in future) and with the lack of mapping - is sending the event meant to be fire and forget?
+          // Caution wins over reworking this.
           for {
             appId <- box.applicationId.fold(updateBoxWithApplicationId(box))(id => successful(id))
             result <- validateCallBack(box, request)
