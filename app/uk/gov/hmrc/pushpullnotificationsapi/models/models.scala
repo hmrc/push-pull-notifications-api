@@ -99,8 +99,7 @@ case class Box(
     boxName: String,
     boxCreator: BoxCreator,
     applicationId: Option[ApplicationId] = None,
-    subscriber: Option[Subscriber] = None,
-    clientManaged: Boolean = false)
+    subscriber: Option[Subscriber] = None)
 
 case class Client(id: ClientId, secrets: Seq[ClientSecretValue])
 

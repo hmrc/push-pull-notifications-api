@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 import org.mockito.captor.{ArgCaptor, Captor}
 
@@ -131,17 +130,6 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
     }
 
-    "getBoxesByClientId" should {
-      "delegate to repo and return same list" in new Setup {
-        val boxes: List[Box] = List()
-
-        BoxRepositoryMock.GetBoxesByClientId.succeedsWith(clientId, boxes)
-        await(objInTest.getBoxesByClientId(clientId)) shouldBe boxes
-
-        BoxRepositoryMock.GetBoxesByClientId.verifyCalledWith(clientId)
-      }
-    }
-
     "getAllBoxes" should {
       "cal repository correctly " in new Setup {
         val boxes: List[Box] = List()
@@ -167,7 +155,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
         ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.succeedsWith(applicationId, newUrl, boxWithApplicationId)
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: CallbackUrlUpdated =>
             ThirdPartyApplicationConnectorMock.verifyZeroInteractions()
             BoxRepositoryMock.UpdateApplicationId.verifyNeverCalled()
@@ -190,7 +178,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: CallbackUrlUpdated =>
             ThirdPartyApplicationConnectorMock.GetApplicationDetails.verifyCalledWith(clientId)
             BoxRepositoryMock.UpdateApplicationId.verifyCalledWith(boxId, applicationId)
@@ -209,7 +197,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "")
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: CallbackUrlUpdated =>
             PushServiceMock.verifyZeroInteractions()
             ApiPlatformEventsConnectorMock.SendCallBackUpdatedEvent.verifyCalled()
@@ -225,7 +213,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: UnableToUpdateCallbackUrl =>
             PushServiceMock.ValidateCallbackUrl.verifyCalled(validRequest)
             ApiPlatformEventsConnectorMock.verifyZeroInteractions()
@@ -241,7 +229,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         PushServiceMock.ValidateCallbackUrl.succeedsFor(validRequest)
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: UnableToUpdateCallbackUrl =>
             PushServiceMock.verifyZeroInteractions()
             ApiPlatformEventsConnectorMock.verifyZeroInteractions()
@@ -254,7 +242,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
 
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(ClientId("someotherId"), "callbackUrl")
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: UpdateCallbackUrlUnauthorisedResult =>
             PushServiceMock.verifyZeroInteractions()
             ApiPlatformEventsConnectorMock.verifyZeroInteractions()
@@ -269,7 +257,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
         PushServiceMock.ValidateCallbackUrl.failsFor(validRequest)
 
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: CallbackValidationFailed => ApiPlatformEventsConnectorMock.verifyZeroInteractions()
           case _                           => fail()
         }
@@ -279,7 +267,7 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
       "return BoxIdNotFound when boxId is not found" in new Setup {
         BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, None)
         val validRequest: UpdateCallbackUrlRequest = UpdateCallbackUrlRequest(clientId, "callbackUrl")
-        await(objInTest.updateCallbackUrl(boxId, validRequest, clientManaged = false)) match {
+        await(objInTest.updateCallbackUrl(boxId, validRequest)) match {
           case _: BoxIdNotFound =>
             PushServiceMock.verifyZeroInteractions()
             ApiPlatformEventsConnectorMock.verifyZeroInteractions()
@@ -288,59 +276,5 @@ class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
       }
     }
-
-    "validateBoxOwner" should {
-
-      "return ValidateBoxOwnerSuccessResult when boxId is found and clientId matches" in new Setup {
-        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
-
-        await(objInTest.validateBoxOwner(boxId, clientId)) match {
-          case _: ValidateBoxOwnerSuccessResult => succeed
-          case _                                => fail()
-        }
-
-      }
-
-      "return ValidateBoxOwnerFailedResult when boxId is found and clientId doesn't match" in new Setup {
-        when(BoxRepositoryMock.aMock.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(Some(BoxObjectWithNoSubscribers)))
-        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientIdTwo))
-        result.isInstanceOf[ValidateBoxOwnerFailedResult] shouldBe true
-      }
-
-      "return ValidateBoxOwnerNotFoundResult when boxId is not found" in new Setup {
-        when(BoxRepositoryMock.aMock.findByBoxId(eqTo(boxId))).thenReturn(Future.successful(None))
-        val result: ValidateBoxOwnerResult = await(objInTest.validateBoxOwner(boxId, clientId))
-        result.isInstanceOf[ValidateBoxOwnerNotFoundResult] shouldBe true
-      }
-    }
-
-    "deleteBox" should {
-
-      "return BoxDeleteSuccessfulResult when a box is found by boxId" in new Setup {
-        val clientManagedBox: Box = BoxObjectWithNoSubscribers.copy(clientManaged = true)
-        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(clientManagedBox))
-        BoxRepositoryMock.DeleteBox.succeeds()
-
-        await(objInTest.deleteBox(clientManagedBox.boxCreator.clientId, clientManagedBox.boxId)) shouldBe BoxDeleteSuccessfulResult()
-      }
-
-      "return BoxDeleteAccessDeniedResult when clientManaged is false" in new Setup {
-        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(BoxObjectWithNoSubscribers))
-        BoxRepositoryMock.DeleteBox.failsWith(BoxDeleteAccessDeniedResult())
-
-        await(objInTest.deleteBox(clientId, boxId)) shouldBe BoxDeleteAccessDeniedResult()
-      }
-
-      "return BoxDeleteAccessDeniedResult when the given clientId does not match the box's clientId" in new Setup {
-        val incorrectClientId: ClientId = clientIdTwo
-        val clientManagedBox: Box = BoxObjectWithNoSubscribers.copy(clientManaged = true)
-
-        BoxRepositoryMock.FindByBoxId.succeedsWith(boxId, Some(clientManagedBox))
-        BoxRepositoryMock.DeleteBox.verifyNeverCalled()
-
-        await(objInTest.deleteBox(incorrectClientId, boxId)) shouldBe BoxDeleteAccessDeniedResult()
-      }
-    }
-
   }
 }

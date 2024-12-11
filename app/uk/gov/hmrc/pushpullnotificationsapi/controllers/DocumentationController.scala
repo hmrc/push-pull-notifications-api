@@ -33,19 +33,7 @@ class DocumentationController @Inject() (appconfig: AppConfig, assets: Assets, c
     Ok(txt.definition(appconfig.apiStatus)).as("application/json")
   }
 
-  def yaml(version: String, file: String): Action[AnyContent] = {
-    if (file == "application.yaml") {
-      returnTemplatedYaml()
-    } else {
-      returnStaticAsset(version: String, file: String)
-    }
-  }
-
-  private def returnTemplatedYaml(): Action[AnyContent] = Action {
-    Ok(txt.application(appconfig.cmbEnabled)).as("application/text")
-  }
-
-  private def returnStaticAsset(version: String, file: String): Action[AnyContent] = {
+  def asset(version: String, file: String): Action[AnyContent] = {
     assets.at(s"/public/api/conf/$version", file)
   }
 }

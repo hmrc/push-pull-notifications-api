@@ -32,12 +32,6 @@ object CreateBoxRequest {
   implicit val format: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
 }
 
-case class CreateClientManagedBoxRequest(boxName: String)
-
-object CreateClientManagedBoxRequest {
-  implicit val format: OFormat[CreateClientManagedBoxRequest] = Json.format[CreateClientManagedBoxRequest]
-}
-
 case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType)
 
 object SubscriberRequest {
@@ -59,18 +53,6 @@ case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String) {
 
 object UpdateCallbackUrlRequest {
   implicit val format: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
-}
-
-case class UpdateManagedCallbackUrlRequest(callbackUrl: String)
-
-object UpdateManagedCallbackUrlRequest {
-  implicit val format: OFormat[UpdateManagedCallbackUrlRequest] = Json.format[UpdateManagedCallbackUrlRequest]
-}
-
-case class ValidateBoxOwnershipRequest(boxId: BoxId, clientId: ClientId)
-
-object ValidateBoxOwnershipRequest {
-  implicit val format: OFormat[ValidateBoxOwnershipRequest] = Json.format[ValidateBoxOwnershipRequest]
 }
 
 case class PrivateHeader(name: String, value: String)
