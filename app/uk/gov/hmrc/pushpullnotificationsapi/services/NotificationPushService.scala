@@ -86,7 +86,7 @@ class NotificationPushService @Inject() (
       pushService.handleNotification(outboundNotification).map {
         case _: PushServiceSuccessResult    => true
         case error: PushServiceFailedResult =>
-          logger.info(s"Attempt to push to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
+          logger.warn(s"Attempt to push notification for id: ${notification.notificationId} from boxId: ${box.boxId} for client: ${client.id} app:${box.applicationId.fold("UNKNOWN")(_.toString())} to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false
       }
     }
