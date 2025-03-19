@@ -37,9 +37,11 @@ If your service responds with a different HTTP status code, the notification sta
 
 If after a few hours, an HTTP status code 200 has not been received, the notification status is updated to `FAILED`.
 
-The push notification system is designed to process a notification multiple times, but with the same effect as processing it once (idempotently).
+### Design your application to process duplicate push notifications as a single notification (idempotency)
 
-Push notifications may be sent more than once due to retries or network disruptions, but by processing these notifications idempotently, your system can guarantee consistent outcomes and avoid duplication.
+The push notification system is designed to send ‘At least once’ to guarantee delivery. In most cases this means notifications will be sent once and successfully received.
+
+In rare cases of network disruption, messages may be sent more than once. You should design your application to process duplicate notifications as a single notification. This will prevent errors and provide a consistent outcome for your application and users.
 
 ### Validating the callback URL
 
