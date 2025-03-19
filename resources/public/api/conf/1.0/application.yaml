@@ -4,13 +4,13 @@ info:
   contact: {}
   version: '1.0'
 servers:
-  - url: https://test-api.service.hmrc.gov.uk/misc/push-pull-notification
+  - url: https://test-api.service.hmrc.gov.uk
     description: Sandbox
-  - url: https://api.service.hmrc.gov.uk/misc/push-pull-notification
+  - url: https://api.service.hmrc.gov.uk
     description: Production
     variables: {}
 paths:
-  "/box/{boxId}/notifications":
+  "/misc/push-pull-notification/box/{boxId}/notifications":
     get:
       tags:
       - push-pull-notification-api
@@ -159,7 +159,7 @@ paths:
       security:
         - applicationRestricted:
             - read:pull-notifications
-  "/box/{boxId}/notifications/acknowledge":
+  "/misc/push-pull-notification/box/{boxId}/notifications/acknowledge":
     put:
       tags:
       - push-pull-notification-api
