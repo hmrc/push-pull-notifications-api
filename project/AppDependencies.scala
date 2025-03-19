@@ -4,11 +4,11 @@ import play.sbt.PlayImport._
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-  val bootstrapVersion = "9.7.0"
-  val mongoVersion = "2.4.0"
-  val eventsVersion = "0.75.0"
+  val bootstrapVersion = "9.11.0"
+  val mongoVersion = "2.6.0"
+  val eventsVersion = "0.79.0"
   val commonDomainVersion = "0.18.0"
-  val appDomainVersion = "0.72.0"
+  val appDomainVersion = "0.75.0"
   
   lazy val dependencies = Seq(
     ws,
@@ -19,7 +19,7 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "api-platform-application-events"  % eventsVersion,
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
-    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.0.0",
+    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.2.0",
     "org.typelevel"           %% "cats-core"                        % "2.10.0"
   )
 
