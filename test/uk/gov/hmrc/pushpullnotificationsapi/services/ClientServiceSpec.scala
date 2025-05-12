@@ -51,20 +51,7 @@ class ClientServiceSpec extends AsyncHmrcSpec with TestData {
   }
 
   "findOrCreateClient" should {
-    "not insert a new client into the client repository when one already exists" in new Setup {
-      ClientRepositoryMock.FindByClientId.thenSuccessWith(clientId, Some(client))
-
-      val result: Client = await(objInTest.findOrCreateClient(clientId))
-
-      result shouldBe client
-      ClientRepositoryMock.FindByClientId.verifyCalledWith(clientId)
-
-      ClientRepositoryMock.InsertClient.neverCalled()
-    }
-
-    "insert a new client into the client repository when none already exist" in new Setup {
-      ClientRepositoryMock.FindByClientId.thenClientNotFound(clientId)
-
+    "delegate the find or creation to the client repository" in new Setup {
       ClientRepositoryMock.InsertClient.thenSuccessfulWith(client)
 
       when(mockClientSecretGenerator.generate).thenReturn(clientSecret)
@@ -72,7 +59,6 @@ class ClientServiceSpec extends AsyncHmrcSpec with TestData {
       val result: Client = await(objInTest.findOrCreateClient(clientId))
 
       result shouldBe client
-      ClientRepositoryMock.FindByClientId.verifyCalledWith(clientId)
       ClientRepositoryMock.InsertClient.verifyCalledWith(client)
     }
   }

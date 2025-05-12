@@ -17,7 +17,6 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
@@ -32,9 +31,6 @@ class ClientService @Inject() (clientRepository: ClientRepository, clientSecretG
   }
 
   def findOrCreateClient(clientId: ClientId): Future[Client] = {
-    for {
-      clientOption: Option[Client] <- clientRepository.findByClientId(clientId)
-      client <- clientOption.fold(clientRepository.insertClient(Client(clientId, Seq(clientSecretGenerator.generate))))(successful)
-    } yield client
+    clientRepository.insertClient(Client(clientId, Seq(clientSecretGenerator.generate)))
   }
 }

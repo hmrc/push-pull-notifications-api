@@ -5,7 +5,7 @@ lazy val appName = "push-pull-notifications-api"
 Global / bloopAggregateSourceDependencies := true
 Global / bloopExportJarClassifiers := Some(Set("sources"))
 
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "2.13.16"
 ThisBuild / majorVersion := 0
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 ThisBuild / semanticdbEnabled := true
@@ -34,9 +34,6 @@ lazy val microservice = Project(appName, file("."))
   )
   .settings(
     scalacOptions ++= Seq(
-      "-deprecation",
-      "-feature",
-      "-Ywarn-unused",
       "-Xlint:-missing-interpolator,_",
       // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
       // suppress warnings in generated routes files
