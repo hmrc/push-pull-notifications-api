@@ -52,14 +52,14 @@ class ClientServiceSpec extends AsyncHmrcSpec with TestData {
 
   "findOrCreateClient" should {
     "delegate the find or creation to the client repository" in new Setup {
-      ClientRepositoryMock.InsertClient.thenSuccessfulWith(client)
+      ClientRepositoryMock.FindOrCreateClient.thenSuccessfulWith(client)
 
       when(mockClientSecretGenerator.generate).thenReturn(clientSecret)
 
       val result: Client = await(objInTest.findOrCreateClient(clientId))
 
       result shouldBe client
-      ClientRepositoryMock.InsertClient.verifyCalledWith(client)
+      ClientRepositoryMock.FindOrCreateClient.verifyCalledWith(client)
     }
   }
 }

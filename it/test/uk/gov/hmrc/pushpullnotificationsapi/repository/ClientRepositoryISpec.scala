@@ -64,9 +64,9 @@ class ClientRepositoryISpec
   val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   val client: Client = Client(clientId, Seq(clientSecret))
 
-  "insertClient" should {
+  "findOrCreateClient" should {
     "insert a client when it does not exist" in {
-      val result: Client = await(repo.insertClient(client))
+      val result: Client = await(repo.findOrCreateClient(client))
 
       result shouldBe client
       val fetchedRecords = await(repo.findByClientId(client.id))
@@ -75,7 +75,7 @@ class ClientRepositoryISpec
     }
 
     "encrypt the client secret in the database" in {
-      await(repo.insertClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue("the client secret")))))
+      await(repo.findOrCreateClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue("the client secret")))))
 
       val dbClients: Seq[DbClient] = await(repo.collection.find().toFuture())
 
@@ -83,10 +83,10 @@ class ClientRepositoryISpec
     }
 
     "return the existing client when a client with the same ID already exists" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
       val clientWithDifferentSecrets = Client(client.id, Seq(ClientSecretValue(randomUUID.toString)))
 
-      val result: Client = await(repo.insertClient(clientWithDifferentSecrets))
+      val result: Client = await(repo.findOrCreateClient(clientWithDifferentSecrets))
 
       result shouldBe client
       val fetchedRecords = await(repo.findByClientId(client.id))
@@ -97,7 +97,7 @@ class ClientRepositoryISpec
 
   "findByClientId" should {
     "return matching client" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
 
       val result: Option[Client] = await(repo.findByClientId(client.id))
 

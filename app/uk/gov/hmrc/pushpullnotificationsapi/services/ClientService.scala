@@ -31,6 +31,6 @@ class ClientService @Inject() (clientRepository: ClientRepository, clientSecretG
   }
 
   def findOrCreateClient(clientId: ClientId): Future[Client] = {
-    clientRepository.insertClient(Client(clientId, Seq(clientSecretGenerator.generate)))
+    clientRepository.findOrCreateClient(Client(clientId, Seq(clientSecretGenerator.generate)))
   }
 }

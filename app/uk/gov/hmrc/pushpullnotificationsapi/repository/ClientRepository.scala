@@ -57,7 +57,7 @@ class ClientRepository @Inject() (mongo: MongoComponent, crypto: LocalCrypto)(im
     ) {
   override lazy val requiresTtlIndex: Boolean = false
 
-  def insertClient(client: Client): Future[Client] = {
+  def findOrCreateClient(client: Client): Future[Client] = {
     val dbClient = fromClient(client, crypto)
     collection.findOneAndUpdate(
       filter = equal("id", client.id),
