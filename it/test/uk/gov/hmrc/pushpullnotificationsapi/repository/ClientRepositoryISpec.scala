@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID.randomUUID
 
-import org.mongodb.scala.MongoWriteException
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -65,11 +64,9 @@ class ClientRepositoryISpec
   val clientSecret: ClientSecretValue = ClientSecretValue("someRandomSecret")
   val client: Client = Client(clientId, Seq(clientSecret))
 
-  "insertClient" should {
+  "findOrCreateClient" should {
     "insert a client when it does not exist" in {
-      await(repo.insertClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue(randomUUID.toString)))))
-
-      val result: Client = await(repo.insertClient(client))
+      val result: Client = await(repo.findOrCreateClient(client))
 
       result shouldBe client
       val fetchedRecords = await(repo.findByClientId(client.id))
@@ -78,29 +75,29 @@ class ClientRepositoryISpec
     }
 
     "encrypt the client secret in the database" in {
-      await(repo.insertClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue("the client secret")))))
-
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue("the client secret")))))
 
       val dbClients: Seq[DbClient] = await(repo.collection.find().toFuture())
 
       dbClients.head.secrets.head.encryptedValue shouldBe "X+UILjCREN19DnjPfxBDNECPVWlIUfd76KlrwnleZ/o="
     }
 
-    "fail when a client with the same ID already exists" in {
-      await(repo.insertClient(client))
+    "return the existing client when a client with the same ID already exists" in {
+      await(repo.findOrCreateClient(client))
+      val clientWithDifferentSecrets = Client(client.id, Seq(ClientSecretValue(randomUUID.toString)))
 
-      val exception: MongoWriteException = intercept[MongoWriteException] {
-        await(repo.insertClient(client))
-      }
+      val result: Client = await(repo.findOrCreateClient(clientWithDifferentSecrets))
 
-      exception.getMessage should include("E11000 duplicate key error collection")
+      result shouldBe client
+      val fetchedRecords = await(repo.findByClientId(client.id))
+      fetchedRecords.size shouldBe 1
+      fetchedRecords.head shouldBe client
     }
   }
 
   "findByClientId" should {
     "return matching client" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
 
       val result: Option[Client] = await(repo.findByClientId(client.id))
 
@@ -108,8 +105,6 @@ class ClientRepositoryISpec
     }
 
     "return none when there is no matching client" in {
-      await(repo.insertClient(Client(ClientId(randomUUID.toString), Seq(ClientSecretValue(randomUUID.toString)))))
-
       val result: Option[Client] = await(repo.findByClientId(client.id))
 
       result shouldBe None

@@ -53,18 +53,14 @@ trait ClientRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar
 
     }
 
-    object InsertClient {
+    object FindOrCreateClient {
 
       def verifyCalledWith(client: Client) = {
-        verify.insertClient(eqTo(client))
+        verify.findOrCreateClient(eqTo(client))
       }
 
       def thenSuccessfulWith(client: Client) = {
-        when(aMock.insertClient(eqTo(client))).thenReturn(successful(client))
-      }
-
-      def neverCalled() = {
-        verify(never).insertClient(*[Client])
+        when(aMock.findOrCreateClient(eqTo(client))).thenReturn(successful(client))
       }
 
     }

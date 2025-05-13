@@ -71,7 +71,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
 
   "GET /client/:clientId/secrets" should {
     "respond with 200 and the array of secrets for the requested client" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
 
       val result = doGet(s"/client/${clientId.value}/secrets", List("Authorization" -> authToken))
 
@@ -80,7 +80,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     }
 
     "respond with 404 when there is no matching client for the given client ID" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
 
       val result = doGet(s"/client/wrongClientId/secrets", List("Authorization" -> authToken))
 
@@ -89,7 +89,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
     }
 
     "respond with 403 when the authorization header does not match the token from the app config" in {
-      await(repo.insertClient(client))
+      await(repo.findOrCreateClient(client))
 
       val result = doGet(s"/client/${clientId.value}/secrets", List("Authorization" -> "wrongToken"))
 

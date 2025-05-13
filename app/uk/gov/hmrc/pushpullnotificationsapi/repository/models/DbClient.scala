@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.crypto.{Crypted, PlainText}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
@@ -47,4 +48,6 @@ private[repository] object DbClientSecret {
   def toClientSecret(dbClientSecret: DbClientSecret, crypto: LocalCrypto): ClientSecretValue = {
     ClientSecretValue(crypto.decrypt(Crypted(dbClientSecret.encryptedValue)).value)
   }
+
+  implicit val format: OFormat[DbClientSecret] = Json.format[DbClientSecret]
 }
