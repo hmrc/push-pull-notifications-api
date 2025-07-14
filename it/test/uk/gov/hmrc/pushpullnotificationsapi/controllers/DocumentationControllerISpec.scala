@@ -31,6 +31,7 @@ import play.api.test.Helpers._
 import play.api.{Application, Mode}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
+import uk.gov.hmrc.pushpullnotificationsapi.platform.controllers.DocumentationController
 
 class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest with BeforeAndAfterEach {
 
