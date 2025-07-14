@@ -115,6 +115,6 @@ object AcknowledgeNotificationsRequest {
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])
 
-case class NotificationQueryParams(status: Option[NotificationStatus], fromDate: Option[Instant], toDate: Option[Instant])
+case class NotificationQueryParams(status: Option[NotificationStatus], fromDate: Option[Instant], toDate: Option[Instant], count: Option[Int])
 
 case class ValidatedNotificationQueryRequest[A](clientId: ClientId, params: NotificationQueryParams, request: Request[A])

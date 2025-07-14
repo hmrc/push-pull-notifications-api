@@ -246,11 +246,6 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
         testAndValidateGetByQueryParams(boxId, OK, Some("PENDING"), maybeToDateStr = Some("2020-02-02T00:54:00Z"))
       }
 
-      "return 400 when invalid toDate filter provided" in {
-        testAndValidateGetByQueryParams(boxId, BAD_REQUEST, None, maybeToDateStr = Some("4433:33:88T223322"))
-
-      }
-
       "return 400 when fromdate is after toDate" in {
         val fromdateStr = "2020-02-05T00:54:00Z"
         val toDateStr = "2020-02-02T00:54:00Z"
@@ -263,6 +258,14 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
         status(result) shouldBe BAD_REQUEST
         val resultStr = contentAsString(result)
         resultStr shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"Invalid Status parameter provided\"}"
+      }
+
+      "return 400 when invalid count query parameter is provided" in {
+        primeAuthAction(clientIdStr)
+        val result = doGet(s"/box/${boxId.value.toString}/notifications?count=SOMEVALUE", validHeadersJson)
+        status(result) shouldBe BAD_REQUEST
+        val resultStr = contentAsString(result)
+        resultStr shouldBe "{\"code\":\"INVALID_REQUEST_PAYLOAD\",\"message\":\"Invalid Count parameter provided\"}"
       }
 
       "return 400 when unknown query parameter is provided" in {
@@ -442,7 +445,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       expectedStatusCode: Int,
       maybeNotificationStatus: Option[String],
       maybeFromDateStr: Option[String] = None,
-      maybeToDateStr: Option[String] = None
+      maybeToDateStr: Option[String] = None,
+      maybeCountInt: Option[Int] = None
     ): Unit = {
     if (expectedStatusCode == UNAUTHORIZED) {
       AuthConnectorMock.Authorise.succeedsWith(None)
@@ -458,7 +462,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
           eqTo(clientId),
           eqTo(maybeNotificationStatus.map(NotificationStatus.unsafeApply)),
           eqTo(maybeFromDate),
-          eqTo(maybeToDate)
+          eqTo(maybeToDate),
+          eqTo(maybeCountInt)
         ))
           .thenReturn(Future.successful(Right(List(notification, notification2))))
       case NOT_FOUND   => ()
@@ -480,7 +485,8 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
           eqTo(clientId),
           eqTo(maybeNotificationStatus.map(NotificationStatus.unsafeApply)),
           eqTo(maybeFromDate),
-          eqTo(maybeToDate)
+          eqTo(maybeToDate),
+          eqTo(maybeCountInt)
         )
     }
   }

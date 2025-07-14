@@ -85,32 +85,32 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     object GetNotifications {
 
       def succeedsWith(boxId: BoxId, clientId: ClientId, notifications: Notification*) = {
-        when(aMock.getNotifications(eqTo(boxId), eqTo(clientId), eqTo(None), eqTo(None), eqTo(None)))
+        when(aMock.getNotifications(eqTo(boxId), eqTo(clientId), eqTo(None), eqTo(None), eqTo(None), eqTo(None)))
           .thenReturn(successful(Right(notifications.toList)))
       }
 
       def succeedsWith(boxId: BoxId, status: NotificationStatus, list: List[Notification]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *, *))
           .thenReturn(successful(Right(list)))
       }
 
       def failsWithNotFoundFor(boxId: BoxId, status: NotificationStatus, from: Option[Instant], to: Option[Instant]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to)))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to), *))
           .thenReturn(successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
       }
 
       def failsWithNotFoundFor(boxId: BoxId, status: NotificationStatus) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *, *))
           .thenReturn(successful(Left(GetNotificationsServiceBoxNotFoundResult(""))))
       }
 
       def failsWithUnauthorisedFor(boxId: BoxId, status: NotificationStatus) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), *, *, *))
           .thenReturn(successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
       }
 
       def failsWithUnauthorisedFor(boxId: BoxId, status: NotificationStatus, from: Option[Instant], to: Option[Instant]) = {
-        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to)))
+        when(aMock.getNotifications(eqTo(boxId), *[ClientId], eqTo(Some(status)), eqTo(from), eqTo(to), *))
           .thenReturn(successful(Left(GetNotificationsServiceUnauthorisedResult(""))))
       }
     }

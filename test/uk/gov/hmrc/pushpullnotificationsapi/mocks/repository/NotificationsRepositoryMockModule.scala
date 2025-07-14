@@ -71,7 +71,7 @@ trait NotificationsRepositoryMockModule extends MockitoSugar with ArgumentMatche
     object NumberOfNotificationsToReturn {
 
       def thenReturn(numberToReturn: Int) = {
-        when(aMock.numberOfNotificationsToReturn).thenReturn(numberToReturn)
+        when(aMock.defauultNumberOfNotificationsToReturn).thenReturn(numberToReturn)
 
       }
 
