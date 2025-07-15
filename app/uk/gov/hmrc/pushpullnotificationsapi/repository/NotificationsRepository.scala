@@ -89,7 +89,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     )
     with MongoJavatimeFormats.Implicits with ClockNow {
 
-  lazy val defauultNumberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
+  lazy val defaultNumberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
   def getByBoxIdAndFilters(
       boxId: BoxId,
@@ -106,7 +106,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       .withReadPreference(ReadPreference.primaryPreferred())
       .find(query)
       .sort(Sorts.ascending("createdDateTime"))
-      .limit(numberOfNotificationsToReturn.getOrElse(defauultNumberOfNotificationsToReturn))
+      .limit(numberOfNotificationsToReturn.getOrElse(defaultNumberOfNotificationsToReturn))
       .map(toNotification(_, crypto))
       .toFuture().map(_.toList)
   }
