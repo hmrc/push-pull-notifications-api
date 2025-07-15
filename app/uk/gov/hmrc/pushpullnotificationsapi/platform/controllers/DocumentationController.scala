@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.controllers
+package uk.gov.hmrc.pushpullnotificationsapi.platform.controllers
 
 import javax.inject.{Inject, Singleton}
 

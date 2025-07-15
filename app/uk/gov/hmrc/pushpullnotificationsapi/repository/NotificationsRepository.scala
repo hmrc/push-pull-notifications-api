@@ -89,14 +89,14 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     )
     with MongoJavatimeFormats.Implicits with ClockNow {
 
-  lazy val numberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
+  lazy val defaultNumberOfNotificationsToReturn: Int = appConfig.numberOfNotificationsToRetrievePerRequest
 
   def getByBoxIdAndFilters(
       boxId: BoxId,
       status: Option[NotificationStatus] = None,
       fromDateTime: Option[Instant] = None,
       toDateTime: Option[Instant] = None,
-      numberOfNotificationsToReturn: Int = numberOfNotificationsToReturn
+      numberOfNotificationsToReturn: Option[Int] = None
     ): Future[List[Notification]] = {
 
     val query: Bson =
@@ -106,7 +106,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       .withReadPreference(ReadPreference.primaryPreferred())
       .find(query)
       .sort(Sorts.ascending("createdDateTime"))
-      .limit(numberOfNotificationsToReturn)
+      .limit(numberOfNotificationsToReturn.getOrElse(defaultNumberOfNotificationsToReturn))
       .map(toNotification(_, crypto))
       .toFuture().map(_.toList)
   }
@@ -131,7 +131,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     maybeStatus.fold(Filters.empty())(status => equal("status", Codecs.toBson(status)))
   }
 
-  def getAllByBoxId(boxId: BoxId): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Int.MaxValue)
+  def getAllByBoxId(boxId: BoxId): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Some(Int.MaxValue))
 
   def saveNotification(notification: Notification): Future[Option[NotificationId]] = {
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {

@@ -49,7 +49,8 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
   val statusParamKey = "status"
   val fromDateParamKey = "fromDate"
   val toDateParamKey = "toDate"
-  val validKeys = List(statusParamKey, fromDateParamKey, toDateParamKey)
+  val countKey = "count"
+  val validKeys = List(statusParamKey, fromDateParamKey, toDateParamKey, countKey)
 
   def validateQueryParamsKeys(queryParams: Map[String, Seq[String]]): Either[Result, Boolean] = {
     if (queryParams.nonEmpty) {
@@ -68,7 +69,18 @@ class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionCon
       fromDateVal <- validateDateParamValue(request.request.getQueryString(fromDateParamKey))
       toDateVal <- validateDateParamValue(request.request.getQueryString(toDateParamKey))
       _ <- validateToDateIsAfterFromDate(fromDateVal, toDateVal)
-    } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal)
+      countVal <- validateCount(request.request.getQueryString(countKey))
+    } yield NotificationQueryParams(statusVal, fromDateVal, toDateVal, countVal)
+  }
+
+  private def validateCount(maybeCountStr: Option[String]): Either[Result, Option[Int]] = {
+    maybeCountStr match {
+      case Some(count) => count.toIntOption.toRight[Result] {
+          logger.info(s"Invalid Count Param provided: $count")
+          BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Count parameter provided"))
+        }.map(Some(_))
+      case None        => Right(None)
+    }
   }
 
   private def validateStatusParamValue(maybeStatusStr: Option[String]): Either[Result, Option[NotificationStatus]] = {

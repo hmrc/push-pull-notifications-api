@@ -66,7 +66,8 @@ class NotificationsService @Inject() (
       clientId: ClientId,
       status: Option[NotificationStatus] = None,
       fromDateTime: Option[Instant] = None,
-      toDateTime: Option[Instant] = None
+      toDateTime: Option[Instant] = None,
+      count: Option[Int] = None
     ): Future[Either[GetNotificationsServiceFailedResult, List[Notification]]] = {
 
     boxRepository.findByBoxId(boxId)
@@ -78,7 +79,7 @@ class NotificationsService @Inject() (
             logger.warn(s"Push Box is being pulled boxId: $boxId, clientId: $clientId")
           }
           if (box.boxCreator.clientId != clientId) { Future.successful(Left(GetNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))) }
-          else notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime).map(Right(_))
+          else notificationsRepository.getByBoxIdAndFilters(boxId, status, fromDateTime, toDateTime, count).map(Right(_))
       }
   }
 
