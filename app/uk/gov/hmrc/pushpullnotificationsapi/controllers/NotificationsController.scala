@@ -78,7 +78,7 @@ class NotificationsController @Inject() (
       authAction andThen
       queryParamValidatorAction)
       .async { implicit request =>
-        notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate) map {
+        notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate, request.params.count) map {
           case Right(results: List[Notification])                 => Ok(Json.toJson(results.map(fromNotification)))
           case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
           case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
