@@ -72,10 +72,10 @@ class NotificationsControllerISpec
   override protected val repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
-  val clientId = ClientId.random
+  val clientId = standardApp.clientId
   val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
   val createBox2JsonBody = raw"""{"clientId": "zzzzzzzzzz", "boxName": "bbyybybyb"}"""
-  val tpaResponse: String = Json.toJson(standardApp.modify(_.copy(clientId = clientId))).toString()
+  val tpaResponse: String = Json.toJson(standardApp).toString()
 
   override def beforeEach(): Unit = {
     super.beforeEach()

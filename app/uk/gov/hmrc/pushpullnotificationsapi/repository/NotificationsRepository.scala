@@ -131,7 +131,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
     maybeStatus.fold(Filters.empty())(status => equal("status", Codecs.toBson(status)))
   }
 
-  def getAllByBoxId(boxId: BoxId): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Some(Int.MaxValue))
+  def getAllByBoxId(boxId: BoxId): Future[List[Notification]] = getByBoxIdAndFilters(boxId, numberOfNotificationsToReturn = Some(Int.MaxValue - 1))
 
   def saveNotification(notification: Notification): Future[Option[NotificationId]] = {
     collection.insertOne(fromNotification(notification, crypto)).toFuture().map(_ => Some(notification.notificationId)).recoverWith {

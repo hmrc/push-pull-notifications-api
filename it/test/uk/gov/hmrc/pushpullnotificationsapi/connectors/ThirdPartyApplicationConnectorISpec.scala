@@ -25,7 +25,6 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.{ApplicationWithCollaborators, ApplicationWithCollaboratorsFixtures}
-import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
@@ -61,11 +60,11 @@ class ThirdPartyApplicationConnectorISpec
   }
 
   "getApplicationDetails" should {
-    val clientId = ClientId.random
+    val clientId = standardApp.clientId
 
     "retrieve application record based on provided clientId" in new SetUp() {
 
-      val jsonResponse = Json.toJson(standardApp.withId(applicationId).modify(_.copy(clientId = clientId))).toString()
+      val jsonResponse = Json.toJson(standardApp.withId(applicationId)).toString()
 
       primeApplicationQueryEndpoint(OK, jsonResponse, clientId)
 

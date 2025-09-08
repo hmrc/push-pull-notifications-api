@@ -82,10 +82,10 @@ class BoxControllerISpec
 
   val url = s"http://localhost:$port"
 
-  val createBoxJsonBody = raw"""{"clientId": "${clientId.value}", "boxName": "$boxName"}"""
-  val createBox2JsonBody = raw"""{"clientId":  "${clientIdTwo.value}", "boxName": "bbyybybyb"}"""
+  val createBoxJsonBody = raw"""{"clientId": "${clientId}", "boxName": "$boxName"}"""
+  val createBox2JsonBody = raw"""{"clientId":  "${clientIdTwo}", "boxName": "bbyybybyb"}"""
   val expectedChallenge = randomUUID.toString
-  val tpaResponse = Json.toJson(standardApp.modify(_.copy(clientId = clientId))).toString()
+  val tpaResponse = Json.toJson(standardApp).toString()
 
   val updateSubscriberJsonBodyWithIds: String =
     raw"""{ "subscriber":
