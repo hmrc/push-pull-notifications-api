@@ -9,7 +9,7 @@ object AppDependencies {
   val appEventVersion = "0.88.0"
   val appDomainVersion = "0.87.0"
   val mockitoScalaVersion = "2.0.0"
-  val mockitoVersion = "5.18.0"
+  val mockitoVersion = "5.19.0"
 
 
   lazy val dependencies = Seq(
