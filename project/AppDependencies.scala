@@ -24,7 +24,7 @@ object AppDependencies {
     // "uk.gov.hmrc"                   %% "api-platform-application-domain"          % appDomainVersion,
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
-    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.2.0",
+    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.3.0",
     "org.typelevel"           %% "cats-core"                        % "2.10.0"
   )
 
