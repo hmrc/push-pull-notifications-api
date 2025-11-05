@@ -6,8 +6,8 @@ object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
   val bootstrapVersion = "9.19.0"
   val mongoVersion = "2.7.0"
-  val appEventVersion = "0.88.0"
-  val appDomainVersion = "0.87.0"
+  val appEventVersion = "0.90.0"
+  val appDomainVersion = "0.90.0"
   val mockitoScalaVersion = "2.0.0"
 
 
