@@ -40,15 +40,15 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
   val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
 
   override def newAppForTest(testData: TestData): Application = GuiceApplicationBuilder()
-    .configure("run.mode" -> "Stub")
-    .configure(Map(
+    .configure(
+      "run.mode" -> "Stub",
       "appName" -> "application-name",
       "appUrl" -> "https://example.com",
       "auditing.enabled" -> false,
       "Test.microservice.services.service-locator.host" -> stubHost,
       "Test.microservice.services.service-locator.port" -> stubPort,
       "apiStatus" -> "ALPHA"
-    ))
+    )
     .in(Mode.Test).build()
 
   override def beforeEach(): Unit = {
