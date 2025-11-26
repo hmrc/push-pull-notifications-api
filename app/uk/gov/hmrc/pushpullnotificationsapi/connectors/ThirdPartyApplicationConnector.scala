@@ -33,6 +33,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 class ThirdPartyApplicationConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationWithCollaborators] = {
-    http.get(url"${appConfig.thirdPartyApplicationUrl}/application?${Seq("clientId" -> clientId)}").execute[ApplicationWithCollaborators]
+    http
+      .get(url"${appConfig.thirdPartyApplicationUrl}/query?clientId=$clientId")
+      .execute[ApplicationWithCollaborators]
   }
 }

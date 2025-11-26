@@ -21,7 +21,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 
 trait ThirdPartyApplicationService {
-  val queryApplicationsUrl = "/application"
+  val queryApplicationsUrl = "/query"
 
   def primeApplicationQueryEndpoint(status: Int, body: String, clientId: ClientId) = {
     stubFor(get(urlPathEqualTo(queryApplicationsUrl))

@@ -86,7 +86,7 @@ class BoxService @Inject() (
                     eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box).recoverWith {
                       case NonFatal(e) =>
                         logger.warn(s"Unable to send CallbackUrlUpdated event", e)
-                        successful(successfulUpdate)
+                        successful(false) // We throw it away anyhow
                     }
                   case _                                    => logger.warn("Updating callback URL failed - not sending event")
                 }
