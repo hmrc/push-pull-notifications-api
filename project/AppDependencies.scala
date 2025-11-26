@@ -5,9 +5,9 @@ import play.sbt.PlayImport._
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
   val bootstrapVersion = "9.19.0"
-  val mongoVersion = "2.7.0"
-  val appEventVersion = "0.88.0"
-  val appDomainVersion = "0.87.0"
+  val mongoVersion = "2.10.0"
+  val appEventVersion = "0.90.0"
+  val appDomainVersion = "0.94.0"
   val mockitoScalaVersion = "2.0.0"
 
 
@@ -17,13 +17,13 @@ object AppDependencies {
     "commons-codec"           %  "commons-codec"                    % "1.15",
     "uk.gov.hmrc"             %% "domain-play-30"                   % "10.0.0",
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-30"               % mongoVersion,
-    "uk.gov.hmrc"             %% "api-platform-application-events"  % appEventVersion,
+    // "uk.gov.hmrc"             %% "api-platform-application-events"  % appEventVersion,
     // Use these during poc stage of development
-    // "uk.gov.hmrc"                   %% "api-platform-application-events"          % appEventVersion exclude("uk.gov.hmrc","api-platform-application-domain"),
-    // "uk.gov.hmrc"                   %% "api-platform-application-domain"          % appDomainVersion,
+    "uk.gov.hmrc"             %% "api-platform-application-events"          % appEventVersion exclude("uk.gov.hmrc","api-platform-application-domain"),
+    "uk.gov.hmrc"             %% "api-platform-application-domain"          % appDomainVersion,
     "com.github.blemale"      %% "scaffeine"                        % "5.2.1",
     "com.lihaoyi"             %% "sourcecode"                       % "0.3.0",
-    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.3.0",
+    "uk.gov.hmrc"             %% "crypto-json-play-30"              % "8.4.0",
     "org.typelevel"           %% "cats-core"                        % "2.10.0"
   )
 
