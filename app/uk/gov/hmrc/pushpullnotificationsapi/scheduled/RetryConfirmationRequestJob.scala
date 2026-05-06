@@ -54,7 +54,7 @@ class RetryConfirmationRequestJob @Inject() (
   lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryConfirmationRequestJob", ttl = 1.hour)
 
   override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
-    val retryAfterDateTime: Instant = instant()
+    val retryAfterDateTime: Instant = instant
 
     repo
       .fetchRetryableConfirmations(retryAfterDateTime)

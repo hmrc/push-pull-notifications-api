@@ -41,7 +41,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 class ApiPlatformEventsConnector @Inject() (http: HttpClientV2, appConfig: AppConfig, val clock: Clock)(implicit ec: ExecutionContext) extends ApplicationLogger with ClockNow {
 
   def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, instant(), Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
+    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, instant, Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
     http.post(url"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated")
       .withBody(Json.toJson(event))
       .execute[HttpResponse]
