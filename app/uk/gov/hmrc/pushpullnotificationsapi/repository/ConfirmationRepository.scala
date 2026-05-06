@@ -85,7 +85,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
   def updateConfirmationNeed(notificationId: NotificationId): Future[Option[ConfirmationRequest]] = {
     collection.findOneAndUpdate(
       filter = equal("notificationId", Codecs.toBson(notificationId.value)),
-      update = set("pushedDateTime", instant()),
+      update = set("pushedDateTime", instant),
       options = FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
     ).headOption().map(o => o.flatMap(_.toNonDb))
   }

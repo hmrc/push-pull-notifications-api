@@ -55,7 +55,7 @@ class NotificationPushService @Inject() (
         case true  =>
           notificationsRepository.updateStatus(notification.notificationId, ACKNOWLEDGED).flatMap(_ => {
 
-            val pushDurationInMilliseconds = instant().toEpochMilli - notification.createdDateTime.toEpochMilli()
+            val pushDurationInMilliseconds = instant.toEpochMilli - notification.createdDateTime.toEpochMilli()
             metrics.defaultRegistry.timer(s"pushNotifiction.duration.${box.boxId}").update(pushDurationInMilliseconds, TimeUnit.MILLISECONDS)
 
             // TODO remove this log entry when metrics have been verfied as correct
