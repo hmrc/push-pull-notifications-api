@@ -199,7 +199,9 @@ class NotificationsControllerISpec
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", """{"hello":"test"}""", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {
@@ -341,7 +343,7 @@ class NotificationsControllerISpec
       }
     }
 
-    "GET /box/[boxId]/notifications" should {
+    "GET /box/[boxId]/notifications/acknowledge" should {
 
       "return 204 happy path" in {
         primeAuthServiceSuccess(clientId, "{\"authorise\" : [ ], \"retrieve\" : [ \"clientId\" ]}")
