@@ -26,7 +26,7 @@ import play.api.mvc.{ActionRefiner, Result}
 import uk.gov.hmrc.http.HttpErrorFunctions
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.lenientFormatter
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 

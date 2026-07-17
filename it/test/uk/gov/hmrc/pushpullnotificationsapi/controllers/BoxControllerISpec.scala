@@ -27,13 +27,13 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
 import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.ApplicationWithCollaboratorsFixtures
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
@@ -101,42 +101,42 @@ class BoxControllerISpec
   def callCreateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .put(jsonBody)
       .futureValue
 
   def callUpdateSubscriberEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/$boxId/subscriber")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .put(jsonBody)
       .futureValue
 
   def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/$boxId/callback")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .put(jsonBody)
       .futureValue
 
   def callGetBoxByNameAndClientIdEndpoint(boxName: String, clientId: ClientId, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=${clientId.value}")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .get()
       .futureValue
 
   def callGetBoxByNameAndEmptyClientIdEndpoint(boxName: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box?boxName=$boxName&clientId=")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .get()
       .futureValue
 
   def callValidateBoxEndpoint(jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/cmb/validate")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .post(jsonBody)
       .futureValue
 
@@ -209,7 +209,7 @@ class BoxControllerISpec
       "respond with 404 when invalid uri provided" in {
         val result = wsClient
           .url(s"$url/box/unKnownPath")
-          .withHttpHeaders(validHeadersJson.toSeq: _*)
+          .withHttpHeaders(validHeadersJson.toSeq*)
           .get()
           .futureValue
 

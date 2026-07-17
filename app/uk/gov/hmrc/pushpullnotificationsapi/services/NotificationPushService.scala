@@ -30,7 +30,7 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
@@ -84,7 +84,7 @@ class NotificationPushService @Inject() (
       val outboundNotification = OutboundNotification(subscriber.callBackUrl, calculateForwardedHeaders(client, notificationAsJsonString), notificationAsJsonString)
 
       pushService.handleNotification(outboundNotification).map {
-        case _: PushServiceSuccessResult    => true
+        case PushServiceSuccessResult       => true
         case error: PushServiceFailedResult =>
           logger.warn(s"Attempt to push notification for id: ${notification.notificationId} from boxId: ${box.boxId} for client: ${client.id} app:${box.applicationId.fold("UNKNOWN")(_.toString())} to callback URL ${outboundNotification.destinationUrl} failed with error: ${error.errorMessage}")
           false
@@ -104,7 +104,7 @@ class NotificationPushService @Inject() (
     boxRepository.fetchPushSubscriberBoxes().map { boxes =>
       boxes.map(box => notificationsRepository.fetchRetryableNotifications(box, retryAfter)) match {
         case first :: second :: rest =>
-          Source.combine(first, second, rest: _*)(Merge(_))
+          Source.combine(first, second, rest*)(Merge(_))
         case first :: Nil            =>
           first
         case Nil                     =>

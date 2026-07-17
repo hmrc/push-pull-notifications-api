@@ -21,7 +21,7 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.http.HeaderNames.ACCEPT
-import play.api.mvc.Results._
+import play.api.mvc.Results.*
 import play.api.mvc.{ActionFilter, Request, Result}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID

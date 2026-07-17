@@ -29,7 +29,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json.toJson
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -64,7 +64,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule wi
   }
 
   private def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 

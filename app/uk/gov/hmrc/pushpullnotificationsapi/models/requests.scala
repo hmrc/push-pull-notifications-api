@@ -64,7 +64,7 @@ object PrivateHeader {
 case class WrappedNotificationBody(body: String, contentType: String)
 
 object WrappedNotificationBody {
-  import play.api.libs.json._
+  import play.api.libs.json.*
 
   implicit val format: OFormat[WrappedNotificationBody] = Json.format[WrappedNotificationBody]
 }
@@ -72,7 +72,7 @@ object WrappedNotificationBody {
 case class WrappedNotificationRequest(notification: WrappedNotificationBody, version: String, confirmationUrl: Option[URL], privateHeaders: List[PrivateHeader])
 
 trait URLFormatter {
-  import play.api.libs.json._
+  import play.api.libs.json.*
   import scala.util.{Failure, Success}
 
   val fromString: String => JsResult[URL] = rawText => {
@@ -91,9 +91,9 @@ trait URLFormatter {
 object URLFormatter extends URLFormatter
 
 object WrappedNotificationRequest {
-  import play.api.libs.json._
-  import play.api.libs.functional.syntax._
-  import URLFormatter._
+  import play.api.libs.json.*
+  import play.api.libs.functional.syntax.*
+  import URLFormatter.*
 
   implicit val reads: Reads[WrappedNotificationRequest] = (
     (__ \ "notification").read[WrappedNotificationBody] and

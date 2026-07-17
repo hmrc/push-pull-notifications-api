@@ -65,7 +65,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   def doGet(path: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url$path")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .get()
       .futureValue
 

@@ -30,7 +30,7 @@ import org.mongodb.scala.model.Aggregates.`match`
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
+import org.mongodb.scala.model.*
 import org.mongodb.scala.{MongoWriteException, ReadPreference}
 
 import uk.gov.hmrc.mongo.MongoComponent
@@ -39,7 +39,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
@@ -56,28 +56,28 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
       domainFormat = dbNotificationFormatter,
       indexes = Seq(
         IndexModel(
-          ascending(List("notificationId"): _*),
+          ascending(List("notificationId")*),
           IndexOptions()
             .name("notifications_idx")
             .background(true)
             .unique(true)
         ),
         IndexModel(
-          ascending(List("boxId", "status"): _*),
+          ascending(List("boxId", "status")*),
           IndexOptions()
             .name("boxid_status_idx")
             .background(true)
             .unique(false)
         ),
         IndexModel(
-          ascending(List("boxId", "createdDateTime"): _*),
+          ascending(List("boxId", "createdDateTime")*),
           IndexOptions()
             .name("boxid_createdatetime_idx")
             .background(true)
             .unique(false)
         ),
         IndexModel(
-          ascending(Seq("createdDateTime"): _*),
+          ascending(Seq("createdDateTime")*),
           IndexOptions()
             .name("create_datetime_ttl_idx")
             .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
@@ -124,7 +124,7 @@ class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: M
   }
 
   private def notificationIdsQuery(notificationIds: List[NotificationId]): Bson = {
-    in("notificationId", (notificationIds.map(Codecs.toBson(_))): _*)
+    in("notificationId", (notificationIds.map(Codecs.toBson(_)))*)
   }
 
   private def statusQuery(maybeStatus: Option[NotificationStatus]): Bson = {

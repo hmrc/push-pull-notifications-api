@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 
 trait ApiPlatformEventsService {
   val callbackUpdatedEventUri = "/application-events/ppnsCallbackUriUpdated"

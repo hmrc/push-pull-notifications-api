@@ -90,7 +90,7 @@ class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 }

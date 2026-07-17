@@ -26,7 +26,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.{ApiPlatformEventsConnector, ThirdPartyApplicationConnector}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
 import uk.gov.hmrc.pushpullnotificationsapi.services.PushService
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
@@ -82,18 +82,18 @@ class BoxService @Inject() (
             appId <- box.applicationId.fold(updateBoxWithApplicationId(box))(id => successful(id))
             result <- validateCallBack(box, request)
             _ = result match {
-                  case successfulUpdate: CallbackUrlUpdated =>
+                  case successfulUpdate @ CallbackUrlUpdated =>
                     eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box).recoverWith {
                       case NonFatal(e) =>
                         logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                         successful(false) // We throw it away anyhow
                     }
-                  case _                                    => logger.warn("Updating callback URL failed - not sending event")
+                  case _                                     => logger.warn("Updating callback URL failed - not sending event")
                 }
           } yield result
-        } else successful(UpdateCallbackUrlUnauthorisedResult())
+        } else successful(UpdateCallbackUrlUnauthorisedResult)
 
-      case None => successful(BoxIdNotFound())
+      case None => successful(BoxIdNotFound)
     } recoverWith {
       case NonFatal(e) => successful(UnableToUpdateCallbackUrl(errorMessage = e.getMessage))
     }
@@ -102,7 +102,7 @@ class BoxService @Inject() (
   private def validateCallBack(box: Box, request: UpdateCallbackUrlRequest): Future[UpdateCallbackUrlResult] = {
     if (request.callbackUrl.nonEmpty) {
       pushService.validateCallbackUrl(request) flatMap {
-        case _: PushServiceSuccessResult     =>
+        case PushServiceSuccessResult        =>
           logger.info(s"Callback Validated for boxId:${box.boxId} updating push callbackUrl")
           updateBoxWithCallBack(box.boxId, new SubscriberContainer(PushSubscriber(request.callbackUrl)))
         case result: PushServiceFailedResult =>
@@ -117,7 +117,7 @@ class BoxService @Inject() (
 
   private def updateBoxWithCallBack(boxId: BoxId, subscriber: SubscriberContainer[Subscriber]): Future[UpdateCallbackUrlResult] =
     repository.updateSubscriber(boxId, subscriber).map {
-      case Some(_) => CallbackUrlUpdated()
+      case Some(_) => CallbackUrlUpdated
       case _       => UnableToUpdateCallbackUrl(errorMessage = "Unable to update box with callback Url")
     }
 

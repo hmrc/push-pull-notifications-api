@@ -32,9 +32,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 class ConfigurationModule extends Module {
 
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] = {
     Seq(
-      bind[Encrypter with Decrypter].to[LocalCrypto],
+      bind[Encrypter & Decrypter].to[LocalCrypto],
       bind[RetryPushNotificationsJobConfig].toProvider[RetryPushNotificationsJobConfigProvider],
       bind[RetryConfirmationRequestJobConfig].toProvider[RetryConfirmationRequestJobConfigProvider]
     )

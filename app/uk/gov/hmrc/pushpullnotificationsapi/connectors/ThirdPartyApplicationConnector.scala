@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.google.inject.Inject
 
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 

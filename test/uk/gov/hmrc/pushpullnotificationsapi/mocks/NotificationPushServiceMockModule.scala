@@ -24,7 +24,7 @@ import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.*
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {

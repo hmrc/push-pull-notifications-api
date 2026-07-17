@@ -25,16 +25,17 @@ import com.google.inject.Inject
 
 import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames.CONTENT_TYPE
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorResult, ConfirmationConnectorSuccessResult}
+import play.api.libs.ws.JsonBodyWritables
 
 @Singleton
-class ConfirmationConnector @Inject() (http: HttpClientV2)(implicit ec: ExecutionContext) {
+class ConfirmationConnector @Inject() (http: HttpClientV2)(implicit ec: ExecutionContext) extends JsonBodyWritables {
 
   def sendConfirmation(confirmationUrl: URL, confirmation: OutboundConfirmation)(implicit hc: HeaderCarrier): Future[ConfirmationConnectorResult] = {
     http.post(confirmationUrl)
@@ -43,7 +44,7 @@ class ConfirmationConnector @Inject() (http: HttpClientV2)(implicit ec: Executio
       .execute[Either[UpstreamErrorResponse, HttpResponse]]
       .map {
         case Left(e)  => ConfirmationConnectorFailedResult(e.toString)
-        case Right(_) => ConfirmationConnectorSuccessResult()
+        case Right(_) => ConfirmationConnectorSuccessResult
       }
       .recover {
         case NonFatal(e) => ConfirmationConnectorFailedResult(e.getMessage)

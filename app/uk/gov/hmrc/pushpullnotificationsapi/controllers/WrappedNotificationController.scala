@@ -21,14 +21,14 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future.successful
 
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationId
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 
@@ -61,9 +61,9 @@ class WrappedNotificationsController @Inject() (
               confirmationUrl =>
                 val confirmationId = ConfirmationId.random
                 confirmationService.saveConfirmationRequest(confirmationId, confirmationUrl, notificationId, request.privateHeaders) map {
-                  case _: ConfirmationCreateServiceSuccessResult =>
+                  case ConfirmationCreateServiceSuccessResult   =>
                     Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
-                  case _: ConfirmationCreateServiceFailedResult  =>
+                  case _: ConfirmationCreateServiceFailedResult =>
                     InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
                 }
             }

@@ -18,12 +18,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 
 import scala.concurrent.ExecutionContext
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec

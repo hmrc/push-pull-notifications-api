@@ -40,7 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.BoxServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
@@ -446,7 +446,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 
@@ -466,7 +466,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       case Failure(_)     => None
     }
 
-    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
   }

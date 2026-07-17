@@ -25,6 +25,7 @@ import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.{API_PULL_SUBSCRIBER, API_PUSH_SUBSCRIBER}
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
 
 case class BoxId(value: UUID) extends AnyVal {
   override def toString: String = value.toString
@@ -61,8 +62,9 @@ object SubscriptionType {
   def apply(text: String): Option[SubscriptionType] = SubscriptionType.values.find(_.toString() == text.toUpperCase)
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[SubscriptionType] = SealedTraitJsonFormatting.createFormatFor[SubscriptionType]("Subscription Type", SubscriptionType.apply)
+
+  implicit val format: Format[SubscriptionType] =
+    SimpleEnumJsonFormatting.createStringFormatFor[SubscriptionType]("Subscription Type", SubscriptionType.apply, _.toString().toUpperCase())
 }
 
 sealed trait Subscriber {

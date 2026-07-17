@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.support
-
-import com.github.tomakehurst.wiremock.client.WireMock.*
+package uk.gov.hmrc.pushpullnotificationsapi.controllers.binders
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 
-trait ThirdPartyApplicationService {
-  val queryApplicationsUrl = "/query"
+object RouteModels {
+  type SimpleClientId = String
 
-  def primeApplicationQueryEndpoint(status: Int, body: String, clientId: ClientId) = {
-    stubFor(get(urlPathEqualTo(queryApplicationsUrl))
-      .withQueryParam("clientId", equalTo(clientId.value))
-      .willReturn(
-        aResponse()
-          .withBody(body)
-          .withStatus(status)
-      ))
+  object SimpleClientId {
+    def from(x: ClientId): SimpleClientId = new SimpleClientId(x.value)
   }
 
+  object Conversions {
+
+    given Conversion[SimpleClientId, ClientId] with
+      def apply(x: SimpleClientId): ClientId = ClientId(x)
+
+    given Conversion[Option[SimpleClientId], Option[ClientId]] with
+      def apply(x: Option[SimpleClientId]): Option[ClientId] = x.map(ClientId(_))
+
+  }
 }

@@ -27,7 +27,7 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
+import org.mongodb.scala.model.*
 
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -61,7 +61,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
             .unique(true)
         ),
         IndexModel(
-          ascending(Seq("createdDateTime"): _*),
+          ascending(Seq("createdDateTime")*),
           IndexOptions()
             .name("create_datetime_ttl_idx")
             .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
@@ -113,7 +113,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
           equal("status", Codecs.toBson[ConfirmationStatus](ConfirmationStatus.PENDING)),
           or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", retryAfter))
         )
-      ).toObservable()
+      )
     )
       .map(_.toNonDb)
       .collect {

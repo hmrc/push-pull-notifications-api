@@ -37,7 +37,7 @@ class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditE
 
   override def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] =
     Future.successful {
-      implicit val headerCarrier: HeaderCarrier = hc(request)
+      implicit val headerCarrier: HeaderCarrier = hc(using request)
       statusCode match {
         case NOT_FOUND              =>
           NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"URI not found ${request.path}"))

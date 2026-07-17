@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 import org.mongodb.scala.model.Filters.{equal, _}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
+import org.mongodb.scala.model.*
 
 import play.api.Logger
 import uk.gov.hmrc.mongo.MongoComponent
@@ -32,7 +32,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, formatSubscriber}
 
@@ -44,7 +44,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
       domainFormat = BoxFormat.boxFormats,
       indexes = Seq(
         IndexModel(
-          ascending(List("boxName", "boxCreator.clientId"): _*),
+          ascending(List("boxName", "boxCreator.clientId")*),
           IndexOptions()
             .name("box_index")
             .background(true)
@@ -77,7 +77,7 @@ class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionCont
     }
 
   def deleteBox(boxId: BoxId): Future[DeleteBoxResult] =
-    collection.deleteOne(equal("boxId", Codecs.toBson(boxId))).map(_ => BoxDeleteSuccessfulResult()).head() recoverWith {
+    collection.deleteOne(equal("boxId", Codecs.toBson(boxId))).map(_ => BoxDeleteSuccessfulResult).head() recoverWith {
       case NonFatal(e) => Future.successful(BoxDeleteFailedResult(e.getMessage))
     }
 

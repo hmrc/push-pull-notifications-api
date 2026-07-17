@@ -31,7 +31,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json, Reads, Writes}
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
@@ -42,7 +42,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{AcknowledgeNotificationsRequ
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
-import uk.gov.hmrc.pushpullnotificationsapi.support._
+import uk.gov.hmrc.pushpullnotificationsapi.support.*
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -140,28 +140,28 @@ class NotificationsControllerISpec
   def doPost(urlString: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(urlString)
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .post(jsonBody)
       .futureValue
 
   def doPut(urlString: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(urlString)
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .put(jsonBody)
       .futureValue
 
   def doGet(urlString: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(urlString)
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .get()
       .futureValue
 
   def callUpdateCallbackUrlEndpoint(boxId: BoxId, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url/box/${boxId.value.toString}/callback")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .put(jsonBody)
       .futureValue
 

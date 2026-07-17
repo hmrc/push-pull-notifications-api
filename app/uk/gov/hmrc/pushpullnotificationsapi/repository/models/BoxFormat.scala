@@ -18,13 +18,13 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 
 /** */
 object BoxFormat extends OFormat[Box] {
@@ -49,7 +49,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "boxCreator").read[BoxCreator] and
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber]
-  ) { Box }
+  )(Box.apply)
 
   implicit val boxFormats: OFormat[Box] = OFormat(boxReads, boxWrites)
 

@@ -26,6 +26,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId, PrivateHeader}
+import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
 
 sealed trait MessageContentType {
   def value: String = MessageContentType.value(this)
@@ -45,10 +46,9 @@ object MessageContentType {
   }
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
 
   implicit val format: Format[MessageContentType] =
-    SealedTraitJsonFormatting.createFormatFor[MessageContentType]("Message content type", MessageContentType.apply, MessageContentType.value)
+    SimpleEnumJsonFormatting.createFormatFor[MessageContentType]("Message content type", MessageContentType.apply, MessageContentType.value)
 }
 
 sealed trait NotificationStatus
@@ -64,8 +64,9 @@ object NotificationStatus {
   def unsafeApply(text: String): NotificationStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid NotificationStatus"))
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[NotificationStatus] = SealedTraitJsonFormatting.createFormatFor[NotificationStatus]("Notification status", NotificationStatus.apply)
+
+  implicit val format: Format[NotificationStatus] =
+    SimpleEnumJsonFormatting.createStringFormatFor[NotificationStatus]("Notification status", NotificationStatus.apply, _.toString().toUpperCase())
 }
 
 case class NotificationId(value: UUID) extends AnyVal {
@@ -105,8 +106,9 @@ object ConfirmationStatus {
   def apply(text: String): Option[ConfirmationStatus] = ConfirmationStatus.values.find(_.toString() == text.toUpperCase)
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[ConfirmationStatus] = SealedTraitJsonFormatting.createFormatFor[ConfirmationStatus]("Confirmation status", ConfirmationStatus.apply)
+
+  implicit val format: Format[ConfirmationStatus] =
+    SimpleEnumJsonFormatting.createStringFormatFor[ConfirmationStatus]("Confirmation status", ConfirmationStatus.apply, _.toString().toUpperCase())
 }
 
 case class ForwardedHeader(key: String, value: String)

@@ -26,20 +26,21 @@ import scala.util.{Failure, Success, Try}
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status.{BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR}
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
+import uk.gov.hmrc.http.*
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.CallbackValidation
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
+import play.api.libs.ws.JsonBodyWritables
 
 @Singleton
 class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext)
-    extends ApplicationLogger {
+    extends ApplicationLogger with JsonBodyWritables {
 
-  import OutboundProxyConnector._
+  import OutboundProxyConnector.*
 
   def addProxyIfRequired(requestBuilder: RequestBuilder): RequestBuilder = if (appConfig.useProxy) {
     requestBuilder.withProxy
@@ -50,7 +51,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
   private val destinationUrlPattern: Pattern = "^https.*".r.pattern
 
   private val validate: String => Try[String] =
-    OutboundProxyConnector.validateDestinationUrl(appConfig.validateCallbackUrlIsHttps, destinationUrlPattern, appConfig.allowedHostList) _
+    OutboundProxyConnector.validateDestinationUrl(appConfig.validateCallbackUrlIsHttps, destinationUrlPattern, appConfig.allowedHostList)
 
   def postNotification(notification: OutboundNotification): Future[Int] = {
 
@@ -74,7 +75,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
 
         addProxyIfRequired(httpClient.post(url"$url"))
           .withBody(Json.parse(notification.payload))
-          .setHeader(extraHeaders: _*)
+          .setHeader(extraHeaders*)
           .execute[Either[UpstreamErrorResponse, HttpResponse]]
           .map {
             case Left(UpstreamErrorResponse(_, statusCode, _, _)) => failWith(statusCode)

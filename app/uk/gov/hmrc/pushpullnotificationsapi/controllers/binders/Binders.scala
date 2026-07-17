@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.pushpullnotificationsapi.controllers
-
-import java.util.UUID
-import scala.util.Try
+package uk.gov.hmrc.pushpullnotificationsapi.controllers.binders
 
 import play.api.Logger
-import play.api.mvc.{PathBindable, QueryStringBindable}
+import play.api.mvc.{QueryStringBindable}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models.BoxId
+
+// N.B. Lots commented out here until Play supports opaque types on the paths.
+//
 
 object Binders {
   val logger: Logger = Logger("binders")
 
-  private def boxIdFromString(text: String): Either[String, BoxId] = {
-    Try(UUID.fromString(text))
-      .toOption
-      .toRight({
-        logger.info("Cannot parse parameter %s as BoxId".format(text))
-        "Box ID is not a UUID"
-      })
-      .map(BoxId(_))
-  }
+  // private def boxIdFromString(text: String): Either[String, BoxId] = {
+  //   Try(UUID.fromString(text))
+  //     .toOption
+  //     .toRight({
+  //       logger.info("Cannot parse parameter %s as BoxId".format(text))
+  //       "Box ID is not a UUID"
+  //     })
+  //     .map(BoxId(_))
+  // }
 
   implicit def clientIdQueryStringBindable(implicit textBinder: QueryStringBindable[String]): QueryStringBindable[ClientId] = new QueryStringBindable[ClientId] {
 
@@ -56,25 +55,25 @@ object Binders {
     }
   }
 
-  implicit def boxIdPathBindable(implicit textBinder: PathBindable[String]): PathBindable[BoxId] = new PathBindable[BoxId] {
+  // implicit def boxIdPathBindable(implicit textBinder: PathBindable[String]): PathBindable[BoxId] = new PathBindable[BoxId] {
 
-    override def bind(key: String, value: String): Either[String, BoxId] = {
-      textBinder.bind(key, value).flatMap(boxIdFromString)
-    }
+  //   override def bind(key: String, value: String): Either[String, BoxId] = {
+  //     textBinder.bind(key, value).flatMap(boxIdFromString)
+  //   }
 
-    override def unbind(key: String, boxId: BoxId): String = {
-      boxId.toString
-    }
-  }
+  //   override def unbind(key: String, boxId: BoxId): String = {
+  //     boxId.toString
+  //   }
+  // }
 
-  implicit def clientIdPathBinder(implicit textBinder: PathBindable[String]): PathBindable[ClientId] = new PathBindable[ClientId] {
+  // implicit def clientIdPathBinder(implicit textBinder: PathBindable[String]): PathBindable[ClientId] = new PathBindable[ClientId] {
 
-    override def bind(key: String, value: String): Either[String, ClientId] = {
-      textBinder.bind(key, value).map(ClientId(_))
-    }
+  //   override def bind(key: String, value: String): Either[String, ClientId] = {
+  //     textBinder.bind(key, value).map(ClientId(_))
+  //   }
 
-    override def unbind(key: String, clientId: ClientId): String = {
-      clientId.value
-    }
-  }
+  //   override def unbind(key: String, clientId: ClientId): String = {
+  //     clientId.value
+  //   }
+  // }
 }

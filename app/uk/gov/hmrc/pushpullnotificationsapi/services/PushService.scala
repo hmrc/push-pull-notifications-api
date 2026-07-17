@@ -34,8 +34,8 @@ class PushService @Inject() (
   def validateCallbackUrl(request: UpdateCallbackUrlRequest): Future[PushServiceResult] = {
     callbackValidator.validateCallback(CallbackValidation(request.callbackUrl)) map {
       result =>
-        if (result.successful) PushServiceSuccessResult()
-        else result.errorMessage.fold(PushServiceFailedResult("Unknown Error"))(PushServiceFailedResult)
+        if (result.successful) PushServiceSuccessResult
+        else result.errorMessage.fold(PushServiceFailedResult("Unknown Error"))(PushServiceFailedResult(_))
     }
   }
 
@@ -50,7 +50,7 @@ class PushService @Inject() (
             logger.warn(s"Call to ${notification.destinationUrl} returned HTTP Status Code $statusCode - treating notification as unsuccessful")
             PushServiceFailedResult("HTTP Status Code was not 200")
           } else {
-            PushServiceSuccessResult()
+            PushServiceSuccessResult
           }
         })
         .recover {

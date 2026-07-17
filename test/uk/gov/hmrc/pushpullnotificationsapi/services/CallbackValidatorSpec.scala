@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
 
 import play.api.http.Status.INTERNAL_SERVER_ERROR
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.{BadRequestException, JsValidationException, UpstreamErrorResponse}
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec

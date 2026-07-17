@@ -24,23 +24,23 @@ final case class BoxRetrievedResult(box: Box) extends BoxCreateSuccessResult
 
 sealed trait DeleteBoxResult
 final case class BoxDeleteFailedResult(message: String) extends DeleteBoxResult
-final case class BoxDeleteNotFoundResult() extends DeleteBoxResult
-final case class BoxDeleteAccessDeniedResult() extends DeleteBoxResult
-final case class BoxDeleteSuccessfulResult() extends DeleteBoxResult
+case object BoxDeleteNotFoundResult extends DeleteBoxResult
+case object BoxDeleteAccessDeniedResult extends DeleteBoxResult
+case object BoxDeleteSuccessfulResult extends DeleteBoxResult
 
 sealed trait NotificationCreateServiceResult
 
 sealed trait NotificationCreateServiceFailedResult extends NotificationCreateServiceResult
 sealed trait NotificationCreateServiceSuccessResult extends NotificationCreateServiceResult
 
-final case class NotificationCreateSuccessResult() extends NotificationCreateServiceSuccessResult
+case object NotificationCreateSuccessResult extends NotificationCreateServiceSuccessResult
 final case class NotificationCreateFailedDuplicateResult(message: String) extends NotificationCreateServiceFailedResult
 final case class NotificationCreateFailedBoxIdNotFoundResult(message: String) extends NotificationCreateServiceFailedResult
 
 sealed trait ConfirmationCreateServiceResult
 
 final case class ConfirmationCreateServiceFailedResult(message: String) extends ConfirmationCreateServiceResult
-final case class ConfirmationCreateServiceSuccessResult() extends ConfirmationCreateServiceResult
+case object ConfirmationCreateServiceSuccessResult extends ConfirmationCreateServiceResult
 
 sealed trait GetNotificationsServiceFailedResult
 
@@ -57,23 +57,23 @@ final case class AcknowledgeNotificationsServiceUnauthorisedResult(message: Stri
 final case class AcknowledgeNotificationsSuccessUpdatedResult(result: Boolean) extends AcknowledgeNotificationsServiceResultSuccess
 
 sealed trait PushServiceResult
-final case class PushServiceSuccessResult() extends PushServiceResult
+case object PushServiceSuccessResult extends PushServiceResult
 final case class PushServiceFailedResult(errorMessage: String) extends PushServiceResult
 
 sealed trait ConfirmationConnectorResult
-final case class ConfirmationConnectorSuccessResult() extends ConfirmationConnectorResult
+case object ConfirmationConnectorSuccessResult extends ConfirmationConnectorResult
 final case class ConfirmationConnectorFailedResult(errorMessage: String) extends ConfirmationConnectorResult
 
 sealed trait UpdateCallbackUrlResult
 sealed trait UpdateCallbackUrlSuccessResult extends UpdateCallbackUrlResult
 sealed trait UpdateCallbackUrlFailedResult extends UpdateCallbackUrlResult
 
-final case class CallbackUrlUpdated() extends UpdateCallbackUrlSuccessResult
-final case class BoxIdNotFound() extends UpdateCallbackUrlFailedResult
+case object CallbackUrlUpdated extends UpdateCallbackUrlSuccessResult
+case object BoxIdNotFound extends UpdateCallbackUrlFailedResult
 final case class UnableToUpdateCallbackUrl(errorMessage: String) extends UpdateCallbackUrlFailedResult
 final case class CallbackValidationFailed(errorMessage: String) extends UpdateCallbackUrlFailedResult
-final case class UpdateCallbackUrlUnauthorisedResult() extends UpdateCallbackUrlFailedResult
+case object UpdateCallbackUrlUnauthorisedResult extends UpdateCallbackUrlFailedResult
 sealed trait ValidateBoxOwnerResult
 final case class ValidateBoxOwnerNotFoundResult(errorMessage: String) extends ValidateBoxOwnerResult
-final case class ValidateBoxOwnerSuccessResult() extends ValidateBoxOwnerResult
+case object ValidateBoxOwnerSuccessResult extends ValidateBoxOwnerResult
 final case class ValidateBoxOwnerFailedResult(errorMessage: String) extends ValidateBoxOwnerResult

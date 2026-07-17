@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.apache.pekko.actor.{Cancellable, Scheduler}

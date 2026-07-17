@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId, NotificationStatus, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ConfirmationRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationRequest
@@ -42,7 +42,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
     )(implicit ec: ExecutionContext
     ): Future[ConfirmationCreateServiceResult] = {
     repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId, privateHeaders)).map {
-      case Some(_) => ConfirmationCreateServiceSuccessResult()
+      case Some(_) => ConfirmationCreateServiceSuccessResult
       case None    => ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }
   }
@@ -64,10 +64,10 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
         request.confirmationUrl,
         OutboundConfirmation(request.confirmationId, request.notificationId, "1", NotificationStatus.ACKNOWLEDGED, request.pushedDateTime, request.privateHeaders)
       ) map {
-        case _: ConfirmationConnectorSuccessResult =>
+        case ConfirmationConnectorSuccessResult   =>
           repository.updateStatus(request.notificationId, ConfirmationStatus.ACKNOWLEDGED)
           true
-        case _: ConfirmationConnectorFailedResult  =>
+        case _: ConfirmationConnectorFailedResult =>
           logger.info(s"Confirmation not sent for notificationId: ${request.notificationId.value}")
           false
       }
