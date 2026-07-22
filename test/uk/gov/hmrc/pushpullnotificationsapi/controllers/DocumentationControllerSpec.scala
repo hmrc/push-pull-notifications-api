@@ -19,6 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import scala.concurrent.Future
 
 import org.apache.pekko.stream.Materializer
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
@@ -26,19 +27,21 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.Result
-import play.api.test.Helpers.{route, _}
+import play.api.test.Helpers.{route, *}
 import play.api.test.{FakeRequest, Helpers}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
+import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
-class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class DocumentationControllerSpec extends AsyncHmrcSpec with MockitoSugar with ArgumentMatchersSugar with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   implicit def mat: Materializer = app.injector.instanceOf[Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[AppConfig].to(mockAppConfig))
+    .disable[SchedulerModule]
     .build()
 
   override def beforeEach(): Unit = {
@@ -90,7 +93,7 @@ class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 }

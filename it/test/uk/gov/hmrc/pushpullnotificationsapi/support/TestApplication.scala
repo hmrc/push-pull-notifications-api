@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.support
 import play.api.inject.guice.GuiceApplicationBuilder
 
 trait TestApplication {
-  _: BaseISpec =>
+  self: BaseISpec =>
 
   protected override def appBuilder: GuiceApplicationBuilder =
     new GuiceApplicationBuilder()

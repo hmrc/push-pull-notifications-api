@@ -44,17 +44,17 @@ class RetryPushNotificationsJob @Inject() (
     notificationsRepository: NotificationsRepository,
     notificationPushService: NotificationPushService,
     val clock: Clock
-  )(implicit mat: Materializer)
+  )(using m: Materializer)
     extends ScheduledMongoJob with ClockNow {
 
   override def name: String = "RetryPushNotificationsJob"
   override def interval: FiniteDuration = jobConfig.interval
   override def initialDelay: FiniteDuration = jobConfig.initialDelay
   override val isEnabled: Boolean = jobConfig.enabled
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryPushNotificationsJob", ttl = 1.hour)
+  given HeaderCarrier = HeaderCarrier()
+  override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryPushNotificationsJob", ttl = 1.hour)
 
-  override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
+  override def runJob(using ExecutionContext): Future[RunningOfJobSuccessful] = {
     val retryAfterDateTime: Instant = instant
     val nextRetryAfterDateTime: Instant = retryAfterDateTime.plus(Duration.ofMillis(jobConfig.interval.toMillis))
 
@@ -76,7 +76,7 @@ class RetryPushNotificationsJob @Inject() (
     )
   }
 
-  private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
+  private def retryPushNotification(retryableNotification: RetryableNotification, retryAfterDateTime: Instant)(using ExecutionContext): Future[Unit] = {
     notificationPushService
       .handlePushNotification(retryableNotification.box, retryableNotification.notification)
       .flatMap(success => if (success) successful(()) else updateFailedNotification(retryableNotification.notification, retryAfterDateTime))
@@ -87,7 +87,7 @@ class RetryPushNotificationsJob @Inject() (
       }
   }
 
-  private def updateFailedNotification(notification: Notification, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
+  private def updateFailedNotification(notification: Notification, retryAfterDateTime: Instant)(using ExecutionContext): Future[Unit] = {
     if (notification.createdDateTime.isAfter(instant.minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
       notificationsRepository.updateRetryAfterDateTime(notification.notificationId, retryAfterDateTime).map(_ => ())
     } else {

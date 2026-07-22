@@ -28,14 +28,14 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 class PushService @Inject() (
     callbackValidator: CallbackValidator,
     outboundProxyConnector: OutboundProxyConnector
-  )(implicit ec: ExecutionContext)
+  )(using ExecutionContext)
     extends ApplicationLogger {
 
   def validateCallbackUrl(request: UpdateCallbackUrlRequest): Future[PushServiceResult] = {
     callbackValidator.validateCallback(CallbackValidation(request.callbackUrl)) map {
       result =>
         if (result.successful) PushServiceSuccessResult()
-        else result.errorMessage.fold(PushServiceFailedResult("Unknown Error"))(PushServiceFailedResult)
+        else result.errorMessage.fold(PushServiceFailedResult("Unknown Error"))(PushServiceFailedResult(_))
     }
   }
 

@@ -30,7 +30,7 @@ import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.{ConfirmationServiceMockModule, NotificationPushServiceMockModule}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
@@ -84,13 +84,13 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData with FixedClo
     "return NotificationCreateSuccessResult when box exists , push is called with subscriber & notification successfully saved" in new Setup {
       primeBoxRepo(Some(BoxObjectWithPushSubscribers), boxId)
       primeNotificationRepoSave(Some(NotificationId.random))
-      when(NotificationPushServiceMock.aMock.handlePushNotification(eqTo(BoxObjectWithPushSubscribers), *)(*, *))
+      when(NotificationPushServiceMock.aMock.handlePushNotification(eqTo(BoxObjectWithPushSubscribers), *)(using *, *))
         .thenReturn(Future.successful(true))
       val result: NotificationCreateServiceResult = await(serviceToTest.saveNotification(boxId, NotificationId.random, messageContentTypeJson, message))
       result shouldBe NotificationCreateSuccessResult()
 
       verify(BoxRepositoryMock.aMock, times(1)).findByBoxId(eqTo(boxId))
-      verify(NotificationPushServiceMock.aMock).handlePushNotification(eqTo(BoxObjectWithPushSubscribers), *)(*, *)
+      verify(NotificationPushServiceMock.aMock).handlePushNotification(eqTo(BoxObjectWithPushSubscribers), *)(using *, *)
       NotificationsRepositoryMock.SaveNotification.verifyCalled()
     }
 
@@ -102,7 +102,7 @@ class NotificationsServiceSpec extends AsyncHmrcSpec with TestData with FixedClo
       result shouldBe NotificationCreateSuccessResult()
 
       verify(BoxRepositoryMock.aMock, times(1)).findByBoxId(eqTo(boxId))
-      verify(NotificationPushServiceMock.aMock).handlePushNotification(eqTo(BoxObjectWithNoSubscribers), *)(*, *)
+      verify(NotificationPushServiceMock.aMock).handlePushNotification(eqTo(BoxObjectWithNoSubscribers), *)(using *, *)
       NotificationsRepositoryMock.SaveNotification.verifyCalled()
     }
 

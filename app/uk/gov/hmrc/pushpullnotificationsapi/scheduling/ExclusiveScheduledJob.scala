@@ -22,9 +22,9 @@ import scala.util.{Failure, Success, Try}
 
 trait ExclusiveScheduledJob extends ScheduledJob {
 
-  def executeInMutex(implicit ec: ExecutionContext): Future[this.Result]
+  def executeInMutex(using ExecutionContext): Future[this.Result]
 
-  final def execute(implicit ec: ExecutionContext): Future[Result] =
+  final def execute(using ExecutionContext): Future[Result] =
     if (mutex.tryAcquire()) {
       Try(executeInMutex) match {
         case Success(f) => f andThen { case _ => mutex.release() }

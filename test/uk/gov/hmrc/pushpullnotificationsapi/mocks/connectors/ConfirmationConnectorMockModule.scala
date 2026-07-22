@@ -42,23 +42,23 @@ trait ConfirmationConnectorMockModule extends MockitoSugar with ArgumentMatchers
     object SendConfirmation {
 
       def returnsFailure() = {
-        when(aMock.sendConfirmation(*, *)(*)).thenReturn(successful(ConfirmationConnectorFailedResult("bang boom splat")))
+        when(aMock.sendConfirmation(*, *)(using *)).thenReturn(successful(ConfirmationConnectorFailedResult("bang boom splat")))
       }
 
       def throws() = {
-        when(aMock.sendConfirmation(*, *)(*)).thenThrow(new RuntimeException("Boom"))
+        when(aMock.sendConfirmation(*, *)(using *)).thenThrow(new RuntimeException("Boom"))
       }
 
       def neverCalled() = {
-        verify(never).sendConfirmation(*, *)(*)
+        verify(never).sendConfirmation(*, *)(using *)
       }
 
       def verifyCalledWith(url: URL) = {
-        verify.sendConfirmation(eqTo(url), *[OutboundConfirmation])(*)
+        verify.sendConfirmation(eqTo(url), *[OutboundConfirmation])(using *)
       }
 
       def isSuccessWith(url: URL, expectedOutBoundConfirmation: OutboundConfirmation) = {
-        when(aMock.sendConfirmation(eqTo(url), eqTo(expectedOutBoundConfirmation))(*)).thenReturn(successful(ConfirmationConnectorSuccessResult()))
+        when(aMock.sendConfirmation(eqTo(url), eqTo(expectedOutBoundConfirmation))(using *)).thenReturn(successful(ConfirmationConnectorSuccessResult()))
       }
 
     }

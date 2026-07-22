@@ -20,7 +20,7 @@ import scala.util.control.NonFatal
 
 import _root_.play.api.Logger
 import _root_.play.api.mvc.Result
-import _root_.play.api.mvc.Results._
+import _root_.play.api.mvc.Results.*
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 

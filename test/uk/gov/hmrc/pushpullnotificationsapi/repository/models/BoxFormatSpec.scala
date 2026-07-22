@@ -23,8 +23,8 @@ import play.api.libs.json.{JsValue, Json}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
 import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.MongoBoxFormat.given
 
 class BoxFormatSpec extends HmrcSpec {
 
@@ -211,7 +211,7 @@ class BoxFormatSpec extends HmrcSpec {
             |}""".stripMargin
         )
 
-        boxFormats.writes(box) shouldBe expectedJson
+        MongoBoxFormat.given_OFormat_Box.writes(box) shouldBe expectedJson
       }
 
       "handle optional fields being None" in {
@@ -231,7 +231,7 @@ class BoxFormatSpec extends HmrcSpec {
             |}""".stripMargin
         )
 
-        boxFormats.writes(box) shouldBe expectedJson
+        MongoBoxFormat.given_OFormat_Box.writes(box) shouldBe expectedJson
       }
     }
   }

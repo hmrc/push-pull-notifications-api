@@ -21,9 +21,9 @@ import java.time.format.DateTimeFormatterBuilder
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import com.codahale.metrics._
+import com.codahale.metrics.*
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time._
+import org.scalatest.time.*
 
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
@@ -31,10 +31,10 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.mocks._
+import uk.gov.hmrc.pushpullnotificationsapi.mocks.*
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.{BoxRepositoryMockModule, NotificationsRepositoryMockModule}
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.*
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class NotificationPushServiceSpec extends AsyncHmrcSpec with TestData with FixedClock with Eventually with SpanSugar {

@@ -29,13 +29,14 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json.toJson
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach with TestData {
 
@@ -46,6 +47,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule wi
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[ClientService].to(ClientServiceMock.aMock))
     .overrides(bind[AppConfig].to(mockAppConfig))
+    .disable[SchedulerModule]
     .build()
 
   override def beforeEach(): Unit = {
@@ -64,7 +66,7 @@ class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule wi
   }
 
   private def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 

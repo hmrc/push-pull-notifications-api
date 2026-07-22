@@ -1,14 +1,14 @@
 import play.core.PlayVersion
-import sbt._
-import play.sbt.PlayImport._
+import sbt.*
+import play.sbt.PlayImport.*
 
 object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
-  val bootstrapVersion = "10.7.0"
+  val bootstrapVersion = "10.7.1"
   val mongoVersion = "2.12.0"
   val appEventVersion = "1.1.0"
-  val appDomainVersion = "1.1.0"
-  val mockitoScalaVersion = "2.0.0"
+  val appDomainVersion = "1.3.0"
+  val mockitoScalaVersion = "2.2.1"
 
 
   lazy val dependencies = Seq(

@@ -17,10 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.util
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.temporal.ChronoField._
+import java.time.temporal.ChronoField.*
 import java.time.{Instant, ZoneId}
 
-import play.api.libs.json._
+import play.api.libs.json.*
 
 object PPNSInstantFormatter {
 

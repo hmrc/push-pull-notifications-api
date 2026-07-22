@@ -20,10 +20,10 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import org.mongodb.scala.model.Filters.{equal, _}
+import org.mongodb.scala.model.*
+import org.mongodb.scala.model.Filters.{equal, *}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
 
 import play.api.Logger
 import uk.gov.hmrc.mongo.MongoComponent
@@ -31,20 +31,19 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, ClientId}
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models._
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.BoxFormat
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.{boxIdFormatter, formatSubscriber}
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.MongoBoxFormat
 
 @Singleton
-class BoxRepository @Inject() (mongo: MongoComponent)(implicit ec: ExecutionContext)
+class BoxRepository @Inject() (mongo: MongoComponent)(using ExecutionContext)
     extends PlayMongoRepository[Box](
       collectionName = "box",
       mongoComponent = mongo,
-      domainFormat = BoxFormat.boxFormats,
+      domainFormat = MongoBoxFormat.given_OFormat_Box,
       indexes = Seq(
         IndexModel(
-          ascending(List("boxName", "boxCreator.clientId"): _*),
+          ascending(List("boxName", "boxCreator.clientId")*),
           IndexOptions()
             .name("box_index")
             .background(true)

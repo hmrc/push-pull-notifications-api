@@ -43,17 +43,17 @@ class RetryConfirmationRequestJob @Inject() (
     repo: ConfirmationRepository,
     service: ConfirmationService,
     val clock: Clock
-  )(implicit mat: Materializer)
+  )(using Materializer)
     extends ScheduledMongoJob with ClockNow {
 
   override def name: String = "RetryConfirmationRequestJob"
   override def interval: FiniteDuration = jobConfig.interval
   override def initialDelay: FiniteDuration = jobConfig.initialDelay
   override val isEnabled: Boolean = jobConfig.enabled
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  lazy override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryConfirmationRequestJob", ttl = 1.hour)
+  given HeaderCarrier = HeaderCarrier()
+  override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryConfirmationRequestJob", ttl = 1.hour)
 
-  override def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful] = {
+  override def runJob(using ExecutionContext): Future[RunningOfJobSuccessful] = {
     val retryAfterDateTime: Instant = instant
 
     repo
@@ -67,7 +67,7 @@ class RetryConfirmationRequestJob @Inject() (
       }
   }
 
-  private def retryConfirmation(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
+  private def retryConfirmation(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(using ExecutionContext): Future[Unit] = {
     service
       .sendConfirmation(confirmation)
       .flatMap(success => if (success) successful(()) else updateFailedNotification(confirmation, retryAfterDateTime))
@@ -78,7 +78,7 @@ class RetryConfirmationRequestJob @Inject() (
       }
   }
 
-  private def updateFailedNotification(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(implicit ec: ExecutionContext): Future[Unit] = {
+  private def updateFailedNotification(confirmation: ConfirmationRequest, retryAfterDateTime: Instant)(using ExecutionContext): Future[Unit] = {
     if (confirmation.createdDateTime.isAfter(retryAfterDateTime.minus(Duration.ofHours(jobConfig.numberOfHoursToRetry)))) {
       repo.updateRetryAfterDateTime(confirmation.notificationId, retryAfterDateTime).map(_ => ())
     } else {

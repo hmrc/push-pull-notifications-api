@@ -29,8 +29,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
@@ -46,7 +46,7 @@ class NotificationPushService @Inject() (
     confirmationService: ConfirmationService,
     metrics: Metrics,
     val clock: Clock
-  )(implicit ec: ExecutionContext)
+  )(using ExecutionContext)
     extends ApplicationLogger with ClockNow {
 
   def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
@@ -76,7 +76,7 @@ class NotificationPushService @Inject() (
     } else Future.successful(true)
   }
 
-  private def sendNotificationToPush(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  private def sendNotificationToPush(box: Box, notification: Notification)(using ExecutionContext): Future[Boolean] = {
     val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
     clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>
@@ -104,7 +104,7 @@ class NotificationPushService @Inject() (
     boxRepository.fetchPushSubscriberBoxes().map { boxes =>
       boxes.map(box => notificationsRepository.fetchRetryableNotifications(box, retryAfter)) match {
         case first :: second :: rest =>
-          Source.combine(first, second, rest: _*)(Merge(_))
+          Source.combine(first, second, rest*)(Merge(_))
         case first :: Nil            =>
           first
         case Nil                     =>

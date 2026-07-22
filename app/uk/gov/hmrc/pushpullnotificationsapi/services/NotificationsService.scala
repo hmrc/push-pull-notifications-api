@@ -23,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
@@ -34,7 +34,7 @@ class NotificationsService @Inject() (
     notificationsRepository: NotificationsRepository,
     pushService: NotificationPushService,
     confirmationService: ConfirmationService
-  )(implicit ec: ExecutionContext)
+  )(using ExecutionContext)
     extends ApplicationLogger {
 
   def acknowledgeNotifications(
@@ -54,7 +54,7 @@ class NotificationsService @Inject() (
                   .foreach(confirmationService.handleConfirmation)
                 result
               })
-              .map(AcknowledgeNotificationsSuccessUpdatedResult)
+              .map(AcknowledgeNotificationsSuccessUpdatedResult(_))
           } else {
             Future.successful(AcknowledgeNotificationsServiceUnauthorisedResult("clientId does not match boxCreator"))
           }

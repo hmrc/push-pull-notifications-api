@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.google.inject.Inject
 
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 
@@ -30,9 +30,9 @@ import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
 @Singleton
-class ThirdPartyApplicationConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class ThirdPartyApplicationConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(using ExecutionContext) {
 
-  def getApplicationDetails(clientId: ClientId)(implicit hc: HeaderCarrier): Future[ApplicationWithCollaborators] = {
+  def getApplicationDetails(clientId: ClientId)(using HeaderCarrier): Future[ApplicationWithCollaborators] = {
     http
       .get(url"${appConfig.thirdPartyApplicationUrl}/query?clientId=$clientId")
       .execute[ApplicationWithCollaborators]

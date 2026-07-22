@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import play.api.mvc.Results._
+import play.api.mvc.Results.*
 import play.api.mvc.{ActionRefiner, Request, Result}
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions}
@@ -30,7 +30,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationReq
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class AuthAction @Inject() (override val authConnector: AuthConnector)(implicit ec: ExecutionContext)
+class AuthAction @Inject() (override val authConnector: AuthConnector)(using ec: ExecutionContext)
     extends ActionRefiner[Request, AuthenticatedNotificationRequest]
     with HttpErrorFunctions
     with AuthorisedFunctions
@@ -40,10 +40,10 @@ class AuthAction @Inject() (override val authConnector: AuthConnector)(implicit 
   override def executionContext: ExecutionContext = ec
 
   override def refine[A](request: Request[A]): Future[Either[Result, AuthenticatedNotificationRequest[A]]] = {
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    given HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
     authorised().retrieve(uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.clientId) {
-      maybeClientId: Option[String] =>
+      (maybeClientId: Option[String]) =>
         maybeClientId match {
           case Some(clientId) => Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
           case _              =>

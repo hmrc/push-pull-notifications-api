@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import java.util.regex.Pattern
 import scala.util.{Failure, Success}
 
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.*
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 

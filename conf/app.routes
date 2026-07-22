@@ -3,7 +3,7 @@
 # Box
 PUT       /box                                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.createBox()
 
-GET       /box                                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[ClientId])
+GET       /box                                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.getBoxes(boxName: Option[String], clientId: Option[SimpleClientId])
 
 PUT       /box/:boxId/callback                    uk.gov.hmrc.pushpullnotificationsapi.controllers.BoxController.updateCallbackUrl(boxId: BoxId)
 
@@ -19,4 +19,4 @@ POST      /box/:boxId/wrapped-notifications       uk.gov.hmrc.pushpullnotificati
 
 # Client
 
-GET      /client/:clientId/secrets                uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: ClientId)
+GET      /client/:clientId/secrets                uk.gov.hmrc.pushpullnotificationsapi.controllers.ClientController.getClientSecrets(clientId: SimpleClientId)

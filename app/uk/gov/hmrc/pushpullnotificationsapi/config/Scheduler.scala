@@ -19,18 +19,30 @@ package uk.gov.hmrc.pushpullnotificationsapi.config
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
-import com.google.inject.AbstractModule
+import play.api.inject.{Binding, Module}
+import play.api.{Configuration, Environment}
 
 import play.api.Application
 import play.api.inject.ApplicationLifecycle
 
-import uk.gov.hmrc.pushpullnotificationsapi.scheduled.{RetryConfirmationRequestJob, RetryPushNotificationsJob}
 import uk.gov.hmrc.pushpullnotificationsapi.scheduling.{RunningOfScheduledJobs, ScheduledJob}
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.*
+import javax.inject.Provider
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.{MINUTES, SECONDS}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class SchedulerModule extends AbstractModule {
+import com.typesafe.config.Config
 
-  override def configure(): Unit = {
-    bind(classOf[Scheduler]).asEagerSingleton()
+
+class SchedulerModule extends Module {
+  
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] = {
+    Seq(
+      bind[RetryPushNotificationsJobConfig].toProvider[RetryPushNotificationsJobConfigProvider],
+      bind[RetryConfirmationRequestJobConfig].toProvider[RetryConfirmationRequestJobConfigProvider],
+      bind[Scheduler].toSelf.eagerly()
+    )
   }
 }
 
@@ -40,7 +52,44 @@ class Scheduler @Inject() (
     retryConfirmationRequestJob: RetryConfirmationRequestJob,
     override val applicationLifecycle: ApplicationLifecycle,
     override val application: Application
-  )(implicit val ec: ExecutionContext)
+  )(using ExecutionContext)
     extends RunningOfScheduledJobs {
-  override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob, retryConfirmationRequestJob).filter(_.isEnabled)
+  override val scheduledJobs: Seq[ScheduledJob] = Seq(retryPushNotificationsJob, retryConfirmationRequestJob).filter(_.isEnabled)
+}
+
+@Singleton
+class RetryPushNotificationsJobConfigProvider @Inject() (configuration: Configuration) extends Provider[RetryPushNotificationsJobConfig] {
+
+  override def get(): RetryPushNotificationsJobConfig = {
+    // scalastyle:off magic.number
+    val initialDelay = configuration.getOptional[String]("retryPushNotificationsJob.initialDelay").map(Duration.create(_).asInstanceOf[FiniteDuration])
+      .getOrElse(FiniteDuration(60, SECONDS))
+    val interval = configuration.getOptional[String]("retryPushNotificationsJob.interval").map(Duration.create(_).asInstanceOf[FiniteDuration])
+      .getOrElse(FiniteDuration(5, MINUTES))
+    val enabled = configuration.getOptional[Boolean]("retryPushNotificationsJob.enabled").getOrElse(false)
+    val numberOfHoursToRetry = configuration.getOptional[Int]("retryPushNotificationsJob.numberOfHoursToRetry").getOrElse(6)
+    val parallelism = configuration.getOptional[Int]("retryPushNotificationsJob.parallelism").getOrElse(10)
+    RetryPushNotificationsJobConfig(initialDelay, interval, enabled, numberOfHoursToRetry, parallelism)
+    // scalastyle:on magic.number
+
+  }
+}
+
+@Singleton
+class RetryConfirmationRequestJobConfigProvider @Inject() (configuration: Config) extends Provider[RetryConfirmationRequestJobConfig] {
+
+  override def get(): RetryConfirmationRequestJobConfig = {
+    val initialDelay = configuration.getDuration("retryConfirmationRequestJob.initialDelay")
+    val interval = configuration.getDuration("retryConfirmationRequestJob.interval")
+    val enabled = configuration.getBoolean("retryConfirmationRequestJob.enabled")
+    val numberOfHoursToRetry = configuration.getInt("retryConfirmationRequestJob.numberOfHoursToRetry")
+    val parallelism = configuration.getInt("retryConfirmationRequestJob.parallelism")
+    RetryConfirmationRequestJobConfig(
+      FiniteDuration(initialDelay.toNanos, TimeUnit.NANOSECONDS),
+      FiniteDuration(interval.toNanos, TimeUnit.NANOSECONDS),
+      enabled,
+      numberOfHoursToRetry,
+      parallelism
+    )
+  }
 }

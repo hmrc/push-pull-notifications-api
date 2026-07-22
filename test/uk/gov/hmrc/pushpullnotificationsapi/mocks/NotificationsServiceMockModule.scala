@@ -24,7 +24,7 @@ import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
@@ -45,26 +45,26 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       object XML {
 
         def succeedsFor(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(using *))
             .thenReturn(successful(NotificationCreateSuccessResult()))
         }
 
         def verifyCalledWith(boxId: BoxId, xmlBody: String) = {
-          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*)
+          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(using *)
         }
 
         def failsWithDuplicate(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(using *))
             .thenReturn(successful(NotificationCreateFailedDuplicateResult("bang")))
         }
 
         def failsWithBoxNotFound(boxId: BoxId, xmlBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(using *))
             .thenReturn(successful(NotificationCreateFailedBoxIdNotFoundResult("some Exception")))
         }
 
         def throwsFor(boxId: BoxId, xmlBody: String, e: Exception) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(*))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_XML), eqTo(xmlBody))(using *))
             .thenReturn(failed(e))
         }
       }
@@ -72,12 +72,12 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
       object Json {
 
         def succeedsFor(boxId: BoxId, jsonBody: String) = {
-          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*))
+          when(aMock.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(using *))
             .thenReturn(successful(NotificationCreateSuccessResult()))
         }
 
         def verifyCalledWith(boxId: BoxId, jsonBody: String) = {
-          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(*)
+          verify.saveNotification(eqTo(boxId), *[NotificationId], eqTo(MessageContentType.APPLICATION_JSON), eqTo(jsonBody))(using *)
         }
       }
     }
@@ -118,16 +118,16 @@ trait NotificationsServiceMockModule extends MockitoSugar with ArgumentMatchersS
     object AcknowledgeNotifications {
 
       def succeeds() = {
-        when(NotificationsServiceMock.aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*))
+        when(NotificationsServiceMock.aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(using *))
           .thenReturn(successful(AcknowledgeNotificationsSuccessUpdatedResult(true)))
       }
 
       def findsNothing() = {
-        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*)).thenReturn(successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
+        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(using *)).thenReturn(successful(AcknowledgeNotificationsServiceBoxNotFoundResult("some message")))
       }
 
       def isUnauthorised() = {
-        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(*)).thenReturn(successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
+        when(aMock.acknowledgeNotifications(*[BoxId], *[ClientId], *)(using *)).thenReturn(successful(AcknowledgeNotificationsServiceUnauthorisedResult("some message")))
       }
     }
   }

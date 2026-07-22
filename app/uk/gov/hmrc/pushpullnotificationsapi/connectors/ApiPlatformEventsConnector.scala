@@ -25,23 +25,26 @@ import com.google.inject.Inject
 
 import play.api.http.Status.CREATED
 import play.api.libs.json.Json
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import play.api.libs.ws.JsonBodyWritables
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.{Actors, ApplicationId}
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
-import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{ApplicationEvents, EventId}
-import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters._
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.models.{ApplicationEvent, ApplicationEvents, EventId}
+import uk.gov.hmrc.apiplatform.modules.events.applications.domain.services.EventsInterServiceCallJsonFormatters.given
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class ApiPlatformEventsConnector @Inject() (http: HttpClientV2, appConfig: AppConfig, val clock: Clock)(implicit ec: ExecutionContext) extends ApplicationLogger with ClockNow {
+class ApiPlatformEventsConnector @Inject() (http: HttpClientV2, appConfig: AppConfig, val clock: Clock)(using ExecutionContext) extends ApplicationLogger with ClockNow
+    with JsonBodyWritables {
 
-  def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    val event = ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, instant, Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
+  def sendCallBackUpdatedEvent(applicationId: ApplicationId, oldUrl: String, newUrl: String, box: Box)(using HeaderCarrier): Future[Boolean] = {
+    val event: ApplicationEvent =
+      ApplicationEvents.PpnsCallBackUriUpdatedEvent(EventId.random, applicationId, instant, Actors.Unknown, box.boxId.value.toString, box.boxName, oldUrl, newUrl)
     http.post(url"${appConfig.apiPlatformEventsUrl}/application-events/ppnsCallbackUriUpdated")
       .withBody(Json.toJson(event))
       .execute[HttpResponse]

@@ -33,7 +33,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.services.InstantJsonFormatter.lenientFormatter
@@ -41,11 +41,12 @@ import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.NotificationsServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
+import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach
     with TestData
@@ -56,6 +57,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
     .configure(Map("notifications.envelopeSize" -> "256B"))
     .overrides(bind[NotificationsService].to(NotificationsServiceMock.aMock))
     .overrides(bind[AuthConnector].to(AuthConnectorMock.aMock))
+    .disable[SchedulerModule]
     .build()
 
   lazy implicit val mat: Materializer = app.materializer
@@ -505,7 +507,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
   }
 
   def doGet(uri: String, headers: Map[String, String]): Future[Result] = {
-    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(GET, uri).withHeaders(headers.toSeq*)
     route(app, fakeRequest).get
   }
 
@@ -525,7 +527,7 @@ class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServic
       case Failure(_)     => None
     }
 
-    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq: _*)
+    val fakeRequest = FakeRequest(method, uri).withHeaders(headers.toSeq*)
     maybeBody
       .fold(route(app, fakeRequest.withBody(bodyValue)).get)(jsonBody => route(app, fakeRequest.withJsonBody(jsonBody)).get)
 

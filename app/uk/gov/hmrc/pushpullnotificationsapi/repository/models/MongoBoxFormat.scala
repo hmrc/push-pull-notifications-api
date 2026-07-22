@@ -18,24 +18,21 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.time.Instant
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.play.json.Union
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ApplicationId
-import uk.gov.hmrc.pushpullnotificationsapi.models._
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 
 /** */
-object BoxFormat extends OFormat[Box] {
+object MongoBoxFormat {
+  private given Format[Instant] = MongoJavatimeFormats.instantFormat
+  private given OFormat[PullSubscriber] = Json.format[PullSubscriber]
+  private given OFormat[PushSubscriber] = Json.format[PushSubscriber]
 
-  implicit private val boxIdFormatter: Format[BoxId] = Json.valueFormat[BoxId]
-  implicit private val boxCreatorFormat: OFormat[BoxCreator] = Json.format[BoxCreator]
-  implicit private val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
-  implicit private val pushSubscriberFormat: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit private val pullSubscriberFormat: OFormat[PullSubscriber] = Json.format[PullSubscriber]
-
-  implicit private val formatSubscriber: OFormat[Subscriber] = Union
+  private given OFormat[Subscriber] = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
@@ -49,15 +46,7 @@ object BoxFormat extends OFormat[Box] {
       (__ \ "boxCreator").read[BoxCreator] and
       (__ \ "applicationId").readNullable[ApplicationId] and
       (__ \ "subscriber").readNullable[Subscriber]
-  ) { Box }
+  )((boxId, boxName, boxCreator, applicationId, subscriber) => Box(boxId, boxName, boxCreator, applicationId, subscriber))
 
-  implicit val boxFormats: OFormat[Box] = OFormat(boxReads, boxWrites)
-
-  override def writes(box: Box): JsObject = {
-    boxWrites.writes(box)
-  }
-
-  override def reads(json: JsValue): JsResult[Box] = {
-    boxReads.reads(json)
-  }
+  given OFormat[Box] = OFormat(boxReads, boxWrites)
 }

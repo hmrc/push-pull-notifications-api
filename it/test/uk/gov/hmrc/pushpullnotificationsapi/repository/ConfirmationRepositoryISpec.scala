@@ -37,9 +37,9 @@ import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositoryS
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters._
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.*
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 
 class ConfirmationRepositoryISpec
@@ -81,7 +81,7 @@ class ConfirmationRepositoryISpec
   def repo: ConfirmationRepository = repository.asInstanceOf[ConfirmationRepository]
 
   def saveMongoJsonWithBadUrl(input: ConfirmationRequest): InsertOneResult = {
-    import play.api.libs.json._
+    import play.api.libs.json.*
 
     val rawJson = Json.toJson(input.toDB).as[JsObject]
     val editedJson: JsObject = rawJson + ("confirmationUrl" -> JsString("BOB"))
@@ -90,7 +90,7 @@ class ConfirmationRepositoryISpec
   }
 
   def saveMongoJsonWithNoPrivateHeadersField(input: ConfirmationRequest): InsertOneResult = {
-    import play.api.libs.json._
+    import play.api.libs.json.*
 
     val rawJson = Json.toJson(input.toDB).as[JsObject]
     val editedJson: JsObject = rawJson - "privateHeaders"

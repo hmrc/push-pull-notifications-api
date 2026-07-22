@@ -29,19 +29,19 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{NotificationId
 case class CreateBoxRequest(boxName: String, clientId: ClientId)
 
 object CreateBoxRequest {
-  implicit val format: OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
+  given OFormat[CreateBoxRequest] = Json.format[CreateBoxRequest]
 }
 
 case class SubscriberRequest(callBackUrl: String, subscriberType: SubscriptionType)
 
 object SubscriberRequest {
-  implicit val format: OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
+  given OFormat[SubscriberRequest] = Json.format[SubscriberRequest]
 }
 
 case class UpdateSubscriberRequest(subscriber: SubscriberRequest)
 
 object UpdateSubscriberRequest {
-  implicit val format: OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
+  given OFormat[UpdateSubscriberRequest] = Json.format[UpdateSubscriberRequest]
 }
 
 case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String) {
@@ -52,27 +52,27 @@ case class UpdateCallbackUrlRequest(clientId: ClientId, callbackUrl: String) {
 }
 
 object UpdateCallbackUrlRequest {
-  implicit val format: OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
+  given OFormat[UpdateCallbackUrlRequest] = Json.format[UpdateCallbackUrlRequest]
 }
 
 case class PrivateHeader(name: String, value: String)
 
 object PrivateHeader {
-  implicit val format: OFormat[PrivateHeader] = Json.format[PrivateHeader]
+  given OFormat[PrivateHeader] = Json.format[PrivateHeader]
 }
 
 case class WrappedNotificationBody(body: String, contentType: String)
 
 object WrappedNotificationBody {
-  import play.api.libs.json._
+  import play.api.libs.json.*
 
-  implicit val format: OFormat[WrappedNotificationBody] = Json.format[WrappedNotificationBody]
+  given OFormat[WrappedNotificationBody] = Json.format[WrappedNotificationBody]
 }
 
 case class WrappedNotificationRequest(notification: WrappedNotificationBody, version: String, confirmationUrl: Option[URL], privateHeaders: List[PrivateHeader])
 
 trait URLFormatter {
-  import play.api.libs.json._
+  import play.api.libs.json.*
   import scala.util.{Failure, Success}
 
   val fromString: String => JsResult[URL] = rawText => {
@@ -84,18 +84,18 @@ trait URLFormatter {
     }
   }
 
-  implicit val readsURL: Reads[URL] = implicitly[Reads[String]].flatMapResult(fromString)
-  implicit val writesURL: Writes[URL] = implicitly[Writes[String]].contramap(url => url.toString)
+  given Reads[URL] = Reads.StringReads.flatMapResult(fromString)
+  given Writes[URL] = Writes.StringWrites.contramap(url => url.toString)
 }
 
 object URLFormatter extends URLFormatter
 
 object WrappedNotificationRequest {
-  import play.api.libs.json._
-  import play.api.libs.functional.syntax._
-  import URLFormatter._
+  import play.api.libs.json.*
+  import play.api.libs.functional.syntax.*
+  import URLFormatter.given
 
-  implicit val reads: Reads[WrappedNotificationRequest] = (
+  given Reads[WrappedNotificationRequest] = (
     (__ \ "notification").read[WrappedNotificationBody] and
       (__ \ "version").read[String] and
       (__ \ "confirmationUrl").readNullable[URL] and
@@ -103,14 +103,14 @@ object WrappedNotificationRequest {
       (__ \ "privateHeaders").readNullable[List[PrivateHeader]].map(_.getOrElse(List.empty))
   )(WrappedNotificationRequest.apply(_, _, _, _))
 
-  implicit val writes: OWrites[WrappedNotificationRequest] = Json.writes[WrappedNotificationRequest]
+  given OWrites[WrappedNotificationRequest] = Json.writes[WrappedNotificationRequest]
 }
 // Notifications
 
 case class AcknowledgeNotificationsRequest(notificationIds: List[NotificationId])
 
 object AcknowledgeNotificationsRequest {
-  implicit val format: OFormat[AcknowledgeNotificationsRequest] = Json.format[AcknowledgeNotificationsRequest]
+  given OFormat[AcknowledgeNotificationsRequest] = Json.format[AcknowledgeNotificationsRequest]
 }
 
 case class AuthenticatedNotificationRequest[A](clientId: ClientId, request: Request[A])

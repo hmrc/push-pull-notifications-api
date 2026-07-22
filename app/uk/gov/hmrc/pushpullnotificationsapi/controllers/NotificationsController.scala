@@ -22,14 +22,14 @@ import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
 
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc._
+import play.api.mvc.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
+import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
-import uk.gov.hmrc.pushpullnotificationsapi.models._
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
@@ -43,7 +43,7 @@ class NotificationsController @Inject() (
     validateAcceptHeaderAction: ValidateAcceptHeaderAction,
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
-  )(implicit val ec: ExecutionContext)
+  )(using ExecutionContext)
     extends BackendController(cc)
     with NotificationUtils
     with WithJsonBodyWithBadRequest {
@@ -89,7 +89,7 @@ class NotificationsController @Inject() (
     (Action andThen
       validateAcceptHeaderAction andThen
       authAction).async(playBodyParsers.json) { implicit request =>
-      implicit val actualBody: Request[JsValue] = request.request
+      given Request[JsValue] = request.request
       withJsonBody[AcknowledgeNotificationsRequest] {
         jsonValue =>
           if (validateAcknowledgeRequest(jsonValue)) notificationsService.acknowledgeNotifications(boxId, request.clientId, jsonValue) map {
@@ -103,7 +103,7 @@ class NotificationsController @Inject() (
           else {
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
           }
-      }(actualBody, manifest, AcknowledgeNotificationsRequest.format)
+      }
     }
 
   private def validateAcknowledgeRequest(request: AcknowledgeNotificationsRequest): Boolean = {

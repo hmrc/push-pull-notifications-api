@@ -26,8 +26,9 @@ import scala.util.{Failure, Success, Try}
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status.{BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR}
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http._
+import play.api.libs.ws.JsonBodyWritables
+import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
@@ -36,10 +37,10 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotific
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext)
-    extends ApplicationLogger {
+class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(using ExecutionContext)
+    extends JsonBodyWritables with ApplicationLogger {
 
-  import OutboundProxyConnector._
+  import OutboundProxyConnector.*
 
   def addProxyIfRequired(requestBuilder: RequestBuilder): RequestBuilder = if (appConfig.useProxy) {
     requestBuilder.withProxy
@@ -50,7 +51,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
   private val destinationUrlPattern: Pattern = "^https.*".r.pattern
 
   private val validate: String => Try[String] =
-    OutboundProxyConnector.validateDestinationUrl(appConfig.validateCallbackUrlIsHttps, destinationUrlPattern, appConfig.allowedHostList) _
+    OutboundProxyConnector.validateDestinationUrl(appConfig.validateCallbackUrlIsHttps, destinationUrlPattern, appConfig.allowedHostList)
 
   def postNotification(notification: OutboundNotification): Future[Int] = {
 
@@ -66,7 +67,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
       INTERNAL_SERVER_ERROR
     }
 
-    implicit val irrelevantHc: HeaderCarrier = HeaderCarrier()
+    given HeaderCarrier = HeaderCarrier()
 
     Future.fromTry(validate(notification.destinationUrl))
       .flatMap { url =>
@@ -74,7 +75,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
 
         addProxyIfRequired(httpClient.post(url"$url"))
           .withBody(Json.parse(notification.payload))
-          .setHeader(extraHeaders: _*)
+          .setHeader(extraHeaders*)
           .execute[Either[UpstreamErrorResponse, HttpResponse]]
           .map {
             case Left(UpstreamErrorResponse(_, statusCode, _, _)) => failWith(statusCode)
@@ -89,7 +90,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
   }
 
   def validateCallback(callbackValidation: CallbackValidation, challenge: String): Future[String] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+    given HeaderCarrier = HeaderCarrier()
     Future.fromTry(validate(callbackValidation.callbackUrl))
       .flatMap { validatedCallbackUrl =>
         val callbackUrlWithChallenge = Option(new URL(validatedCallbackUrl).getQuery)
@@ -102,7 +103,7 @@ class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpCl
 }
 
 object OutboundProxyConnector extends ApplicationLogger {
-  implicit val callbackValidationResponseFormat: OFormat[CallbackValidationResponse] = Json.format[CallbackValidationResponse]
+  given OFormat[CallbackValidationResponse] = Json.format[CallbackValidationResponse]
   private[connectors] case class CallbackValidationResponse(challenge: String)
 
   def validateDestinationUrl(validateCallbackUrlIsHttps: Boolean, destinationUrlPattern: Pattern, allowedHostList: List[String])(destinationUrl: String): Try[String] = {

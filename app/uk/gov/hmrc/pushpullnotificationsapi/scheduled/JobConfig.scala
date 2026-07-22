@@ -32,7 +32,7 @@ case class JobConfig(initialDelay: FiniteDuration, interval: FiniteDuration, ena
 
 object JobConfig {
 
-  private implicit class ToFiniteDuration(d: Duration) {
+  extension (d: Duration) {
     def finite(): FiniteDuration = FiniteDuration(d.toNanos(), TimeUnit.NANOSECONDS)
   }
 
@@ -47,9 +47,9 @@ trait ScheduledMongoJob extends ExclusiveScheduledJob with ScheduledJobState wit
 
   def isEnabled: Boolean
 
-  def runJob(implicit ec: ExecutionContext): Future[RunningOfJobSuccessful]
+  def runJob(using ExecutionContext): Future[RunningOfJobSuccessful]
 
-  override def executeInMutex(implicit ec: ExecutionContext): Future[Result] = {
+  override def executeInMutex(using ExecutionContext): Future[Result] = {
     lockKeeper withLock {
       runJob
     } map {

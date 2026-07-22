@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.support
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 import com.codahale.metrics.MetricRegistry
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
-
+import scala.compiletime.uninitialized
 import play.api.Application
 
 trait MetricsTestSupport {
-  self: Suite with Matchers =>
+  self: Suite & Matchers =>
 
   def app: Application
 
-  private var metricsRegistry: MetricRegistry = _
+  private var metricsRegistry: MetricRegistry = uninitialized
 
   def givenCleanMetricRegistry(): Unit = {
     val registry = app.injector.instanceOf[MetricRegistry]

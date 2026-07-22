@@ -35,6 +35,8 @@ private[repository] object DbClient {
   def toClient(dbClient: DbClient, crypto: LocalCrypto): Client = {
     Client(dbClient.id, dbClient.secrets.map(toClientSecret(_, crypto)))
   }
+
+  given OFormat[DbClient] = Json.format[DbClient]
 }
 
 private[repository] case class DbClientSecret(encryptedValue: String)
@@ -49,5 +51,5 @@ private[repository] object DbClientSecret {
     ClientSecretValue(crypto.decrypt(Crypted(dbClientSecret.encryptedValue)).value)
   }
 
-  implicit val format: OFormat[DbClientSecret] = Json.format[DbClientSecret]
+  given OFormat[DbClientSecret] = Json.format[DbClientSecret]
 }

@@ -24,7 +24,7 @@ import org.mockito.verification.VerificationMode
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.Box
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.*
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
 
 trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
@@ -62,30 +62,30 @@ trait NotificationPushServiceMockModule extends MockitoSugar with ArgumentMatche
     object HandlePushNotification {
 
       def thenThrowsFor(box: Box, notification: Notification) =
-        when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(*, *)).thenReturn(failed(new RuntimeException("BOOM!!!")))
+        when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(using *, *)).thenReturn(failed(new RuntimeException("BOOM!!!")))
 
       def returnsTrue() = {
-        when(aMock.handlePushNotification(*, *)(*, *)).thenReturn(successful(true))
+        when(aMock.handlePushNotification(*, *)(using *, *)).thenReturn(successful(true))
       }
 
       def returnsTrueFor(box: Box, notification: Notification) = {
-        when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(*, *)).thenReturn(successful(true))
+        when(aMock.handlePushNotification(eqTo(box), eqTo(notification))(using *, *)).thenReturn(successful(true))
       }
 
       def returnsFalse() = {
-        when(aMock.handlePushNotification(*, *)(*, *)).thenReturn(successful(false))
+        when(aMock.handlePushNotification(*, *)(using *, *)).thenReturn(successful(false))
       }
 
       def verifyCalled() = {
-        verify(times(1)).handlePushNotification(*, *)(*, *)
+        verify(times(1)).handlePushNotification(*, *)(using *, *)
       }
 
       def verifyCalledWith(box: Box, notification: Notification) = {
-        verify(times(1)).handlePushNotification(eqTo(box), eqTo(notification))(*, *)
+        verify(times(1)).handlePushNotification(eqTo(box), eqTo(notification))(using *, *)
       }
 
       def verifyNeverCalled() = {
-        verify(never).handlePushNotification(*, *)(*, *)
+        verify(never).handlePushNotification(*, *)(using *, *)
       }
     }
   }

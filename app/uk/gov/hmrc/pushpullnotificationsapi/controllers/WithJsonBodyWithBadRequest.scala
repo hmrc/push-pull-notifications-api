@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-import play.api.libs.json.{JsError, JsSuccess, Reads, _}
+import play.api.libs.json.{JsError, JsSuccess, Reads, *}
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.{Request, Result}
 import uk.gov.hmrc.play.bootstrap.controller.WithJsonBody
@@ -29,11 +29,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 trait WithJsonBodyWithBadRequest {
   self: WithJsonBody =>
 
-  override protected def withJsonBody[T](f: T => Future[Result])(implicit request: Request[JsValue], ct: ClassTag[T], reads: Reads[T]): Future[Result] = {
+  override protected def withJsonBody[T](f: T => Future[Result])(using request: Request[JsValue], ct: ClassTag[T], reads: Reads[T]): Future[Result] = {
     withJson(request.body)(f)
   }
 
-  protected def withJson[T](json: JsValue)(f: T => Future[Result])(implicit reads: Reads[T]): Future[Result] = {
+  protected def withJson[T](json: JsValue)(f: T => Future[Result])(using Reads[T]): Future[Result] = {
     json.validate[T] match {
       case JsSuccess(payload, _) => f(payload)
       case JsError(_)            =>

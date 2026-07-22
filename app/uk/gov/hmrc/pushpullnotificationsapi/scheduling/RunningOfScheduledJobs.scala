@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -30,17 +30,15 @@ import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 /** All implementing classes must be singletons - see https://www.playframework.com/documentation/2.6.x/ScalaDependencyInjection#Stopping/cleaning-up
   */
-trait RunningOfScheduledJobs extends ApplicationLogger {
+trait RunningOfScheduledJobs(using ExecutionContext) extends ApplicationLogger {
 
-  implicit val ec: ExecutionContext
+  def application: Application
 
-  val application: Application
+  def scheduler: Scheduler = application.actorSystem.scheduler
 
-  lazy val scheduler: Scheduler = application.actorSystem.scheduler
+  def scheduledJobs: Seq[ScheduledJob]
 
-  val scheduledJobs: Seq[ScheduledJob]
-
-  val applicationLifecycle: ApplicationLifecycle
+  def applicationLifecycle: ApplicationLifecycle
 
   private[scheduling] var cancellables: Seq[Cancellable] = Seq.empty
 

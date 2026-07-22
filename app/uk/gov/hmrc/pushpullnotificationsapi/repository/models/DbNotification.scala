@@ -21,8 +21,8 @@ import java.time.temporal.ChronoUnit
 
 import uk.gov.hmrc.crypto.{Crypted, PlainText}
 
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications._
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification.{fromNotification, toNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto

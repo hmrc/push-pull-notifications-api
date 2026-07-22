@@ -34,7 +34,7 @@ object FutureUtils extends ApplicationLogger {
   //   timeThisFuture(f, s"$shortFile-${line.value} in ${enc.value}")
   // }
 
-  def timeThisFuture[T](f: => Future[T], msg: => String)(implicit ec: ExecutionContext): Future[T] = {
+  def timeThisFuture[T](f: => Future[T], msg: => String)(using ExecutionContext): Future[T] = {
     val startTime = System.currentTimeMillis()
     val theF = f
 

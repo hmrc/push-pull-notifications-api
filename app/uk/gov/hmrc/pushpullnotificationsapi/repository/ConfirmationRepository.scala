@@ -24,10 +24,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.mongodb.MongoWriteException
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.scaladsl.Source
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
 
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -40,11 +40,11 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationSt
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB, PlayHmrcMongoFormatters}
 
 @Singleton
-class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, val clock: Clock)(implicit ec: ExecutionContext)
+class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, val clock: Clock)(using ExecutionContext)
     extends PlayMongoRepository[ConfirmationRequestDB](
       collectionName = "confirmations",
       mongoComponent = mongoComponent,
-      domainFormat = PlayHmrcMongoFormatters.confirmationRequestFormatter,
+      domainFormat = PlayHmrcMongoFormatters.given_Format_ConfirmationRequestDB,
       indexes = Seq(
         IndexModel(
           ascending("confirmationId"),
@@ -61,7 +61,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
             .unique(true)
         ),
         IndexModel(
-          ascending(Seq("createdDateTime"): _*),
+          ascending(Seq("createdDateTime")*),
           IndexOptions()
             .name("create_datetime_ttl_idx")
             .expireAfter(appConfig.notificationTTLinSeconds, TimeUnit.SECONDS)
@@ -113,7 +113,7 @@ class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: Mo
           equal("status", Codecs.toBson[ConfirmationStatus](ConfirmationStatus.PENDING)),
           or(Filters.exists("retryAfterDateTime", false), lte("retryAfterDateTime", retryAfter))
         )
-      ).toObservable()
+      )
     )
       .map(_.toNonDb)
       .collect {

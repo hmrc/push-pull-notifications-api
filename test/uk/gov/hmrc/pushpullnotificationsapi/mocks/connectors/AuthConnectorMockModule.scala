@@ -38,11 +38,11 @@ trait AuthConnectorMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object Authorise {
 
       def failsWith(result: AuthorisationException) = {
-        when(aMock.authorise[Option[String]](*, *)(*, *)).thenReturn(failed(result))
+        when(aMock.authorise[Option[String]](*, *)(using *, *)).thenReturn(failed(result))
       }
 
       def succeedsWith(result: Option[String]) = {
-        when(aMock.authorise[Option[String]](*, *)(*, *)).thenReturn(successful(result))
+        when(aMock.authorise[Option[String]](*, *)(using *, *)).thenReturn(successful(result))
       }
 
     }

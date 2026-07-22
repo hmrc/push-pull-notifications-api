@@ -30,8 +30,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
-class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] {
-  this: Suite with ServerProvider =>
+class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] with JsonBodyWritables {
+  this: Suite & ServerProvider =>
 
   def repo: ClientRepository =
     app.injector.instanceOf[ClientRepository]
@@ -65,7 +65,7 @@ class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with
   def doGet(path: String, headers: List[(String, String)]): WSResponse =
     wsClient
       .url(s"$url$path")
-      .withHttpHeaders(headers: _*)
+      .withHttpHeaders(headers*)
       .get()
       .futureValue
 

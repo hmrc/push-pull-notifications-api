@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
-import scala.concurrent.duration._
+import scala.compiletime.uninitialized
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.apache.pekko.actor.{Cancellable, Scheduler}
@@ -42,16 +44,15 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
 
     "schedule a configured job with the given interval and initialDuration" in new TestCase {
       object Captured {
-        var initialDelay: FiniteDuration = _
-        var interval: FiniteDuration = _
+        var initialDelay: FiniteDuration = uninitialized
+        var interval: FiniteDuration = uninitialized
       }
       private val testApp = fakeApplication()
 
       new RunningOfScheduledJobs {
-        override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
-        override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
-        override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
-        override lazy val application: Application = testApp
+        override val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
+        override val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
+        override val application: Application = testApp
         override lazy val scheduler: Scheduler = new StubbedScheduler {
           override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
             Captured.initialDelay = initialDelay
@@ -72,7 +73,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
 
     "set up the scheduled job to run the execute method" in new TestCase {
       private val testApp = fakeApplication()
-      var capturedRunnable: Runnable = _
+      var capturedRunnable: Runnable = uninitialized
       override val testScheduledJob = new TestScheduledJob {
         var executed = false
         override def execute(implicit ec: ExecutionContext): Future[Result] = {
@@ -82,8 +83,7 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         override def isExecuted: Boolean = executed
       }
       new RunningOfScheduledJobs {
-        override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
-        override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
+        override val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
         override lazy val scheduler: Scheduler = new StubbedScheduler {
           override def scheduleWithFixedDelay(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
             capturedRunnable = runnable
@@ -94,8 +94,8 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
           }
         }
 
-        override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
-        override lazy val application: Application = testApp
+        override val scheduledJobs: Seq[ScheduledJob] = Seq(testScheduledJob)
+        override val application: Application = testApp
       }
 
       testScheduledJob.isExecuted should be(false)
@@ -110,10 +110,9 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
     "cancel all of the scheduled jobs" in new TestCase {
       private val testApp = fakeApplication()
       private val runner = new RunningOfScheduledJobs {
-        override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
-        override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
-        override lazy val scheduledJobs: Seq[ScheduledJob] = Seq.empty
-        override lazy val application: Application = testApp
+        override val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
+        override val scheduledJobs: Seq[ScheduledJob] = Seq.empty
+        override val application: Application = testApp
       }
       runner.cancellables = Seq(new StubCancellable, new StubCancellable)
 
@@ -127,10 +126,9 @@ class RunningOfScheduledJobsSpec extends AnyWordSpec with Matchers with Eventual
         override def name: String = "StoppableJob"
       }
       new RunningOfScheduledJobs {
-        override lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
-        override lazy val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
-        override lazy val scheduledJobs: Seq[ScheduledJob] = Seq(stoppableJob)
-        override lazy val application: Application = testApp
+        override val applicationLifecycle: ApplicationLifecycle = testApp.injector.instanceOf[ApplicationLifecycle]
+        override val scheduledJobs: Seq[ScheduledJob] = Seq(stoppableJob)
+        override val application: Application = testApp
       }
 
       stoppableJob.isRunning = Future.successful(true)

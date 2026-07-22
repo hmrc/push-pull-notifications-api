@@ -20,15 +20,17 @@ import java.util.UUID.randomUUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{failed, successful}
 
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+
 import play.api.http.Status.INTERNAL_SERVER_ERROR
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.http.{BadRequestException, JsValidationException, UpstreamErrorResponse}
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.HmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.OutboundProxyConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.{CallbackValidation, CallbackValidationResult}
 
-class CallbackValidatorSpec extends HmrcSpec {
+class CallbackValidatorSpec extends HmrcSpec with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup {
     val mockOutboundProxyConnector: OutboundProxyConnector = mock[OutboundProxyConnector]

@@ -31,7 +31,7 @@ case class BoxId(value: UUID) extends AnyVal {
 }
 
 object BoxId {
-  implicit val format: Format[BoxId] = Json.valueFormat[BoxId]
+  given Format[BoxId] = Json.valueFormat[BoxId]
   def random: BoxId = BoxId(UUID.randomUUID())
 }
 
@@ -40,16 +40,17 @@ case class ConfirmationId(value: UUID) extends AnyVal {
 }
 
 object ConfirmationId {
-  implicit val format: Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
+  given Format[ConfirmationId] = Json.valueFormat[ConfirmationId]
   def random: ConfirmationId = ConfirmationId(UUID.randomUUID())
 }
 
 case class BoxCreator(clientId: ClientId)
 
 object BoxCreator {
-  implicit val format: OFormat[BoxCreator] = Json.format[BoxCreator]
+  given OFormat[BoxCreator] = Json.format[BoxCreator]
 }
 
+// TODO - enum
 sealed trait SubscriptionType
 
 object SubscriptionType {
@@ -61,8 +62,8 @@ object SubscriptionType {
   def apply(text: String): Option[SubscriptionType] = SubscriptionType.values.find(_.toString() == text.toUpperCase)
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[SubscriptionType] = SealedTraitJsonFormatting.createFormatFor[SubscriptionType]("Subscription Type", SubscriptionType.apply)
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
+  given Format[SubscriptionType] = SimpleEnumJsonFormatting.createStringFormatFor[SubscriptionType]("Subscription Type", SubscriptionType.apply)
 }
 
 sealed trait Subscriber {
@@ -71,10 +72,10 @@ sealed trait Subscriber {
 }
 
 object Subscriber {
-  implicit private val pushSubscriberFormat: OFormat[PushSubscriber] = Json.format[PushSubscriber]
-  implicit private val pullSubscriberFormat: OFormat[PullSubscriber] = Json.format[PullSubscriber]
+  private given OFormat[PushSubscriber] = Json.format[PushSubscriber]
+  private given OFormat[PullSubscriber] = Json.format[PullSubscriber]
 
-  implicit val formatSubscriber: OFormat[Subscriber] = Union
+  given OFormat[Subscriber] = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)
@@ -106,5 +107,5 @@ case class Client(id: ClientId, secrets: Seq[ClientSecretValue])
 case class ClientSecretValue(value: String)
 
 object ClientSecretValue {
-  implicit val format: OFormat[ClientSecretValue] = Json.format[ClientSecretValue]
+  given OFormat[ClientSecretValue] = Json.format[ClientSecretValue]
 }

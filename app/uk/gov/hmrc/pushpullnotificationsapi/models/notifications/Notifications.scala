@@ -27,6 +27,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.{Box, BoxId, ConfirmationId, PrivateHeader}
 
+// TODO - enum
 sealed trait MessageContentType {
   def value: String = MessageContentType.value(this)
 }
@@ -45,12 +46,13 @@ object MessageContentType {
   }
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
 
-  implicit val format: Format[MessageContentType] =
-    SealedTraitJsonFormatting.createFormatFor[MessageContentType]("Message content type", MessageContentType.apply, MessageContentType.value)
+  given Format[MessageContentType] =
+    SimpleEnumJsonFormatting.createFormatFor[MessageContentType]("Message content type", MessageContentType.apply, MessageContentType.value)
 }
 
+// TODO - enum
 sealed trait NotificationStatus
 
 object NotificationStatus {
@@ -64,16 +66,17 @@ object NotificationStatus {
   def unsafeApply(text: String): NotificationStatus = apply(text).getOrElse(throw new RuntimeException(s"$text is not a valid NotificationStatus"))
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[NotificationStatus] = SealedTraitJsonFormatting.createFormatFor[NotificationStatus]("Notification status", NotificationStatus.apply)
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
+  given Format[NotificationStatus] = SimpleEnumJsonFormatting.createStringFormatFor[NotificationStatus]("Notification status", NotificationStatus.apply)
 }
 
+// TODO - opaque type
 case class NotificationId(value: UUID) extends AnyVal {
   override def toString: String = value.toString
 }
 
 object NotificationId {
-  implicit val format: Format[NotificationId] = Json.valueFormat[NotificationId]
+  given Format[NotificationId] = Json.valueFormat[NotificationId]
   def random: NotificationId = NotificationId(UUID.randomUUID())
 }
 
@@ -89,10 +92,11 @@ case class Notification(
     retryAfterDateTime: Option[Instant] = None)
 
 object Notification {
-  implicit val dateFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
-  implicit val format: OFormat[Notification] = Json.format[Notification]
+  given Format[Instant] = MongoJavatimeFormats.instantFormat
+  given OFormat[Notification] = Json.format[Notification]
 }
 
+// TODO - enum
 sealed trait ConfirmationStatus
 
 object ConfirmationStatus {
@@ -105,20 +109,20 @@ object ConfirmationStatus {
   def apply(text: String): Option[ConfirmationStatus] = ConfirmationStatus.values.find(_.toString() == text.toUpperCase)
 
   import play.api.libs.json.Format
-  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SealedTraitJsonFormatting
-  implicit val format: Format[ConfirmationStatus] = SealedTraitJsonFormatting.createFormatFor[ConfirmationStatus]("Confirmation status", ConfirmationStatus.apply)
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.SimpleEnumJsonFormatting
+  given Format[ConfirmationStatus] = SimpleEnumJsonFormatting.createStringFormatFor[ConfirmationStatus]("Confirmation status", ConfirmationStatus.apply)
 }
 
 case class ForwardedHeader(key: String, value: String)
 
 object ForwardedHeader {
-  implicit val format: OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
+  given OFormat[ForwardedHeader] = Json.format[ForwardedHeader]
 }
 
 case class OutboundNotification(destinationUrl: String, forwardedHeaders: List[ForwardedHeader], payload: String)
 
 object OutboundNotification {
-  implicit val format: OFormat[OutboundNotification] = Json.format[OutboundNotification]
+  given OFormat[OutboundNotification] = Json.format[OutboundNotification]
 }
 
 case class OutboundConfirmation(
@@ -130,7 +134,7 @@ case class OutboundConfirmation(
     privateHeaders: List[PrivateHeader])
 
 object OutboundConfirmation {
-  implicit val format: OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
+  given OFormat[OutboundConfirmation] = Json.format[OutboundConfirmation]
 }
 
 case class RetryableNotification(notification: Notification, box: Box)

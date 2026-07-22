@@ -34,12 +34,12 @@ package uk.gov.hmrc.apiplatform.modules.utils
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import play.api.libs.json._
+import play.api.libs.json.*
 
 trait JsonFormattersSpec extends AnyWordSpec with Matchers with JsonTestUtils {}
 
 trait JsonTestUtils {
-  self: AnyWordSpec with Matchers =>
+  self: AnyWordSpec & Matchers =>
 
   def testToJson[T](in: T)(fields: (String, String)*)(implicit wrt: Writes[T]) = {
     val f: Seq[(String, JsValue)] = fields.map { case (k, v) => (k -> JsString(v)) }
