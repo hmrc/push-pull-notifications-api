@@ -24,7 +24,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{Client, ClientSecretValue}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.ClientRepository
 
 @Singleton
-class ClientService @Inject() (clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)(implicit ec: ExecutionContext) {
+class ClientService @Inject() (clientRepository: ClientRepository, clientSecretGenerator: ClientSecretGenerator)(using ExecutionContext) {
 
   def getClientSecrets(clientId: ClientId): Future[Option[Seq[ClientSecretValue]]] = {
     clientRepository.findByClientId(clientId).map(_.map(_.secrets))

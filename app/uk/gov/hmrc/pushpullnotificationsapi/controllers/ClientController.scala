@@ -33,7 +33,7 @@ class ClientController @Inject() (
     validateAuthorizationHeaderAction: ValidateAuthorizationHeaderAction,
     clientService: ClientService,
     cc: ControllerComponents
-  )(implicit val ec: ExecutionContext)
+  )(using ec: ExecutionContext)
     extends BackendController(cc) {
 
   def getClientSecrets(clientId: ClientId): Action[AnyContent] = (Action andThen validateAuthorizationHeaderAction).async {

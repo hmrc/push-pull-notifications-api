@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{status => _, _}
+import com.github.tomakehurst.wiremock.client.WireMock.{status as _, *}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.*
 import org.apache.pekko.stream.Materializer
 import org.scalatest.{BeforeAndAfterEach, TestData}

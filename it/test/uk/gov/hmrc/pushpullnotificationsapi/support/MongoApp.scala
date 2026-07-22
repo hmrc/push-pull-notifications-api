@@ -21,7 +21,7 @@ import org.scalatest.{BeforeAndAfterEach, Suite, TestSuite}
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
 trait MongoApp[A] extends DefaultPlayMongoRepositorySupport[A] with BeforeAndAfterEach {
-  me: Suite with TestSuite =>
+  me: Suite & TestSuite =>
 
   override def beforeEach(): Unit = {
     super.beforeEach()

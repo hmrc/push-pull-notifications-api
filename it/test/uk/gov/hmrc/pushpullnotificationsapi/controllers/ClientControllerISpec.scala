@@ -20,6 +20,7 @@ import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.play.ServerProvider
 
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.ws.WSBodyReadables.readableAsString
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.{FORBIDDEN, NOT_FOUND, OK}
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
@@ -31,7 +32,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbClient
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MongoApp, ServerBaseISpec}
 
 class ClientControllerISpec extends ServerBaseISpec with BeforeAndAfterEach with MongoApp[DbClient] {
-  this: Suite with ServerProvider =>
+  this: Suite & ServerProvider =>
 
   def repo: ClientRepository =
     app.injector.instanceOf[ClientRepository]

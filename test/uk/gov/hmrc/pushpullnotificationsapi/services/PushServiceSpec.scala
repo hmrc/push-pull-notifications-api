@@ -40,7 +40,7 @@ class PushServiceSpec extends AsyncHmrcSpec {
     "return PushServiceSuccessResult when result is successful" in new Setup {
       when(mockCallbackValidator.validateCallback(CallbackValidation("someUrl"))).thenReturn(successful(CallbackValidationResult(successful = true)))
       val result = await(objInTest.validateCallbackUrl(UpdateCallbackUrlRequest(ClientId("someClientId"), "someUrl")))
-      result shouldBe a[PushServiceSuccessResult]
+      result shouldBe PushServiceSuccessResult
     }
 
     "return PushServiceFailedResult with an unknown error when result fails" in new Setup {
@@ -73,7 +73,7 @@ class PushServiceSpec extends AsyncHmrcSpec {
     "return PushServiceSuccessResult when 200 status code is returned from connector" in new Setup {
       when(mockOutboundProxyConnector.postNotification(validNotification)).thenReturn(successful(200))
       val result = await(objInTest.handleNotification(validNotification))
-      result shouldBe PushServiceSuccessResult()
+      result shouldBe PushServiceSuccessResult
     }
 
     "return PushServiceFailedResult when non 200 status code is returned from connector" in new Setup {

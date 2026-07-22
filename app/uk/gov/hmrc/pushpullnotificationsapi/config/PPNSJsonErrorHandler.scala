@@ -30,7 +30,7 @@ import uk.gov.hmrc.play.bootstrap.config.HttpAuditEvent
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
-class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditEvent: HttpAuditEvent, configuration: Configuration)(implicit ec: ExecutionContext)
+class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditEvent: HttpAuditEvent, configuration: Configuration)(using ExecutionContext)
     extends JsonErrorHandler(auditConnector, httpAuditEvent, configuration) {
 
   import httpAuditEvent.dataEvent

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
-import java.{util => ju}
+import java.util as ju
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,10 +38,10 @@ class BoxService @Inject() (
     applicationConnector: ThirdPartyApplicationConnector,
     eventsConnector: ApiPlatformEventsConnector,
     clientService: ClientService
-  )(implicit ec: ExecutionContext)
+  )(using ExecutionContext)
     extends ApplicationLogger {
 
-  def createBox(clientId: ClientId, boxName: String)(implicit hc: HeaderCarrier): Future[CreateBoxResult] = {
+  def createBox(clientId: ClientId, boxName: String)(using HeaderCarrier): Future[CreateBoxResult] = {
 
     repository.getBoxByNameAndClientId(boxName, clientId) flatMap {
       case Some(x) => successful(BoxRetrievedResult(x))
@@ -82,13 +82,13 @@ class BoxService @Inject() (
             appId <- box.applicationId.fold(updateBoxWithApplicationId(box))(id => successful(id))
             result <- validateCallBack(box, request)
             _ = result match {
-                  case successfulUpdate @ CallbackUrlUpdated =>
+                  case _ @CallbackUrlUpdated =>
                     eventsConnector.sendCallBackUpdatedEvent(appId, oldUrl, request.callbackUrl, box).recoverWith {
                       case NonFatal(e) =>
                         logger.warn(s"Unable to send CallbackUrlUpdated event", e)
                         successful(false) // We throw it away anyhow
                     }
-                  case _                                     => logger.warn("Updating callback URL failed - not sending event")
+                  case _                     => logger.warn("Updating callback URL failed - not sending event")
                 }
           } yield result
         } else successful(UpdateCallbackUrlUnauthorisedResult)
@@ -128,7 +128,7 @@ class BoxService @Inject() (
     }
   }
 
-  private def updateBoxWithApplicationId(box: Box)(implicit hc: HeaderCarrier): Future[ApplicationId] = {
+  private def updateBoxWithApplicationId(box: Box)(using HeaderCarrier): Future[ApplicationId] = {
     applicationConnector.getApplicationDetails(box.boxCreator.clientId)
       .flatMap(appDetails => {
         repository.updateApplicationId(box.boxId, appDetails.id)

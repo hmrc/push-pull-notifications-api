@@ -26,7 +26,8 @@ import play.api.http.Status
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.libs.ws.WSBodyReadables.readableAsString
+import play.api.libs.ws.{DefaultBodyWritables, WSClient, WSResponse}
 import play.api.test.Helpers.*
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
@@ -50,8 +51,10 @@ class BoxControllerISpec
     with CallbackDestinationService
     with ThirdPartyApplicationService
     with ApplicationWithCollaboratorsFixtures
-    with TestData {
-  this: Suite with ServerProvider =>
+    with TestData
+    with DefaultBodyWritables {
+
+  this: Suite & ServerProvider =>
 
   def repo: BoxRepository =
     app.injector.instanceOf[BoxRepository]

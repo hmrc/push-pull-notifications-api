@@ -26,18 +26,18 @@ import scala.util.{Failure, Success, Try}
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.http.Status.{BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR}
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.HttpReads.Implicits.*
+import play.api.libs.ws.JsonBodyWritables
 import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.CallbackValidation
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundNotification
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
-import play.api.libs.ws.JsonBodyWritables
 
 @Singleton
-class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext)
+class OutboundProxyConnector @Inject() (appConfig: AppConfig, httpClient: HttpClientV2)(using ExecutionContext)
     extends ApplicationLogger with JsonBodyWritables {
 
   import OutboundProxyConnector.*

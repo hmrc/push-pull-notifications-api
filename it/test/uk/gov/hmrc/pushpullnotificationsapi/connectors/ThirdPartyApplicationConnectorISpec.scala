@@ -26,21 +26,18 @@ import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.{ApplicationWithCollaborators, ApplicationWithCollaboratorsFixtures}
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
-import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, ThirdPartyApplicationService, WireMockSupport}
+import uk.gov.hmrc.pushpullnotificationsapi.support.{ThirdPartyApplicationService, WireMockSupport}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class ThirdPartyApplicationConnectorISpec
     extends AsyncHmrcSpec
     with WireMockSupport
     with GuiceOneAppPerSuite
-    with MetricsTestSupport
     with ThirdPartyApplicationService
     with ApplicationWithCollaboratorsFixtures
     with TestData {
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
-
-  override def commonStubs(): Unit = givenCleanMetricRegistry()
+  private given HeaderCarrier = HeaderCarrier()
 
   override implicit lazy val app: Application = appBuilder.build()
 

@@ -18,6 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID.randomUUID
 
+import org.mongodb.scala.ObservableFuture
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite

@@ -28,7 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVAL
 import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
 
 @Singleton
-class ValidateAcceptHeaderAction @Inject() (implicit ec: ExecutionContext) extends ActionFilter[Request] {
+class ValidateAcceptHeaderAction @Inject() ()(using ec: ExecutionContext) extends ActionFilter[Request] {
 
   override def executionContext: ExecutionContext = ec
 

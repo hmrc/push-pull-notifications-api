@@ -40,7 +40,7 @@ class WrappedNotificationsController @Inject() (
     validateUserAgentHeaderAction: ValidateUserAgentHeaderAction,
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
-  )(implicit val ec: ExecutionContext)
+  )(using ExecutionContext)
     extends BackendController(cc)
     with NotificationUtils
     with WithJsonBodyWithBadRequest {

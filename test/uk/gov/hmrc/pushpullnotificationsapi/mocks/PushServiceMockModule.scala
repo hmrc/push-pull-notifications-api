@@ -41,7 +41,7 @@ trait PushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
     object ValidateCallbackUrl {
 
       def succeedsFor(request: UpdateCallbackUrlRequest) =
-        when(aMock.validateCallbackUrl(eqTo(request))).thenReturn(successful(PushServiceSuccessResult()))
+        when(aMock.validateCallbackUrl(eqTo(request))).thenReturn(successful(PushServiceSuccessResult))
 
       def failsFor(request: UpdateCallbackUrlRequest) =
         when(aMock.validateCallbackUrl(eqTo(request))).thenReturn(successful(PushServiceFailedResult("")))
@@ -62,7 +62,7 @@ trait PushServiceMockModule extends MockitoSugar with ArgumentMatchersSugar {
 
       def succeedsFor() = {
         val outboundNotificationCaptor = ArgCaptor[OutboundNotification]
-        when(aMock.handleNotification(outboundNotificationCaptor)).thenReturn(successful(PushServiceSuccessResult()))
+        when(aMock.handleNotification(outboundNotificationCaptor)).thenReturn(successful(PushServiceSuccessResult))
         outboundNotificationCaptor
       }
     }

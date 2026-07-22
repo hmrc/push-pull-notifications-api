@@ -27,7 +27,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{CallbackValidation, Callback
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class CallbackValidator @Inject() (outboundProxyConnector: OutboundProxyConnector, challengeGenerator: ChallengeGenerator)(implicit ec: ExecutionContext)
+class CallbackValidator @Inject() (outboundProxyConnector: OutboundProxyConnector, challengeGenerator: ChallengeGenerator)(using ExecutionContext)
     extends ApplicationLogger {
 
   def validateCallback(callbackValidation: CallbackValidation): Future[CallbackValidationResult] = {

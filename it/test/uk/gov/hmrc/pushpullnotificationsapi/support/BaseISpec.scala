@@ -33,14 +33,14 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with MetricsTestSupport {
+abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport { // } with MetricsTestSupport {
 
   def app: Application
   protected def appBuilder: GuiceApplicationBuilder
 
-  override def commonStubs(): Unit = {
-    givenCleanMetricRegistry()
-  }
+  // override def commonStubs(): Unit = {
+  //   givenCleanMetricRegistry()
+  // }
 
   protected implicit def materializer: Materializer = app.materializer
 
@@ -56,7 +56,7 @@ abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with Metrics
 
   protected def htmlEscapedMessage(key: String): String = HtmlFormat.escape(Messages(key)).toString
 
-  implicit def hc(implicit request: FakeRequest[_]): HeaderCarrier =
+  implicit def hc(implicit request: FakeRequest[?]): HeaderCarrier =
     HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
   val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")

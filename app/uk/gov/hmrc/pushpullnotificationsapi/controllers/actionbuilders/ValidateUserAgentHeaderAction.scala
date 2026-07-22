@@ -28,7 +28,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 @Singleton
-class ValidateUserAgentHeaderAction @Inject() (appConfig: AppConfig)(implicit ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
+class ValidateUserAgentHeaderAction @Inject() (appConfig: AppConfig)(using ec: ExecutionContext) extends ActionFilter[Request] with HttpErrorFunctions {
   actionName =>
 
   override def executionContext: ExecutionContext = ec

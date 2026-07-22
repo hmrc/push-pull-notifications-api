@@ -26,8 +26,8 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.ValidateUserAgentHeaderAction
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.given
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.given
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
@@ -37,7 +37,7 @@ class BoxController @Inject() (
     boxService: BoxService,
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
-  )(implicit val ec: ExecutionContext)
+  )(using ec: ExecutionContext)
     extends BackendController(cc)
     with ApplicationLogger {
 

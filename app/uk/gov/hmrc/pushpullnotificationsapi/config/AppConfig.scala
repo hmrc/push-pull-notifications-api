@@ -21,8 +21,8 @@ import scala.jdk.CollectionConverters.*
 
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import com.typesafe.config.Config
+
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.ScheduledJobConfig
 
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
@@ -48,6 +48,5 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val useProxy: Boolean = config.getOptional[Boolean]("http-verbs.proxy.enabled").getOrElse(false)
   val validateCallbackUrlIsHttps: Boolean = config.getOptional[Boolean]("validateHttpsCallbackUrl").getOrElse(true)
 
-  def scheduledJobConfig(jobName: String): Config = config.underlying.atPath(s"scheduledJobs.$jobName")
+  def scheduledJobConfig(jobName: String): ScheduledJobConfig = ScheduledJobConfig.fromConfig(config.underlying.getConfig(jobName))
 }
-

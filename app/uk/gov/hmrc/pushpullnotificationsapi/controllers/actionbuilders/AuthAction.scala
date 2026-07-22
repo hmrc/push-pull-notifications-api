@@ -30,7 +30,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{AuthenticatedNotificationReq
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class AuthAction @Inject() (override val authConnector: AuthConnector)(implicit ec: ExecutionContext)
+class AuthAction @Inject() (override val authConnector: AuthConnector)(using ec: ExecutionContext)
     extends ActionRefiner[Request, AuthenticatedNotificationRequest]
     with HttpErrorFunctions
     with AuthorisedFunctions

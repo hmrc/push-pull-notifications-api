@@ -24,6 +24,7 @@ import scala.util.control.NonFatal
 import com.google.inject.Inject
 
 import play.api.libs.json.Json
+import play.api.libs.ws.JsonBodyWritables
 import play.mvc.Http.HeaderNames.CONTENT_TYPE
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -32,12 +33,11 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.OutboundConfirmation
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedResult, ConfirmationConnectorResult, ConfirmationConnectorSuccessResult}
-import play.api.libs.ws.JsonBodyWritables
 
 @Singleton
-class ConfirmationConnector @Inject() (http: HttpClientV2)(implicit ec: ExecutionContext) extends JsonBodyWritables {
+class ConfirmationConnector @Inject() (http: HttpClientV2)(using ExecutionContext) extends JsonBodyWritables {
 
-  def sendConfirmation(confirmationUrl: URL, confirmation: OutboundConfirmation)(implicit hc: HeaderCarrier): Future[ConfirmationConnectorResult] = {
+  def sendConfirmation(confirmationUrl: URL, confirmation: OutboundConfirmation)(using HeaderCarrier): Future[ConfirmationConnectorResult] = {
     http.post(confirmationUrl)
       .withBody(Json.toJson(confirmation))
       .setHeader(CONTENT_TYPE -> APPLICATION_JSON.value)

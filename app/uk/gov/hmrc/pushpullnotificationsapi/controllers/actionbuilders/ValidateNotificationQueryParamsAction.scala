@@ -31,7 +31,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationSta
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class ValidateNotificationQueryParamsAction @Inject() (implicit ec: ExecutionContext)
+class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionContext)
     extends ActionRefiner[AuthenticatedNotificationRequest, ValidatedNotificationQueryRequest]
     with HttpErrorFunctions
     with ApplicationLogger {

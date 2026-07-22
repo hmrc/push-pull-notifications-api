@@ -45,7 +45,7 @@ class OutboundProxyConnectorISpec extends AsyncHmrcSpec with WireMockSupport wit
       )
 
   trait Setup {
-    implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
+    given ExecutionContext = app.injector.instanceOf[ExecutionContext]
 
     val mockAppConfig: AppConfig = mock[AppConfig]
     when(mockAppConfig.allowedHostList).thenReturn(List("localhost"))
@@ -55,7 +55,7 @@ class OutboundProxyConnectorISpec extends AsyncHmrcSpec with WireMockSupport wit
   }
 
   trait SetupWithProxy {
-    implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
+    given ExecutionContext = app.injector.instanceOf[ExecutionContext]
 
     val mockAppConfig: AppConfig = mock[AppConfig]
     when(mockAppConfig.useProxy).thenReturn(true)

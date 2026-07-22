@@ -20,6 +20,7 @@ import java.lang
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.*
@@ -28,11 +29,10 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.apiplatform.modules.common.services.EitherTHelper
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.controllers.actionbuilders.{AuthAction, ValidateAcceptHeaderAction, ValidateNotificationQueryParamsAction, ValidateUserAgentHeaderAction}
-import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.models.NotificationResponse.fromNotification
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
-import scala.reflect.ClassTag
 
 @Singleton()
 class NotificationsController @Inject() (
@@ -44,7 +44,7 @@ class NotificationsController @Inject() (
     validateAcceptHeaderAction: ValidateAcceptHeaderAction,
     cc: ControllerComponents,
     playBodyParsers: PlayBodyParsers
-  )(implicit val ec: ExecutionContext)
+  )(using ExecutionContext)
     extends BackendController(cc)
     with NotificationUtils
     with WithJsonBodyWithBadRequest {

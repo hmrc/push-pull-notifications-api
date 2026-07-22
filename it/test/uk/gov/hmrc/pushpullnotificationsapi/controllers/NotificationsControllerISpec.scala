@@ -30,6 +30,8 @@ import play.api.http.Status
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json, Reads, Writes}
+import play.api.libs.ws.WSBodyReadables.readableAsString
+import play.api.libs.ws.WSBodyWritables.writeableOf_String
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.*
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
@@ -57,7 +59,7 @@ class NotificationsControllerISpec
     with ApplicationWithCollaboratorsFixtures
     with Eventually {
 
-  this: Suite with ServerProvider =>
+  this: Suite & ServerProvider =>
 
   val expectedChallenge = randomUUID.toString
 
@@ -168,7 +170,7 @@ class NotificationsControllerISpec
   def createBoxAndReturn(): Box = {
     val result = doPut(s"$url/box", createBoxJsonBody, validHeadersJson)
     result.status shouldBe CREATED
-    await(boxRepository.collection.find().toFuture()).head
+    await(boxRepository.collection.find().head())
   }
 
   def createNotifications(boxId: BoxId, numberToCreate: Int): List[String] = {
@@ -199,7 +201,9 @@ class NotificationsControllerISpec
         val result = doPost(s"$url/box/${box.boxId.value.toString}/notifications", """{"hello":"test"}""", validHeadersJson)
         result.status shouldBe CREATED
         validateStringIsUUID(result.body)
-        verifyCallback()
+        eventually {
+          verifyCallback()
+        }
       }
 
       "respond with 201 when notification created for valid json and json content type with no subscriber" in {

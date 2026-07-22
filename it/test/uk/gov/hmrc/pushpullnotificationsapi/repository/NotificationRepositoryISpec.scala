@@ -21,7 +21,8 @@ import java.time.{Duration, Instant}
 import java.util.UUID
 
 import org.apache.pekko.stream.Materializer
-import org.mongodb.scala.Document
+import org.bson.BsonString
+import org.mongodb.scala.{Document, ObservableFuture}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -78,7 +79,7 @@ class NotificationRepositoryISpec
 
   def getIndex(indexName: String): Option[Document] = {
     await(repo.collection.listIndexes()
-      .filter(_.getString("name").equalsIgnoreCase(indexName))
+      .filter(_.get[BsonString]("name").get.getValue.equalsIgnoreCase(indexName))
       .headOption())
   }
 

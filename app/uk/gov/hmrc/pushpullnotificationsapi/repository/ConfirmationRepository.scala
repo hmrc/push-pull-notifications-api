@@ -24,10 +24,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.mongodb.MongoWriteException
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.scaladsl.Source
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Filters.{and, equal, lte, or}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.*
 
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -40,7 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationSt
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB, PlayHmrcMongoFormatters}
 
 @Singleton
-class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, val clock: Clock)(implicit ec: ExecutionContext)
+class ConfirmationRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, val clock: Clock)(using ExecutionContext)
     extends PlayMongoRepository[ConfirmationRequestDB](
       collectionName = "confirmations",
       mongoComponent = mongoComponent,

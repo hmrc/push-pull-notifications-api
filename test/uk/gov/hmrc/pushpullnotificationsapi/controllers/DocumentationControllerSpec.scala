@@ -26,7 +26,7 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.Result
-import play.api.test.Helpers.{route, _}
+import play.api.test.Helpers.{route, *}
 import play.api.test.{FakeRequest, Helpers}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec

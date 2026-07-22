@@ -31,8 +31,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, NotificationId}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 
-trait NotificationUtils {
-  implicit val ec: ExecutionContext
+trait NotificationUtils(using ExecutionContext) {
+
   def notificationsService: NotificationsService
 
   protected def contentTypeHeaderToNotificationType(contentType: String): Option[MessageContentType] = {
@@ -48,7 +48,7 @@ trait NotificationUtils {
       contentType: MessageContentType,
       message: String
     )(fn: (NotificationId) => Future[Result]
-    )(implicit hc: HeaderCarrier
+    )(using HeaderCarrier
     ): Future[Result] = {
     val notificationId = NotificationId.random
 

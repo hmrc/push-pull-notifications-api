@@ -41,19 +41,19 @@ trait ApiPlatformEventsConnectorMockModule extends MockitoSugar with ArgumentMat
     object SendCallBackUpdatedEvent {
 
       def verifyCalledWith(applicationId: ApplicationId, endpoint: String, newUrl: String, box: Box) = {
-        verify.sendCallBackUpdatedEvent(eqTo(applicationId), eqTo(endpoint), eqTo(newUrl), eqTo(box))(*)
+        verify.sendCallBackUpdatedEvent(eqTo(applicationId), eqTo(endpoint), eqTo(newUrl), eqTo(box))(using *)
       }
 
       def verifyCalled() = {
-        verify.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(*)
+        verify.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(using *)
       }
 
       def succeeds() = {
-        when(aMock.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(*)).thenReturn(successful(true))
+        when(aMock.sendCallBackUpdatedEvent(*[ApplicationId], *, *, *)(using *)).thenReturn(successful(true))
       }
 
       def succeedsWith(applicationId: ApplicationId, newUrl: String, box: Box) = {
-        when(aMock.sendCallBackUpdatedEvent(eqTo(applicationId), *, eqTo(newUrl), eqTo(box))(*)).thenReturn(successful(true))
+        when(aMock.sendCallBackUpdatedEvent(eqTo(applicationId), *, eqTo(newUrl), eqTo(box))(using *)).thenReturn(successful(true))
       }
 
     }

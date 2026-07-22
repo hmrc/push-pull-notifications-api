@@ -13,10 +13,11 @@ object CodeCoverageSettings {
     "MicroserviceAuditConnector",
     "Module",
     "GraphiteStartUp",
+    """uk.gov.hmrc.pushpullnotificationsapi.controllers.binders""",
     ".*\\.Reverse[^.]*"
   )
 
-  val settings: Seq[Setting[_]] = Seq(
+  val settings: Seq[Setting[?]] = Seq(
     ScoverageKeys.coverageExcludedPackages := excludedPackages.mkString(";"),
     ScoverageKeys.coverageMinimumStmtTotal := 95.1,
     ScoverageKeys.coverageFailOnMinimum := true,

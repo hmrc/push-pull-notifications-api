@@ -31,7 +31,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{BAD_REQUEST, route, status, _}
+import play.api.test.Helpers.{BAD_REQUEST, route, status, *}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -39,8 +39,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.BoxServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
-import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.boxFormats
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
@@ -49,8 +49,8 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
   implicit def mat: Materializer = app.injector.instanceOf[Materializer]
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  val mockAppConfig: AppConfig = mock[AppConfig]
 
+  val mockAppConfig: AppConfig = mock[AppConfig]
   override lazy val app: Application = GuiceApplicationBuilder()
     .overrides(bind[BoxService].to(BoxServiceMock.aMock))
     .overrides(bind[AppConfig].to(mockAppConfig))
@@ -299,7 +299,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
 
       "return 200 when request is successful" in {
         setUpAppConfig(List("api-subscription-fields"))
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated())
+        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated)
 
         validateResult(
           doPut(
@@ -317,7 +317,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 200 when payload is missing the callbackUrl value" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated())
+        BoxServiceMock.UpdateCallbackUrl.thenSucceedsWith(boxId, CallbackUrlUpdated)
 
         validateResult(
           doPut(
@@ -351,7 +351,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 404 if Box does not exist" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, BoxIdNotFound())
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, BoxIdNotFound)
 
         validateResult(
           doPut(
@@ -406,7 +406,7 @@ class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with Aut
       "return 401 if client id does not match that on the box" in {
         setUpAppConfig(List("api-subscription-fields"))
 
-        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, UpdateCallbackUrlUnauthorisedResult())
+        BoxServiceMock.UpdateCallbackUrl.failsWith(boxId, UpdateCallbackUrlUnauthorisedResult)
 
         validateResult(
           doPut(

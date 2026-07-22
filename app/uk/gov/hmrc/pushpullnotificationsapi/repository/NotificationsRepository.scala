@@ -26,11 +26,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.apache.pekko.NotUsed
 import org.apache.pekko.stream.scaladsl.Source
 import org.bson.conversions.Bson
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Aggregates.`match`
-import org.mongodb.scala.model.Filters.{equal, _}
+import org.mongodb.scala.model.Filters.{equal, *}
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model.*
 import org.mongodb.scala.{MongoWriteException, ReadPreference}
 
 import uk.gov.hmrc.mongo.MongoComponent
@@ -49,7 +49,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoForma
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 @Singleton
-class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: LocalCrypto, val clock: Clock)(implicit ec: ExecutionContext)
+class NotificationsRepository @Inject() (appConfig: AppConfig, mongoComponent: MongoComponent, crypto: LocalCrypto, val clock: Clock)(using ExecutionContext)
     extends PlayMongoRepository[DbNotification](
       collectionName = "notifications",
       mongoComponent = mongoComponent,

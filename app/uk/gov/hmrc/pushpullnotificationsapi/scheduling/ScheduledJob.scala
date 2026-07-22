@@ -21,10 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ScheduledJob {
   def name: String
-  def execute(implicit ec: ExecutionContext): Future[Result]
-  def isRunning: Future[Boolean]
 
-  case class Result(message: String)
+  def isEnabled: Boolean
 
   def configKey: String = name
 
@@ -33,4 +31,6 @@ trait ScheduledJob {
   def interval: FiniteDuration
 
   override def toString() = s"$name after $initialDelay every $interval"
+
+  def execute(using ExecutionContext): Future[String]
 }

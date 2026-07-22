@@ -29,8 +29,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
-import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
+import uk.gov.hmrc.pushpullnotificationsapi.models.SubscriptionType.API_PUSH_SUBSCRIBER
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.ACKNOWLEDGED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, Notification, OutboundNotification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
@@ -46,10 +46,10 @@ class NotificationPushService @Inject() (
     confirmationService: ConfirmationService,
     metrics: Metrics,
     val clock: Clock
-  )(implicit ec: ExecutionContext)
+  )(using ExecutionContext)
     extends ApplicationLogger with ClockNow {
 
-  def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def handlePushNotification(box: Box, notification: Notification)(using HeaderCarrier, ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
       sendNotificationToPush(box, notification) flatMap {
         case true  =>
@@ -76,7 +76,7 @@ class NotificationPushService @Inject() (
     } else Future.successful(true)
   }
 
-  private def sendNotificationToPush(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  private def sendNotificationToPush(box: Box, notification: Notification)(using ExecutionContext): Future[Boolean] = {
     val subscriber: PushSubscriber = box.subscriber.get.asInstanceOf[PushSubscriber]
 
     clientService.findOrCreateClient(box.boxCreator.clientId) flatMap { client =>

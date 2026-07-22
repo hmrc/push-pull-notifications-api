@@ -25,11 +25,11 @@ import org.scalatest.matchers.should.Matchers
 import play.api.Application
 
 trait MetricsTestSupport {
-  self: Suite with Matchers =>
+  self: Suite & Matchers =>
 
   def app: Application
 
-  private var metricsRegistry: MetricRegistry = _
+  protected var metricsRegistry: MetricRegistry
 
   def givenCleanMetricRegistry(): Unit = {
     val registry = app.injector.instanceOf[MetricRegistry]

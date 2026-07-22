@@ -47,7 +47,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
     }
   }
 
-  def handleConfirmation(notificationId: NotificationId)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def handleConfirmation(notificationId: NotificationId)(using HeaderCarrier, ExecutionContext): Future[Boolean] = {
     repository.updateConfirmationNeed(notificationId) map {
       case Some(confirmationRequest) =>
         sendConfirmation(confirmationRequest)
@@ -58,7 +58,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
     }
   }
 
-  def sendConfirmation(request: ConfirmationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def sendConfirmation(request: ConfirmationRequest)(using HeaderCarrier, ExecutionContext): Future[Boolean] = {
     try {
       connector.sendConfirmation(
         request.confirmationUrl,

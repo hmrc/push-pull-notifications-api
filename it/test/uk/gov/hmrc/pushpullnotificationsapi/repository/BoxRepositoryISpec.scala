@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
+import org.mongodb.scala.ObservableFuture
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -105,7 +106,7 @@ class BoxRepositoryISpec
     "create a Box with one PushSubscriber" in {
       val result: Unit = await(repo.createBox(box))
       result shouldBe ((): Unit)
-      val fetchedRecords = await(repo.collection.find().toFuture())
+      val fetchedRecords = await(repo.collection.find().toFuture)
       val fetchedBox = fetchedRecords.head
       fetchedBox.boxName shouldBe boxName
       fetchedBox.boxCreator.clientId shouldBe clientId

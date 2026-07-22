@@ -115,7 +115,7 @@ trait BoxRepositoryMockModule extends MockitoSugar with ArgumentMatchersSugar {
       }
 
       def succeeds() = {
-        when(aMock.deleteBox(*[BoxId])).thenReturn(successful(BoxDeleteSuccessfulResult()))
+        when(aMock.deleteBox(*[BoxId])).thenReturn(successful(BoxDeleteSuccessfulResult))
       }
 
     }

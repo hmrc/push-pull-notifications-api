@@ -41,7 +41,7 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
     object GetApplicationDetails {
 
       def failsWith(clientId: ClientId) = {
-        when(aMock.getApplicationDetails(eqTo(clientId))(*)).thenReturn(failed(new RuntimeException("bang")))
+        when(aMock.getApplicationDetails(eqTo(clientId))(using *)).thenReturn(failed(new RuntimeException("bang")))
       }
 
       def verifyNoInteractions() = {
@@ -49,11 +49,11 @@ trait ThirdPartyApplicationConnectorMockModule extends MockitoSugar with Argumen
       }
 
       def verifyCalledWith(clientId: ClientId) = {
-        verify.getApplicationDetails(eqTo(clientId))(*)
+        verify.getApplicationDetails(eqTo(clientId))(using *)
       }
 
       def isSuccessWith(clientId: ClientId, applicationId: ApplicationId) = {
-        when(aMock.getApplicationDetails(eqTo(clientId))(*))
+        when(aMock.getApplicationDetails(eqTo(clientId))(using *))
           .thenReturn(successful(standardApp.withId(applicationId)))
       }
     }
