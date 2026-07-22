@@ -19,7 +19,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 import java.time.{Clock, Duration, Instant}
 import javax.inject.Inject
 import scala.concurrent.Future.successful
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -28,33 +28,34 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 import uk.gov.hmrc.thirdpartydelegatedauthority.util.FutureUtils
 
 import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.FAILED
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.repository.NotificationsRepository
+import uk.gov.hmrc.pushpullnotificationsapi.scheduling.*
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService
+import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
 class RetryPushNotificationsJob @Inject() (
-    mongoLockRepository: MongoLockRepository,
+    val mongoLockRepository: MongoLockRepository,
     jobConfig: RetryPushNotificationsJobConfig,
     notificationsRepository: NotificationsRepository,
     notificationPushService: NotificationPushService,
     val clock: Clock
-  )(using m: Materializer)
-    extends ScheduledMongoJob with ClockNow {
+  )(using Materializer)
+    extends LockedScheduledJob with ClockNow with ApplicationLogger {
 
   override def name: String = "RetryPushNotificationsJob"
   override def interval: FiniteDuration = jobConfig.interval
   override def initialDelay: FiniteDuration = jobConfig.initialDelay
   override val isEnabled: Boolean = jobConfig.enabled
   given HeaderCarrier = HeaderCarrier()
-  override val lockKeeper: LockService = LockService(mongoLockRepository, lockId = "RetryPushNotificationsJob", ttl = 1.hour)
 
-  override def runJob(using ExecutionContext): Future[RunningOfJobSuccessful] = {
+  override def executeInLock(using ExecutionContext): Future[String] = {
     val retryAfterDateTime: Instant = instant
     val nextRetryAfterDateTime: Instant = retryAfterDateTime.plus(Duration.ofMillis(jobConfig.interval.toMillis))
 
@@ -64,12 +65,12 @@ class RetryPushNotificationsJob @Inject() (
           .fetchRetryablePushNotifications(retryAfterDateTime)
           .flatMap(source =>
             source.runWith(Sink.foreachAsync[RetryableNotification](jobConfig.parallelism)(retryPushNotification(_, nextRetryAfterDateTime)))
-              .map(_ => RunningOfJobSuccessful)
+              .map(_ => "Successful")
           )
           .recoverWith {
             case NonFatal(e) =>
               logger.error("Failed to retry failed push pull notifications", e)
-              Future.failed(RunningOfJobFailed(name, e))
+              Future.failed(e)
           }
       },
       "FetchRetryableNotifications"

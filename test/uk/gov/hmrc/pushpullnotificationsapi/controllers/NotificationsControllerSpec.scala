@@ -44,9 +44,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockMo
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationsService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class NotificationsControllerSpec extends AsyncHmrcSpec with NotificationsServiceMockModule with AuthConnectorMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach
     with TestData

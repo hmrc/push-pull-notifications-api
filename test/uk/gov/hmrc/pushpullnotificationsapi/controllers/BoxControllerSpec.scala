@@ -41,9 +41,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.mocks.BoxServiceMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.given
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 import uk.gov.hmrc.pushpullnotificationsapi.services.BoxService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with AuthConnectorMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

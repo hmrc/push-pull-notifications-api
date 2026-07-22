@@ -43,9 +43,9 @@ import uk.gov.hmrc.pushpullnotificationsapi.mocks.*
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.connectors.AuthConnectorMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 import uk.gov.hmrc.pushpullnotificationsapi.services.{ConfirmationService, NotificationsService}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach with ConfirmationServiceMockModule
     with NotificationsServiceMockModule with AuthConnectorMockModule with TestData with FixedClock {

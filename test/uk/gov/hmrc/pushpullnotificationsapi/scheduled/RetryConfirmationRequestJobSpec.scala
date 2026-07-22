@@ -102,7 +102,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(bad ++ good)
 
-      val result: underTest.Result = await(underTest.execute)
+      val result = await(underTest.execute)
 
       bad.foreach(x => ConfirmationServiceMock.SendConfirmation.verifyCalledWith(x))
       good.foreach(x => ConfirmationServiceMock.SendConfirmation.verifyCalledWith(x))
@@ -117,10 +117,10 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(confirmationRequest))
       ConfirmationServiceMock.SendConfirmation.thenSuccess(true)
-      val result: underTest.Result = await(underTest.execute)
+      val result = await(underTest.execute)
 
       ConfirmationServiceMock.SendConfirmation.verifyCalledWith(confirmationRequest)
-      result.message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      result shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
     "set notification RetryAfterDateTime when it fails to push and the notification is not too old for further retries" in new Setup {
@@ -129,10 +129,10 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.thenSuccessWith(Some(confirmationRequest))
       ConfirmationServiceMock.SendConfirmation.thenSuccess(false)
 
-      val result: underTest.Result = await(underTest.execute)
+      val result = await(underTest.execute)
 
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.verifyCalled()
-      result.message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      result shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
     "set confirmation status to failed when it fails to push and the confirmation is too old for further retries" in new Setup {
@@ -142,13 +142,13 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
       ConfirmationServiceMock.SendConfirmation.thenSuccess(false)
 
-      val result: underTest.Result = await(underTest.execute)
+      val result = await(underTest.execute)
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()
       ConfirmationRepositoryMock.UpdateStatus.verifyCalledWith(notificationId, FAILED)
       ConfirmationRepositoryMock.UpdateRetryAfterDateTime.neverCalled()
 
-      result.message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      result shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
     "not execute if the job is already running" in new Setup {
@@ -160,29 +160,29 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
       await(underTest.execute)
-      val result2: underTest.Result = await(underTest.execute)
+      val result2 = await(underTest.execute)
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()
       ConfirmationServiceMock.SendConfirmation.verifyCalled()
-      result2.message shouldBe "RetryConfirmationRequestJob did not run because repository was locked by another instance of the scheduler."
+      result2 shouldBe "RetryConfirmationRequestJob did not run because repository was locked by another instance of the scheduler."
     }
 
     "handle error when something fails" in new Setup {
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenFails()
-      val result: underTest.Result = await(underTest.execute)
+      val result = await(underTest.execute)
 
       ConfirmationServiceMock.SendConfirmation.neverCalled()
-      result.message shouldBe "The execution of scheduled job RetryConfirmationRequestJob failed with error 'Failed'. " +
+      result shouldBe "The execution of scheduled job RetryConfirmationRequestJob failed with error 'Failed'. " +
         "The next execution of the job will do retry."
     }
 
     "attempt to send all even if 1st fails with one batch worth of requests" in new Setup(5) {
-      runBatchTest(numberBad = 2, numberGood = 3).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      runBatchTest(numberBad = 2, numberGood = 3) shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
     "attempt to send all even if 1st fails with more than one batch worth of requests" in new Setup(5) {
-      runBatchTest(numberBad = 1, numberGood = 15).message shouldBe "RetryConfirmationRequestJob Job ran successfully."
+      runBatchTest(numberBad = 1, numberGood = 15) shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
   }
 }

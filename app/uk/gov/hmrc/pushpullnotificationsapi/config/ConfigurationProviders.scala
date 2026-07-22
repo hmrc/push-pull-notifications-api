@@ -26,8 +26,7 @@ class ConfigurationModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] = {
     Seq(
-      bind[Encrypter & Decrypter].to[LocalCrypto],
+      bind[Encrypter & Decrypter].to[LocalCrypto]
     )
   }
 }
-

@@ -34,9 +34,9 @@ import play.api.test.Helpers.*
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.ClientServiceMockModule
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 import uk.gov.hmrc.pushpullnotificationsapi.services.ClientService
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
 
 class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach with TestData {
 

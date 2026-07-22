@@ -32,7 +32,7 @@ import play.api.test.{FakeRequest, Helpers}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
-import uk.gov.hmrc.pushpullnotificationsapi.config.SchedulerModule
+import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 
 class DocumentationControllerSpec extends AsyncHmrcSpec with MockitoSugar with ArgumentMatchersSugar with GuiceOneAppPerSuite with BeforeAndAfterEach {
 

@@ -19,6 +19,8 @@ package uk.gov.hmrc.pushpullnotificationsapi.config
 import javax.inject.{Inject, Singleton}
 import scala.jdk.CollectionConverters.*
 
+import com.typesafe.config.Config
+
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -45,4 +47,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val allowedHostList: List[String] = config.underlying.getStringList("allowedHostList").asScala.toList
   val useProxy: Boolean = config.getOptional[Boolean]("http-verbs.proxy.enabled").getOrElse(false)
   val validateCallbackUrlIsHttps: Boolean = config.getOptional[Boolean]("validateHttpsCallbackUrl").getOrElse(true)
+
+  def scheduledJobConfig(jobName: String): Config = config.underlying.getConfig(jobName)
 }
