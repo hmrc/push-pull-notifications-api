@@ -20,6 +20,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.UUID.randomUUID
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterEach, Suite}
@@ -30,8 +31,10 @@ import play.api.http.Status
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Format, JsSuccess, Json, Reads, Writes}
+import play.api.libs.ws.DefaultBodyReadables.readableAsString
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.*
+import uk.gov.hmrc.mongo.logging.ObservableFutureImplicits.ObservableFuture
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
@@ -43,7 +46,6 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.DbNotification
 import uk.gov.hmrc.pushpullnotificationsapi.repository.{BoxRepository, NotificationsRepository}
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
 import uk.gov.hmrc.pushpullnotificationsapi.support.*
-import play.api.libs.ws.JsonBodyWritables
 
 class NotificationsControllerISpec
     extends ServerBaseISpec
@@ -56,8 +58,7 @@ class NotificationsControllerISpec
     with ThirdPartyApplicationService
     with ApiPlatformEventsService
     with ApplicationWithCollaboratorsFixtures
-    with Eventually
-    with JsonBodyWritables {
+    with Eventually {
 
   this: Suite & ServerProvider =>
 
@@ -68,9 +69,11 @@ class NotificationsControllerISpec
   }
 
   given Format[Instant] = Format(Reads.DefaultInstantReads, Writes.DefaultInstantWrites)
+
   def boxRepository: BoxRepository = app.injector.instanceOf[BoxRepository]
 
   def notificationRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]
+
   override protected val repository: PlayMongoRepository[DbNotification] = app.injector.instanceOf[NotificationsRepository]
 
   val boxName = "myboxName"
@@ -138,6 +141,8 @@ class NotificationsControllerISpec
   val validHeadersXml = List(acceptHeader, CONTENT_TYPE -> "application/xml", USER_AGENT -> "api-subscription-fields", AUTHORIZATION -> "Bearer token")
 
   val wsClient: WSClient = app.injector.instanceOf[WSClient]
+
+  import play.api.libs.ws.DefaultBodyWritables.writeableOf_String
 
   def doPost(urlString: String, jsonBody: String, headers: List[(String, String)]): WSResponse =
     wsClient

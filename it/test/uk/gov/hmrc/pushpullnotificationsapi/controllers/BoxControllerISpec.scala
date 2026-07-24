@@ -26,6 +26,8 @@ import play.api.http.Status
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.api.libs.ws.DefaultBodyReadables.readableAsString
+import play.api.libs.ws.DefaultBodyWritables.writeableOf_String
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.test.Helpers.*
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
@@ -35,12 +37,9 @@ import uk.gov.hmrc.apiplatform.modules.applications.core.domain.models.Applicati
 import uk.gov.hmrc.apiplatform.modules.common.domain.models.ClientId
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.repository.BoxRepository
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.MongoBoxFormat
 import uk.gov.hmrc.pushpullnotificationsapi.services.ChallengeGenerator
 import uk.gov.hmrc.pushpullnotificationsapi.support.{AuthService, CallbackDestinationService, ServerBaseISpec, ThirdPartyApplicationService}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
-import play.api.libs.ws.DefaultBodyWritables
-import play.api.libs.ws.DefaultBodyReadables
 
 class BoxControllerISpec
     extends ServerBaseISpec
@@ -52,9 +51,7 @@ class BoxControllerISpec
     with CallbackDestinationService
     with ThirdPartyApplicationService
     with ApplicationWithCollaboratorsFixtures
-    with TestData
-    with DefaultBodyWritables
-    with DefaultBodyReadables {
+    with TestData {
   this: Suite & ServerProvider =>
 
   def repo: BoxRepository =
@@ -225,6 +222,7 @@ class BoxControllerISpec
 
   "GET /box?boxName=someName&clientId=someClientid" should {
     "respond with 200 and box in body when exists" in {
+      import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.given_OFormat_Box
 
       primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
       val result = callCreateBoxEndpoint(createBoxJsonBody, validHeadersJson.toList)
@@ -362,6 +360,8 @@ class BoxControllerISpec
   }
 
   private def createBoxAndCheckExistsWithNoSubscribers(): Box = {
+    import uk.gov.hmrc.pushpullnotificationsapi.models.ResponseFormatters.given_OFormat_Box
+
     primeApplicationQueryEndpoint(Status.OK, tpaResponse, clientId)
 
     val result = callCreateBoxEndpoint(createBoxJsonBody, validHeadersJson.toList)

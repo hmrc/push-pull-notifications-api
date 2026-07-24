@@ -82,7 +82,7 @@ object Subscriber {
     .format
 }
 
-class SubscriberContainer[+A](val elem: A)
+class SubscriberContainer[+A <: Subscriber](val elem: A)
 
 case class PushSubscriber(callBackUrl: String, override val subscribedDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)) extends Subscriber {
   override val subscriptionType: SubscriptionType = API_PUSH_SUBSCRIBER

@@ -24,6 +24,7 @@ lazy val microservice = Project(appName, file("."))
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     Test / unmanagedSourceDirectories += baseDirectory.value / "testcommon",
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-eT"),
+    Test / parallelExecution := false
   )
   .settings(
     routesImport ++= Seq(

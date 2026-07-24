@@ -31,7 +31,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationConnectorFailedR
 import uk.gov.hmrc.pushpullnotificationsapi.support.{MetricsTestSupport, WireMockSupport}
 
 class ConfirmationConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with FixedClock {
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
+  private given HeaderCarrier = HeaderCarrier()
 
   override def commonStubs(): Unit = givenCleanMetricRegistry()
 

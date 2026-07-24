@@ -17,7 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduled
 
 import java.time.{Clock, Duration, Instant}
-import javax.inject.{Inject, Named}
+import javax.inject.Inject
 import scala.concurrent.Future.successful
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}

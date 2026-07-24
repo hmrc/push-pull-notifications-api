@@ -18,7 +18,7 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{status => _, _}
+import com.github.tomakehurst.wiremock.client.WireMock.{status as _, *}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.*
 import org.apache.pekko.stream.Materializer
 import org.scalatest.{BeforeAndAfterEach, TestData}
@@ -58,7 +58,7 @@ class DocumentationControllerISpec extends AsyncHmrcSpec with GuiceOneAppPerTest
   }
 
   trait Setup {
-    implicit def mat: Materializer = app.injector.instanceOf[Materializer]
+    given Materializer = app.injector.instanceOf[Materializer]
     val documentationController = app.injector.instanceOf[DocumentationController]
     val request = FakeRequest()
   }

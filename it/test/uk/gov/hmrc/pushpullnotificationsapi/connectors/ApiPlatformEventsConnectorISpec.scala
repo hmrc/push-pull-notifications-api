@@ -30,7 +30,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.support.{ApiPlatformEventsService, M
 
 class ApiPlatformEventsConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with MetricsTestSupport with ApiPlatformEventsService {
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
+  private given HeaderCarrier = HeaderCarrier()
 
   override def commonStubs(): Unit = givenCleanMetricRegistry()
 

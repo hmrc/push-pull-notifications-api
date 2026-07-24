@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.repository
 
 import java.util.UUID.randomUUID
+import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -24,6 +25,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.mongo.logging.ObservableFutureImplicits.ObservableFuture
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.PlayMongoRepositorySupport
 
@@ -47,6 +49,7 @@ class ClientRepositoryISpec
       )
 
   override implicit lazy val app: Application = appBuilder.build()
+  given ExecutionContext = app.injector.instanceOf[ExecutionContext]
 
   def repo: ClientRepository = app.injector.instanceOf[ClientRepository]
   override protected val repository: PlayMongoRepository[DbClient] = app.injector.instanceOf[ClientRepository]

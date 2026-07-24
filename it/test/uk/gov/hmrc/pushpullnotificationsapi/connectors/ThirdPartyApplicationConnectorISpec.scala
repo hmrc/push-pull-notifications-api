@@ -38,7 +38,7 @@ class ThirdPartyApplicationConnectorISpec
     with ApplicationWithCollaboratorsFixtures
     with TestData {
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
+  private given HeaderCarrier = HeaderCarrier()
 
   override def commonStubs(): Unit = givenCleanMetricRegistry()
 

@@ -36,7 +36,7 @@ trait LockedScheduledJob extends ExclusiveScheduledJob with ApplicationLogger {
     lockService.withLock {
       executeInLock
     } map {
-      case Some(_) => s"$name Job ran successfully."
+      case Some(r) => s"$name Job ran successfully."
       case _       => s"$name did not run because repository was locked by another instance of the scheduler."
     } recover {
       case failure: Exception =>

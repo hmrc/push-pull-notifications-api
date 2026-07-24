@@ -19,11 +19,12 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository
 import java.net.URL
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
+import scala.concurrent.ExecutionContext
 
 import com.mongodb.client.result.InsertOneResult
 import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.model.Filters.{equal => mongoEqual}
+import org.mongodb.scala.model.Filters.equal as mongoEqual
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -39,7 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.ConfirmationId
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.ConfirmationStatus.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
-import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.*
+import uk.gov.hmrc.pushpullnotificationsapi.repository.models.PlayHmrcMongoFormatters.given
 import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{ConfirmationRequest, ConfirmationRequestDB}
 
 class ConfirmationRepositoryISpec
@@ -72,6 +73,8 @@ class ConfirmationRepositoryISpec
   )
   override implicit lazy val app: Application = appBuilder.build()
 
+  given ExecutionContext = app.injector.instanceOf[ExecutionContext]
+
   override def beforeEach(): Unit = {
     prepareDatabase()
   }
@@ -86,7 +89,7 @@ class ConfirmationRepositoryISpec
     val rawJson = Json.toJson(input.toDB).as[JsObject]
     val editedJson: JsObject = rawJson + ("confirmationUrl" -> JsString("BOB"))
 
-    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).head())
   }
 
   def saveMongoJsonWithNoPrivateHeadersField(input: ConfirmationRequest): InsertOneResult = {
@@ -95,7 +98,7 @@ class ConfirmationRepositoryISpec
     val rawJson = Json.toJson(input.toDB).as[JsObject]
     val editedJson: JsObject = rawJson - "privateHeaders"
 
-    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).toFuture())
+    await(mongoDatabase.getCollection("confirmations").insertOne(Document(editedJson.toString())).head())
   }
 
   "handle a bad URL accordingly" should {

@@ -18,16 +18,17 @@ package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, *}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 
-class ExclusiveScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutures {
+class ExclusiveScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFutures with Eventually {
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
@@ -35,7 +36,7 @@ class ExclusiveScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFu
 
     val start = new CountDownLatch(1)
 
-    def continueExecution() = start.countDown()
+    def completeRun() = start.countDown()
 
     val executionCount = new AtomicInteger(0)
 
@@ -51,9 +52,9 @@ class ExclusiveScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFu
 
     override def name = "simpleJob"
 
-    override def initialDelay = FiniteDuration(1, TimeUnit.MINUTES)
+    override def initialDelay = 1.minute
 
-    override def interval = FiniteDuration(1, TimeUnit.MINUTES)
+    override def interval = 1.minute
   }
 
   "ExclusiveScheduledJob" should {
@@ -61,34 +62,36 @@ class ExclusiveScheduledJobSpec extends AsyncHmrcSpec with Matchers with ScalaFu
 
     "let job run in sequence" in {
       val job = new SimpleJob
-      job.continueExecution()
+      job.completeRun()
       job.execute.futureValue shouldBe "1"
       job.execute.futureValue shouldBe "2"
     }
 
-//     "not allow job to run in parallel" in {
-//       val job = new SimpleJob
+    "not allow job to run in parallel" in {
+      val job = new SimpleJob
 
-//       val pausedExecution = job.execute
-//       pausedExecution.isCompleted shouldBe false
-//       job.isRunning.futureValue shouldBe true
-//       job.execute.futureValue.message shouldBe "Skipping execution: job running"
-//       job.isRunning.futureValue shouldBe true
+      val pausedExecution = job.execute
+      pausedExecution.isCompleted shouldBe false
+      job.isRunning shouldBe true
+      job.execute.futureValue shouldBe "Skipping execution: job running"
+      job.isRunning shouldBe true
 
-//       job.continueExecution()
-//       pausedExecution.futureValue.message shouldBe "1"
-//       job.isRunning.futureValue shouldBe false
+      job.completeRun()
+      pausedExecution.futureValue shouldBe "1"
+      eventually {
+        job.isRunning shouldBe false
+      }
+    }
 
-//     }
+    "tolerate exceptions in execution ensuring job is marked as no longer running" in {
+      val job = new SimpleJob() {
+        override def executeInMutex(using ExecutionContext): Future[String] = Future { throw new RuntimeException }
+      }
 
-//     "should tolerate exceptions in execution" in {
-//       val job = new SimpleJob() {
-//         override def executeInMutex(using ExecutionContext): Future[String] = throw new RuntimeException
-//       }
+      // Because futureValue would rethrow in this context wrap in Try
+      Try(job.execute.futureValue)
 
-//       Try(job.execute.futureValue)
-
-//       job.isRunning.futureValue shouldBe false
-//     }
+      job.isRunning shouldBe false
+    }
   }
 }

@@ -29,6 +29,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.mongo.logging.ObservableFutureImplicits.ObservableFuture
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.{CleanMongoCollectionSupport, PlayMongoRepositorySupport}
 
@@ -61,7 +62,7 @@ class BoxRepositoryISpec
       )
 
   override implicit lazy val app: Application = appBuilder.build()
-  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
+  given Materializer = app.injector.instanceOf[Materializer]
 
   def repo: BoxRepository = app.injector.instanceOf[BoxRepository]
   def notificationsRepo: NotificationsRepository = app.injector.instanceOf[NotificationsRepository]

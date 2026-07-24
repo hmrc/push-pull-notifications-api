@@ -32,7 +32,7 @@ object MongoBoxFormat {
   private given OFormat[PullSubscriber] = Json.format[PullSubscriber]
   private given OFormat[PushSubscriber] = Json.format[PushSubscriber]
 
-  private given OFormat[Subscriber] = Union
+  given OFormat[Subscriber] = Union
     .from[Subscriber]("subscriptionType")
     .and[PullSubscriber](SubscriptionType.API_PULL_SUBSCRIBER.toString)
     .and[PushSubscriber](SubscriptionType.API_PUSH_SUBSCRIBER.toString)

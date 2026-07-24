@@ -41,10 +41,10 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
     .configure("metrics.enabled" -> false).build()
-  implicit lazy val materializer: Materializer = app.materializer
+  given Materializer = app.materializer
 
   class Setup(val batch: Int = 5) extends MongoLockRepositoryMockModule with ConfirmationServiceMockModule with ConfirmationRepositoryMockModule with TestData {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+    given HeaderCarrier = HeaderCarrier()
 
     val jobConfig: RetryConfirmationRequestJobConfig = RetryConfirmationRequestJobConfig(
       FiniteDuration(60, SECONDS),

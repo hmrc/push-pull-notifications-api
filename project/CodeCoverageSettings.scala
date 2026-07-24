@@ -13,6 +13,7 @@ object CodeCoverageSettings {
     "MicroserviceAuditConnector",
     "Module",
     "GraphiteStartUp",
+    "uk.gov.hmrc.pushpullnotificationsapi.controllers.binders",
     ".*\\.Reverse[^.]*"
   )
 

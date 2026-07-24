@@ -42,7 +42,7 @@ abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with Metrics
     givenCleanMetricRegistry()
   }
 
-  protected implicit def materializer: Materializer = app.materializer
+  protected given materializer: Materializer = app.materializer
 
   protected def checkHtmlResultWithBodyText(result: Future[Result], expectedSubstring: String): Unit = {
     status(result) shouldBe 200
@@ -56,7 +56,7 @@ abstract class BaseISpec extends AsyncHmrcSpec with WireMockSupport with Metrics
 
   protected def htmlEscapedMessage(key: String): String = HtmlFormat.escape(Messages(key)).toString
 
-  implicit def hc(implicit request: FakeRequest[_]): HeaderCarrier =
+  implicit def hc(implicit request: FakeRequest[?]): HeaderCarrier =
     HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
   val uuidPattern: Pattern = Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")

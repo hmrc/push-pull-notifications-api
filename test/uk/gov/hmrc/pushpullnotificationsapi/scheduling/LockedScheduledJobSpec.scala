@@ -17,8 +17,8 @@
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
 
 import org.mockito.ArgumentMatchers.{any as `*`, eq as eqTo}
 import org.mockito.Mockito.{never, verify, when}
@@ -27,55 +27,61 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 
 import uk.gov.hmrc.apiplatform.modules.common.utils.{FixedClock, HmrcSpec}
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 
-// class LockedScheduledJobSpec extends HmrcSpec with ScalaFutures with GuiceOneAppPerTest with BeforeAndAfterEach with FixedClock with MockitoSugar {
+class LockedScheduledJobSpec extends HmrcSpec with ScalaFutures with GuiceOneAppPerTest with BeforeAndAfterEach with FixedClock with MockitoSugar {
 
-//   override def fakeApplication() =
-//     new GuiceApplicationBuilder()
-//       .configure(
-//         "metrics.jvm"     -> false,
-//         "metrics.enabled" -> false
-//       )
-//       .build()
+  trait FakeService {
+    def call(): String
+  }
 
-//   trait Setup {
+  class FakeServiceJob(service: FakeService, val mongoLockRepository: MongoLockRepository) extends LockedScheduledJob {
+    override def name: String = "FakeServiceJob"
+    override def interval: FiniteDuration = 5.seconds
+    override def initialDelay: FiniteDuration = 1.second
+    override val isEnabled: Boolean = true
 
-//     // val mockService = mock[SentEmailService]
-//     val mockLockRepository   = mock[MongoLockRepository]
-//     val mockAppConfig        = mock[AppConfig]
-//     when(mockAppConfig.scheduledJobConfig(*)).thenReturn(ScheduledJobConfig(10.seconds, 10.seconds, true))
+    override def executeInLock(using ExecutionContext): Future[String] = {
+      service.call()
+      Future.successful("done")
+    }
+  }
 
-//     // val subject = new EmailSendingJob(mockAppConfig, mockLockRepository, mockSentEmailService)
-//   }
+  trait Setup {
 
-//   "ExclusiveScheduledJob" should {
+    val fakeService = mock[FakeService]
+    val mockLockRepository = mock[MongoLockRepository]
+    val mockAppConfig = mock[AppConfig]
 
-//     "back off when Mongo lock cannot be obtained" in new Setup {
-//       when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(None))
+    val subject = new FakeServiceJob(fakeService, mockLockRepository)
+  }
 
-//       val result = await(subject.execute)
+  "LockedScheduledJobSpec" should {
 
-//       result.message shouldBe "Job named EmailSendingJob cannot acquire Mongo lock, not running"
-//       verify(mockLockRepository).takeLock(eqTo("EmailSendingJob-lock"), *, *)
-//       verify(mockSentEmailService, never).sendNextPendingEmail
-//     }
+    "back off when Mongo lock cannot be obtained" in new Setup {
+      when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(None))
 
-//     "execute in lock when Mongo lock can be obtained" in new Setup {
-//       when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(Some(Lock("", "", instant, instant))))
-//       when(mockLockRepository.releaseLock(*, *)).thenReturn(Future.successful(()))
-//       when(mockSentEmailService.sendNextPendingEmail).thenReturn(Future("Sent successfully"))
+      val result = await(subject.execute)
 
-//       val result = await(subject.execute)
+      result shouldBe "FakeServiceJob did not run because repository was locked by another instance of the scheduler."
+      verify(mockLockRepository).takeLock(eqTo("FakeServiceJob-lock"), *, *)
+      verify(fakeService, never).call()
+    }
 
-//       result.message shouldBe "Job named EmailSendingJob ran, and completed, with result Sent successfully"
-//       verify(mockLockRepository).takeLock(eqTo("EmailSendingJob-lock"), *, *)
-//       verify(mockLockRepository).releaseLock(eqTo("EmailSendingJob-lock"), *)
-//     }
-//   }
-// }
+    "execute in lock when Mongo lock can be obtained" in new Setup {
+      when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(Some(Lock("", "", instant, instant))))
+      when(mockLockRepository.releaseLock(*, *)).thenReturn(Future.successful(()))
+      when(fakeService.call()).thenReturn("faked")
+
+      val result = await(subject.execute)
+
+      result shouldBe "FakeServiceJob Job ran successfully."
+      verify(mockLockRepository).takeLock(eqTo("FakeServiceJob-lock"), *, *)
+      verify(mockLockRepository).releaseLock(eqTo("FakeServiceJob-lock"), *)
+    }
+  }
+}
