@@ -23,7 +23,7 @@ import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
-trait LockedScheduledJob extends ExclusiveScheduledJob with ApplicationLogger {
+trait ExclusiveLockedScheduledJob extends ExclusiveScheduledJob with ApplicationLogger {
 
   def executeInLock(using ExecutionContext): Future[String]
 
@@ -32,11 +32,11 @@ trait LockedScheduledJob extends ExclusiveScheduledJob with ApplicationLogger {
   // Lock for 10 minutes longer than the interval to allow for retries and timeouts
   lazy val lockService: LockService = LockService(mongoLockRepository, lockId = s"$name-lock", ttl = interval + 10.minutes)
 
-  override def executeInMutex(using ExecutionContext): Future[String] =
+  final def executeInMutex(using ExecutionContext): Future[String] =
     lockService.withLock {
       executeInLock
     } map {
-      case Some(r) => s"$name Job ran successfully."
+      case Some(_) => s"$name Job ran successfully."
       case _       => s"$name did not run because repository was locked by another instance of the scheduler."
     } recover {
       case failure: Exception =>

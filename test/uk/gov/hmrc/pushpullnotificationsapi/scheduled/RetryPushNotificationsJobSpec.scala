@@ -149,22 +149,19 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       result shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
-    "not execute if the job is already running" in new Setup {
+    "not execute if the job is already running locally" in new Setup {
 
       val retryableNotification: RetryableNotification = RetryableNotification(notification, BoxObjectWithNoSubscribers)
       NotificationPushServiceMock.HandlePushNotification.returnsTrue()
       NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
 
-      MongoLockRepositoryMock.IsLocked.thenTrueTrueFalse()
-      MongoLockRepositoryMock.TakeLock.thenTrueFalse()
-      MongoLockRepositoryMock.ReleaseLock.thenSuccess()
-
-      await(underTest.execute)
+      val resultF = underTest.execute
       val result2: String = await(underTest.execute)
 
+      await(resultF)
       NotificationPushServiceMock.FetchRetryablePushNotifications.verifyCalled()
       NotificationPushServiceMock.HandlePushNotification.verifyCalled()
-      result2 shouldBe "Skipping execution: job running" // "RetryPushNotificationsJob did not run because repository was locked by another instance of the scheduler."
+      result2 shouldBe "Skipping execution: job running"
     }
 
     "handle error when something fails" in new Setup {

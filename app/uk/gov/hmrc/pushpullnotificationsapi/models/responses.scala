@@ -17,12 +17,10 @@
 package uk.gov.hmrc.pushpullnotificationsapi.models
 
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json.{JsObject, Json, OFormat}
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.PENDING
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{MessageContentType, Notification, NotificationId, NotificationStatus}
 
 case class CreateBoxResponse(boxId: BoxId)
@@ -60,10 +58,10 @@ case class NotificationResponse(
     boxId: BoxId,
     messageContentType: MessageContentType,
     message: String,
-    status: NotificationStatus = PENDING,
-    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-    readDateTime: Option[Instant] = None,
-    pushedDateTime: Option[Instant] = None)
+    status: NotificationStatus,
+    createdDateTime: Instant,
+    readDateTime: Option[Instant],
+    pushedDateTime: Option[Instant])
 
 object NotificationResponse {
   import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter.instantWrites

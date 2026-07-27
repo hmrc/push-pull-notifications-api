@@ -46,7 +46,7 @@ class RetryConfirmationRequestJob @Inject() (
     service: ConfirmationService,
     val clock: Clock
   )(using Materializer)
-    extends LockedScheduledJob with ClockNow with ApplicationLogger {
+    extends ExclusiveLockedScheduledJob with ClockNow with ApplicationLogger {
 
   override def name: String = "RetryConfirmationRequestJob"
   override def interval: FiniteDuration = jobConfig.interval

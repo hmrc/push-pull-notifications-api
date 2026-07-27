@@ -151,20 +151,18 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       result shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
-    "not execute if the job is already running" in new Setup {
+    "not execute if the job is already running locally" in new Setup {
 
       ConfirmationServiceMock.SendConfirmation.thenSuccess(true)
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(confirmationRequest))
-      MongoLockRepositoryMock.IsLocked.thenTrueTrueFalse()
-      MongoLockRepositoryMock.TakeLock.thenTrueFalse()
-      MongoLockRepositoryMock.ReleaseLock.thenSuccess()
 
-      await(underTest.execute)
+      val resultF = underTest.execute
       val result2 = await(underTest.execute)
+      result2 shouldBe "Skipping execution: job running"
 
+      await(resultF)
       ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()
       ConfirmationServiceMock.SendConfirmation.verifyCalled()
-      result2 shouldBe "RetryConfirmationRequestJob did not run because repository was locked by another instance of the scheduler."
     }
 
     "handle error when something fails" in new Setup {

@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.pushpullnotificationsapi.scheduling
 
+import java.util.concurrent.CountDownLatch
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,13 +40,18 @@ class LockedScheduledJobSpec extends HmrcSpec with ScalaFutures with GuiceOneApp
     def call(): String
   }
 
-  class FakeServiceJob(service: FakeService, val mongoLockRepository: MongoLockRepository) extends LockedScheduledJob {
-    override def name: String = "FakeServiceJob"
-    override def interval: FiniteDuration = 5.seconds
-    override def initialDelay: FiniteDuration = 1.second
-    override val isEnabled: Boolean = true
+  class FakeServiceJob(service: FakeService, val mongoLockRepository: MongoLockRepository) extends ExclusiveLockedScheduledJob {
+    val name: String = "FakeServiceJob"
+    val interval: FiniteDuration = 5.seconds
+    val initialDelay: FiniteDuration = 1.second
+    val isEnabled: Boolean = true
+
+    val start = new CountDownLatch(1)
+
+    def completeRun() = start.countDown()
 
     override def executeInLock(using ExecutionContext): Future[String] = {
+      start.await
       service.call()
       Future.successful("done")
     }
@@ -62,6 +68,23 @@ class LockedScheduledJobSpec extends HmrcSpec with ScalaFutures with GuiceOneApp
 
   "LockedScheduledJobSpec" should {
 
+    "back off when Mutex cannot be acquired" in new Setup {
+      when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(Some(Lock("", "", instant, instant))))
+      when(mockLockRepository.releaseLock(*, *)).thenReturn(Future.successful(()))
+      when(fakeService.call()).thenReturn("faked")
+
+      // Start first copy of job (but not complete)
+      subject.execute
+
+      // Run second job which should notice first job is running
+      val result2 = await(subject.execute)
+
+      result2 shouldBe "Skipping execution: job running"
+
+      verify(mockLockRepository).takeLock(eqTo("FakeServiceJob-lock"), *, *)
+      subject.completeRun()
+    }
+
     "back off when Mongo lock cannot be obtained" in new Setup {
       when(mockLockRepository.takeLock(*, *, *)).thenReturn(Future.successful(None))
 
@@ -77,7 +100,9 @@ class LockedScheduledJobSpec extends HmrcSpec with ScalaFutures with GuiceOneApp
       when(mockLockRepository.releaseLock(*, *)).thenReturn(Future.successful(()))
       when(fakeService.call()).thenReturn("faked")
 
-      val result = await(subject.execute)
+      val resultF = subject.execute
+      subject.completeRun()
+      val result = await(resultF)
 
       result shouldBe "FakeServiceJob Job ran successfully."
       verify(mockLockRepository).takeLock(eqTo("FakeServiceJob-lock"), *, *)

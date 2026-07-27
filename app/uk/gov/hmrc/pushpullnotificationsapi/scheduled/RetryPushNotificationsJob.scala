@@ -47,7 +47,7 @@ class RetryPushNotificationsJob @Inject() (
     notificationPushService: NotificationPushService,
     val clock: Clock
   )(using Materializer)
-    extends LockedScheduledJob with ClockNow with ApplicationLogger {
+    extends ExclusiveLockedScheduledJob with ClockNow with ApplicationLogger {
 
   override def name: String = "RetryPushNotificationsJob"
   override def interval: FiniteDuration = jobConfig.interval

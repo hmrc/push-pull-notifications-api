@@ -197,7 +197,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
             entity.body.consumeData
           }
             .map(_.decodeString(Charset.defaultCharset()))
-            .map(s => println(s))
         )
 
         NotificationsServiceMock.verifyZeroInteractions()
@@ -212,7 +211,6 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
             entity.body.consumeData
           }
             .map(_.decodeString(Charset.defaultCharset()))
-            .map(s => println(s))
         )
 
         NotificationsServiceMock.verifyZeroInteractions()
