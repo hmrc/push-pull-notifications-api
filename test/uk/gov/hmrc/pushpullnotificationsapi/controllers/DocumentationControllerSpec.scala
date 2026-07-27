@@ -36,7 +36,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 
 class DocumentationControllerSpec extends AsyncHmrcSpec with MockitoSugar with ArgumentMatchersSugar with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
-  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
+  given Materializer = app.injector.instanceOf[Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
 
   override lazy val app: Application = GuiceApplicationBuilder()

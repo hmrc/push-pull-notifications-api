@@ -20,7 +20,6 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.mongodb.client.model.ReturnDocument
-import org.apache.pekko.stream.Materializer
 import org.mongodb.scala.model.Filters.*
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions, Updates}
@@ -35,7 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.{DbClient, DbClien
 import uk.gov.hmrc.pushpullnotificationsapi.services.LocalCrypto
 
 @Singleton
-class ClientRepository @Inject() (mongo: MongoComponent, crypto: LocalCrypto)(implicit ec: ExecutionContext, val mat: Materializer)
+class ClientRepository @Inject() (mongo: MongoComponent, crypto: LocalCrypto)(using ExecutionContext)
     extends PlayMongoRepository[DbClient](
       collectionName = "client",
       mongoComponent = mongo,

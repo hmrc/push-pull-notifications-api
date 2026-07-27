@@ -47,8 +47,8 @@ import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class BoxControllerSpec extends AsyncHmrcSpec with BoxServiceMockModule with AuthConnectorMockModule with TestData with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
-  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given Materializer = app.injector.instanceOf[Materializer]
+  given HeaderCarrier = HeaderCarrier()
 
   val mockAppConfig: AppConfig = mock[AppConfig]
 

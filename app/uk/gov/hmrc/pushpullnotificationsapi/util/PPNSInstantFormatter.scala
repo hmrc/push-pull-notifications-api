@@ -24,7 +24,7 @@ import play.api.libs.json.*
 
 object PPNSInstantFormatter {
 
-  implicit val lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+  given lenientFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
     .parseLenient()
     .parseCaseInsensitive()
     .appendPattern("uuuu-MM-dd['T'HH:mm:ss[.SSS][Z]['Z']]")
@@ -35,9 +35,9 @@ object PPNSInstantFormatter {
     .toFormatter
     .withZone(ZoneId.of("UTC"))
 
-  implicit val instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
+  given instantReads: Reads[Instant] = Reads.instantReads(lenientFormatter)
 
-  implicit val instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
+  given instantWrites: Writes[Instant] = Writes.temporalWrites(new DateTimeFormatterBuilder()
     .appendPattern("uuuu-MM-dd'T'HH:mm:ss.SSSZ")
     .toFormatter
     .withZone(ZoneId.of("UTC")))

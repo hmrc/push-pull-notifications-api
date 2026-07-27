@@ -17,6 +17,7 @@
 package uk.gov.hmrc.pushpullnotificationsapi.services
 
 import java.net.URL
+import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future.successful
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,6 +25,7 @@ import scala.util.control.NonFatal
 
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.services.ClockNow
 import uk.gov.hmrc.pushpullnotificationsapi.connectors.ConfirmationConnector
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId, NotificationStatus, OutboundConfirmation}
@@ -32,7 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.repository.models.ConfirmationReques
 import uk.gov.hmrc.pushpullnotificationsapi.util.ApplicationLogger
 
 @Singleton
-class ConfirmationService @Inject() (repository: ConfirmationRepository, connector: ConfirmationConnector) extends ApplicationLogger {
+class ConfirmationService @Inject() (repository: ConfirmationRepository, connector: ConfirmationConnector, val clock: Clock) extends ApplicationLogger with ClockNow {
 
   def saveConfirmationRequest(
       confirmationId: ConfirmationId,
@@ -41,7 +43,7 @@ class ConfirmationService @Inject() (repository: ConfirmationRepository, connect
       privateHeaders: List[PrivateHeader]
     )(using ExecutionContext
     ): Future[ConfirmationCreateServiceResult] = {
-    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId, privateHeaders)).map {
+    repository.saveConfirmationRequest(ConfirmationRequest(confirmationId, confirmationUrl, notificationId, privateHeaders, ConfirmationStatus.PENDING, instant, None, None)).map {
       case Some(_) => ConfirmationCreateServiceSuccessResult()
       case None    => ConfirmationCreateServiceFailedResult("unable to create confirmation request duplicate found")
     }

@@ -41,7 +41,7 @@ class NotificationsService @Inject() (
       boxId: BoxId,
       clientId: ClientId,
       request: AcknowledgeNotificationsRequest
-    )(implicit hc: HeaderCarrier
+    )(using HeaderCarrier
     ): Future[AcknowledgeNotificationsServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {
@@ -88,7 +88,7 @@ class NotificationsService @Inject() (
       notificationId: NotificationId,
       contentType: MessageContentType,
       message: String
-    )(implicit hc: HeaderCarrier
+    )(using HeaderCarrier
     ): Future[NotificationCreateServiceResult] = {
     boxRepository.findByBoxId(boxId)
       .flatMap {

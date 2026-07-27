@@ -59,8 +59,8 @@ class WrappedNotificationsControllerSpec extends AsyncHmrcSpec with GuiceOneAppP
     .disable[SchedulerModule]
     .build()
 
-  lazy implicit val mat: Materializer = app.materializer
-  lazy implicit val ec: ExecutionContextExecutor = mat.executionContext
+  given mat: Materializer = app.materializer
+  given ExecutionContextExecutor = mat.executionContext
 
   override def beforeEach(): Unit = {
     reset(NotificationsServiceMock.aMock, ConfirmationServiceMock.aMock, AuthConnectorMock.aMock)

@@ -96,7 +96,7 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
         .toList
     }
 
-    def runBatchTest(numberBad: Int, numberGood: Int)(implicit ec: ExecutionContext) = {
+    def runBatchTest(numberBad: Int, numberGood: Int)(using ExecutionContext) = {
       val bad = buildFailed(numberBad)
       val good = buildSuccess(numberGood)
 

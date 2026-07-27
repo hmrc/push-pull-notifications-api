@@ -76,10 +76,20 @@ trait TestData extends FixedClock with ApplicationIdFixtures with ClientIdFixtur
   val messageContentTypeJson = MessageContentType.APPLICATION_JSON
   val messageContentTypeXml = MessageContentType.APPLICATION_XML
 
-  val confirmationRequest = ConfirmationRequest(confirmationId, confirmationCallbackUrl, notificationId, List.empty, pushedDateTime = Some(pushedTime))
+  val confirmationRequest =
+    ConfirmationRequest(confirmationId, confirmationCallbackUrl, notificationId, List.empty, ConfirmationStatus.PENDING, instant, pushedDateTime = Some(pushedTime), None)
 
   val outOfDateConfirmationRequest: ConfirmationRequest =
-    ConfirmationRequest(confirmationId = confirmationId, new URL("https://anotherurl.com"), notificationId, List.empty, createdDateTime = instant.minus(Duration.ofHours(7)))
+    ConfirmationRequest(
+      confirmationId = confirmationId,
+      new URL("https://anotherurl.com"),
+      notificationId,
+      List.empty,
+      ConfirmationStatus.PENDING,
+      createdDateTime = instant.minus(Duration.ofHours(7)),
+      None,
+      None
+    )
 
   val pushSubscriber = PushSubscriber("mycallbackUrl")
   val pullSubscriber = PullSubscriber("")

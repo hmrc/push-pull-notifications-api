@@ -69,7 +69,9 @@ class ConfirmationRepositoryISpec
     notificationId,
     List.empty,
     ConfirmationStatus.PENDING,
-    instant
+    instant,
+    None,
+    None
   )
   override implicit lazy val app: Application = appBuilder.build()
 
@@ -177,7 +179,8 @@ class ConfirmationRepositoryISpec
 
     def createConfirmationInDb(status: ConfirmationStatus, retryAfterDateTime: Option[Instant] = None) = {
       val id = ConfirmationId.random
-      val confirmation = ConfirmationRequest(id, url, NotificationId.random, List.empty, status, pushedDateTime = Some(instant), retryAfterDateTime = retryAfterDateTime)
+      val confirmation =
+        ConfirmationRequest(id, url, NotificationId.random, List.empty, status, createdDateTime = instant, pushedDateTime = Some(instant), retryAfterDateTime = retryAfterDateTime)
       val result = await(repo.saveConfirmationRequest(confirmation))
       result shouldBe Some(id)
       confirmation

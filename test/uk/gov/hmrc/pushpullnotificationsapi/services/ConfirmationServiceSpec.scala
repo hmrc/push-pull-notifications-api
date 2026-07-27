@@ -21,16 +21,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.Confirmationpullnotificationsapi.mocks.connectors.ConfirmationConnectorMockModule
 import uk.gov.hmrc.http.HeaderCarrier
 
+import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.mocks.repository.ConfirmationRepositoryMockModule
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, OutboundConfirmation}
 import uk.gov.hmrc.pushpullnotificationsapi.models.{ConfirmationCreateServiceFailedResult, ConfirmationCreateServiceSuccessResult}
 import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
-class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData {
+class ConfirmationServiceSpec extends AsyncHmrcSpec with TestData with FixedClock {
 
   trait SetUp extends ConfirmationRepositoryMockModule with ConfirmationConnectorMockModule {
-    val serviceToTest = new ConfirmationService(ConfirmationRepositoryMock.aMock, ConfirmationConnectorMock.aMock)
+    val serviceToTest = new ConfirmationService(ConfirmationRepositoryMock.aMock, ConfirmationConnectorMock.aMock, clock)
     implicit val hc: HeaderCarrier = new HeaderCarrier()
   }
 

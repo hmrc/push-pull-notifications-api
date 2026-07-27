@@ -40,7 +40,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class ClientControllerSpec extends AsyncHmrcSpec with ClientServiceMockModule with GuiceOneAppPerSuite with BeforeAndAfterEach with TestData {
 
-  implicit def mat: Materializer = app.injector.instanceOf[Materializer]
+  given Materializer = app.injector.instanceOf[Materializer]
 
   val mockAppConfig: AppConfig = mock[AppConfig]
 

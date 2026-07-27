@@ -21,7 +21,7 @@ import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.Notification
 
 object ResponseFormatters {
-  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter.*
+  import uk.gov.hmrc.pushpullnotificationsapi.util.PPNSInstantFormatter.given
 
   given OFormat[Box] = Json.format[Box]
   given OFormat[Notification] = Json.format[Notification]

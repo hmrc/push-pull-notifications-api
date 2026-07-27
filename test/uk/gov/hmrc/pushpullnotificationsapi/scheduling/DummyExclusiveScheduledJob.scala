@@ -40,7 +40,7 @@ class DummyExclusiveScheduledJob(
     completedMarker.await(timeout.length, timeout.unit)
   }
 
-  override def executeInMutex(implicit ec: ExecutionContext): Future[String] = {
+  override def executeInMutex(using ExecutionContext): Future[String] = {
     startedMarker.countDown()
     val future = jobCompleter.future
     future.onComplete { case _ =>

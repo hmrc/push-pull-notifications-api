@@ -18,7 +18,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.repository.models
 
 import java.net.URL
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import scala.util.Try
 
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ConfirmationStatus, NotificationId}
@@ -29,10 +28,11 @@ case class ConfirmationRequest(
     confirmationUrl: URL,
     notificationId: NotificationId,
     privateHeaders: List[PrivateHeader],
-    status: ConfirmationStatus = ConfirmationStatus.PENDING,
-    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-    pushedDateTime: Option[Instant] = None,
-    retryAfterDateTime: Option[Instant] = None) {
+    status: ConfirmationStatus, // = ConfirmationStatus.PENDING,
+    createdDateTime: Instant, // = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    pushedDateTime: Option[Instant], // = None,
+    retryAfterDateTime: Option[Instant] // = None
+  ) {
 
   def toDB: ConfirmationRequestDB =
     ConfirmationRequestDB(
@@ -53,10 +53,10 @@ case class ConfirmationRequestDB(
     confirmationUrl: String,
     notificationId: NotificationId,
     privateHeaders: List[PrivateHeader],
-    status: ConfirmationStatus = ConfirmationStatus.PENDING,
-    createdDateTime: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-    pushedDateTime: Option[Instant] = None,
-    retryAfterDateTime: Option[Instant] = None) {
+    status: ConfirmationStatus,
+    createdDateTime: Instant,
+    pushedDateTime: Option[Instant],
+    retryAfterDateTime: Option[Instant]) {
 
   def toNonDb: Option[ConfirmationRequest] = {
     Try {

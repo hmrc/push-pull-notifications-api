@@ -34,7 +34,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.testData.TestData
 
 class BoxServiceSpec extends AsyncHmrcSpec with TestData {
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  given HeaderCarrier = HeaderCarrier()
 
   def updateSubscribersRequestWithId(subtype: SubscriptionType): UpdateSubscriberRequest =
     UpdateSubscriberRequest(SubscriberRequest(callBackUrl = endpoint, subscriberType = subtype))

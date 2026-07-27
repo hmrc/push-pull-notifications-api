@@ -49,7 +49,7 @@ class NotificationPushService @Inject() (
   )(using ExecutionContext)
     extends ApplicationLogger with ClockNow {
 
-  def handlePushNotification(box: Box, notification: Notification)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def handlePushNotification(box: Box, notification: Notification)(using HeaderCarrier, ExecutionContext): Future[Boolean] = {
     if (box.subscriber.isDefined && isValidPushSubscriber(box.subscriber.get)) {
       sendNotificationToPush(box, notification) flatMap {
         case true  =>
