@@ -40,14 +40,14 @@ class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditE
       given HeaderCarrier = hc(using request)
       statusCode match {
         case NOT_FOUND              =>
-          NotFound(JsErrorResponse(ErrorCode.NOT_FOUND, s"URI not found ${request.path}"))
+          NotFound(JsErrorResponse(ErrorCode.NotFound, s"URI not found ${request.path}"))
         case BAD_REQUEST            =>
           if (message.contains("Invalid Json")) {
-            BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format"))
+            BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "JSON body is invalid against expected format"))
           } else {
-            BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
+            BadRequest(JsErrorResponse(ErrorCode.BadRequest, message))
           }
-        case UNSUPPORTED_MEDIA_TYPE => UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, message))
+        case UNSUPPORTED_MEDIA_TYPE => UnsupportedMediaType(JsErrorResponse(ErrorCode.BadRequest, message))
         case _                      =>
           auditConnector.sendEvent(
             dataEvent(
@@ -57,7 +57,7 @@ class PPNSJsonErrorHandler @Inject() (auditConnector: AuditConnector, httpAuditE
               detail = Map.empty
             )
           )
-          Status(statusCode)(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, message))
+          Status(statusCode)(JsErrorResponse(ErrorCode.UnknownError, message))
       }
     }
 

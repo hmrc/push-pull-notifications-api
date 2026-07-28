@@ -36,7 +36,7 @@ class ValidateAuthorizationHeaderAction @Inject() (appConfig: AppConfig)(using e
     val authHeader = request.headers.get(HeaderNames.AUTHORIZATION).getOrElse("")
 
     if (!authHeader.isEmpty && authHeader == appConfig.authorizationToken) Future.successful(None)
-    else Future.successful(Some(Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Authorisation failed"))))
+    else Future.successful(Some(Forbidden(JsErrorResponse(ErrorCode.Forbidden, "Authorisation failed"))))
 
   }
 }

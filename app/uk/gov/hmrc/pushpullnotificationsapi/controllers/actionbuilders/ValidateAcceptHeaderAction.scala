@@ -24,8 +24,7 @@ import play.api.http.HeaderNames.ACCEPT
 import play.api.mvc.Results.*
 import play.api.mvc.{ActionFilter, Request, Result}
 
-import uk.gov.hmrc.pushpullnotificationsapi.models.ErrorCode.ACCEPT_HEADER_INVALID
-import uk.gov.hmrc.pushpullnotificationsapi.models.JsErrorResponse
+import uk.gov.hmrc.pushpullnotificationsapi.models.{ErrorCode, JsErrorResponse}
 
 @Singleton
 class ValidateAcceptHeaderAction @Inject() ()(using ec: ExecutionContext) extends ActionFilter[Request] {
@@ -35,7 +34,7 @@ class ValidateAcceptHeaderAction @Inject() ()(using ec: ExecutionContext) extend
   override protected def filter[A](request: Request[A]): Future[Option[Result]] = {
     request.headers.get(ACCEPT) match {
       case Some("application/vnd.hmrc.1.0+json") => successful(None)
-      case _                                     => successful(Some(NotAcceptable(JsErrorResponse(ACCEPT_HEADER_INVALID, "The accept header is missing or invalid"))))
+      case _                                     => successful(Some(NotAcceptable(JsErrorResponse(ErrorCode.AcceptHeaderInvalid, "The accept header is missing or invalid"))))
     }
   }
 }

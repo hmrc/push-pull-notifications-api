@@ -37,7 +37,7 @@ import uk.gov.hmrc.apiplatform.modules.common.domain.models.{ApplicationId, Clie
 import uk.gov.hmrc.apiplatform.modules.common.utils.FixedClock
 import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.models.*
-import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.APPLICATION_JSON
+import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.MessageContentType.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.NotificationStatus.*
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{Notification, NotificationId, NotificationStatus, RetryableNotification}
 import uk.gov.hmrc.pushpullnotificationsapi.services.NotificationPushService

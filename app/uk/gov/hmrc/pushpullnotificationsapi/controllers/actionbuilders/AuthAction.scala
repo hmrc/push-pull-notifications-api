@@ -48,12 +48,12 @@ class AuthAction @Inject() (override val authConnector: AuthConnector)(using ec:
           case Some(clientId) => Future.successful(Right(AuthenticatedNotificationRequest[A](ClientId(clientId), request)))
           case _              =>
             logger.info("Unable to retrieve ClientId for request")
-            Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, "Unable to retrieve ClientId"))))
+            Future.successful(Left(Unauthorized(JsErrorResponse(ErrorCode.Unauthorised, "Unable to retrieve ClientId"))))
         }
     } recover {
       case e: AuthorisationException =>
         logger.info(s"Client Authorisation Failed with error: ${e.getMessage}")
-        Left(Unauthorized(JsErrorResponse(ErrorCode.UNAUTHORISED, e.getMessage)))
+        Left(Unauthorized(JsErrorResponse(ErrorCode.Unauthorised, e.getMessage)))
     }
   }
 

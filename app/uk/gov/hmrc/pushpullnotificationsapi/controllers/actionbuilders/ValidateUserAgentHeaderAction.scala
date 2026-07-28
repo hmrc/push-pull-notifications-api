@@ -41,7 +41,7 @@ class ValidateUserAgentHeaderAction @Inject() (appConfig: AppConfig)(using ec: E
         if (x.contains(userAgent)) {
           Future.successful(None)
         } else {
-          Future.successful(Some(Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Authorisation failed"))))
+          Future.successful(Some(Forbidden(JsErrorResponse(ErrorCode.Forbidden, "Authorisation failed"))))
         }
     }
 

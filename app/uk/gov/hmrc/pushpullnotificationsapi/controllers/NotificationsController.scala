@@ -59,14 +59,14 @@ class NotificationsController @Inject() (
 
       (
         for {
-          contentType <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not found")))
+          contentType <- ET.fromOption(request.contentType, UnsupportedMediaType(JsErrorResponse(ErrorCode.BadRequest, "Content Type not found")))
           messageContentType <- ET.fromOption(
                                   contentTypeHeaderToNotificationType(contentType),
-                                  UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))
+                                  UnsupportedMediaType(JsErrorResponse(ErrorCode.BadRequest, "Content Type not Supported"))
                                 )
           body = request.body
           isValidBody = validateBodyAgainstContentType(messageContentType, body)
-          messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+          messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Message syntax is invalid")))
           result <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
         } yield result
       ).merge
@@ -80,8 +80,8 @@ class NotificationsController @Inject() (
       .async { implicit request =>
         notificationsService.getNotifications(boxId, request.clientId, request.params.status, request.params.fromDate, request.params.toDate, request.params.count) map {
           case Right(results: List[Notification])                 => Ok(Json.toJson(results.map(fromNotification)))
-          case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
-          case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+          case Left(_: GetNotificationsServiceBoxNotFoundResult)  => NotFound(JsErrorResponse(ErrorCode.BoxNotFound, "Box not found"))
+          case Left(_: GetNotificationsServiceUnauthorisedResult) => Forbidden(JsErrorResponse(ErrorCode.Forbidden, "Access denied"))
         } recover recovery
       }
 
@@ -96,12 +96,12 @@ class NotificationsController @Inject() (
             case _: AcknowledgeNotificationsSuccessUpdatedResult      =>
               NoContent
             case _: AcknowledgeNotificationsServiceBoxNotFoundResult  =>
-              NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found"))
+              NotFound(JsErrorResponse(ErrorCode.BoxNotFound, "Box not found"))
             case _: AcknowledgeNotificationsServiceUnauthorisedResult =>
-              Forbidden(JsErrorResponse(ErrorCode.FORBIDDEN, "Access denied"))
+              Forbidden(JsErrorResponse(ErrorCode.Forbidden, "Access denied"))
           } recover recovery
           else {
-            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "JSON body is invalid against expected format")))
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "JSON body is invalid against expected format")))
           }
       }
     }

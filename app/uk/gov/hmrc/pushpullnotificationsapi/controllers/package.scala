@@ -30,6 +30,6 @@ package object controllers {
   def recovery: PartialFunction[Throwable, Result] = {
     case NonFatal(e) =>
       logger.error("An unexpected error occurred:", e)
-      InternalServerError(JsErrorResponse(ErrorCode.UNKNOWN_ERROR, s"An unexpected error occurred:${e.getMessage}"))
+      InternalServerError(JsErrorResponse(ErrorCode.UnknownError, s"An unexpected error occurred:${e.getMessage}"))
   }
 }

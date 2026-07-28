@@ -39,7 +39,7 @@ class ClientController @Inject() (
   def getClientSecrets(clientId: ClientId): Action[AnyContent] = (Action andThen validateAuthorizationHeaderAction).async {
     clientService.getClientSecrets(clientId) map {
       case Some(clientSecrets) => Ok(Json.toJson(clientSecrets))
-      case None                => NotFound(JsErrorResponse(ErrorCode.CLIENT_NOT_FOUND, "Client not found"))
+      case None                => NotFound(JsErrorResponse(ErrorCode.ClientNotFound, "Client not found"))
     } recover recovery
   }
 }

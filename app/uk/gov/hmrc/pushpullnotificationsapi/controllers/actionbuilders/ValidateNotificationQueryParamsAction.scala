@@ -55,7 +55,7 @@ class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionCont
   def validateQueryParamsKeys(queryParams: Map[String, Seq[String]]): Either[Result, Boolean] = {
     if (queryParams.nonEmpty) {
       if (!queryParams.keys.forall(validKeys.contains(_))) {
-        Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid / Unknown query parameter provided")))
+        Left(BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Invalid / Unknown query parameter provided")))
       } else Right(true)
     } else {
       Right(true)
@@ -77,7 +77,7 @@ class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionCont
     maybeCountStr match {
       case Some(count) => count.toIntOption.toRight[Result] {
           logger.info(s"Invalid Count Param provided: $count")
-          BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Count parameter provided"))
+          BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Invalid Count parameter provided"))
         }.map(Some(_))
       case None        => Right(None)
     }
@@ -87,7 +87,7 @@ class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionCont
     maybeStatusStr match {
       case Some(status) => NotificationStatus.apply(status).toRight[Result] {
           logger.info(s"Invalid Status Param provided: $status")
-          BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Invalid Status parameter provided"))
+          BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Invalid Status parameter provided"))
         }.map(Some(_))
       case None         => Right(None)
     }
@@ -102,7 +102,7 @@ class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionCont
           case Success(parseDate) => Right(Some(parseDate))
           case Failure(_)         =>
             logger.info(s"Unparsable DateValue Param provided: $stringVal")
-            Left(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Unparsable DateValue Param provided")))
+            Left(BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Unparsable DateValue Param provided")))
         }
       case None            => Right(None)
     }
@@ -114,7 +114,7 @@ class ValidateNotificationQueryParamsAction @Inject() ()(using ec: ExecutionCont
         if (fromDate.isBefore(toDate)) {
           Right(Some(true))
         } else {
-          Left(BadRequest(JsErrorResponse(ErrorCode.BAD_REQUEST, "fromDate parameter is before toDateParameter")))
+          Left(BadRequest(JsErrorResponse(ErrorCode.BadRequest, "fromDate parameter is before toDateParameter")))
         }
       case _                              => Right(Some(true))
     }

@@ -83,30 +83,30 @@ object NotificationResponse {
   }
 }
 
-object ErrorCode extends Enumeration {
-  type ErrorCode = Value
-  val ACCEPT_HEADER_INVALID = Value("ACCEPT_HEADER_INVALID")
-  val BAD_REQUEST = Value("BAD_REQUEST")
-  val BOX_NOT_FOUND = Value("BOX_NOT_FOUND")
-  val CLIENT_NOT_FOUND = Value("CLIENT_NOT_FOUND")
-  val DUPLICATE_BOX = Value("DUPLICATE_BOX")
-  val DUPLICATE_NOTIFICATION = Value("DUPLICATE_NOTIFICATION")
-  val DUPLICATE_CONFIRMATION = Value("DUPLICATE_CONFIRMATION")
-  val FORBIDDEN = Value("FORBIDDEN")
-  val INVALID_ACCEPT_HEADER = Value("INVALID_ACCEPT_HEADER")
-  val INVALID_CONTENT_TYPE = Value("INVALID_CONTENT_TYPE")
-  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
-  val NOT_FOUND = Value("NOT_FOUND")
-  val UNAUTHORISED = Value("UNAUTHORISED")
-  val UNKNOWN_ERROR = Value("UNKNOWN_ERROR")
+enum ErrorCode {
 
+  case AcceptHeaderInvalid,
+    BadRequest,
+    BoxNotFound,
+    ClientNotFound,
+    DuplicateBox,
+    DuplicateNotification,
+    DuplicateConfirmation,
+    Forbidden,
+    InvalidAcceptHeader,
+    InvalidContentType,
+    InvalidRequestPayload,
+    NotFound,
+    Unauthorised,
+    UnknownError,
 }
 
 object JsErrorResponse {
+  import uk.gov.hmrc.apiplatform.modules.common.domain.services.EnumJsonHelper.*
 
-  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
+  def apply(errorCode: ErrorCode, message: JsValueWrapper): JsObject =
     Json.obj(
-      "code" -> errorCode.toString,
+      "code" -> errorCode.asScreamingSnakeCase,
       "message" -> message
     )
 }

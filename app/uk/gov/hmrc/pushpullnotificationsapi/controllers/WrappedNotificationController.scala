@@ -64,27 +64,27 @@ class WrappedNotificationsController @Inject() (
                   case _: ConfirmationCreateServiceSuccessResult =>
                     Created(Json.toJson(CreateWrappedNotificationResponse(notificationId, confirmationId)))
                   case _: ConfirmationCreateServiceFailedResult  =>
-                    InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_CONFIRMATION, "Unable to save Confirmation: duplicate found"))
+                    InternalServerError(JsErrorResponse(ErrorCode.DuplicateConfirmation, "Unable to save Confirmation: duplicate found"))
                 }
             }
           }
 
           (
             for {
-              _ <- ET.cond(request.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message version is invalid")))
+              _ <- ET.cond(request.version == "1", (), BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Message version is invalid")))
               _ <- ET.cond(
                      ifConfirmationUrlExistsItMustBeHttps(request.confirmationUrl),
                      (),
-                     BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Confirmation URL must have https protocol"))
+                     BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Confirmation URL must have https protocol"))
                    )
-              _ <- ET.cond(request.privateHeaders.length <= 5, (), BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request contains more than 5 private headers")))
+              _ <- ET.cond(request.privateHeaders.length <= 5, (), BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Request contains more than 5 private headers")))
               messageContentType <- ET.fromOption(
                                       contentTypeHeaderToNotificationType(request.notification.contentType),
-                                      UnsupportedMediaType(JsErrorResponse(ErrorCode.BAD_REQUEST, "Content Type not Supported"))
+                                      UnsupportedMediaType(JsErrorResponse(ErrorCode.BadRequest, "Content Type not Supported"))
                                     )
               body = request.notification.body
               isValidBody = validateBodyAgainstContentType(messageContentType, body)
-              messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Message syntax is invalid")))
+              messageBody <- ET.cond(isValidBody, body, BadRequest(JsErrorResponse(ErrorCode.InvalidRequestPayload, "Message syntax is invalid")))
               result <- ET.liftF(processNotification(boxId, messageContentType, messageBody)(handleNotification))
             } yield result
           ).merge

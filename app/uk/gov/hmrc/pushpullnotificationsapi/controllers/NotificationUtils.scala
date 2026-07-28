@@ -53,9 +53,9 @@ trait NotificationUtils(using ExecutionContext) {
 
     notificationsService.saveNotification(boxId, notificationId, contentType, message) flatMap {
       case _: NotificationCreateSuccessResult             => fn(notificationId)
-      case _: NotificationCreateFailedBoxIdNotFoundResult => successful(NotFound(JsErrorResponse(ErrorCode.BOX_NOT_FOUND, "Box not found")))
+      case _: NotificationCreateFailedBoxIdNotFoundResult => successful(NotFound(JsErrorResponse(ErrorCode.BoxNotFound, "Box not found")))
       case _: NotificationCreateFailedDuplicateResult     =>
-        successful(InternalServerError(JsErrorResponse(ErrorCode.DUPLICATE_NOTIFICATION, "Unable to save Notification: duplicate found")))
+        successful(InternalServerError(JsErrorResponse(ErrorCode.DuplicateNotification, "Unable to save Notification: duplicate found")))
     } recover recovery
   }
 
