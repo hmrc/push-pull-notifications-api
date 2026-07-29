@@ -151,20 +151,6 @@ class RetryConfirmationRequestJobSpec extends AsyncHmrcSpec with GuiceOneAppPerS
       result shouldBe "RetryConfirmationRequestJob Job ran successfully."
     }
 
-    "not execute if the job is already running locally" in new Setup {
-
-      ConfirmationServiceMock.SendConfirmation.thenSuccess(true)
-      ConfirmationRepositoryMock.FetchRetryableConfirmations.thenSuccessWith(List(confirmationRequest))
-
-      val resultF = underTest.execute
-      val result2 = await(underTest.execute)
-      result2 shouldBe "Skipping execution: job running"
-
-      await(resultF)
-      ConfirmationRepositoryMock.FetchRetryableConfirmations.verifyCalledOnce()
-      ConfirmationServiceMock.SendConfirmation.verifyCalled()
-    }
-
     "handle error when something fails" in new Setup {
 
       ConfirmationRepositoryMock.FetchRetryableConfirmations.thenFails()

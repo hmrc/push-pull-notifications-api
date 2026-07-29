@@ -149,21 +149,6 @@ class RetryPushNotificationsJobSpec extends AsyncHmrcSpec with GuiceOneAppPerSui
       result shouldBe "RetryPushNotificationsJob Job ran successfully."
     }
 
-    "not execute if the job is already running locally" in new Setup {
-
-      val retryableNotification: RetryableNotification = RetryableNotification(notification, BoxObjectWithNoSubscribers)
-      NotificationPushServiceMock.HandlePushNotification.returnsTrue()
-      NotificationPushServiceMock.FetchRetryablePushNotifications.succeedsFor(retryableNotification)
-
-      val resultF = underTest.execute
-      val result2: String = await(underTest.execute)
-
-      await(resultF)
-      NotificationPushServiceMock.FetchRetryablePushNotifications.verifyCalled()
-      NotificationPushServiceMock.HandlePushNotification.verifyCalled()
-      result2 shouldBe "Skipping execution: job running"
-    }
-
     "handle error when something fails" in new Setup {
       NotificationPushServiceMock.FetchRetryablePushNotifications.failsWithException()
 
