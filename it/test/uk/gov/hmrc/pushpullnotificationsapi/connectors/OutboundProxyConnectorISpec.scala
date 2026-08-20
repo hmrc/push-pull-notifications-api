@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.connectors
 import scala.concurrent.ExecutionContext
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import play.api.Application
@@ -32,7 +31,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.models.CallbackValidation
 import uk.gov.hmrc.pushpullnotificationsapi.models.notifications.{ForwardedHeader, OutboundNotification}
 
-class OutboundProxyConnectorISpec extends AsyncHmrcSpec with MockitoSugar with ArgumentMatchersSugar with WireMockSupport with GuiceOneAppPerSuite with HttpClientV2Support {
+class OutboundProxyConnectorISpec extends AsyncHmrcSpec with WireMockSupport with GuiceOneAppPerSuite with HttpClientV2Support {
 
   override implicit lazy val app: Application = appBuilder.build()
 

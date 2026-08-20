@@ -19,7 +19,6 @@ package uk.gov.hmrc.pushpullnotificationsapi.controllers
 import scala.concurrent.Future
 
 import org.apache.pekko.stream.Materializer
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
@@ -34,7 +33,7 @@ import uk.gov.hmrc.pushpullnotificationsapi.AsyncHmrcSpec
 import uk.gov.hmrc.pushpullnotificationsapi.config.AppConfig
 import uk.gov.hmrc.pushpullnotificationsapi.scheduled.SchedulerModule
 
-class DocumentationControllerSpec extends AsyncHmrcSpec with MockitoSugar with ArgumentMatchersSugar with GuiceOneAppPerSuite with BeforeAndAfterEach {
+class DocumentationControllerSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite with BeforeAndAfterEach {
 
   given Materializer = app.injector.instanceOf[Materializer]
   val mockAppConfig: AppConfig = mock[AppConfig]
