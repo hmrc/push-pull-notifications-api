@@ -12,9 +12,7 @@
         "version": "1.0",
         "status": "@{apiStatus}",
         "endpointsEnabled": @{!apiStatus.equalsIgnoreCase("ALPHA")},
-        "access": {
-          "type": "PUBLIC"
-        }
+        "access": "PUBLIC"
       }
     ]
   }
